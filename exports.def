@@ -1,0 +1,4 @@
+LIBRARY	"po3_SpellPerkItemDistributor"
+EXPORTS
+SKSEPlugin_Query
+SKSEPlugin_Load
