@@ -1,3 +1,3 @@
-# ExamplePlugin-CommonLibSSE
+# Spell Perk Item Distributor
 
-Basic plugin template for use with CommonLibSSE
+Distributes spells/perks/items/shouts/packages to NPCs
