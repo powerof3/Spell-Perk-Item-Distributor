@@ -2,28 +2,15 @@
 
 #include "enum.h"
 
+extern std::unordered_set<RE::TESBoundObject*> equipOnLoadForms;
 
-namespace STRING_UTIL
+
+namespace UTIL
 {
-	std::vector<std::string> split(const std::string& a_str, const std::string& a_delimiter);
+	std::vector<std::string> splitTrimmedString(const std::string& a_str, bool a_trim, const std::string& a_delimiter = " , ");
 
-	std::string& ltrim(std::string& a_str, const std::string& a_chars = "\t\n\v\f\r ");
-
-	std::string& rtrim(std::string& a_str, const std::string& a_chars = "\t\n\v\f\r ");
-
-	std::string& trim(std::string& a_str, const std::string& a_chars = "\t\n\v\f\r ");
-
-	const bool onlySpace(const std::string& a_str);
-
-	StringVec splitTrimmedString(const std::string& a_str, bool a_trim, const std::string& a_delimiter = " , ");
-
-	std::string& santize(std::string& a_str);
-
-	bool insenstiveStringCompare(const std::string& a_str1, const std::string& a_str2);
+	std::string LookupFormType(RE::FormType a_type);
 }
-
-
-std::string LookupFormType(RE::FormType a_type);
 
 
 template <typename T>
@@ -38,40 +25,36 @@ T to_int(const std::string& a_str)
 
 
 template <class Form>
-void LookupForms(RE::TESDataHandler* a_dataHandler, const char* a_type, const INIDataVec& a_INIDataVec, FormDataVec<Form>& a_formDataVec)
+void LookupForms(const std::string& a_type, const INIDataVec& a_INIDataVec, FormDataVec<Form>& a_formDataVec)
 {
 	logger::info("	Starting {} lookup", a_type);
 
-	for (auto& INI_data : a_INIDataVec) {
-		auto formIDModPair = std::get<INI_TYPE::kFormIDPair>(INI_data);
-		auto filterIDs = std::get<INI_TYPE::kFilterIDs>(INI_data);
-
-		RE::FormID formID = formIDModPair.first;
-		std::string mod = formIDModPair.second;
-
-		auto form = a_dataHandler->LookupForm<Form>(formID, mod);
+	for (auto& [formIDPair_ini, strings_ini, filterIDs, level_ini, gender_ini, itemCount, chance_ini] : a_INIDataVec) {
+		
+		auto [formID, mod] = formIDPair_ini;	
+		auto form = RE::TESDataHandler::GetSingleton()->LookupForm<Form>(formID, mod);
 		if (!form) {
-			auto base = a_dataHandler->LookupForm(formID, mod);
+			auto base = RE::TESDataHandler::GetSingleton()->LookupForm(formID, mod);
 			form = base ? static_cast<Form*>(base) : nullptr;
 		}
 		if (form) {
 			logger::info("		{} [0x{:08X}] ({}) SUCCESS", form->GetName(), formID, mod);
 		} else {
-			logger::error("		{} [0x{:08X}] ({}) FAIL - wrong formtype", a_type, formID, mod);
+			logger::error("		{} [0x{:08X}] ({}) FAIL - missing or wrong form type", a_type, formID, mod);
 			continue;
 		}
 
-		FormVec filterForms;
+		FormVec tempFilterForms;
 		if (!filterIDs.empty()) {
 			logger::info("			Starting filter form lookup");
 			for (auto filterID : filterIDs) {
 				auto filterForm = RE::TESForm::LookupByID(filterID);
 				if (filterForm) {
 					auto formType = filterForm->GetFormType();
-					auto const type = LookupFormType(formType);
+					auto const type = UTIL::LookupFormType(formType);
 					if (!type.empty()) {
 						logger::info("				{} [0x{:08X}] SUCCESS", type, filterID);
-						filterForms.push_back(filterForm);
+						tempFilterForms.push_back(filterForm);
 					} else {
 						logger::error("				[0x{:08X}]) FAIL - wrong formtype ({})", filterID, formType);
 					}
@@ -82,16 +65,24 @@ void LookupForms(RE::TESDataHandler* a_dataHandler, const char* a_type, const IN
 		}
 
 		FormData<Form> formData;
-		std::get<DATA_TYPE::kForm>(formData) = std::make_pair(form, std::get<INI_TYPE::kItemCount>(INI_data));
-		std::get<DATA_TYPE::kStrings>(formData) = std::get<INI_TYPE::kStrings>(INI_data);
-		std::get<DATA_TYPE::kFilterForms>(formData) = filterForms;
-		std::get<DATA_TYPE::kLevel>(formData) = std::get<INI_TYPE::kLevel>(INI_data);
-		std::get<DATA_TYPE::kGender>(formData) = std::get<INI_TYPE::kGender>(INI_data);
-		std::get<DATA_TYPE::kChance>(formData) = std::get<INI_TYPE::kChance>(INI_data);
-		std::get<DATA_TYPE::kNPCCount>(formData) = 0;
+		auto& [formCountPair, strings, filterForms, level, gender, chance, count] = formData;
+
+		formCountPair = { form, itemCount.first };
+		if (itemCount.second) {
+			auto boundObject = form->As<RE::TESBoundObject>();
+			if (boundObject) {
+				equipOnLoadForms.insert(boundObject);
+			}
+		}
+		strings = strings_ini;
+		filterForms = tempFilterForms;
+		level = level_ini;
+		gender = gender_ini;
+		chance = chance_ini;
+		count = 0;
 
 		a_formDataVec.push_back(formData);
-	}
+	} 
 }
 
 
@@ -108,7 +99,7 @@ bool PassedPrimaryFilters(RE::TESNPC* a_actorbase, const FormData<Form>& a_formD
 	if (!strings.empty()) {
 		std::string name = a_actorbase->GetName();
 		if (!name.empty() && std::any_of(strings.begin(), strings.end(), [&name](const std::string& str) {
-				return STRING_UTIL::insenstiveStringCompare(str, name);
+				return SKSE::UTIL::STRING::insenstiveStringCompare(str, name);
 			})) {
 			return true;
 		}
@@ -176,11 +167,10 @@ bool PassedPrimaryFilters(RE::TESNPC* a_actorbase, const FormData<Form>& a_formD
 
 
 template <class Form>
-bool PassedSecondaryFilters(const RE::TESNPC* a_actorbase, const FormData<Form>& a_formData)
+bool PassedSecondaryFilters(RE::TESNPC* a_actorbase, const FormData<Form>& a_formData)
 {
 	auto const levelPair = std::get<DATA_TYPE::kLevel>(a_formData);
-	auto const actorLevelPair = levelPair.first;
-	auto const skillLevelPair = levelPair.second;
+	auto const& [actorLevelPair, skillLevelPair] = levelPair;
 
 	auto const gender = std::get<DATA_TYPE::kGender>(a_formData);
 	auto const chance = std::get<DATA_TYPE::kChance>(a_formData);
@@ -191,9 +181,8 @@ bool PassedSecondaryFilters(const RE::TESNPC* a_actorbase, const FormData<Form>&
 		}
 	}
 
-	auto actorMin = actorLevelPair.first;
-	auto actorMax = actorLevelPair.second;
-	auto const actorLevel = a_actorbase->actorData.level;
+	auto [actorMin, actorMax] = actorLevelPair;
+	auto actorLevel = a_actorbase->actorData.level;
 
 	if (actorMin < ACTOR_LEVEL::MAX && actorMax < ACTOR_LEVEL::MAX) {
 		if (!((actorMin < actorLevel) && (actorMax > actorLevel))) {
@@ -210,8 +199,7 @@ bool PassedSecondaryFilters(const RE::TESNPC* a_actorbase, const FormData<Form>&
 	}
 
 	auto skillType = skillLevelPair.first;
-	auto skillMin = skillLevelPair.second.first;
-	auto skillMax = skillLevelPair.second.second;
+	auto [skillMin, skillMax] = skillLevelPair.second;
 
 	if (skillType >= 0 && skillType < 18) {
 		auto const skillLevel = a_actorbase->playerSkills.values[skillType];
@@ -233,7 +221,7 @@ bool PassedSecondaryFilters(const RE::TESNPC* a_actorbase, const FormData<Form>&
 
 	if (chance != 100) {
 		auto rand = SKSE::RNG::GetSingleton();
-		auto rng = rand->GenerateRandomNumber(0, static_cast<std::uint32_t>(100));
+		auto rng = rand->GenerateRandomNumber<std::uint32_t>(0, 100);
 		if (rng > chance) {
 			return false;
 		}
@@ -259,7 +247,7 @@ void ForEachForm(RE::TESNPC* a_actorbase, FormDataVec<Form>& a_formDataVec, std:
 
 
 template <class Form>
-void ListNPCCount(const char* a_type, FormDataVec<Form>& a_formDataVec, const size_t a_totalCount)
+void ListNPCCount(const std::string& a_type, FormDataVec<Form>& a_formDataVec, const size_t a_totalCount)
 {
 	if (!a_formDataVec.empty()) {
 		logger::info("	{}", a_type);

@@ -1,54 +1,33 @@
 ﻿#include "main.h"
 #include "version.h"
 
+static INIDataVec spellsINI;
+static INIDataVec perksINI;
+static INIDataVec itemsINI;
+static INIDataVec shoutsINI;
+static INIDataVec levSpellsINI;
+static INIDataVec packagesINI;
+static INIDataVec outfitsINI;
 
-namespace STRING_UTIL
+static FormDataVec<RE::SpellItem> spells;
+static FormDataVec<RE::BGSPerk> perks;
+static FormDataVec<RE::TESBoundObject> items;
+static FormDataVec<RE::TESLevSpell> levSpells;
+static FormDataVec<RE::TESShout> shouts;
+static FormDataVec<RE::TESPackage> packages;
+static FormDataVec<RE::BGSOutfit> outfits;
+
+std::unordered_set<RE::TESBoundObject*> equipOnLoadForms;
+
+namespace UTIL
 {
-	std::vector<std::string> split(const std::string& a_str, const std::string& a_delimiter)
-	{
-		std::vector<std::string> list;
-		std::string s = a_str;
-		size_t pos = 0;
-		std::string token;
-		while ((pos = s.find(a_delimiter)) != std::string::npos) {
-			token = s.substr(0, pos);
-			list.push_back(token);
-			s.erase(0, pos + a_delimiter.length());
-		}
-		list.push_back(s);
-		return list;
-	}
+	using namespace SKSE::UTIL::STRING;
 
-
-	std::string& ltrim(std::string& a_str, const std::string& a_chars)
-	{
-		return a_str.erase(0, a_str.find_first_not_of(a_chars));
-	}
-
-
-	std::string& rtrim(std::string& a_str, const std::string& a_chars)
-	{
-		return a_str.erase(a_str.find_last_not_of(a_chars) + 1);
-	}
-
-
-	std::string& trim(std::string& a_str, const std::string& a_chars)
-	{
-		return ltrim(rtrim(a_str, a_chars), a_chars);
-	}
-
-
-	const bool onlySpace(const std::string& a_str)
-	{
-		return std::all_of(a_str.begin(), a_str.end(), isspace);
-	}
-
-
-	StringVec splitTrimmedString(const std::string& a_str, bool a_trim, const std::string& a_delimiter)
+	std::vector<std::string> splitTrimmedString(const std::string& a_str, bool a_trim, const std::string& a_delimiter)
 	{
 		if (!a_str.empty() && a_str.find("NONE") == std::string::npos) {
 			if (!onlySpace(a_str)) {
-				auto split_strs = split(a_str.data(), a_delimiter);
+				auto split_strs = split(a_str.c_str(), a_delimiter);
 				if (a_trim) {
 					for (auto& split_str : split_strs) {
 						trim(split_str);
@@ -57,42 +36,26 @@ namespace STRING_UTIL
 				return split_strs;
 			}
 		}
-		return StringVec();
+		return std::vector<std::string>();
 	}
 
 
-	std::string& santize(std::string& a_str)
+	std::string LookupFormType(RE::FormType a_type)
 	{
-		std::replace_if(
-			a_str.begin(), a_str.end(), [](unsigned char c) { return !std::isalnum(c); }, ' ');
-		return trim(a_str);
-	}
-
-
-	bool insenstiveStringCompare(const std::string& a_str1, const std::string& a_str2)
-	{
-		return ((a_str1.size() == a_str2.size()) && std::equal(a_str1.begin(), a_str1.end(), a_str2.begin(), [](const auto& c1, const auto& c2) {
-			return (c1 == c2 || std::toupper(c1) == std::toupper(c2));
-		}));
-	}
-}
-
-
-std::string LookupFormType(RE::FormType a_type)
-{
-	switch (a_type) {
-	case RE::FormType::Faction:
-		return "Faction";
-	case RE::FormType::Class:
-		return "Class";
-	case RE::FormType::CombatStyle:
-		return "CombatStyle";
-	case RE::FormType::Race:
-		return "Race";
-	case RE::FormType::Outfit:
-		return "Outfit";
-	default:
-		return std::string();
+		switch (a_type) {
+		case RE::FormType::Faction:
+			return "Faction";
+		case RE::FormType::Class:
+			return "Class";
+		case RE::FormType::CombatStyle:
+			return "CombatStyle";
+		case RE::FormType::Race:
+			return "Race";
+		case RE::FormType::Outfit:
+			return "Outfit";
+		default:
+			return std::string();
+		}
 	}
 }
 
@@ -100,16 +63,18 @@ std::string LookupFormType(RE::FormType a_type)
 INIData GetINIData(const std::string& a_value)
 {
 	using TYPE = INI_TYPE;
+	namespace STRING = SKSE::UTIL::STRING;
+
+	auto sections = STRING::split(a_value, " | ");
+	logger::info("		{}", a_value);
 
 	INIData data;
-	auto sections = STRING_UTIL::split(a_value, " | ");
-
-	logger::info("		{}", a_value);
+	auto& [formIDPair_ini, strings_ini, filterIDs, level_ini, gender_ini, itemCount_ini, chance_ini] = data;
 
 	//FORMID/ESP
 	std::pair<RE::FormID, std::string> item_ID;
 	try {
-		auto formIDpair = STRING_UTIL::split(sections.at(TYPE::kFormID).c_str(), " - ");
+		auto formIDpair = STRING::split(sections.at(TYPE::kFormID).c_str(), " - ");
 		auto espStr = formIDpair.at(TYPE::kESP);
 
 		//FIX FOR MODS WITH "-" CHARACTERS
@@ -126,98 +91,101 @@ INIData GetINIData(const std::string& a_value)
 		item_ID.first = 0;
 		item_ID.second = "Skyrim.esm";
 	}
-	std::get<TYPE::kFormIDPair>(data) = item_ID;
+	formIDPair_ini = item_ID;
 
 	//KEYWORDS
 	try {
-		auto strings = sections.at(TYPE::kStrings);
-		std::get<TYPE::kStrings>(data) = STRING_UTIL::splitTrimmedString(sections.at(TYPE::kStrings), true);
+		strings_ini = UTIL::splitTrimmedString(sections.at(TYPE::kStrings), true);
 	} catch (...) {
 	}
 
 	//FILTER FORMS
 	try {
-		auto filterIDs = sections.at(TYPE::kFilterIDs);
-		auto split_IDs = STRING_UTIL::splitTrimmedString(filterIDs, false);
+		auto split_IDs = UTIL::splitTrimmedString(sections.at(TYPE::kFilterIDs), false);
 		for (auto& IDs : split_IDs) {
-			std::get<TYPE::kFilterIDs>(data).emplace_back(std::stoul(IDs, nullptr, 16));
+			filterIDs.emplace_back(std::stoul(IDs, nullptr, 16));
 		}
 	} catch (...) {
 	}
 
 	//LEVEL
-	ActorLevel actorLevelPair = std::make_pair(ACTOR_LEVEL::MAX, ACTOR_LEVEL::MAX);
-	SkillLevel skillLevelPair = std::make_pair(SKILL_LEVEL::TYPE_MAX, std::make_pair(SKILL_LEVEL::VALUE_MAX, SKILL_LEVEL::VALUE_MAX));
+	ActorLevel actorLevelPair = { ACTOR_LEVEL::MAX, ACTOR_LEVEL::MAX };
+	SkillLevel skillLevelPair = { SKILL_LEVEL::TYPE_MAX, { SKILL_LEVEL::VALUE_MAX, SKILL_LEVEL::VALUE_MAX } };
 	try {
-		auto split_levels = STRING_UTIL::splitTrimmedString(sections.at(TYPE::kLevel), false);
+		auto split_levels = UTIL::splitTrimmedString(sections.at(TYPE::kLevel), false);
 		for (auto& levels : split_levels) {
 			if (levels.find("(") != std::string::npos) {
-				auto sanitizedLevel = STRING_UTIL::santize(levels);
-				auto skills = STRING_UTIL::split(sanitizedLevel, " ");
+				auto sanitizedLevel = STRING::removeNonAlphaNumeric(levels);
+				auto skills = STRING::split(sanitizedLevel, " ");
 				if (!skills.empty()) {
 					if (skills.size() > 2) {
 						auto type = to_int<std::uint32_t>(skills.at(S_LEVEL::kType));
 						auto minLevel = to_int<std::uint8_t>(skills.at(S_LEVEL::kMin));
 						auto maxLevel = to_int<std::uint8_t>(skills.at(S_LEVEL::kMax));
-						auto levelPair = std::make_pair(minLevel, maxLevel);
-						skillLevelPair = std::make_pair(type, levelPair);
+						skillLevelPair = { type, { minLevel, maxLevel } };
 					} else {
 						auto type = to_int<std::uint32_t>(skills.at(S_LEVEL::kType));
 						auto minLevel = to_int<std::uint8_t>(skills.at(S_LEVEL::kMin));
-						auto levelPair = std::make_pair(minLevel, SKILL_LEVEL::VALUE_MAX);
-						skillLevelPair = std::make_pair(type, levelPair);
+						skillLevelPair = { type, { minLevel, SKILL_LEVEL::VALUE_MAX }};
 					}
 				}
 			} else {
-				auto split_level = STRING_UTIL::split(levels, "/");
+				auto split_level = STRING::split(levels, "/");
 				if (split_level.size() > 1) {
 					auto minLevel = to_int<std::uint16_t>(split_level.at(A_LEVEL::kMin));
 					auto maxLevel = to_int<std::uint16_t>(split_level.at(A_LEVEL::kMax));
-					actorLevelPair = std::make_pair(minLevel, maxLevel);
+					actorLevelPair = { minLevel, maxLevel };
 				} else {
-					auto level = static_cast<std::uint16_t>(std::stoul(levels));
-					actorLevelPair = std::make_pair(level, ACTOR_LEVEL::MAX);
+					auto level = to_int<std::uint16_t>(levels);
+					actorLevelPair = { level, ACTOR_LEVEL::MAX };
 				}
 			}
 		}
 	} catch (...) {
 	}
-	std::get<TYPE::kLevel>(data) = std::make_pair(actorLevelPair, skillLevelPair);
+	level_ini = { actorLevelPair, skillLevelPair };
 
 	//GENDER
-	std::get<TYPE::kGender>(data) = RE::SEX::kNone;
+	gender_ini = RE::SEX::kNone;
 	try {
 		auto genderStr = sections.at(TYPE::kGender);
 		if (!genderStr.empty() && genderStr.find("NONE") == std::string::npos) {
 			genderStr.erase(remove(genderStr.begin(), genderStr.end(), ' '), genderStr.end());
 			if (genderStr == "M") {
-				std::get<TYPE::kGender>(data) = RE::SEX::kMale;
+				gender_ini = RE::SEX::kMale;
 			} else if (genderStr == "F") {
-				std::get<TYPE::kGender>(data) = RE::SEX::kFemale;
+				gender_ini = RE::SEX::kFemale;
 			} else {
-				auto gender = std::stoul(sections.at(TYPE::kGender));
-				std::get<TYPE::kGender>(data) = static_cast<RE::SEX>(gender);
+				gender_ini = static_cast<RE::SEX>(to_int<std::uint32_t>(sections.at(TYPE::kGender)));
 			}
 		}
 	} catch (...) {
 	}
 
 	//ITEMCOUNT
-	std::get<TYPE::kItemCount>(data) = 1;
+	itemCount_ini = { 1, false };
 	try {
 		auto itemCountStr = sections.at(TYPE::kItemCount);
 		if (!itemCountStr.empty() && itemCountStr.find("NONE") == std::string::npos) {
-			std::get<TYPE::kItemCount>(data) = std::stoi(itemCountStr);
+			auto split_itemCount = STRING::split(itemCountStr, "/");
+			if (split_itemCount.size() > 1) {
+				auto itemChance = to_int<std::uint32_t>(split_itemCount.at(0));
+				auto equipOnLoad = STRING::bool_cast(split_itemCount.at(1));
+				itemCount_ini = { itemChance, equipOnLoad };
+			} else {
+				itemCount_ini.first = to_int<std::uint32_t>(itemCountStr);
+			}
+
 		}
 	} catch (...) {
 	}
 
 	//CHANCE
-	std::get<TYPE::kChance>(data) = 100;
+	chance_ini = 100;
 	try {
 		auto chanceStr = sections.at(TYPE::kChance);
 		if (!chanceStr.empty() && chanceStr.find("NONE") == std::string::npos) {
-			std::get<TYPE::kChance>(data) = std::stoul(chanceStr);
+			chance_ini = to_int<std::uint32_t>(chanceStr);
 		}
 	} catch (...) {
 	}
@@ -271,6 +239,7 @@ bool ReadINIs()
 		GetDataFromINI(ini, "Shout", shoutsINI);
 		GetDataFromINI(ini, "LevSpell", levSpellsINI);
 		GetDataFromINI(ini, "Package", packagesINI);
+		GetDataFromINI(ini, "Outfit", outfitsINI);
 	}
 
 	return true;
@@ -284,25 +253,28 @@ bool LookupAllForms()
 		logger::info("{:*^30}", "LOOKUP");
 
 		if (!spellsINI.empty()) {
-			LookupForms(dataHandler, "Spell", spellsINI, spells);
+			LookupForms("Spell", spellsINI, spells);
 		}
 		if (!perksINI.empty()) {
-			LookupForms(dataHandler, "Perk", perksINI, perks);
+			LookupForms("Perk", perksINI, perks);
 		}
 		if (!itemsINI.empty()) {
-			LookupForms(dataHandler, "Item", itemsINI, items);
+			LookupForms("Item", itemsINI, items);
 		}
 		if (!shoutsINI.empty()) {
-			LookupForms(dataHandler, "Shout", shoutsINI, shouts);
+			LookupForms("Shout", shoutsINI, shouts);
 		}
 		if (!levSpellsINI.empty()) {
-			LookupForms(dataHandler, "LevSpell", levSpellsINI, levSpells);
+			LookupForms("LevSpell", levSpellsINI, levSpells);
 		}
 		if (!packagesINI.empty()) {
-			LookupForms(dataHandler, "Package", packagesINI, packages);
+			LookupForms("Package", packagesINI, packages);
+		}
+		if (outfitsINI.empty()) {
+			LookupForms("Outfit", outfitsINI, outfits);
 		}
 	}
-	return !spells.empty() || !perks.empty() || !items.empty() || !shouts.empty() || !levSpells.empty() || !packages.empty() ?
+	return !spells.empty() || !perks.empty() || !items.empty() || !shouts.empty() || !levSpells.empty() || !packages.empty() || !outfits.empty() ?
 				 true :
 				 false;
 }
@@ -374,6 +346,14 @@ void ApplyNPCRecords()
 					}
 					return false;
 				});
+				ForEachForm<RE::BGSOutfit>(actorbase, outfits, [&](const FormCountPair<RE::BGSOutfit> a_outfitsPair) {
+					auto outfit = a_outfitsPair.first;
+					if (outfit) {
+						actorbase->defaultOutfit = outfit;
+						return true;
+					}
+					return false;
+				});
 			}
 		}
 
@@ -398,6 +378,9 @@ void ApplyNPCRecords()
 		if (!packages.empty()) {
 			ListNPCCount("Packages", packages, totalNPCs);
 		}
+		if (!outfits.empty()) {
+			ListNPCCount("Outfits", outfits, totalNPCs);
+		}
 	}
 }
 
@@ -416,6 +399,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 				logger::info("	Adding {}/{} shouts(s)", shouts.size(), shoutsINI.size());
 				logger::info("	Adding {}/{} leveled spell(s)", levSpells.size(), levSpellsINI.size());
 				logger::info("	Adding {}/{} package(s)", packages.size(), packagesINI.size());
+				logger::info("	Adding {}/{} outfits(s)", outfits.size(), outfitsINI.size());
 				ApplyNPCRecords();
 			} else {
 				logger::error("No distributables were located within game files...");

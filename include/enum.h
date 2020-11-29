@@ -1,31 +1,17 @@
 #pragma once
 
 #include "RE/Skyrim.h"
-#include "REL/Relocation.h"
 #include "SKSE/SKSE.h"
 
-#include <spdlog/sinks/basic_file_sink.h>
 #include <SimpleIni.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 namespace logger = SKSE::log;
+using namespace SKSE::util;
+
 #define DLLEXPORT __declspec(dllexport)
 
-
-namespace OLD_DATA
-{
-	enum TYPE : std::uint32_t
-	{
-		kFormID = 0,
-		kESP,
-		kKeywords,
-		kFactions,
-		kItemCount
-	};
-}
-using OLD_TYPE = OLD_DATA::TYPE;
-
-
-namespace INI_DATA
+namespace INI
 {
 	enum TYPE : std::uint32_t
 	{
@@ -40,8 +26,7 @@ namespace INI_DATA
 		kChance
 	};
 }
-using INI_TYPE = INI_DATA::TYPE;
-
+using INI_TYPE = INI::TYPE;
 
 namespace DATA
 {
@@ -59,7 +44,6 @@ namespace DATA
 }
 using DATA_TYPE = DATA::TYPE;
 
-
 namespace ACTOR_LEVEL
 {
 	enum TYPE : std::uint32_t
@@ -71,7 +55,6 @@ namespace ACTOR_LEVEL
 	inline constexpr auto MAX = std::numeric_limits<std::uint16_t>::max();
 }
 using A_LEVEL = ACTOR_LEVEL::TYPE;
-
 
 namespace SKILL_LEVEL
 {
@@ -87,40 +70,25 @@ namespace SKILL_LEVEL
 }
 using S_LEVEL = SKILL_LEVEL::TYPE;
 
+namespace
+{
+	using FormIDPair = std::pair<RE::FormID, std::string>;
+	using StringVec = std::vector<std::string>;
+	using FormVec = std::vector<RE::TESForm*>;
 
-using FormIDPair = std::pair<RE::FormID, std::string>;
-using StringVec = std::vector<std::string>;
+	using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;
+	using SkillLevel = std::pair<std::uint32_t, std::pair<std::uint8_t, std::uint8_t>>;
+	using ItemCount = std::int32_t;
+	using Chance = std::uint32_t;
+	using NPCCount = std::uint32_t;
 
-using FormIDVec = std::vector<RE::FormID>;
-using FormVec = std::vector<RE::TESForm*>;
+	using INIData = std::tuple<FormIDPair, StringVec, std::vector<RE::FormID>, std::pair<ActorLevel, SkillLevel>, RE::SEX, std::pair<ItemCount, bool>, Chance>;
+	using INIDataVec = std::vector<INIData>;
 
-using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;
-using SkillLevel = std::pair<std::uint32_t, std::pair<std::uint8_t, std::uint8_t>>;
-using ItemCount = std::int32_t;
-using Chance = std::uint32_t;
-using NPCCount = std::uint32_t;
-
-
-using INIData = std::tuple<FormIDPair, StringVec, FormIDVec, std::pair<ActorLevel, SkillLevel>, RE::SEX, ItemCount, Chance>;
-using INIDataVec = std::vector<INIData>;
-
-static INIDataVec spellsINI;
-static INIDataVec perksINI;
-static INIDataVec itemsINI;
-static INIDataVec shoutsINI;
-static INIDataVec levSpellsINI;
-static INIDataVec packagesINI;
-
-template <class Form>
-using FormCountPair = std::pair<Form*, ItemCount>;
-template <class Form>
-using FormData = std::tuple<FormCountPair<Form>, StringVec, FormVec, std::pair<ActorLevel, SkillLevel>, RE::SEX, Chance, NPCCount>;
-template <class Form>
-using FormDataVec = std::vector<FormData<Form>>;
-
-static FormDataVec<RE::SpellItem> spells;
-static FormDataVec<RE::BGSPerk> perks;
-static FormDataVec<RE::TESBoundObject> items;
-static FormDataVec<RE::TESLevSpell> levSpells;
-static FormDataVec<RE::TESShout> shouts;
-static FormDataVec<RE::TESPackage> packages;
+	template <class Form>
+	using FormCountPair = std::pair<Form*, ItemCount>;
+	template <class Form>
+	using FormData = std::tuple<FormCountPair<Form>, StringVec, FormVec, std::pair<ActorLevel, SkillLevel>, RE::SEX, Chance, NPCCount>;
+	template <class Form>
+	using FormDataVec = std::vector<FormData<Form>>;
+}
