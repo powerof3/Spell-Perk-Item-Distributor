@@ -160,14 +160,11 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\enum.h" />
     <ClInclude Include="include\main.h" />
     <ClInclude Include="include\version.h" />
-    <ClInclude Include="src\processing.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\processing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CommonLibSSE\CommonLibSSE.vcxproj">

@@ -1,16 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="include\enum.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="include\main.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\version.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="src\processing.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -24,9 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\processing.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
