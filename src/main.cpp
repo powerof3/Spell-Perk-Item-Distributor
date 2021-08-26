@@ -21,7 +21,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 	logger::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
 
 	a_info->infoVersion = SKSE::PluginInfo::kVersion;
-	a_info->name = "SPID plugin";
+	a_info->name = "powerofthree's Spell Perk Distributor";
 	a_info->version = Version::MAJOR;
 
 	if (a_skse->IsEditor()) {
