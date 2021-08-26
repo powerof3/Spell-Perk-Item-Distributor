@@ -1,0 +1,13 @@
+{
+  "name": "spid",
+  "version-string": "4.5.0",
+  "description": "Spell Perk Item Distributor",
+  "homepage": "https://github.com/powerof3/FEC",
+  "license": "MIT",
+  "dependencies": [
+    "boost-stl-interfaces",
+    "simpleini",
+    "spdlog",
+    "xbyak"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "configurations": [
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "SKSE_SUPPORT_XBYAK",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "xbyak_DIR",
+          "value": "C:/Dev/vcpkg/installed/x64-windows-static-md/share/xbyak",
+          "type": "PATH"
+        },
+        {
+          "name": "SimpleINI_DIR",
+          "value": "C:/Dev/vcpkg/installed/x64-windows-static-md/share/simpleini",
+          "type": "PATH"
+        }
+      ]
+    }
+  ]
+}
