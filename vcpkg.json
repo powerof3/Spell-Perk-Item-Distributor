@@ -2,7 +2,7 @@
   "name": "spid",
   "version-string": "4.5.0",
   "description": "Spell Perk Item Distributor",
-  "homepage": "https://github.com/powerof3/FEC",
+  "homepage": "https://github.com/powerof3/Spell-Perk-Item-Distributor",
   "license": "MIT",
   "dependencies": [
     "boost-stl-interfaces",
