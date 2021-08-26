@@ -15,16 +15,6 @@
           "name": "SKSE_SUPPORT_XBYAK",
           "value": "False",
           "type": "BOOL"
-        },
-        {
-          "name": "xbyak_DIR",
-          "value": "C:/Dev/vcpkg/installed/x64-windows-static-md/share/xbyak",
-          "type": "PATH"
-        },
-        {
-          "name": "SimpleINI_DIR",
-          "value": "C:/Dev/vcpkg/installed/x64-windows-static-md/share/simpleini",
-          "type": "PATH"
         }
       ]
     }
