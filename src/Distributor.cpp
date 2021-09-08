@@ -219,8 +219,6 @@ namespace Distribute::Hook
 				Leveled::Hook();
 				DeathItem::DeathManager::Register();
 			}
-
-			std::_Exit(EXIT_FAILURE);
 		}
 		static inline REL::Relocation<decltype(thunk)>(func);
 	};

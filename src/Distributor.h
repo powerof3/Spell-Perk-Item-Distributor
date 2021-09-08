@@ -26,7 +26,7 @@ namespace INI
 		inline std::string sanitize(const std::string& a_value)
 		{
 			static const boost::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", boost::regex_constants::optimize);
-            if (auto newValue = boost::regex_replace(a_value, re_spaces, "$1"); newValue != a_value) {
+			if (auto newValue = boost::regex_replace(a_value, re_spaces, "$1"); newValue != a_value) {
 				string::replace_first_instance(newValue, " - ", "~");
 				string::replace_all(newValue, "NOT ", "-");
 				return newValue;
