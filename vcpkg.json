@@ -1,11 +1,12 @@
 {
   "name": "spid",
-  "version-string": "4.5.0",
+  "version-string": "5.0.0",
   "description": "Spell Perk Item Distributor",
   "homepage": "https://github.com/powerof3/Spell-Perk-Item-Distributor",
   "license": "MIT",
   "dependencies": [
     "boost-stl-interfaces",
+    "boost-regex",
     "simpleini",
     "spdlog",
     "xbyak"

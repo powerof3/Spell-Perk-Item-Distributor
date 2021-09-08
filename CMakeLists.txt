@@ -92,7 +92,12 @@ else ()
 	)
 endif ()
 
-find_package(Boost MODULE REQUIRED)
+find_package(Boost
+	MODULE
+	REQUIRED
+	COMPONENTS
+		regex
+)
 find_package(spdlog REQUIRED CONFIG)
 find_package(xbyak REQUIRED CONFIG)
 
@@ -149,6 +154,7 @@ target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
 		Boost::headers
+		Boost::regex
 		CommonLibSSE::CommonLibSSE
 		spdlog::spdlog
 		xbyak::xbyak

@@ -1,14 +1,6 @@
 #include "Distributor.h"
 
-static INIDataVec spellsINI;
-static INIDataVec perksINI;
-static INIDataVec itemsINI;
-static INIDataVec shoutsINI;
-static INIDataVec levSpellsINI;
-static INIDataVec packagesINI;
-static INIDataVec outfitsINI;
-static INIDataVec keywordsINI;
-static INIDataVec deathItemsINI;
+static std::map<std::string, INIDataVec> INIs;
 
 static FormDataVec<RE::SpellItem> spells;
 static FormDataVec<RE::BGSPerk> perks;
@@ -28,7 +20,7 @@ bool INI::Read()
 
 	auto constexpr folder = R"(Data\)";
 	for (const auto& entry : std::filesystem::directory_iterator(folder)) {
-		if (entry.exists() && entry.path().extension() == ".ini"sv) {
+		if (entry.exists() && !entry.path().empty() && entry.path().extension() == ".ini"sv) {
 			if (const auto path = entry.path().string(); path.find("_DISTR") != std::string::npos) {
 				configs.push_back(path);
 			}
@@ -42,6 +34,11 @@ bool INI::Read()
 
 	logger::info("	{} matching inis found", configs.size());
 
+	//initialize map
+	for (size_t i = 0; i < TYPES::kTotal; i++) {
+		INIs[TYPES::types[i]] = INIDataVec{};
+	}
+
 	for (auto& path : configs) {
 		logger::info("	ini : {}", path);
 
@@ -50,20 +47,32 @@ bool INI::Read()
 		ini.SetMultiKey();
 
 		if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
-			logger::error("	couldn't read path");
+			logger::error("	couldn't read INI");
 			continue;
 		}
 
-		get_ini_data(ini, "Spell", spellsINI);
-		get_ini_data(ini, "Perk", perksINI);
-		get_ini_data(ini, "Item", itemsINI);
-		get_ini_data(ini, "Shout", shoutsINI);
-		get_ini_data(ini, "LevSpell", levSpellsINI);
-		get_ini_data(ini, "Package", packagesINI);
-		get_ini_data(ini, "Outfit", outfitsINI);
-		get_ini_data(ini, "Keyword", keywordsINI);
-		get_ini_data(ini, "DeathItem", deathItemsINI);
+		if (auto values = ini.GetSection(""); values) {
+			std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
+
+			for (auto& [key, entry] : *values) {
+				auto [data, sanitized_str] = parse_ini(entry);
+				INIs[key.pItem].emplace_back(data);
+				if (sanitized_str.has_value()) {
+					oldFormatMap.emplace(key, std::make_pair(entry, sanitized_str.value()));
+				}
+			}
+
+			if (!oldFormatMap.empty()) {
+				logger::info("	sanitizing {} entries", oldFormatMap.size());
+				for (auto [key, entry] : oldFormatMap) {
+					auto& [original, sanitized] = entry;
+					detail::format_INI(ini, key.pItem, original, sanitized, key.pComment);
+				}
+				ini.SaveFile(path.c_str());
+			}
+		}
 	}
+
 	return true;
 }
 
@@ -72,33 +81,15 @@ bool Lookup::GetForms()
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 		logger::info("{:*^30}", "LOOKUP");
 
-		if (!spellsINI.empty()) {
-			Lookup::get_forms("Spell", spellsINI, spells);
-		}
-		if (!perksINI.empty()) {
-			get_forms("Perk", perksINI, perks);
-		}
-		if (!itemsINI.empty()) {
-			get_forms("Item", itemsINI, items);
-		}
-		if (!shoutsINI.empty()) {
-			get_forms("Shout", shoutsINI, shouts);
-		}
-		if (!levSpellsINI.empty()) {
-			get_forms("LevSpell", levSpellsINI, levSpells);
-		}
-		if (!packagesINI.empty()) {
-			get_forms("Package", packagesINI, packages);
-		}
-		if (!outfitsINI.empty()) {
-			get_forms("Outfit", outfitsINI, outfits);
-		}
-		if (!keywordsINI.empty()) {
-			get_forms("Keyword", keywordsINI, keywords);
-		}
-		if (!deathItemsINI.empty()) {
-			get_forms("DeathItem", deathItemsINI, deathItems);
-		}
+		get_forms(dataHandler, "Spell", INIs["Spell"], spells);
+		get_forms(dataHandler, "Perk", INIs["Perk"], perks);
+		get_forms(dataHandler, "Item", INIs["Item"], items);
+		get_forms(dataHandler, "Shout", INIs["Shout"], shouts);
+		get_forms(dataHandler, "LevSpell", INIs["LevSpell"], levSpells);
+		get_forms(dataHandler, "Package", INIs["Package"], packages);
+		get_forms(dataHandler, "Outfit", INIs["Outfit"], outfits);
+		get_forms(dataHandler, "Keyword", INIs["Keyword"], keywords);
+		get_forms(dataHandler, "DeathItem", INIs["DeathItem"], deathItems);
 	}
 
 	const auto result = !spells.empty() || !perks.empty() || !items.empty() || !shouts.empty() || !levSpells.empty() || !packages.empty() || !outfits.empty() || !keywords.empty() || !deathItems.empty();
@@ -106,15 +97,15 @@ bool Lookup::GetForms()
 	if (result) {
 		logger::info("{:*^30}", "PROCESSING");
 
-		logger::info("	Adding {}/{} spell(s)", spells.size(), spellsINI.size());
-		logger::info("	Adding {}/{} perks(s)", perks.size(), perksINI.size());
-		logger::info("	Adding {}/{} items(s)", items.size(), itemsINI.size());
-		logger::info("	Adding {}/{} shouts(s)", shouts.size(), shoutsINI.size());
-		logger::info("	Adding {}/{} leveled spell(s)", levSpells.size(), levSpellsINI.size());
-		logger::info("	Adding {}/{} package(s)", packages.size(), packagesINI.size());
-		logger::info("	Adding {}/{} outfits(s)", outfits.size(), outfitsINI.size());
-		logger::info("	Adding {}/{} keywords(s)", keywords.size(), keywordsINI.size());
-		logger::info("	Adding {}/{} death item(s)", deathItems.size(), deathItemsINI.size());
+		logger::info("	Adding {}/{} spell(s)", spells.size(), INIs["Spell"].size());
+		logger::info("	Adding {}/{} perks(s)", perks.size(), INIs["Perk"].size());
+		logger::info("	Adding {}/{} items(s)", items.size(), INIs["Item"].size());
+		logger::info("	Adding {}/{} shouts(s)", shouts.size(), INIs["Shout"].size());
+		logger::info("	Adding {}/{} leveled spell(s)", levSpells.size(), INIs["LevSpell"].size());
+		logger::info("	Adding {}/{} package(s)", packages.size(), INIs["Package"].size());
+		logger::info("	Adding {}/{} outfits(s)", outfits.size(), INIs["Outfit"].size());
+		logger::info("	Adding {}/{} keywords(s)", keywords.size(), INIs["Keyword"].size());
+		logger::info("	Adding {}/{} death item(s)", deathItems.size(), INIs["DeathItem"].size());
 	}
 	return result;
 }
@@ -123,7 +114,7 @@ void Distribute::ApplyToNPCs()
 {
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 		constexpr auto apply_npc_records = [](RE::TESNPC& a_actorbase) {
-			for_each_form<RE::BGSKeyword>(a_actorbase, keywords, [&](const FormCountPair<RE::BGSKeyword>& a_keywordsPair) {
+			for_each_form<RE::BGSKeyword>(a_actorbase, keywords, [&](const auto& a_keywordsPair) {
 				const auto keyword = a_keywordsPair.first;
 				if (!a_actorbase.HasKeyword(keyword->formEditorID)) {
 					return a_actorbase.AddKeyword(keyword);
@@ -131,52 +122,40 @@ void Distribute::ApplyToNPCs()
 				return false;
 			});
 
-			for_each_form<RE::SpellItem>(a_actorbase, spells, [&](const FormCountPair<RE::SpellItem>& a_spellPair) {
+			for_each_form<RE::SpellItem>(a_actorbase, spells, [&](const auto& a_spellPair) {
 				const auto spell = a_spellPair.first;
 				const auto actorEffects = a_actorbase.GetSpellList();
 				return actorEffects && actorEffects->AddSpell(spell);
 			});
 
-			for_each_form<RE::BGSPerk>(a_actorbase, perks, [&](const FormCountPair<RE::BGSPerk>& a_perkPair) {
+			for_each_form<RE::BGSPerk>(a_actorbase, perks, [&](const auto& a_perkPair) {
 				const auto perk = a_perkPair.first;
 				return a_actorbase.AddPerk(perk, 1);
 			});
 
-			for_each_form<RE::TESShout>(a_actorbase, shouts, [&](const FormCountPair<RE::TESShout>& a_shoutPair) {
+			for_each_form<RE::TESShout>(a_actorbase, shouts, [&](const auto& a_shoutPair) {
 				const auto shout = a_shoutPair.first;
 				const auto actorEffects = a_actorbase.GetSpellList();
 				return actorEffects && actorEffects->AddShout(shout);
 			});
 
-			for_each_form<RE::TESLevSpell>(a_actorbase, levSpells, [&](const FormCountPair<RE::TESLevSpell>& a_levSpellPair) {
+			for_each_form<RE::TESLevSpell>(a_actorbase, levSpells, [&](const auto& a_levSpellPair) {
 				const auto levSpell = a_levSpellPair.first;
 				const auto actorEffects = a_actorbase.GetSpellList();
 				return actorEffects && actorEffects->AddLevSpell(levSpell);
 			});
 
-			for_each_form<RE::BGSOutfit>(a_actorbase, outfits, [&](const FormCountPair<RE::BGSOutfit>& a_outfitsPair) {
-				const auto outfit = a_outfitsPair.first;
-				const auto& baseOutfit = a_actorbase.defaultOutfit;
-				if (!baseOutfit || !baseOutfit->IsDynamicForm()) {
-					const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSOutfit>();
-					if (const auto newOutfit = factory ? factory->Create() : nullptr; newOutfit) {
-						newOutfit->outfitItems = outfit->outfitItems;
-						a_actorbase.defaultOutfit = newOutfit;
-						return true;
-					}
-				} else if (baseOutfit && baseOutfit->IsDynamicForm()) {
-					std::ranges::copy(outfit->outfitItems, std::back_inserter(baseOutfit->outfitItems));
-					return true;
-				}
-				return false;
+			for_each_form<RE::BGSOutfit>(a_actorbase, outfits, [&](const auto& a_outfitsPair) {
+				a_actorbase.defaultOutfit = a_outfitsPair.first;
+				return true;
 			});
 
-			for_each_form<RE::TESBoundObject>(a_actorbase, items, [&](const FormCountPair<RE::TESBoundObject>& a_itemPair) {
+			for_each_form<RE::TESBoundObject>(a_actorbase, items, [&](const auto& a_itemPair) {
 				const auto& [item, count] = a_itemPair;
 				return a_actorbase.AddObjectToContainer(item, count, &a_actorbase);
 			});
 
-			for_each_form<RE::TESPackage>(a_actorbase, packages, [&](const FormCountPair<RE::TESPackage>& a_packagePair) {
+			for_each_form<RE::TESPackage>(a_actorbase, packages, [&](const auto& a_packagePair) {
 				const auto package = a_packagePair.first;
 				auto& packagesList = a_actorbase.aiPackages.packages;
 				if (std::ranges::find(packagesList, package) == packagesList.end()) {
@@ -199,7 +178,7 @@ void Distribute::ApplyToNPCs()
 
 		logger::info("{:*^30}", "RESULT");
 
-		auto const totalNPCs = dataHandler->GetFormArray<RE::TESNPC>().size();
+		auto const totalNPCs = dataHandler->GetFormArray<RE::TESNPC>().size() - 1;  //ignore player
 		if (!keywords.empty()) {
 			list_npc_count("Keywords", keywords, totalNPCs);
 		}
@@ -240,6 +219,8 @@ namespace Distribute::Hook
 				Leveled::Hook();
 				DeathItem::DeathManager::Register();
 			}
+
+			std::_Exit(EXIT_FAILURE);
 		}
 		static inline REL::Relocation<decltype(thunk)>(func);
 	};
@@ -267,28 +248,16 @@ namespace Distribute::Leveled
 			const auto baseTemplate = actorbase ? actorbase->baseTemplateForm : nullptr;
 
 			if (baseTemplate && baseTemplate->Is(RE::FormType::LeveledNPC)) {
-				for_each_form<RE::TESBoundObject>(*actorbase, items, [&](const FormCountPair<RE::TESBoundObject> a_itemPair) {
+				for_each_form<RE::TESBoundObject>(*actorbase, items, [&](const auto& a_itemPair) {
 					const auto& [item, count] = a_itemPair;
 					if (const auto itemCount = actorbase->CountObjectsInContainer(item); itemCount < count) {
 						return item && actorbase->AddObjectToContainer(item, count, actorbase);
 					}
 					return false;
 				});
-				for_each_form<RE::BGSOutfit>(*actorbase, outfits, [&](const FormCountPair<RE::BGSOutfit>& a_outfitsPair) {
-					const auto outfit = a_outfitsPair.first;
-					const auto& defaultOutfit = actorbase->defaultOutfit;
-					if (!defaultOutfit || !defaultOutfit->IsDynamicForm()) {
-						const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSOutfit>();
-						if (const auto newOutfit = factory ? factory->Create() : nullptr; newOutfit) {
-							newOutfit->outfitItems = outfit->outfitItems;
-							actorbase->defaultOutfit = newOutfit;
-							return true;
-						}
-					} else if (defaultOutfit && defaultOutfit->IsDynamicForm()) {
-						std::ranges::copy(outfit->outfitItems, std::back_inserter(defaultOutfit->outfitItems));
-						return true;
-					}
-					return false;
+				for_each_form<RE::BGSOutfit>(*actorbase, outfits, [&](const auto& a_outfitsPair) {
+					actorbase->defaultOutfit = a_outfitsPair.first;
+					return true;
 				});
 			}
 		}
@@ -331,7 +300,7 @@ namespace Distribute::DeathItem
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto base = actor ? actor->GetActorBase() : nullptr;
 			if (actor && base) {
-				for_each_form<RE::TESBoundObject>(*base, deathItems, [&](const FormCountPair<RE::TESBoundObject> a_deathItemPair) {
+				for_each_form<RE::TESBoundObject>(*base, deathItems, [&](const auto& a_deathItemPair) {
 					const auto& [deathItem, count] = a_deathItemPair;
 					detail::add_item(actor, deathItem, count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
@@ -341,4 +310,9 @@ namespace Distribute::DeathItem
 
 		return EventResult::kContinue;
 	}
+}
+
+bool Read()
+{
+	return false;
 }

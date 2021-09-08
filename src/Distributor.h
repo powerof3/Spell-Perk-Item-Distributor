@@ -6,56 +6,78 @@ namespace INI
 {
 	namespace detail
 	{
-		inline std::vector<std::string> split_trimmed_string(const std::string& a_str, bool a_trim, const std::string& a_delimiter = " , ")
+		inline std::vector<std::string> split_sub_string(const std::string& a_str, const std::string& a_delimiter = ",")
 		{
-			if (!a_str.empty() && a_str.find("NONE"sv) == std::string::npos && !string::is_only_space(a_str)) {
-				auto split_strs = string::split(a_str, a_delimiter);
-				if (a_trim) {
-					std::ranges::for_each(split_strs, [](auto& str) { string::trim(str); });
-				}
-				return split_strs;
+			if (!a_str.empty() && a_str.find("NONE"sv) == std::string::npos) {
+				return string::split(a_str, a_delimiter);
 			}
 			return std::vector<std::string>();
 		}
+
+		inline FormIDPair get_filter_ID(const std::string& a_str)
+		{
+			if (const auto it = a_str.find("~"sv); it != std::string::npos) {
+				auto splitID = string::split(a_str, "~");
+				return std::make_pair(string::lexical_cast<RE::FormID>(splitID.at(kFormID), true), splitID.at(kESP));
+			}
+			return std::make_pair(string::lexical_cast<RE::FormID>(a_str), std::nullopt);
+		}
+
+		inline std::string sanitize(const std::string& a_value)
+		{
+			static const boost::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", boost::regex_constants::optimize);
+            if (auto newValue = boost::regex_replace(a_value, re_spaces, "$1"); newValue != a_value) {
+				string::replace_first_instance(newValue, " - ", "~");
+				string::replace_all(newValue, "NOT ", "-");
+				return newValue;
+			}
+			return a_value;
+		}
+
+		inline void format_INI(CSimpleIniA& ini, const std::string& a_type, const std::string& a_value, const std::string& a_newValue, const char* a_comment)
+		{
+			ini.DeleteValue("", a_type.c_str(), a_value.c_str());
+			ini.SetValue("", a_type.c_str(), a_newValue.c_str(), a_comment, false);
+		}
 	}
 
-	inline INIData parse_ini(const std::string& a_value)
+	inline std::pair<INIData, std::optional<std::string>> parse_ini(const std::string& a_value)
 	{
 		using TYPE = INI_TYPE;
-
-		auto sections = string::split(a_value, "|");
-		std::ranges::for_each(sections, [](auto& str) { string::trim(str); });
+		using namespace FILTERS;
 
 		INIData data;
 		auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, gender_ini, itemCount_ini, chance_ini] = data;
 
+		auto sanitized_value = detail::sanitize(a_value);
+		auto sections = string::split(sanitized_value, "|");
+
 		//[FORMID/ESP] / string
 		std::variant<FormIDPair, std::string> item_ID;
 		try {
-			auto& formSection = sections.at(kFormID);
-			if (formSection.find(" - ") != std::string::npos) {
+			auto formSection = sections.at(kFormID);
+			if (!string::is_only_letter(formSection)) {
 				FormIDPair pair;
+				pair.second = std::nullopt;
 
-				auto formIDpair = string::split(formSection, " - ");
-				auto espStr = formIDpair.at(kESP);
-
-				//FIX FOR MODS WITH "-" CHARACTERS
-				auto const size = formIDpair.size();
-				if (size > 2) {
-					for (size_t i = 2; i < size; i++) {
-						espStr += " - " + formIDpair[i];
+				if (string::is_only_hex(formSection)) {
+					// formID
+					pair.first = string::lexical_cast<RE::FormID>(formSection, true);
+				} else {
+					// formID~esp
+					auto formIDpair = string::split(formSection, "~");
+					pair.first = string::lexical_cast<RE::FormID>(formIDpair.at(kFormID), true);
+					if (auto size = formIDpair.size(); size > 1) {
+						pair.second = formIDpair.at(kESP);
 					}
 				}
-
-				pair.first = std::stoul(formIDpair.at(TYPE::kFormID), nullptr, 16);
-				pair.second = espStr;
 
 				item_ID.emplace<FormIDPair>(pair);
 			} else {
 				item_ID.emplace<std::string>(formSection);
 			}
 		} catch (...) {
-			FormIDPair pair = { 0, "Skyrim.esm" };
+			FormIDPair pair = { 0, std::nullopt };
 			item_ID.emplace<FormIDPair>(pair);
 		}
 		formIDPair_ini = item_ID;
@@ -64,19 +86,21 @@ namespace INI
 		try {
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
 
-			auto split_str = detail::split_trimmed_string(sections.at(kStrings), false);
-			for (auto& str : split_str) {
+			for (auto split_str = detail::split_sub_string(sections.at(kStrings)); auto& str : split_str) {
 				if (auto it = str.find("+"sv); it != std::string::npos) {
-					auto strings = detail::split_trimmed_string(str, true, "+");
+					auto strings = detail::split_sub_string(str, "+");
 					strings_ALL.insert(strings_ALL.end(), strings.begin(), strings.end());
-				} else if (it = str.find("NOT"sv); it != std::string::npos) {
-					str.erase(it, 3);
-					strings_NOT.emplace_back(string::trim_copy(str));
+
+				} else if (it = str.find("-"sv); it != std::string::npos) {
+					str.erase(it, 1);
+					strings_NOT.emplace_back(str);
+
 				} else if (it = str.find("*"sv); it != std::string::npos) {
 					str.erase(it, 1);
-					strings_ANY.emplace_back(string::trim_copy(str));
+					strings_ANY.emplace_back(str);
+
 				} else {
-					strings_MATCH.emplace_back(string::trim_copy(str));
+					strings_MATCH.emplace_back(str);
 				}
 			}
 		} catch (...) {
@@ -86,18 +110,18 @@ namespace INI
 		try {
 			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
 
-			auto split_IDs = detail::split_trimmed_string(sections.at(kFilterIDs), false);
-			for (auto& IDs : split_IDs) {
+			for (auto split_IDs = detail::split_sub_string(sections.at(kFilterIDs)); auto& IDs : split_IDs) {
 				if (auto it = IDs.find("+"sv); it != std::string::npos) {
-					auto splitIDs_ALL = detail::split_trimmed_string(IDs, true, "+");
+					auto splitIDs_ALL = detail::split_sub_string(IDs, "+");
 					for (auto& IDs_ALL : splitIDs_ALL) {
-						filterIDs_ALL.emplace_back(std::stoul(IDs_ALL, nullptr, 16));
+						filterIDs_ALL.emplace_back(detail::get_filter_ID(IDs_ALL));
 					}
-				} else if (it = IDs.find("NOT"sv); it != std::string::npos) {
-					IDs.erase(it, 3);
-					filterIDs_NOT.emplace_back(std::stoul(IDs, nullptr, 16));
+				} else if (it = IDs.find("-"sv); it != std::string::npos) {
+					IDs.erase(it, 1);
+					filterIDs_NOT.emplace_back(detail::get_filter_ID(IDs));
+
 				} else {
-					filterIDs_MATCH.emplace_back(std::stoul(IDs, nullptr, 16));
+					filterIDs_MATCH.emplace_back(detail::get_filter_ID(IDs));
 				}
 			}
 		} catch (...) {
@@ -107,11 +131,12 @@ namespace INI
 		ActorLevel actorLevelPair = { ACTOR_LEVEL::MAX, ACTOR_LEVEL::MAX };
 		SkillLevel skillLevelPair = { SKILL_LEVEL::TYPE_MAX, { SKILL_LEVEL::VALUE_MAX, SKILL_LEVEL::VALUE_MAX } };
 		try {
-			auto split_levels = detail::split_trimmed_string(sections.at(kLevel), false);
-			for (auto& levels : split_levels) {
+			for (auto split_levels = detail::split_sub_string(sections.at(kLevel)); auto& levels : split_levels) {
 				if (levels.find('(') != std::string::npos) {
+					//skill(min/max)
 					auto sanitizedLevel = string::remove_non_alphanumeric(levels);
 					auto skills = string::split(sanitizedLevel, " ");
+					//skill min max
 					if (!skills.empty()) {
 						if (skills.size() > 2) {
 							auto type = string::lexical_cast<std::uint32_t>(skills.at(S_LEVEL::kType));
@@ -143,14 +168,13 @@ namespace INI
 		//GENDER
 		gender_ini = RE::SEX::kNone;
 		try {
-			if (auto genderStr = sections.at(TYPE::kGender); !genderStr.empty() && genderStr.find("NONE"sv) == std::string::npos) {
-				genderStr.erase(std::ranges::remove(genderStr, ' ').begin(), genderStr.end());
+			if (auto genderStr = sections.at(kGender); !genderStr.empty() && genderStr.find("NONE"sv) == std::string::npos) {
 				if (genderStr == "M") {
 					gender_ini = RE::SEX::kMale;
 				} else if (genderStr == "F") {
 					gender_ini = RE::SEX::kFemale;
 				} else {
-					gender_ini = string::lexical_cast<RE::SEX>(sections.at(TYPE::kGender));
+					gender_ini = string::lexical_cast<RE::SEX>(sections.at(kGender));
 				}
 			}
 		} catch (...) {
@@ -174,23 +198,10 @@ namespace INI
 		} catch (...) {
 		}
 
-		return data;
-	}
-
-	inline void get_ini_data(const CSimpleIniA& ini, const char* a_type, INIDataVec& a_INIDataVec)
-	{
-		CSimpleIniA::TNamesDepend values;
-		ini.GetAllValues("", a_type, values);
-		values.sort(CSimpleIniA::Entry::LoadOrder());
-
-		if (const auto size = values.size(); size > 0) {
-			logger::info("		{} entries found : {}", a_type, size);
-
-			a_INIDataVec.reserve(size);
-			for (const auto& value : values) {
-				a_INIDataVec.emplace_back(parse_ini(value.pItem));
-			}
+		if (sanitized_value != a_value) {
+			return std::make_pair(data, sanitized_value);
 		}
+		return std::make_pair(data, std::nullopt);
 	}
 
 	bool Read();
@@ -200,7 +211,7 @@ namespace Lookup
 {
 	namespace detail
 	{
-		inline bool formID_to_form(const FormIDVec& a_formIDVec, FormVec& a_formVec)
+		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, const FormIDPairVec& a_formIDVec, FormVec& a_formVec)
 		{
 			if (!a_formIDVec.empty()) {
 				constexpr auto lookup_form_type = [](const RE::FormType a_type) {
@@ -222,17 +233,23 @@ namespace Lookup
 					}
 				};
 
-				for (auto& filterID : a_formIDVec) {
-					if (const auto filterForm = RE::TESForm::LookupByID(filterID); filterForm) {
+				for (auto& [formID, modName] : a_formIDVec) {
+					RE::TESForm* filterForm = nullptr;
+					if (modName.has_value()) {
+						filterForm = a_dataHandler->LookupForm(formID, modName.value());
+					} else {
+						filterForm = RE::TESForm::LookupByID(formID);
+					}
+					if (filterForm) {
 						const auto formType = filterForm->GetFormType();
 						if (const auto type = lookup_form_type(formType); !type.empty()) {
 							a_formVec.push_back(filterForm);
 						} else {
-							logger::error("				Filter [0x{:08X}]) FAIL - wrong formtype ({})", filterID, formType);
+							logger::error("				Filter [0x{:08X}]) FAIL - invalid formtype ({})", formID, formType);
 							return false;
 						}
 					} else {
-						logger::error("				Filter [0x{:08X}] FAIL - form doesn't exist", filterID);
+						logger::error("				Filter [0x{:08X}] FAIL - form doesn't exist", formID);
 						return false;
 					}
 				}
@@ -242,24 +259,38 @@ namespace Lookup
 	}
 
 	template <class Form>
-	void get_forms(const std::string& a_type, const INIDataVec& a_INIDataVec, FormDataVec<Form>& a_formDataVec)
+	void get_forms(RE::TESDataHandler* a_dataHandler, const std::string& a_type, const INIDataVec& a_INIDataVec, FormDataVec<Form>& a_formDataVec)
 	{
+		if (a_INIDataVec.empty()) {
+			return;
+		}
+
 		logger::info("	Starting {} lookup", a_type);
 
 		for (auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, gender_ini, itemCount_ini, chance_ini] : a_INIDataVec) {
 			Form* form;
 
 			if (std::holds_alternative<FormIDPair>(formIDPair_ini)) {
-				auto [formID, mod] = std::get<FormIDPair>(formIDPair_ini);
-
-				form = RE::TESDataHandler::GetSingleton()->LookupForm<Form>(formID, mod);
-				if (!form) {
-					const auto base = RE::TESDataHandler::GetSingleton()->LookupForm(formID, mod);
-					form = base ? static_cast<Form*>(base) : nullptr;
+				auto [formID, modName] = std::get<FormIDPair>(formIDPair_ini);
+				if (modName.has_value()) {
+					form = a_dataHandler->LookupForm<Form>(formID, modName.value());
+					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
+						if (!form) {
+							const auto base = a_dataHandler->LookupForm(formID, modName.value());
+							form = base ? static_cast<Form*>(base) : nullptr;
+						}
+					}
+				} else {
+					form = RE::TESForm::LookupByID<Form>(formID);
+					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
+						if (!form) {
+							const auto base = RE::TESForm::LookupByID(formID);
+							form = base ? static_cast<Form*>(base) : nullptr;
+						}
+					}
 				}
-
 				if (!form) {
-					logger::error("		{} [0x{:08X}] ({}) FAIL - doesn't exist or wrong form type", a_type, formID, mod);
+					logger::error("		{} [0x{:X}] ({}) FAIL - doesn't exist or has invalid form type", a_type, formID, modName.has_value() ? modName.value() : "null esp");
 					continue;
 				}
 
@@ -269,10 +300,10 @@ namespace Lookup
 				}
 
 				if (auto keywordName = std::get<std::string>(formIDPair_ini); !keywordName.empty()) {
-					auto& keywordArray = RE::TESDataHandler::GetSingleton()->GetFormArray<RE::BGSKeyword>();
+					auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
 
 					auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
-						return keyword && string::iequals(keyword->formEditorID.c_str(), keywordName);
+						return keyword && string::iequals(keyword->formEditorID, keywordName);
 					});
 
 					if (result != keywordArray.end()) {
@@ -285,8 +316,7 @@ namespace Lookup
 						}
 					} else {
 						const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-						auto keyword = factory ? factory->Create() : nullptr;
-						if (keyword) {
+						if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
 							keyword->formEditorID = keywordName;
 							logger::info("		{} [0x{:08X}] INFO - creating keyword", keywordName, keyword->GetFormID());
 
@@ -304,7 +334,7 @@ namespace Lookup
 			std::array<FormVec, 3> filterForms;
 			bool result = true;
 			for (std::uint32_t i = 0; i < 3; i++) {
-				if (!detail::formID_to_form(filterIDs_ini[i], filterForms[i])) {
+				if (!detail::formID_to_form(a_dataHandler, filterIDs_ini[i], filterForms[i])) {
 					result = false;
 					break;
 				}
@@ -507,6 +537,8 @@ namespace Distribute
 		template <class Form>
 		bool secondary(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
 		{
+			using namespace FILTERS;
+
 			auto const levelPair = std::get<DATA_TYPE::kLevel>(a_formData);
 			auto const& [actorLevelPair, skillLevelPair] = levelPair;
 
@@ -564,7 +596,7 @@ namespace Distribute
 			if (!filter::strings(a_actorbase, formData) || !filter::forms(a_actorbase, formData) || !filter::secondary(a_actorbase, formData)) {
 				continue;
 			}
-			if (auto const formCountPair = std::get<DATA_TYPE::kForm>(formData); formCountPair.first && a_fn(formCountPair)) {
+			if (auto const formCountPair = std::get<DATA_TYPE::kForm>(formData); formCountPair.first != nullptr && a_fn(formCountPair)) {
 				++std::get<DATA_TYPE::kNPCCount>(formData);
 			}
 		}
@@ -587,15 +619,15 @@ namespace Distribute
 					} else {
 						name = form->GetName();
 					}
-					logger::info("		{} [0x{:08X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
+					logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
 				}
 			}
 		}
 	}
 
-    void ApplyToNPCs();
+	void ApplyToNPCs();
 
-    namespace Leveled
+	namespace Leveled
 	{
 		void Hook();
 	}
@@ -606,10 +638,10 @@ namespace Distribute
 	}
 
 	namespace DeathItem
-    {
-		struct detail //AddObjectToContainer doesn't work with leveled items :s
+	{
+		struct detail  //AddObjectToContainer doesn't work with leveled items :s
 		{
-            static void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount, bool a_silent, std::uint32_t a_stackID, RE::BSScript::Internal::VirtualMachine* a_vm)
+			static void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount, bool a_silent, std::uint32_t a_stackID, RE::BSScript::Internal::VirtualMachine* a_vm)
 			{
 				using func_t = decltype(&detail::add_item);
 				REL::Relocation<func_t> func{ REL::ID(55945) };
@@ -617,7 +649,7 @@ namespace Distribute
 			}
 		};
 
-        class DeathManager : public RE::BSTEventSink<RE::TESDeathEvent>
+		class DeathManager : public RE::BSTEventSink<RE::TESDeathEvent>
 		{
 		public:
 			static DeathManager* GetSingleton()
@@ -628,12 +660,12 @@ namespace Distribute
 
 			static void Register();
 
-        protected:
+		protected:
 			using EventResult = RE::BSEventNotifyControl;
 
 			EventResult ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override;
 
-        private:
+		private:
 			DeathManager() = default;
 			DeathManager(const DeathManager&) = delete;
 			DeathManager(DeathManager&&) = delete;
@@ -643,5 +675,5 @@ namespace Distribute
 			DeathManager& operator=(const DeathManager&) = delete;
 			DeathManager& operator=(DeathManager&&) = delete;
 		};
-    }
+	}
 }

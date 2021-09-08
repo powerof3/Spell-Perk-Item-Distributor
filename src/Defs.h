@@ -1,7 +1,7 @@
 #pragma once
 
-using FormIDPair = std::pair<RE::FormID, std::string>;
-using FormIDVec = std::vector<RE::FormID>;
+using FormIDPair = std::pair<RE::FormID, std::optional<std::string>>;
+using FormIDPairVec = std::vector<FormIDPair>;
 using StringVec = std::vector<std::string>;
 using FormVec = std::vector<RE::TESForm*>;
 
@@ -14,7 +14,7 @@ using NPCCount = std::uint32_t;
 using INIData = std::tuple<
 	std::variant<FormIDPair, std::string>,
 	std::array<StringVec, 4>,
-	std::array<FormIDVec, 3>,
+	std::array<FormIDPairVec, 3>,
 	std::pair<ActorLevel, SkillLevel>,
 	RE::SEX,
 	ItemCount,
@@ -49,6 +49,8 @@ namespace INI
 		kItemCount,
 		kChance
 	};
+
+	using Values = std::vector<std::pair<std::string, std::string>>;
 }
 using INI_TYPE = INI::TYPE;
 
@@ -68,28 +70,51 @@ namespace DATA
 }
 using DATA_TYPE = DATA::TYPE;
 
-namespace ACTOR_LEVEL
+namespace FILTERS
 {
-	enum TYPE : std::uint32_t
+	namespace ACTOR_LEVEL
 	{
-		kMin = 0,
-		kMax
+		enum TYPE : std::uint32_t
+		{
+			kMin = 0,
+			kMax
+		};
+
+		inline constexpr auto MAX = std::numeric_limits<std::uint16_t>::max();
+	}
+	using A_LEVEL = ACTOR_LEVEL::TYPE;
+
+	namespace SKILL_LEVEL
+	{
+		enum TYPE : std::uint32_t
+		{
+			kType = 0,
+			kMin,
+			kMax
+		};
+
+		inline constexpr auto TYPE_MAX = std::numeric_limits<std::uint32_t>::max();
+		inline constexpr auto VALUE_MAX = std::numeric_limits<std::uint8_t>::max();
+	}
+	using S_LEVEL = SKILL_LEVEL::TYPE;
+}
+
+namespace TYPES
+{
+	enum TYPE
+	{
+		kSpell = 0,
+		kPerk,
+		kItem,
+		kShout,
+		kLevSpell,
+		kPackage,
+		kOutfit,
+		kKeyword,
+		kDeathItem,
+
+		kTotal
 	};
 
-	inline constexpr auto MAX = std::numeric_limits<std::uint16_t>::max();
+	inline constexpr std::array types = { "Spell", "Perk", "Item", "Shout", "LevSpell", "Package", "Outfit", "Keyword", "DeathItem" };
 }
-using A_LEVEL = ACTOR_LEVEL::TYPE;
-
-namespace SKILL_LEVEL
-{
-	enum TYPE : std::uint32_t
-	{
-		kType = 0,
-		kMin,
-		kMax
-	};
-
-	inline constexpr auto TYPE_MAX = std::numeric_limits<std::uint32_t>::max();
-	inline constexpr auto VALUE_MAX = std::numeric_limits<std::uint8_t>::max();
-}
-using S_LEVEL = SKILL_LEVEL::TYPE;
