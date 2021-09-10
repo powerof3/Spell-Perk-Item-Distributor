@@ -66,7 +66,8 @@ bool INI::Read()
 				logger::info("	sanitizing {} entries", oldFormatMap.size());
 				for (auto [key, entry] : oldFormatMap) {
 					auto& [original, sanitized] = entry;
-					detail::format_INI(ini, key.pItem, original, sanitized, key.pComment);
+					ini.DeleteValue("", key.pItem, original.c_str());
+					ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
 				}
 				ini.SaveFile(path.c_str());
 			}

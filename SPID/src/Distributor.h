@@ -16,11 +16,15 @@ namespace INI
 
 		inline FormIDPair get_filter_ID(const std::string& a_str)
 		{
-			if (const auto it = a_str.find("~"sv); it != std::string::npos) {
+			if (a_str.find("~"sv) != std::string::npos) {
 				auto splitID = string::split(a_str, "~");
-				return std::make_pair(string::lexical_cast<RE::FormID>(splitID.at(kFormID), true), splitID.at(kESP));
+				return std::make_pair(
+					string::lexical_cast<RE::FormID>(splitID.at(kFormID), true),
+					splitID.at(kESP));
 			}
-			return std::make_pair(string::lexical_cast<RE::FormID>(a_str), std::nullopt);
+			return std::make_pair(
+				string::lexical_cast<RE::FormID>(a_str, true),
+				std::nullopt);
 		}
 
 		inline std::string sanitize(const std::string& a_value)
@@ -33,17 +37,10 @@ namespace INI
 			}
 			return a_value;
 		}
-
-		inline void format_INI(CSimpleIniA& ini, const std::string& a_type, const std::string& a_value, const std::string& a_newValue, const char* a_comment)
-		{
-			ini.DeleteValue("", a_type.c_str(), a_value.c_str());
-			ini.SetValue("", a_type.c_str(), a_newValue.c_str(), a_comment, false);
-		}
 	}
 
 	inline std::pair<INIData, std::optional<std::string>> parse_ini(const std::string& a_value)
 	{
-		using TYPE = INI_TYPE;
 		using namespace FILTERS;
 
 		INIData data;
@@ -86,12 +83,13 @@ namespace INI
 		try {
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
 
-			for (auto split_str = detail::split_sub_string(sections.at(kStrings)); auto& str : split_str) {
-				if (auto it = str.find("+"sv); it != std::string::npos) {
+			auto split_str = detail::split_sub_string(sections.at(kStrings));
+			for (auto& str : split_str) {
+				if (str.find("+"sv) != std::string::npos) {
 					auto strings = detail::split_sub_string(str, "+");
 					strings_ALL.insert(strings_ALL.end(), strings.begin(), strings.end());
 
-				} else if (it = str.find("-"sv); it != std::string::npos) {
+				} else if (auto it = str.find("-"sv); it != std::string::npos) {
 					str.erase(it, 1);
 					strings_NOT.emplace_back(str);
 
@@ -110,18 +108,19 @@ namespace INI
 		try {
 			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
 
-			for (auto split_IDs = detail::split_sub_string(sections.at(kFilterIDs)); auto& IDs : split_IDs) {
-				if (auto it = IDs.find("+"sv); it != std::string::npos) {
+			auto split_IDs = detail::split_sub_string(sections.at(kFilterIDs));
+			for (auto& IDs : split_IDs) {
+				if (IDs.find("+"sv) != std::string::npos) {
 					auto splitIDs_ALL = detail::split_sub_string(IDs, "+");
 					for (auto& IDs_ALL : splitIDs_ALL) {
-						filterIDs_ALL.emplace_back(detail::get_filter_ID(IDs_ALL));
+						filterIDs_ALL.push_back(detail::get_filter_ID(IDs_ALL));
 					}
-				} else if (it = IDs.find("-"sv); it != std::string::npos) {
+				} else if (auto it = IDs.find("-"sv); it != std::string::npos) {
 					IDs.erase(it, 1);
-					filterIDs_NOT.emplace_back(detail::get_filter_ID(IDs));
+					filterIDs_NOT.push_back(detail::get_filter_ID(IDs));
 
 				} else {
-					filterIDs_MATCH.emplace_back(detail::get_filter_ID(IDs));
+					filterIDs_MATCH.push_back(detail::get_filter_ID(IDs));
 				}
 			}
 		} catch (...) {
@@ -245,11 +244,11 @@ namespace Lookup
 						if (const auto type = lookup_form_type(formType); !type.empty()) {
 							a_formVec.push_back(filterForm);
 						} else {
-							logger::error("				Filter [0x{:08X}]) FAIL - invalid formtype ({})", formID, formType);
+							logger::error("				Filter [0x{:X}]) FAIL - invalid formtype ({})", formID, formType);
 							return false;
 						}
 					} else {
-						logger::error("				Filter [0x{:08X}] FAIL - form doesn't exist", formID);
+						logger::error("				Filter [0x{:X}] FAIL - form doesn't exist", formID);
 						return false;
 					}
 				}
@@ -308,7 +307,7 @@ namespace Lookup
 
 					if (result != keywordArray.end()) {
 						if (const auto keyword = *result; keyword && !keyword->IsDynamicForm()) {
-							logger::info("		{} [0x{:08X}] INFO - using existing keyword", keywordName, keyword->GetFormID());
+							logger::info("		{} [0x{:X}] INFO - using existing keyword", keywordName, keyword->GetFormID());
 
 							form = keyword;
 						} else {
@@ -318,7 +317,7 @@ namespace Lookup
 						const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
 						if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
 							keyword->formEditorID = keywordName;
-							logger::info("		{} [0x{:08X}] INFO - creating keyword", keywordName, keyword->GetFormID());
+							logger::info("		{} [0x{:X}] INFO - creating keyword", keywordName, keyword->GetFormID());
 
 							keywordArray.push_back(keyword);
 
@@ -549,17 +548,19 @@ namespace Distribute
 				return false;
 			}
 
-			auto [actorMin, actorMax] = actorLevelPair;
-			auto actorLevel = a_actorbase.actorData.level;
+			if (!a_actorbase.HasPCLevelMult()) {
+				auto [actorMin, actorMax] = actorLevelPair;
+				auto actorLevel = a_actorbase.actorData.level;
 
-			if (actorMin < ACTOR_LEVEL::MAX && actorMax < ACTOR_LEVEL::MAX) {
-				if (!(actorMin < actorLevel && actorMax > actorLevel)) {
+				if (actorMin < ACTOR_LEVEL::MAX && actorMax < ACTOR_LEVEL::MAX) {
+					if (!(actorMin < actorLevel && actorMax > actorLevel)) {
+						return false;
+					}
+				} else if (actorMin < ACTOR_LEVEL::MAX && actorLevel < actorMin) {
 					return false;
-				}
-			} else if (actorMin < ACTOR_LEVEL::MAX && actorLevel < actorMin) {
-				return false;
-			} else if (actorMax < ACTOR_LEVEL::MAX && actorLevel > actorMax) {
-				return false;
+				} else if (actorMax < ACTOR_LEVEL::MAX && actorLevel > actorMax) {
+					return false;
+				}			    
 			}
 
 			auto skillType = skillLevelPair.first;
