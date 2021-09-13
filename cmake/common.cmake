@@ -191,13 +191,13 @@ macro(copy_files)
 		message(FATAL_ERROR "Arguments must be paired as a file + path spec.")
 	endif()
 
-	option(COPY_BUILD "Copy the build output to the Fallout 4 directory." OFF)
+	option(COPY_BUILD "Copy the build output to the Skyrim directory." OFF)
 
 	set(_ARGS "${ARGN}")
 
 	if(COPY_BUILD)
-		set_from_environment(Fallout4Path)
-		if(DEFINED Fallout4Path)
+		set_from_environment(Skyrim64Path)
+		if(DEFINED Skyrim64Path)
 			math(EXPR _PAIRS "${ARGC} / 2 - 1")
 			foreach(_IDX RANGE "${_PAIRS}")
 				math(EXPR _IDX "${_IDX} * 2")
@@ -206,7 +206,7 @@ macro(copy_files)
 				list(GET _ARGS "${_IDX}" _FROM)
 				list(GET _ARGS "${_IDXN}" _TO)
 
-				cmake_path(SET _TO NORMALIZE "${Fallout4Path}/${_TO}")
+				cmake_path(SET _TO NORMALIZE "${Skyrim64Path}/${_TO}")
 
 				add_custom_command(
 					TARGET "${PROJECT_NAME}"
@@ -215,7 +215,7 @@ macro(copy_files)
 				)
 			endforeach()
 		else()
-			message(WARNING "Variable Fallout4Path is not defined. Skipping post-build copy command.")
+			message(WARNING "Variable Skyrim64Path is not defined. Skipping post-build copy command.")
 		endif()
 	endif()
 

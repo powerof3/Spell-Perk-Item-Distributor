@@ -14,7 +14,7 @@ namespace INI
 			return std::vector<std::string>();
 		}
 
-		inline FormIDPair get_filter_ID(const std::string& a_str)
+		inline FormIDPair get_formID(const std::string& a_str)
 		{
 			if (a_str.find("~"sv) != std::string::npos) {
 				auto splitID = string::split(a_str, "~");
@@ -29,13 +29,25 @@ namespace INI
 
 		inline std::string sanitize(const std::string& a_value)
 		{
-			static const boost::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", boost::regex_constants::optimize);
-			if (auto newValue = boost::regex_replace(a_value, re_spaces, "$1"); newValue != a_value) {
+			auto newValue = a_value;
+
+			//formID hypen
+			if (newValue.find('~') == std::string::npos) {
 				string::replace_first_instance(newValue, " - ", "~");
-				string::replace_all(newValue, "NOT ", "-");
-				return newValue;
 			}
-			return a_value;
+
+			//strip spaces
+			static const boost::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", boost::regex_constants::optimize);
+			newValue = regex_replace(newValue, re_spaces, "$1");
+
+			//strip leading zeros
+			static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
+			newValue = regex_replace(newValue, re_zeros, "0x$2");
+
+			//NOT to hyphen
+			string::replace_all(newValue, "NOT ", "-");
+
+			return newValue;
 		}
 	}
 
@@ -44,7 +56,7 @@ namespace INI
 		using namespace FILTERS;
 
 		INIData data;
-		auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, gender_ini, itemCount_ini, chance_ini] = data;
+		auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, traits_ini, itemCount_ini, chance_ini] = data;
 
 		auto sanitized_value = detail::sanitize(a_value);
 		auto sections = string::split(sanitized_value, "|");
@@ -52,8 +64,7 @@ namespace INI
 		//[FORMID/ESP] / string
 		std::variant<FormIDPair, std::string> item_ID;
 		try {
-			auto formSection = sections.at(kFormID);
-			if (!string::is_only_letter(formSection)) {
+			if (auto formSection = sections.at(kFormID); !string::is_only_letter(formSection)) {
 				FormIDPair pair;
 				pair.second = std::nullopt;
 
@@ -62,11 +73,7 @@ namespace INI
 					pair.first = string::lexical_cast<RE::FormID>(formSection, true);
 				} else {
 					// formID~esp
-					auto formIDpair = string::split(formSection, "~");
-					pair.first = string::lexical_cast<RE::FormID>(formIDpair.at(kFormID), true);
-					if (auto size = formIDpair.size(); size > 1) {
-						pair.second = formIDpair.at(kESP);
-					}
+					pair = detail::get_formID(formSection);
 				}
 
 				item_ID.emplace<FormIDPair>(pair);
@@ -83,8 +90,7 @@ namespace INI
 		try {
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
 
-			auto split_str = detail::split_sub_string(sections.at(kStrings));
-			for (auto& str : split_str) {
+			for (auto split_str = detail::split_sub_string(sections.at(kStrings)); auto& str : split_str) {
 				if (str.find("+"sv) != std::string::npos) {
 					auto strings = detail::split_sub_string(str, "+");
 					strings_ALL.insert(strings_ALL.end(), strings.begin(), strings.end());
@@ -108,19 +114,18 @@ namespace INI
 		try {
 			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
 
-			auto split_IDs = detail::split_sub_string(sections.at(kFilterIDs));
-			for (auto& IDs : split_IDs) {
+			for (auto split_IDs = detail::split_sub_string(sections.at(kFilterIDs)); auto& IDs : split_IDs) {
 				if (IDs.find("+"sv) != std::string::npos) {
 					auto splitIDs_ALL = detail::split_sub_string(IDs, "+");
 					for (auto& IDs_ALL : splitIDs_ALL) {
-						filterIDs_ALL.push_back(detail::get_filter_ID(IDs_ALL));
+						filterIDs_ALL.push_back(detail::get_formID(IDs_ALL));
 					}
 				} else if (auto it = IDs.find("-"sv); it != std::string::npos) {
 					IDs.erase(it, 1);
-					filterIDs_NOT.push_back(detail::get_filter_ID(IDs));
+					filterIDs_NOT.push_back(detail::get_formID(IDs));
 
 				} else {
-					filterIDs_MATCH.push_back(detail::get_filter_ID(IDs));
+					filterIDs_MATCH.push_back(detail::get_formID(IDs));
 				}
 			}
 		} catch (...) {
@@ -164,16 +169,22 @@ namespace INI
 		}
 		level_ini = { actorLevelPair, skillLevelPair };
 
-		//GENDER
-		gender_ini = RE::SEX::kNone;
+		//TRAITS
+		traits_ini = { RE::SEX::kNone, std::nullopt, std::nullopt };
 		try {
-			if (auto genderStr = sections.at(kGender); !genderStr.empty() && genderStr.find("NONE"sv) == std::string::npos) {
-				if (genderStr == "M") {
-					gender_ini = RE::SEX::kMale;
-				} else if (genderStr == "F") {
-					gender_ini = RE::SEX::kFemale;
-				} else {
-					gender_ini = string::lexical_cast<RE::SEX>(sections.at(kGender));
+			for (auto split_traits = detail::split_sub_string(sections.at(kTraits), "/"); auto& trait : split_traits) {
+				if (trait == "M") {
+					std::get<TRAIT::kSex>(traits_ini) = RE::SEX::kMale;
+				} else if (trait == "F") {
+					std::get<TRAIT::kSex>(traits_ini) = RE::SEX::kFemale;
+				} else if (trait == "U") {
+					std::get<TRAIT::kUnique>(traits_ini) = true;
+				} else if (trait == "-U") {
+					std::get<TRAIT::kUnique>(traits_ini) = false;
+				} else if (trait == "S") {
+					std::get<TRAIT::kSummonable>(traits_ini) = true;
+				} else if (trait == "-S") {
+					std::get<TRAIT::kSummonable>(traits_ini) = false;
 				}
 			}
 		} catch (...) {
@@ -244,11 +255,11 @@ namespace Lookup
 						if (const auto type = lookup_form_type(formType); !type.empty()) {
 							a_formVec.push_back(filterForm);
 						} else {
-							logger::error("				Filter [0x{:X}]) FAIL - invalid formtype ({})", formID, formType);
+							logger::error("			Filter [0x{:X}]) FAIL - invalid formtype ({})", formID, formType);
 							return false;
 						}
 					} else {
-						logger::error("				Filter [0x{:X}] FAIL - form doesn't exist", formID);
+						logger::error("			Filter [0x{:X}] FAIL - form doesn't exist", formID);
 						return false;
 					}
 				}
@@ -306,12 +317,11 @@ namespace Lookup
 					});
 
 					if (result != keywordArray.end()) {
-						if (const auto keyword = *result; keyword && !keyword->IsDynamicForm()) {
-							logger::info("		{} [0x{:X}] INFO - using existing keyword", keywordName, keyword->GetFormID());
-
+						if (const auto keyword = *result; keyword) {
+							if (!keyword->IsDynamicForm()) {
+								logger::info("		{} [0x{:X}] INFO - using existing keyword", keywordName, keyword->GetFormID());
+							}
 							form = keyword;
-						} else {
-							continue;
 						}
 					} else {
 						const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
@@ -440,16 +450,14 @@ namespace Distribute
 				});
 			}
 
-			inline bool matches(RE::TESNPC& a_actorbase, const StringVec& a_strings)
+			inline bool matches(RE::TESNPC& a_actorbase, const StringVec& a_strings, bool a_matchesAll = false)
 			{
+				if (a_matchesAll) {
+					return std::ranges::all_of(a_strings, [&a_actorbase](const auto& str) {
+						return a_actorbase.HasKeyword(str);
+					});
+				}
 				return std::ranges::any_of(a_strings, [&a_actorbase](const auto& str) {
-					return a_actorbase.HasKeyword(str);
-				});
-			}
-
-			inline bool matches_ALL(RE::TESNPC& a_actorbase, const StringVec& a_strings)
-			{
-				return std::ranges::all_of(a_strings, [&a_actorbase](const auto& str) {
 					return a_actorbase.HasKeyword(str);
 				});
 			}
@@ -460,15 +468,12 @@ namespace Distribute
 		{
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = std::get<DATA_TYPE::kStrings>(a_formData);
 
-			if (strings_ALL.empty() && strings_NOT.empty() && strings_MATCH.empty() && strings_ANY.empty()) {
-				return true;
-			}
-
-			if (!strings_ALL.empty() && !keyword::matches_ALL(a_actorbase, strings_ALL)) {
+			if (!strings_ALL.empty() && !keyword::matches(a_actorbase, strings_ALL, true)) {
 				return false;
 			}
 
 			const std::string name = a_actorbase.GetName();
+
 			if (!strings_NOT.empty()) {
 				bool result = false;
 				if (!name.empty() && name::matches(name, strings_NOT)) {
@@ -514,10 +519,6 @@ namespace Distribute
 		{
 			auto& [filterForms_ALL, filterForms_NOT, filterForms_MATCH] = std::get<DATA_TYPE::kFilterForms>(a_formData);
 
-			if (filterForms_ALL.empty() && filterForms_NOT.empty() && filterForms_MATCH.empty()) {
-				return true;
-			}
-
 			if (!filterForms_ALL.empty() && !form::matches_ALL(a_actorbase, filterForms_ALL)) {
 				return false;
 			}
@@ -541,10 +542,17 @@ namespace Distribute
 			auto const levelPair = std::get<DATA_TYPE::kLevel>(a_formData);
 			auto const& [actorLevelPair, skillLevelPair] = levelPair;
 
-			auto const gender = std::get<DATA_TYPE::kGender>(a_formData);
+			auto const traits = std::get<DATA_TYPE::kTraits>(a_formData);
 			auto const chance = std::get<DATA_TYPE::kChance>(a_formData);
 
-			if (gender != RE::SEX::kNone && a_actorbase.GetSex() != gender) {
+			auto& [sex, isUnique, isSummonable] = traits;
+		    if (sex != RE::SEX::kNone && a_actorbase.GetSex() != sex) {
+				return false;
+			}
+			if (isUnique.has_value() && a_actorbase.IsUnique() != isUnique.value()) {
+				return false;
+			}
+			if (isSummonable.has_value() && a_actorbase.IsSummonable() != isSummonable.value()) {
 				return false;
 			}
 
@@ -560,7 +568,7 @@ namespace Distribute
 					return false;
 				} else if (actorMax < ACTOR_LEVEL::MAX && actorLevel > actorMax) {
 					return false;
-				}			    
+				}
 			}
 
 			auto skillType = skillLevelPair.first;
@@ -614,11 +622,9 @@ namespace Distribute
 				auto npcCount = std::get<DATA_TYPE::kNPCCount>(formData);
 
 				if (form) {
-					std::string name;
-					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-						name = form->formEditorID;
-					} else {
-						name = form->GetName();
+					std::string name = form->GetName();
+					if (name.empty()) {
+						name = form->GetFormEditorID();
 					}
 					logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
 				}
@@ -627,16 +633,6 @@ namespace Distribute
 	}
 
 	void ApplyToNPCs();
-
-	namespace Leveled
-	{
-		void Hook();
-	}
-
-	namespace Hook
-	{
-		void Install();
-	}
 
 	namespace DeathItem
 	{
@@ -676,5 +672,15 @@ namespace Distribute
 			DeathManager& operator=(const DeathManager&) = delete;
 			DeathManager& operator=(DeathManager&&) = delete;
 		};
+	}
+
+	namespace Leveled
+	{
+		void Hook();
+	}
+
+	namespace Hook
+	{
+		void Install();
 	}
 }

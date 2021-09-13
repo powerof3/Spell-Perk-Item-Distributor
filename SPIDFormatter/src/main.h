@@ -24,8 +24,8 @@ namespace INI
 	enum TYPE
 	{
 		kInvalid = 0,
-		kUpgrade = 1,
-		kDowngrade = 2
+		kUpgrade,
+		kDowngrade
 	};
 
 	struct detail
@@ -49,8 +49,7 @@ namespace INI
 				return;
 			}
 
-			size_t pos = 0;
-			if ((pos = a_str.find_first_of(a_search, pos)) != std::string::npos) {
+			if (auto pos = a_str.find(a_search); pos != std::string::npos) {
 				a_str.replace(pos, a_search.length(), a_replace);
 			}
 		}
@@ -66,6 +65,10 @@ namespace INI
 			static const boost::regex re_spaces(R"(\B\s+|\s+\B)", boost::regex_constants::optimize);
 			newValue = regex_replace(newValue, re_spaces, " ");
 
+			//strip leading zeros
+			static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
+			newValue = regex_replace(newValue, re_zeros, "0x$2");
+
 			//match NOT hypens
 			static const boost::regex re_hypen(R"((, |\| )(-)(\w+|\d+))", boost::regex_constants::optimize);
 			newValue = regex_replace(newValue, re_hypen, "$1NOT $3");
@@ -79,12 +82,17 @@ namespace INI
 		{
 			auto newValue = a_value;
 
-		    if (newValue.find_first_of('~') == std::string::npos) {
+		    if (newValue.find('~') == std::string::npos) {
 				replace_first_instance(newValue, " - ", "~");
 			}
 
-			static const boost::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", boost::regex_constants::optimize);
+			//strip spaces
+		    static const boost::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", boost::regex_constants::optimize);
 			newValue = regex_replace(newValue, re_spaces, "$1");
+
+			//strip leading zeros
+			static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
+			newValue = regex_replace(newValue, re_zeros, "0x$2");
 
 		    replace_all(newValue, "NOT ", "-");
 

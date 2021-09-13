@@ -8,6 +8,7 @@ using FormVec = std::vector<RE::TESForm*>;
 using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;
 using SkillLevel = std::pair<std::uint32_t, std::pair<std::uint8_t, std::uint8_t>>;
 using ItemCount = std::int32_t;
+using Traits = std::tuple<RE::SEX, std::optional<bool>, std::optional<bool>>;
 using Chance = float;
 using NPCCount = std::uint32_t;
 
@@ -16,7 +17,7 @@ using INIData = std::tuple<
 	std::array<StringVec, 4>,
 	std::array<FormIDPairVec, 3>,
 	std::pair<ActorLevel, SkillLevel>,
-	RE::SEX,
+	Traits,
 	ItemCount,
 	Chance>;
 using INIDataVec = std::vector<INIData>;
@@ -29,7 +30,7 @@ using FormData = std::tuple<
 	std::array<StringVec, 4>,
 	std::array<FormVec, 3>,
 	std::pair<ActorLevel, SkillLevel>,
-	RE::SEX,
+	Traits,
 	Chance,
 	NPCCount>;
 template <class Form>
@@ -45,7 +46,7 @@ namespace INI
 		kESP = kStrings,
 		kFilterIDs,
 		kLevel,
-		kGender,
+		kTraits,
 		kItemCount,
 		kChance
 	};
@@ -63,7 +64,7 @@ namespace DATA
 		kStrings = kItemCount,
 		kFilterForms,
 		kLevel,
-		kGender,
+		kTraits,
 		kChance,
 		kNPCCount
 	};
@@ -97,6 +98,17 @@ namespace FILTERS
 		inline constexpr auto VALUE_MAX = std::numeric_limits<std::uint8_t>::max();
 	}
 	using S_LEVEL = SKILL_LEVEL::TYPE;
+
+	namespace TRAITS
+	{
+		enum TYPE : std::uint32_t
+		{
+			kSex,
+			kUnique,
+			kSummonable
+		};
+	}
+	using TRAIT = TRAITS::TYPE;
 }
 
 namespace TYPES

@@ -6,7 +6,7 @@ bool INI::Format(TYPE a_type)
 
 	for (const auto& entry : std::filesystem::directory_iterator("./")) {
 		if (entry.exists() && !entry.path().empty() && entry.path().extension() == ".ini") {
-			if (const auto path = entry.path().string(); path.find("_DISTR") != std::string::npos) {
+			if (const auto path = entry.path().string(); path.rfind("_DISTR") != std::string::npos) {
 				configs.push_back(path);
 			}
 		}
@@ -17,10 +17,12 @@ bool INI::Format(TYPE a_type)
 		return false;
 	}
 
-	a_type == INI::kUpgrade ? std ::cout << "\nUpgrading INI files...\n\n" : std ::cout << "\nDowngrading INI files...\n\n";
+	auto size = configs.size();
+	a_type == INI::kUpgrade ? std ::cout << "\nUpgrading " << size << " INI files...\n\n" : std ::cout << "\nDowngrading " << size << " INI files...\n\n";
 
 	for (auto& path : configs) {
-		std::cout << "INI : " << path << "\n";
+		detail::replace_first_instance(path, "./", "");
+		std::cout << "ini : " << path << "\n";
 
 		CSimpleIniA ini;
 		ini.SetUnicode();
@@ -43,16 +45,25 @@ bool INI::Format(TYPE a_type)
 			}
 
 			if (!oldFormatMap.empty()) {
-				for (auto [key, entry] : oldFormatMap) {
+				bool doOnce = false;
+			    for (auto [key, entry] : oldFormatMap) {
 					auto& [original, sanitized] = entry;
-					ini.DeleteValue("", key.pItem, original.c_str());
+					if (a_type == INI::kDowngrade) {
+					    if (const auto count = std::ranges::count_if(sanitized, [](const char c) { return c == '~'; }); count > 0) {
+							if (!doOnce) {
+								std::cout << "	Incompatible filter(s) detected (ie. 0x123~MyMod.esp). These must be removed manually\n";
+								doOnce = true;
+							}
+							std::cout << "		" << sanitized << "\n ";
+						}
+					}
+
+				    ini.DeleteValue("", key.pItem, original.c_str());
 					ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
 				}
 				ini.SaveFile(path.c_str());
 
 				std::cout << "	Sanitized " << oldFormatMap.size() << " entries \n";
-			} else {
-				std::cout << "	INI is already formatted\n";
 			}
 		}
 	}

@@ -21,7 +21,7 @@ bool INI::Read()
 	auto constexpr folder = R"(Data\)";
 	for (const auto& entry : std::filesystem::directory_iterator(folder)) {
 		if (entry.exists() && !entry.path().empty() && entry.path().extension() == ".ini"sv) {
-			if (const auto path = entry.path().string(); path.find("_DISTR") != std::string::npos) {
+			if (const auto path = entry.path().string(); path.rfind("_DISTR") != std::string::npos) {
 				configs.push_back(path);
 			}
 		}
@@ -40,7 +40,7 @@ bool INI::Read()
 	}
 
 	for (auto& path : configs) {
-		logger::info("	ini : {}", path);
+		logger::info("	INI : {}", path);
 
 		CSimpleIniA ini;
 		ini.SetUnicode();
@@ -63,7 +63,7 @@ bool INI::Read()
 			}
 
 			if (!oldFormatMap.empty()) {
-				logger::info("	sanitizing {} entries", oldFormatMap.size());
+				logger::info("		sanitizing {} entries", oldFormatMap.size());
 				for (auto [key, entry] : oldFormatMap) {
 					auto& [original, sanitized] = entry;
 					ini.DeleteValue("", key.pItem, original.c_str());
@@ -114,66 +114,62 @@ bool Lookup::GetForms()
 void Distribute::ApplyToNPCs()
 {
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-		constexpr auto apply_npc_records = [](RE::TESNPC& a_actorbase) {
-			for_each_form<RE::BGSKeyword>(a_actorbase, keywords, [&](const auto& a_keywordsPair) {
-				const auto keyword = a_keywordsPair.first;
-				if (!a_actorbase.HasKeyword(keyword->formEditorID)) {
-					return a_actorbase.AddKeyword(keyword);
-				}
-				return false;
-			});
-
-			for_each_form<RE::SpellItem>(a_actorbase, spells, [&](const auto& a_spellPair) {
-				const auto spell = a_spellPair.first;
-				const auto actorEffects = a_actorbase.GetSpellList();
-				return actorEffects && actorEffects->AddSpell(spell);
-			});
-
-			for_each_form<RE::BGSPerk>(a_actorbase, perks, [&](const auto& a_perkPair) {
-				const auto perk = a_perkPair.first;
-				return a_actorbase.AddPerk(perk, 1);
-			});
-
-			for_each_form<RE::TESShout>(a_actorbase, shouts, [&](const auto& a_shoutPair) {
-				const auto shout = a_shoutPair.first;
-				const auto actorEffects = a_actorbase.GetSpellList();
-				return actorEffects && actorEffects->AddShout(shout);
-			});
-
-			for_each_form<RE::TESLevSpell>(a_actorbase, levSpells, [&](const auto& a_levSpellPair) {
-				const auto levSpell = a_levSpellPair.first;
-				const auto actorEffects = a_actorbase.GetSpellList();
-				return actorEffects && actorEffects->AddLevSpell(levSpell);
-			});
-
-			for_each_form<RE::BGSOutfit>(a_actorbase, outfits, [&](const auto& a_outfitsPair) {
-				a_actorbase.defaultOutfit = a_outfitsPair.first;
-				return true;
-			});
-
-			for_each_form<RE::TESBoundObject>(a_actorbase, items, [&](const auto& a_itemPair) {
-				const auto& [item, count] = a_itemPair;
-				return a_actorbase.AddObjectToContainer(item, count, &a_actorbase);
-			});
-
-			for_each_form<RE::TESPackage>(a_actorbase, packages, [&](const auto& a_packagePair) {
-				const auto package = a_packagePair.first;
-				auto& packagesList = a_actorbase.aiPackages.packages;
-				if (std::ranges::find(packagesList, package) == packagesList.end()) {
-					packagesList.push_front(package);
-					const auto packageList = a_actorbase.defaultPackList;
-					if (packageList && !packageList->HasForm(package)) {
-						packageList->AddForm(package);
-						return true;
-					}
-				}
-				return false;
-			});
-		};
-
 		for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
 			if (actorbase && !actorbase->IsPlayer()) {
-				apply_npc_records(*actorbase);
+				for_each_form<RE::BGSKeyword>(*actorbase, keywords, [&](const auto& a_keywordsPair) {
+					const auto keyword = a_keywordsPair.first;
+					if (!actorbase->HasKeyword(keyword->formEditorID)) {
+						return actorbase->AddKeyword(keyword);
+					}
+					return false;
+				});
+
+				for_each_form<RE::SpellItem>(*actorbase, spells, [&](const auto& a_spellPair) {
+					const auto spell = a_spellPair.first;
+					const auto actorEffects = actorbase->GetSpellList();
+					return actorEffects && actorEffects->AddSpell(spell);
+				});
+
+				for_each_form<RE::BGSPerk>(*actorbase, perks, [&](const auto& a_perkPair) {
+					const auto perk = a_perkPair.first;
+					return actorbase->AddPerk(perk, 1);
+				});
+
+				for_each_form<RE::TESShout>(*actorbase, shouts, [&](const auto& a_shoutPair) {
+					const auto shout = a_shoutPair.first;
+					const auto actorEffects = actorbase->GetSpellList();
+					return actorEffects && actorEffects->AddShout(shout);
+				});
+
+				for_each_form<RE::TESLevSpell>(*actorbase, levSpells, [&](const auto& a_levSpellPair) {
+					const auto levSpell = a_levSpellPair.first;
+					const auto actorEffects = actorbase->GetSpellList();
+					return actorEffects && actorEffects->AddLevSpell(levSpell);
+				});
+
+				for_each_form<RE::BGSOutfit>(*actorbase, outfits, [&](const auto& a_outfitsPair) {
+					actorbase->defaultOutfit = a_outfitsPair.first;
+					return true;
+				});
+
+				for_each_form<RE::TESBoundObject>(*actorbase, items, [&](const auto& a_itemPair) {
+					const auto& [item, count] = a_itemPair;
+					return actorbase->AddObjectToContainer(item, count, actorbase);
+				});
+
+				for_each_form<RE::TESPackage>(*actorbase, packages, [&](const auto& a_packagePair) {
+					const auto package = a_packagePair.first;
+					auto& packagesList = actorbase->aiPackages.packages;
+					if (std::ranges::find(packagesList, package) == packagesList.end()) {
+						packagesList.push_front(package);
+						const auto packageList = actorbase->defaultPackList;
+						if (packageList && !packageList->HasForm(package)) {
+							packageList->AddForm(package);
+							return true;
+						}
+					}
+					return false;
+				});
 			}
 		}
 
@@ -204,6 +200,43 @@ void Distribute::ApplyToNPCs()
 		if (!outfits.empty()) {
 			list_npc_count("Outfits", outfits, totalNPCs);
 		}
+	}
+}
+
+namespace Distribute::DeathItem
+{
+	void DeathManager::Register()
+	{
+		if (deathItems.empty()) {
+			return;
+		}
+
+		auto scripts = RE::ScriptEventSourceHolder::GetSingleton();
+		if (scripts) {
+			scripts->AddEventSink(GetSingleton());
+			logger::info("	Registered {}"sv, typeid(DeathManager).name());
+		}
+	}
+
+	DeathManager::EventResult DeathManager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
+	{
+		constexpr auto isNPC = [](auto&& a_ref) {
+			return a_ref && !a_ref->IsPlayerRef();
+		};
+
+		if (a_event && a_event->dead && isNPC(a_event->actorDying)) {
+			const auto actor = a_event->actorDying->As<RE::Actor>();
+			const auto base = actor ? actor->GetActorBase() : nullptr;
+			if (actor && base) {
+				for_each_form<RE::TESBoundObject>(*base, deathItems, [&](const auto& a_deathItemPair) {
+					const auto& [deathItem, count] = a_deathItemPair;
+					detail::add_item(actor, deathItem, count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
+					return true;
+				});
+			}
+		}
+
+		return EventResult::kContinue;
 	}
 }
 
@@ -272,46 +305,4 @@ namespace Distribute::Leveled
 		stl::write_vfunc<RE::Character, 0x084, SetObjectReference>();
 		logger::info("	Hooked leveled actor init");
 	}
-}
-
-namespace Distribute::DeathItem
-{
-	void DeathManager::Register()
-	{
-		if (deathItems.empty()) {
-			return;
-		}
-
-		auto scripts = RE::ScriptEventSourceHolder::GetSingleton();
-		if (scripts) {
-			scripts->AddEventSink(GetSingleton());
-			logger::info("	Registered {}"sv, typeid(DeathManager).name());
-		}
-	}
-
-	DeathManager::EventResult DeathManager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
-	{
-		constexpr auto isNPC = [](auto&& a_ref) {
-			return a_ref && !a_ref->IsPlayerRef();
-		};
-
-		if (a_event && a_event->dead && isNPC(a_event->actorDying)) {
-			const auto actor = a_event->actorDying->As<RE::Actor>();
-			const auto base = actor ? actor->GetActorBase() : nullptr;
-			if (actor && base) {
-				for_each_form<RE::TESBoundObject>(*base, deathItems, [&](const auto& a_deathItemPair) {
-					const auto& [deathItem, count] = a_deathItemPair;
-					detail::add_item(actor, deathItem, count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
-					return true;
-				});
-			}
-		}
-
-		return EventResult::kContinue;
-	}
-}
-
-bool Read()
-{
-	return false;
 }
