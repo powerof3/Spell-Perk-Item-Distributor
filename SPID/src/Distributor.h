@@ -64,7 +64,7 @@ namespace INI
 		//[FORMID/ESP] / string
 		std::variant<FormIDPair, std::string> item_ID;
 		try {
-			if (auto formSection = sections.at(kFormID); !string::is_only_letter(formSection)) {
+			if (auto formSection = sections.at(kFormID); formSection.find('~') != std::string::npos || string::is_only_hex(formSection)) {
 				FormIDPair pair;
 				pair.second = std::nullopt;
 
@@ -95,12 +95,12 @@ namespace INI
 					auto strings = detail::split_sub_string(str, "+");
 					strings_ALL.insert(strings_ALL.end(), strings.begin(), strings.end());
 
-				} else if (auto it = str.find("-"sv); it != std::string::npos) {
-					str.erase(it, 1);
+				} else if (str.at(0) == '-') {
+					str.erase(0, 1);
 					strings_NOT.emplace_back(str);
 
-				} else if (it = str.find("*"sv); it != std::string::npos) {
-					str.erase(it, 1);
+				} else if (str.at(0) == '*') {
+					str.erase(0, 1);
 					strings_ANY.emplace_back(str);
 
 				} else {
@@ -120,8 +120,8 @@ namespace INI
 					for (auto& IDs_ALL : splitIDs_ALL) {
 						filterIDs_ALL.push_back(detail::get_formID(IDs_ALL));
 					}
-				} else if (auto it = IDs.find("-"sv); it != std::string::npos) {
-					IDs.erase(it, 1);
+				} else if (IDs.at(0) == '-') {
+					IDs.erase(0, 1);
 					filterIDs_NOT.push_back(detail::get_formID(IDs));
 
 				} else {
@@ -255,11 +255,11 @@ namespace Lookup
 						if (const auto type = lookup_form_type(formType); !type.empty()) {
 							a_formVec.push_back(filterForm);
 						} else {
-							logger::error("			Filter [0x{:X}]) FAIL - invalid formtype ({})", formID, formType);
+							logger::error("			Filter [0x{:X}] ({}) FAIL - invalid formtype ({})", formID, modName.has_value() ? modName.value() : "", formType);
 							return false;
 						}
 					} else {
-						logger::error("			Filter [0x{:X}] FAIL - form doesn't exist", formID);
+						logger::error("			Filter [0x{:X}] ({}) FAIL - form doesn't exist", formID, modName.has_value() ? modName.value() : "");
 						return false;
 					}
 				}
@@ -300,7 +300,7 @@ namespace Lookup
 					}
 				}
 				if (!form) {
-					logger::error("		{} [0x{:X}] ({}) FAIL - doesn't exist or has invalid form type", a_type, formID, modName.has_value() ? modName.value() : "null esp");
+					logger::error("		{} [0x{:X}] ({}) FAIL - doesn't exist", a_type, formID, modName.has_value() ? modName.value() : "");
 					continue;
 				}
 
@@ -546,7 +546,7 @@ namespace Distribute
 			auto const chance = std::get<DATA_TYPE::kChance>(a_formData);
 
 			auto& [sex, isUnique, isSummonable] = traits;
-		    if (sex != RE::SEX::kNone && a_actorbase.GetSex() != sex) {
+			if (sex != RE::SEX::kNone && a_actorbase.GetSex() != sex) {
 				return false;
 			}
 			if (isUnique.has_value() && a_actorbase.IsUnique() != isUnique.value()) {
