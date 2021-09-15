@@ -1,5 +1,16 @@
 #include "Distributor.h"
 
+void MessageHandler(SKSE::MessagingInterface::Message* a_message)
+{
+	if (a_message->type == SKSE::MessagingInterface::kDataLoaded) {
+		if (Lookup::GetForms()) {
+			Distribute::ApplyToNPCs();
+			Distribute::Leveled::Hook();
+			Distribute::DeathItem::DeathManager::Register();
+		}
+	}
+}
+
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
 	auto path = logger::log_directory();
@@ -43,10 +54,10 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	logger::info("loaded plugin");
 
 	SKSE::Init(a_skse);
-	SKSE::AllocTrampoline(14);
 
 	if (INI::Read()) {
-		Distribute::Hook::Install();
+		auto messaging = SKSE::GetMessagingInterface();
+		messaging->RegisterListener(MessageHandler);
 	}
 
 	return true;

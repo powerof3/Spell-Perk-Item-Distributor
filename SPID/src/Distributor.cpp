@@ -240,34 +240,6 @@ namespace Distribute::DeathItem
 	}
 }
 
-namespace Distribute::Hook
-{
-	struct TESInit
-	{
-		static void thunk(RE::Main* a_main, RE::NiAVObject* a_worldSceneGraph)
-		{
-			func(a_main, a_worldSceneGraph);
-
-			if (Lookup::GetForms()) {
-				ApplyToNPCs();
-				Leveled::Hook();
-				DeathItem::DeathManager::Register();
-			}
-		}
-		static inline REL::Relocation<decltype(thunk)>(func);
-	};
-
-	void Install()
-	{
-		logger::info("{:*^30}", "START");
-
-		logger::info("	Hooking TESInit");
-
-		REL::Relocation<std::uintptr_t> target{ REL::ID(35631), 0x17 };
-		stl::write_thunk_call<TESInit>(target.address());
-	}
-}
-
 namespace Distribute::Leveled
 {
 	struct SetObjectReference

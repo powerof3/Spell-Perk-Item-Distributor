@@ -678,9 +678,4 @@ namespace Distribute
 	{
 		void Hook();
 	}
-
-	namespace Hook
-	{
-		void Install();
-	}
 }
