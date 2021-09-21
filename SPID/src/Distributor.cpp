@@ -35,8 +35,8 @@ bool INI::Read()
 	logger::info("	{} matching inis found", configs.size());
 
 	//initialize map
-	for (size_t i = 0; i < TYPES::kTotal; i++) {
-		INIs[TYPES::types[i]] = INIDataVec{};
+	for (size_t i = 0; i < RECORD::kTotal; i++) {
+		INIs[RECORD::add[i]] = INIDataVec{};
 	}
 
 	for (auto& path : configs) {
@@ -259,6 +259,7 @@ namespace Distribute::Leveled
 					}
 					return false;
 				});
+				
 				for_each_form<RE::BGSOutfit>(*actorbase, outfits, [&](const auto& a_outfitsPair) {
 					actorbase->defaultOutfit = a_outfitsPair.first;
 					return true;

@@ -21,10 +21,15 @@ namespace INI
 				return std::make_pair(
 					string::lexical_cast<RE::FormID>(splitID.at(kFormID), true),
 					splitID.at(kESP));
+			} else if (string::icontains(a_str, ".esp") || string::icontains(a_str, ".esl") || string::icontains(a_str, ".esm")) {
+				return std::make_pair(
+					std::nullopt,
+					a_str);
+			} else {
+				return std::make_pair(
+					string::lexical_cast<RE::FormID>(a_str, true),
+					std::nullopt);
 			}
-			return std::make_pair(
-				string::lexical_cast<RE::FormID>(a_str, true),
-				std::nullopt);
 		}
 
 		inline std::string sanitize(const std::string& a_value)
@@ -53,8 +58,6 @@ namespace INI
 
 	inline std::pair<INIData, std::optional<std::string>> parse_ini(const std::string& a_value)
 	{
-		using namespace FILTERS;
-
 		INIData data;
 		auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, traits_ini, itemCount_ini, chance_ini] = data;
 
@@ -132,8 +135,8 @@ namespace INI
 		}
 
 		//LEVEL
-		ActorLevel actorLevelPair = { ACTOR_LEVEL::MAX, ACTOR_LEVEL::MAX };
-		SkillLevel skillLevelPair = { SKILL_LEVEL::TYPE_MAX, { SKILL_LEVEL::VALUE_MAX, SKILL_LEVEL::VALUE_MAX } };
+		ActorLevel actorLevelPair = { UINT16_MAX, UINT16_MAX };
+		SkillLevel skillLevelPair = { UINT32_MAX, { UINT8_MAX, UINT8_MAX } };
 		try {
 			for (auto split_levels = detail::split_sub_string(sections.at(kLevel)); auto& levels : split_levels) {
 				if (levels.find('(') != std::string::npos) {
@@ -143,25 +146,25 @@ namespace INI
 					//skill min max
 					if (!skills.empty()) {
 						if (skills.size() > 2) {
-							auto type = string::lexical_cast<std::uint32_t>(skills.at(S_LEVEL::kType));
-							auto minLevel = string::lexical_cast<std::uint8_t>(skills.at(S_LEVEL::kMin));
-							auto maxLevel = string::lexical_cast<std::uint8_t>(skills.at(S_LEVEL::kMax));
+							auto type = string::lexical_cast<std::uint32_t>(skills.at(0));
+							auto minLevel = string::lexical_cast<std::uint8_t>(skills.at(1));
+							auto maxLevel = string::lexical_cast<std::uint8_t>(skills.at(2));
 							skillLevelPair = { type, { minLevel, maxLevel } };
 						} else {
-							auto type = string::lexical_cast<std::uint32_t>(skills.at(S_LEVEL::kType));
-							auto minLevel = string::lexical_cast<std::uint8_t>(skills.at(S_LEVEL::kMin));
-							skillLevelPair = { type, { minLevel, SKILL_LEVEL::VALUE_MAX } };
+							auto type = string::lexical_cast<std::uint32_t>(skills.at(0));
+							auto minLevel = string::lexical_cast<std::uint8_t>(skills.at(1));
+							skillLevelPair = { type, { minLevel, UINT8_MAX } };
 						}
 					}
 				} else {
 					auto split_level = string::split(levels, "/");
 					if (split_level.size() > 1) {
-						auto minLevel = string::lexical_cast<std::uint16_t>(split_level.at(A_LEVEL::kMin));
-						auto maxLevel = string::lexical_cast<std::uint16_t>(split_level.at(A_LEVEL::kMax));
+						auto minLevel = string::lexical_cast<std::uint16_t>(split_level.at(0));
+						auto maxLevel = string::lexical_cast<std::uint16_t>(split_level.at(1));
 						actorLevelPair = { minLevel, maxLevel };
 					} else {
 						auto level = string::lexical_cast<std::uint16_t>(levels);
-						actorLevelPair = { level, ACTOR_LEVEL::MAX };
+						actorLevelPair = { level, UINT16_MAX };
 					}
 				}
 			}
@@ -170,21 +173,21 @@ namespace INI
 		level_ini = { actorLevelPair, skillLevelPair };
 
 		//TRAITS
-		traits_ini = { RE::SEX::kNone, std::nullopt, std::nullopt };
 		try {
+			auto& [sex, unique, summonable] = traits_ini;
 			for (auto split_traits = detail::split_sub_string(sections.at(kTraits), "/"); auto& trait : split_traits) {
 				if (trait == "M") {
-					std::get<TRAIT::kSex>(traits_ini) = RE::SEX::kMale;
+					sex = RE::SEX::kMale;
 				} else if (trait == "F") {
-					std::get<TRAIT::kSex>(traits_ini) = RE::SEX::kFemale;
+					sex = RE::SEX::kFemale;
 				} else if (trait == "U") {
-					std::get<TRAIT::kUnique>(traits_ini) = true;
+					unique = true;
 				} else if (trait == "-U") {
-					std::get<TRAIT::kUnique>(traits_ini) = false;
+					unique = false;
 				} else if (trait == "S") {
-					std::get<TRAIT::kSummonable>(traits_ini) = true;
+					summonable = true;
 				} else if (trait == "-S") {
-					std::get<TRAIT::kSummonable>(traits_ini) = false;
+					summonable = false;
 				}
 			}
 		} catch (...) {
@@ -221,50 +224,53 @@ namespace Lookup
 {
 	namespace detail
 	{
-		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, const FormIDPairVec& a_formIDVec, FormVec& a_formVec)
+		inline constexpr frozen::map<RE::FormType, std::string_view, 7> filterMap = {
+			{ RE::FormType::Faction, "Faction"sv },
+			{ RE::FormType::Class, "Class"sv },
+			{ RE::FormType::CombatStyle, "CombatStyle"sv },
+			{ RE::FormType::Race, "Race"sv },
+			{ RE::FormType::Outfit, "Outfit"sv },
+			{ RE::FormType::NPC, "NPC"sv },
+			{ RE::FormType::VoiceType, "VoiceType"sv }
+		};
+
+		inline void formID_to_form(RE::TESDataHandler* a_dataHandler, const FormIDPairVec& a_formIDVec, FormVec& a_formVec)
 		{
 			if (!a_formIDVec.empty()) {
 				constexpr auto lookup_form_type = [](const RE::FormType a_type) {
-					switch (a_type) {
-					case RE::FormType::Faction:
-						return "Faction"sv;
-					case RE::FormType::Class:
-						return "Class"sv;
-					case RE::FormType::CombatStyle:
-						return "CombatStyle"sv;
-					case RE::FormType::Race:
-						return "Race"sv;
-					case RE::FormType::Outfit:
-						return "Outfit"sv;
-					case RE::FormType::NPC:
-						return "NPC"sv;
-					default:
-						return ""sv;
-					}
+					auto it = filterMap.find(a_type);
+					return it != filterMap.end() ? it->second : "";
 				};
 
-				for (auto& [formID, modName] : a_formIDVec) {
-					RE::TESForm* filterForm = nullptr;
-					if (modName.has_value()) {
-						filterForm = a_dataHandler->LookupForm(formID, modName.value());
-					} else {
-						filterForm = RE::TESForm::LookupByID(formID);
-					}
-					if (filterForm) {
-						const auto formType = filterForm->GetFormType();
-						if (const auto type = lookup_form_type(formType); !type.empty()) {
-							a_formVec.push_back(filterForm);
+				for (auto& [optFormID, modName] : a_formIDVec) {
+					if (modName.has_value() && !optFormID.has_value()) {
+						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(modName.value()); filterMod) {
+							logger::info("			Filter ({}) INFO - mod found", filterMod->fileName);
+							a_formVec.push_back(filterMod);
 						} else {
-							logger::error("			Filter [0x{:X}] ({}) FAIL - invalid formtype ({})", formID, modName.has_value() ? modName.value() : "", formType);
-							return false;
+							logger::error("			Filter ({}) SKIP - mod cannot be found", modName.value());
 						}
 					} else {
-						logger::error("			Filter [0x{:X}] ({}) FAIL - form doesn't exist", formID, modName.has_value() ? modName.value() : "");
-						return false;
+						auto formID = optFormID.value();
+						RE::TESForm* filterForm = nullptr;
+						if (modName.has_value()) {
+							filterForm = a_dataHandler->LookupForm(formID, modName.value());
+						} else {
+							filterForm = RE::TESForm::LookupByID(formID);
+						}
+						if (filterForm) {
+							const auto formType = filterForm->GetFormType();
+							if (const auto type = lookup_form_type(formType); !type.empty()) {
+								a_formVec.push_back(filterForm);
+							} else {
+								logger::error("			Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", formID, modName.has_value() ? modName.value() : "", formType);
+							}
+						} else {
+							logger::error("			Filter [0x{:X}] ({}) SKIP - form doesn't exist", formID, modName.has_value() ? modName.value() : "");
+						}
 					}
 				}
 			}
-			return true;
 		}
 	}
 
@@ -281,29 +287,29 @@ namespace Lookup
 			Form* form;
 
 			if (std::holds_alternative<FormIDPair>(formIDPair_ini)) {
-				auto [formID, modName] = std::get<FormIDPair>(formIDPair_ini);
-				if (modName.has_value()) {
-					form = a_dataHandler->LookupForm<Form>(formID, modName.value());
-					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
-						if (!form) {
-							const auto base = a_dataHandler->LookupForm(formID, modName.value());
-							form = base ? static_cast<Form*>(base) : nullptr;
+				if (auto [formID, modName] = std::get<FormIDPair>(formIDPair_ini);	formID.has_value()) {					
+					if (modName.has_value()) {
+						form = a_dataHandler->LookupForm<Form>(formID.value(), modName.value());
+						if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
+							if (!form) {
+								const auto base = a_dataHandler->LookupForm(formID.value(), modName.value());
+								form = base ? static_cast<Form*>(base) : nullptr;
+							}
+						}
+					} else {
+						form = RE::TESForm::LookupByID<Form>(formID.value());
+						if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
+							if (!form) {
+								const auto base = RE::TESForm::LookupByID(formID.value());
+								form = base ? static_cast<Form*>(base) : nullptr;
+							}
 						}
 					}
-				} else {
-					form = RE::TESForm::LookupByID<Form>(formID);
-					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
-						if (!form) {
-							const auto base = RE::TESForm::LookupByID(formID);
-							form = base ? static_cast<Form*>(base) : nullptr;
-						}
+					if (!form) {
+						logger::error("		{} [0x{:X}] ({}) FAIL - doesn't exist", a_type, formID.value(), modName.has_value() ? modName.value() : "");
+						continue;
 					}
 				}
-				if (!form) {
-					logger::error("		{} [0x{:X}] ({}) FAIL - doesn't exist", a_type, formID, modName.has_value() ? modName.value() : "");
-					continue;
-				}
-
 			} else if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 				if (!std::holds_alternative<std::string>(formIDPair_ini)) {
 					continue;
@@ -322,6 +328,9 @@ namespace Lookup
 								logger::info("		{} [0x{:X}] INFO - using existing keyword", keywordName, keyword->GetFormID());
 							}
 							form = keyword;
+						} else {
+							logger::critical("		{} FAIL - couldn't get existing keyword", keywordName);
+							continue;
 						}
 					} else {
 						const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
@@ -341,15 +350,8 @@ namespace Lookup
 			}
 
 			std::array<FormVec, 3> filterForms;
-			bool result = true;
 			for (std::uint32_t i = 0; i < 3; i++) {
-				if (!detail::formID_to_form(a_dataHandler, filterIDs_ini[i], filterForms[i])) {
-					result = false;
-					break;
-				}
-			}
-			if (!result) {
-				continue;
+				detail::formID_to_form(a_dataHandler, filterIDs_ini[i], filterForms[i]);
 			}
 
 			FormCountPair<Form> formCountPair = { form, itemCount_ini };
@@ -363,80 +365,79 @@ namespace Lookup
 	bool GetForms();
 }
 
-namespace Distribute
+namespace Filter
 {
-	namespace filter
+	namespace detail
 	{
 		namespace name
 		{
 			inline bool contains(const std::string& a_name, const StringVec& a_strings)
 			{
 				return std::ranges::any_of(a_strings, [&](const auto& str) {
-					return string::icontains(str, a_name);
+					return string::icontains(a_name, str);
 				});
 			}
 
 			inline bool matches(const std::string& a_name, const StringVec& a_strings)
 			{
 				return std::ranges::any_of(a_strings, [&](const auto& str) {
-					return string::iequals(str, a_name);
+					return string::iequals(a_name, str);
 				});
 			}
 		}
 
 		namespace form
 		{
-			inline bool get_type(RE::TESNPC& a_actorbase, RE::TESForm* a_type)
+			inline bool get_type(RE::TESNPC& a_actorbase, RE::TESForm* a_filter)
 			{
-				switch (a_type->GetFormType()) {
+				switch (a_filter->GetFormType()) {
 				case RE::FormType::CombatStyle:
-					if (const auto combatStyle = static_cast<RE::TESCombatStyle*>(a_type); a_actorbase.GetCombatStyle() == combatStyle) {
-						return true;
-					}
-					break;
+					return a_actorbase.GetCombatStyle() == a_filter;
 				case RE::FormType::Class:
-					if (const auto npcClass = static_cast<RE::TESClass*>(a_type); a_actorbase.npcClass == npcClass) {
-						return true;
-					}
-					break;
+					return a_actorbase.npcClass == a_filter;
 				case RE::FormType::Faction:
-					if (const auto faction = static_cast<RE::TESFaction*>(a_type); a_actorbase.IsInFaction(faction)) {
-						return true;
+					{
+						const auto faction = static_cast<RE::TESFaction*>(a_filter);
+						return faction && a_actorbase.IsInFaction(faction);
 					}
-					break;
 				case RE::FormType::Race:
-					if (const auto race = static_cast<RE::TESRace*>(a_type); a_actorbase.GetRace() == race) {
-						return true;
-					}
-					break;
+					return a_actorbase.GetRace() == a_filter;
 				case RE::FormType::Outfit:
-					if (const auto outfit = static_cast<RE::BGSOutfit*>(a_type); a_actorbase.defaultOutfit == outfit) {
-						return true;
-					}
-					break;
+					return a_actorbase.defaultOutfit == a_filter;
 				case RE::FormType::NPC:
-					if (const auto npc = static_cast<RE::TESNPC*>(a_type); &a_actorbase == npc) {
-						return true;
-					}
-					break;
+					return &a_actorbase == a_filter;
+				case RE::FormType::VoiceType:
+					return a_actorbase.voiceType == a_filter;
 				default:
-					break;
+					return false;
 				}
-
-				return false;
 			}
 
 			inline bool matches(RE::TESNPC& a_actorbase, const FormVec& a_forms)
 			{
-				return std::ranges::any_of(a_forms, [&a_actorbase](const auto& a_form) {
-					return a_form && get_type(a_actorbase, a_form);
+				return std::ranges::any_of(a_forms, [&a_actorbase](const auto& a_formFile) {
+					if (std::holds_alternative<RE::TESForm*>(a_formFile)) {
+						auto form = std::get<RE::TESForm*>(a_formFile);
+						return form && get_type(a_actorbase, form);
+					} else if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
+						auto file = std::get<const RE::TESFile*>(a_formFile);
+						return file && file->IsFormInMod(a_actorbase.GetFormID());
+					}
+					return false;
 				});
 			}
 
 			inline bool matches_ALL(RE::TESNPC& a_actorbase, const FormVec& a_forms)
 			{
-				return std::ranges::all_of(a_forms, [&a_actorbase](const auto& a_form) {
-					return a_form && get_type(a_actorbase, a_form);
+				return std::ranges::all_of(a_forms, [&a_actorbase](const auto& a_formFile) {
+					if (std::holds_alternative<RE::TESForm*>(a_formFile)) {
+						auto form = std::get<RE::TESForm*>(a_formFile);
+						return form && get_type(a_actorbase, form);
+					} else if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
+						auto file = std::get<const RE::TESFile*>(a_formFile);
+						return file && file->IsFormInMod(a_actorbase.GetFormID());
+					}
+					return false;
 				});
 			}
 		}
@@ -462,178 +463,143 @@ namespace Distribute
 				});
 			}
 		}
-
-		template <class Form>
-		bool strings(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
-		{
-			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = std::get<DATA_TYPE::kStrings>(a_formData);
-
-			if (!strings_ALL.empty() && !keyword::matches(a_actorbase, strings_ALL, true)) {
-				return false;
-			}
-
-			const std::string name = a_actorbase.GetName();
-
-			if (!strings_NOT.empty()) {
-				bool result = false;
-				if (!name.empty() && name::matches(name, strings_NOT)) {
-					result = true;
-				}
-				if (!result && keyword::matches(a_actorbase, strings_NOT)) {
-					result = true;
-				}
-				if (result) {
-					return false;
-				}
-			}
-			if (!strings_MATCH.empty()) {
-				bool result = false;
-				if (!name.empty() && name::matches(name, strings_MATCH)) {
-					result = true;
-				}
-				if (!result && keyword::matches(a_actorbase, strings_MATCH)) {
-					result = true;
-				}
-				if (!result) {
-					return false;
-				}
-			}
-			if (!strings_ANY.empty()) {
-				bool result = false;
-				if (!name.empty() && name::contains(name, strings_ANY)) {
-					result = true;
-				}
-				if (!result && keyword::contains(a_actorbase, strings_ANY)) {
-					result = true;
-				}
-				if (!result) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		template <class Form>
-		bool forms(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
-		{
-			auto& [filterForms_ALL, filterForms_NOT, filterForms_MATCH] = std::get<DATA_TYPE::kFilterForms>(a_formData);
-
-			if (!filterForms_ALL.empty() && !form::matches_ALL(a_actorbase, filterForms_ALL)) {
-				return false;
-			}
-
-			if (!filterForms_NOT.empty() && form::matches(a_actorbase, filterForms_NOT)) {
-				return false;
-			}
-
-			if (!filterForms_MATCH.empty() && !form::matches(a_actorbase, filterForms_MATCH)) {
-				return false;
-			}
-
-			return true;
-		}
-
-		template <class Form>
-		bool secondary(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
-		{
-			using namespace FILTERS;
-
-			auto const levelPair = std::get<DATA_TYPE::kLevel>(a_formData);
-			auto const& [actorLevelPair, skillLevelPair] = levelPair;
-
-			auto const traits = std::get<DATA_TYPE::kTraits>(a_formData);
-			auto const chance = std::get<DATA_TYPE::kChance>(a_formData);
-
-			auto& [sex, isUnique, isSummonable] = traits;
-			if (sex != RE::SEX::kNone && a_actorbase.GetSex() != sex) {
-				return false;
-			}
-			if (isUnique.has_value() && a_actorbase.IsUnique() != isUnique.value()) {
-				return false;
-			}
-			if (isSummonable.has_value() && a_actorbase.IsSummonable() != isSummonable.value()) {
-				return false;
-			}
-
-			if (!a_actorbase.HasPCLevelMult()) {
-				auto [actorMin, actorMax] = actorLevelPair;
-				auto actorLevel = a_actorbase.actorData.level;
-
-				if (actorMin < ACTOR_LEVEL::MAX && actorMax < ACTOR_LEVEL::MAX) {
-					if (!(actorMin < actorLevel && actorMax > actorLevel)) {
-						return false;
-					}
-				} else if (actorMin < ACTOR_LEVEL::MAX && actorLevel < actorMin) {
-					return false;
-				} else if (actorMax < ACTOR_LEVEL::MAX && actorLevel > actorMax) {
-					return false;
-				}
-			}
-
-			auto skillType = skillLevelPair.first;
-			auto [skillMin, skillMax] = skillLevelPair.second;
-
-			if (skillType >= 0 && skillType < 18) {
-				auto const skillLevel = a_actorbase.playerSkills.values[skillType];
-
-				if (skillMin < SKILL_LEVEL::VALUE_MAX && skillMax < SKILL_LEVEL::VALUE_MAX) {
-					if (!(skillMin < skillLevel && skillMax > skillLevel)) {
-						return false;
-					}
-				} else if (skillMin < SKILL_LEVEL::VALUE_MAX && skillLevel < skillMin) {
-					return false;
-				} else if (skillMax < SKILL_LEVEL::VALUE_MAX && skillLevel > skillMax) {
-					return false;
-				}
-			}
-
-			if (!numeric::essentially_equal(chance, 100.0)) {
-				if (auto rng = RNG::GetSingleton()->Generate<float>(0.0, 100.0); rng > chance) {
-					return false;
-				}
-			}
-
-			return true;
-		}
 	}
 
 	template <class Form>
-	void for_each_form(RE::TESNPC& a_actorbase, FormDataVec<Form>& a_formDataVec, std::function<bool(const FormCountPair<Form>&)> a_fn)
+	bool strings(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
 	{
-		for (auto& formData : a_formDataVec) {
-			if (!filter::strings(a_actorbase, formData) || !filter::forms(a_actorbase, formData) || !filter::secondary(a_actorbase, formData)) {
-				continue;
+		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = std::get<DATA_TYPE::kStrings>(a_formData);
+
+		if (!strings_ALL.empty() && !detail::keyword::matches(a_actorbase, strings_ALL, true)) {
+			return false;
+		}
+
+		const std::string name = a_actorbase.GetName();
+
+		if (!strings_NOT.empty()) {
+			bool result = false;
+			if (!name.empty() && detail::name::matches(name, strings_NOT)) {
+				result = true;
 			}
-			if (auto const formCountPair = std::get<DATA_TYPE::kForm>(formData); formCountPair.first != nullptr && a_fn(formCountPair)) {
-				++std::get<DATA_TYPE::kNPCCount>(formData);
+			if (!result && detail::keyword::matches(a_actorbase, strings_NOT)) {
+				result = true;
+			}
+			if (result) {
+				return false;
 			}
 		}
+		if (!strings_MATCH.empty()) {
+			bool result = false;
+			if (!name.empty() && detail::name::matches(name, strings_MATCH)) {
+				result = true;
+			}
+			if (!result && detail::keyword::matches(a_actorbase, strings_MATCH)) {
+				result = true;
+			}
+			if (!result) {
+				return false;
+			}
+		}
+		if (!strings_ANY.empty()) {
+			bool result = false;
+			if (!name.empty() && detail::name::contains(name, strings_ANY)) {
+				result = true;
+			}
+			if (!result && detail::keyword::contains(a_actorbase, strings_ANY)) {
+				result = true;
+			}
+			if (!result) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	template <class Form>
-	void list_npc_count(const std::string& a_type, FormDataVec<Form>& a_formDataVec, const size_t a_totalNPCCount)
+	bool forms(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
 	{
-		if (!a_formDataVec.empty()) {
-			logger::info("	{}", a_type);
+		auto& [filterForms_ALL, filterForms_NOT, filterForms_MATCH] = std::get<DATA_TYPE::kFilterForms>(a_formData);
 
-			for (auto& formData : a_formDataVec) {
-				auto [form, itemCount] = std::get<DATA_TYPE::kForm>(formData);
-				auto npcCount = std::get<DATA_TYPE::kNPCCount>(formData);
-
-				if (form) {
-					std::string name = form->GetName();
-					if (name.empty()) {
-						name = form->GetFormEditorID();
-					}
-					logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
-				}
-			}
+		if (!filterForms_ALL.empty() && !detail::form::matches_ALL(a_actorbase, filterForms_ALL)) {
+			return false;
 		}
+
+		if (!filterForms_NOT.empty() && detail::form::matches(a_actorbase, filterForms_NOT)) {
+			return false;
+		}
+
+		if (!filterForms_MATCH.empty() && !detail::form::matches(a_actorbase, filterForms_MATCH)) {
+			return false;
+		}
+
+		return true;
 	}
 
-	void ApplyToNPCs();
+	template <class Form>
+	bool secondary(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
+	{
+		auto const traits = std::get<DATA_TYPE::kTraits>(a_formData);
 
+		auto& [sex, isUnique, isSummonable] = traits;
+		if (sex != RE::SEX::kNone && a_actorbase.GetSex() != sex) {
+			return false;
+		}
+		if (isUnique.has_value() && a_actorbase.IsUnique() != isUnique.value()) {
+			return false;
+		}
+		if (isSummonable.has_value() && a_actorbase.IsSummonable() != isSummonable.value()) {
+			return false;
+		}
+
+		auto const levelPair = std::get<DATA_TYPE::kLevel>(a_formData);
+		auto const& [actorLevelPair, skillLevelPair] = levelPair;
+
+		if (!a_actorbase.HasPCLevelMult()) {
+			auto [actorMin, actorMax] = actorLevelPair;
+			auto actorLevel = a_actorbase.actorData.level;
+
+			if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
+				if (actorLevel < actorMin || actorLevel > actorMax) {
+					return false;
+				}
+			} else if (actorMin < UINT16_MAX && actorLevel < actorMin) {
+				return false;
+			} else if (actorMax < UINT16_MAX && actorLevel > actorMax) {
+				return false;
+			}
+		}
+
+		auto skillType = skillLevelPair.first;
+		auto [skillMin, skillMax] = skillLevelPair.second;
+
+		if (skillType >= 0 && skillType < 18) {
+			auto const skillLevel = a_actorbase.playerSkills.values[skillType];
+
+			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+				if (skillLevel < skillMin || skillLevel > skillMax) {
+					return false;
+				}
+			} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
+				return false;
+			} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+				return false;
+			}
+		}
+
+		auto const chance = std::get<DATA_TYPE::kChance>(a_formData);
+		if (!numeric::essentially_equal(chance, 100.0)) {
+			if (auto rng = RNG::GetSingleton()->Generate<float>(0.0, 100.0); rng > chance) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+}
+
+namespace Distribute
+{
 	namespace DeathItem
 	{
 		struct detail  //AddObjectToContainer doesn't work with leveled items :s
@@ -678,4 +644,40 @@ namespace Distribute
 	{
 		void Hook();
 	}
+
+	template <class Form>
+	void for_each_form(RE::TESNPC& a_actorbase, FormDataVec<Form>& a_formDataVec, std::function<bool(const FormCountPair<Form>&)> a_fn)
+	{
+		for (auto& formData : a_formDataVec) {
+			if (!Filter::strings(a_actorbase, formData) || !Filter::forms(a_actorbase, formData) || !Filter::secondary(a_actorbase, formData)) {
+				continue;
+			}
+			if (auto const formCountPair = std::get<DATA_TYPE::kForm>(formData); formCountPair.first != nullptr && a_fn(formCountPair)) {
+				++std::get<DATA_TYPE::kNPCCount>(formData);
+			}
+		}
+	}
+
+	template <class Form>
+	void list_npc_count(const std::string& a_type, FormDataVec<Form>& a_formDataVec, const size_t a_totalNPCCount)
+	{
+		if (!a_formDataVec.empty()) {
+			logger::info("	{}", a_type);
+
+			for (auto& formData : a_formDataVec) {
+				auto [form, itemCount] = std::get<DATA_TYPE::kForm>(formData);
+				auto npcCount = std::get<DATA_TYPE::kNPCCount>(formData);
+
+				if (form) {
+					std::string name = form->GetName();
+					if (name.empty()) {
+						name = form->GetFormEditorID();
+					}
+					logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
+				}
+			}
+		}
+	}
+
+	void ApplyToNPCs();
 }

@@ -4,6 +4,7 @@
   "dependencies": [
     "boost-stl-interfaces",
     "boost-regex",
+    "frozen",
     "simpleini",
     "spdlog",
     "xbyak"

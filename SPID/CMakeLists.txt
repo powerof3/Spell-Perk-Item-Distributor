@@ -94,6 +94,7 @@ find_package(Boost
 	COMPONENTS
 		regex
 )
+find_package(frozen REQUIRED CONFIG)
 find_package(spdlog REQUIRED CONFIG)
 find_package(xbyak REQUIRED CONFIG)
 
@@ -157,6 +158,7 @@ target_link_libraries(
 		Boost::headers
 		Boost::regex
 		CommonLibSSE::CommonLibSSE
+		frozen::frozen
 		spdlog::spdlog
 		xbyak::xbyak
 )
