@@ -242,31 +242,27 @@ namespace Lookup
 					return it != filterMap.end() ? it->second : "";
 				};
 
-				for (auto& [optFormID, modName] : a_formIDVec) {
-					if (modName.has_value() && !optFormID.has_value()) {
-						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(modName.value()); filterMod) {
+				for (auto& [formID, modName] : a_formIDVec) {
+					if (modName && !formID) {
+						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
 							logger::info("			Filter ({}) INFO - mod found", filterMod->fileName);
 							a_formVec.push_back(filterMod);
 						} else {
-							logger::error("			Filter ({}) SKIP - mod cannot be found", modName.value());
+							logger::error("			Filter ({}) SKIP - mod cannot be found", *modName);
 						}
-					} else {
-						auto formID = optFormID.value();
-						RE::TESForm* filterForm = nullptr;
-						if (modName.has_value()) {
-							filterForm = a_dataHandler->LookupForm(formID, modName.value());
-						} else {
-							filterForm = RE::TESForm::LookupByID(formID);
-						}
+					} else if (formID) {
+						auto filterForm = modName ?
+                                         a_dataHandler->LookupForm(*formID, *modName) :
+                                         RE::TESForm::LookupByID(*formID);
 						if (filterForm) {
 							const auto formType = filterForm->GetFormType();
 							if (const auto type = lookup_form_type(formType); !type.empty()) {
 								a_formVec.push_back(filterForm);
 							} else {
-								logger::error("			Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", formID, modName.has_value() ? modName.value() : "", formType);
+								logger::error("			Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", *formID, modName.value_or(""), formType);
 							}
 						} else {
-							logger::error("			Filter [0x{:X}] ({}) SKIP - form doesn't exist", formID, modName.has_value() ? modName.value() : "");
+							logger::error("			Filter [0x{:X}] ({}) SKIP - form doesn't exist", *formID, modName.value_or(""));
 						}
 					}
 				}
@@ -287,26 +283,26 @@ namespace Lookup
 			Form* form;
 
 			if (std::holds_alternative<FormIDPair>(formIDPair_ini)) {
-				if (auto [formID, modName] = std::get<FormIDPair>(formIDPair_ini);	formID.has_value()) {					
-					if (modName.has_value()) {
-						form = a_dataHandler->LookupForm<Form>(formID.value(), modName.value());
+				if (auto [formID, modName] = std::get<FormIDPair>(formIDPair_ini); formID) {
+					if (modName) {
+						form = a_dataHandler->LookupForm<Form>(*formID, *modName);
 						if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
 							if (!form) {
-								const auto base = a_dataHandler->LookupForm(formID.value(), modName.value());
+								const auto base = a_dataHandler->LookupForm(*formID, *modName);
 								form = base ? static_cast<Form*>(base) : nullptr;
 							}
 						}
 					} else {
-						form = RE::TESForm::LookupByID<Form>(formID.value());
+						form = RE::TESForm::LookupByID<Form>(*formID);
 						if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
 							if (!form) {
-								const auto base = RE::TESForm::LookupByID(formID.value());
+								const auto base = RE::TESForm::LookupByID(*formID);
 								form = base ? static_cast<Form*>(base) : nullptr;
 							}
 						}
 					}
 					if (!form) {
-						logger::error("		{} [0x{:X}] ({}) FAIL - doesn't exist", a_type, formID.value(), modName.has_value() ? modName.value() : "");
+						logger::error("		{} [0x{:X}] ({}) FAIL - doesn't exist", a_type, *formID, modName.value_or(""));
 						continue;
 					}
 				}
@@ -539,10 +535,8 @@ namespace Filter
 	template <class Form>
 	bool secondary(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
 	{
-		auto const traits = std::get<DATA_TYPE::kTraits>(a_formData);
-
-		auto& [sex, isUnique, isSummonable] = traits;
-		if (sex != RE::SEX::kNone && a_actorbase.GetSex() != sex) {
+		const auto& [sex, isUnique, isSummonable] = std::get<DATA_TYPE::kTraits>(a_formData);
+		if (sex.has_value() && a_actorbase.GetSex() != sex.value()) {
 			return false;
 		}
 		if (isUnique.has_value() && a_actorbase.IsUnique() != isUnique.value()) {
@@ -552,8 +546,7 @@ namespace Filter
 			return false;
 		}
 
-		auto const levelPair = std::get<DATA_TYPE::kLevel>(a_formData);
-		auto const& [actorLevelPair, skillLevelPair] = levelPair;
+		const auto& [actorLevelPair, skillLevelPair] = std::get<DATA_TYPE::kLevel>(a_formData);
 
 		if (!a_actorbase.HasPCLevelMult()) {
 			auto [actorMin, actorMax] = actorLevelPair;
@@ -587,7 +580,7 @@ namespace Filter
 			}
 		}
 
-		auto const chance = std::get<DATA_TYPE::kChance>(a_formData);
+		const auto chance = std::get<DATA_TYPE::kChance>(a_formData);
 		if (!numeric::essentially_equal(chance, 100.0)) {
 			if (auto rng = RNG::GetSingleton()->Generate<float>(0.0, 100.0); rng > chance) {
 				return false;
@@ -600,8 +593,18 @@ namespace Filter
 
 namespace Distribute
 {
-	namespace DeathItem
+	class DeathItemManager : public RE::BSTEventSink<RE::TESDeathEvent>
 	{
+	public:
+		static DeathItemManager* GetSingleton()
+		{
+			static DeathItemManager singleton;
+			return &singleton;
+		}
+
+		static void Register();
+
+	protected:
 		struct detail  //AddObjectToContainer doesn't work with leveled items :s
 		{
 			static void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount, bool a_silent, std::uint32_t a_stackID, RE::BSScript::Internal::VirtualMachine* a_vm)
@@ -612,37 +615,24 @@ namespace Distribute
 			}
 		};
 
-		class DeathManager : public RE::BSTEventSink<RE::TESDeathEvent>
-		{
-		public:
-			static DeathManager* GetSingleton()
-			{
-				static DeathManager singleton;
-				return &singleton;
-			}
+		using EventResult = RE::BSEventNotifyControl;
 
-			static void Register();
+		EventResult ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override;
 
-		protected:
-			using EventResult = RE::BSEventNotifyControl;
+	private:
+		DeathItemManager() = default;
+		DeathItemManager(const DeathItemManager&) = delete;
+		DeathItemManager(DeathItemManager&&) = delete;
 
-			EventResult ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override;
+		~DeathItemManager() = default;
 
-		private:
-			DeathManager() = default;
-			DeathManager(const DeathManager&) = delete;
-			DeathManager(DeathManager&&) = delete;
+		DeathItemManager& operator=(const DeathItemManager&) = delete;
+		DeathItemManager& operator=(DeathItemManager&&) = delete;
+	};
 
-			~DeathManager() = default;
-
-			DeathManager& operator=(const DeathManager&) = delete;
-			DeathManager& operator=(DeathManager&&) = delete;
-		};
-	}
-
-	namespace Leveled
+	namespace LeveledActor
 	{
-		void Hook();
+		void Install();
 	}
 
 	template <class Form>

@@ -11,6 +11,7 @@ static FormDataVec<RE::TESPackage> packages;
 static FormDataVec<RE::BGSOutfit> outfits;
 static FormDataVec<RE::BGSKeyword> keywords;
 static FormDataVec<RE::TESBoundObject> deathItems;
+static FormDataVec<RE::TESFaction> factions;
 
 bool INI::Read()
 {
@@ -80,8 +81,6 @@ bool INI::Read()
 bool Lookup::GetForms()
 {
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-		logger::info("{:*^30}", "LOOKUP");
-
 		get_forms(dataHandler, "Spell", INIs["Spell"], spells);
 		get_forms(dataHandler, "Perk", INIs["Perk"], perks);
 		get_forms(dataHandler, "Item", INIs["Item"], items);
@@ -91,9 +90,10 @@ bool Lookup::GetForms()
 		get_forms(dataHandler, "Outfit", INIs["Outfit"], outfits);
 		get_forms(dataHandler, "Keyword", INIs["Keyword"], keywords);
 		get_forms(dataHandler, "DeathItem", INIs["DeathItem"], deathItems);
+		get_forms(dataHandler, "Faction", INIs["Faction"], factions);
 	}
 
-	const auto result = !spells.empty() || !perks.empty() || !items.empty() || !shouts.empty() || !levSpells.empty() || !packages.empty() || !outfits.empty() || !keywords.empty() || !deathItems.empty();
+	const auto result = !spells.empty() || !perks.empty() || !items.empty() || !shouts.empty() || !levSpells.empty() || !packages.empty() || !outfits.empty() || !keywords.empty() || !deathItems.empty() || factions.empty();
 
 	if (result) {
 		logger::info("{:*^30}", "PROCESSING");
@@ -107,6 +107,7 @@ bool Lookup::GetForms()
 		logger::info("	Adding {}/{} outfits(s)", outfits.size(), INIs["Outfit"].size());
 		logger::info("	Adding {}/{} keywords(s)", keywords.size(), INIs["Keyword"].size());
 		logger::info("	Adding {}/{} death item(s)", deathItems.size(), INIs["DeathItem"].size());
+		logger::info("	Adding {}/{} faction(s)", factions.size(), INIs["Faction"].size());
 	}
 	return result;
 }
@@ -147,9 +148,20 @@ void Distribute::ApplyToNPCs()
 					return actorEffects && actorEffects->AddLevSpell(levSpell);
 				});
 
-				for_each_form<RE::BGSOutfit>(*actorbase, outfits, [&](const auto& a_outfitsPair) {
-					actorbase->defaultOutfit = a_outfitsPair.first;
+				for_each_form<RE::BGSOutfit>(*actorbase, outfits, [&](const auto& a_outfitPair) {
+					actorbase->defaultOutfit = a_outfitPair.first;
 					return true;
+				});
+
+				for_each_form<RE::TESFaction>(*actorbase, factions, [&](const auto& a_factionPair) {
+					if (!actorbase->IsInFaction(a_factionPair.first)) {
+						RE::FACTION_RANK faction;
+						faction.faction = a_factionPair.first;
+						faction.rank = 1;
+						actorbase->factions.push_back(faction);
+						return true;
+					}
+					return false;
 				});
 
 				for_each_form<RE::TESBoundObject>(*actorbase, items, [&](const auto& a_itemPair) {
@@ -200,12 +212,15 @@ void Distribute::ApplyToNPCs()
 		if (!outfits.empty()) {
 			list_npc_count("Outfits", outfits, totalNPCs);
 		}
+		if (!factions.empty()) {
+			list_npc_count("Factions", factions, totalNPCs);
+		}
 	}
 }
 
-namespace Distribute::DeathItem
+namespace Distribute
 {
-	void DeathManager::Register()
+	void DeathItemManager::Register()
 	{
 		if (deathItems.empty()) {
 			return;
@@ -214,17 +229,17 @@ namespace Distribute::DeathItem
 		auto scripts = RE::ScriptEventSourceHolder::GetSingleton();
 		if (scripts) {
 			scripts->AddEventSink(GetSingleton());
-			logger::info("	Registered {}"sv, typeid(DeathManager).name());
+			logger::info("	Registered {}"sv, typeid(DeathItemManager).name());
 		}
 	}
 
-	DeathManager::EventResult DeathManager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
+	DeathItemManager::EventResult DeathItemManager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
 	{
-		constexpr auto isNPC = [](auto&& a_ref) {
+		constexpr auto is_NPC = [](auto&& a_ref) {
 			return a_ref && !a_ref->IsPlayerRef();
 		};
 
-		if (a_event && a_event->dead && isNPC(a_event->actorDying)) {
+		if (a_event && a_event->dead && is_NPC(a_event->actorDying)) {
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto base = actor ? actor->GetActorBase() : nullptr;
 			if (actor && base) {
@@ -240,7 +255,7 @@ namespace Distribute::DeathItem
 	}
 }
 
-namespace Distribute::Leveled
+namespace Distribute::LeveledActor
 {
 	struct SetObjectReference
 	{
@@ -259,7 +274,7 @@ namespace Distribute::Leveled
 					}
 					return false;
 				});
-				
+
 				for_each_form<RE::BGSOutfit>(*actorbase, outfits, [&](const auto& a_outfitsPair) {
 					actorbase->defaultOutfit = a_outfitsPair.first;
 					return true;
@@ -269,7 +284,7 @@ namespace Distribute::Leveled
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	void Hook()
+	void Install()
 	{
 		if (items.empty() && outfits.empty()) {
 			return;

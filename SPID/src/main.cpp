@@ -3,13 +3,55 @@
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
 	if (a_message->type == SKSE::MessagingInterface::kDataLoaded) {
+		logger::info("{:*^30}", "LOOKUP");
 		if (Lookup::GetForms()) {
 			Distribute::ApplyToNPCs();
-			Distribute::Leveled::Hook();
-			Distribute::DeathItem::DeathManager::Register();
+			Distribute::LeveledActor::Install();
+			Distribute::DeathItemManager::Register();
 		}
 	}
 }
+
+class DistributionManager : public RE::BSTEventSink<SKSE::ModCallbackEvent>
+{
+public:
+	static DistributionManager* GetSingleton()
+	{
+		static DistributionManager singleton;
+		return &singleton;
+	}
+
+protected:
+	using EventResult = RE::BSEventNotifyControl;
+
+	EventResult ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override
+	{
+		if (a_event && a_event->eventName == "KID_KeywordDistributionDone") {
+			logger::info("{:*^30}", "LOOKUP");
+			logger::info("Starting distribution since KID is done...");
+			if (Lookup::GetForms()) {
+				Distribute::ApplyToNPCs();
+				Distribute::LeveledActor::Install();
+				Distribute::DeathItemManager::Register();
+
+				auto modEvent = SKSE::GetModCallbackEventSource();
+				modEvent->RemoveEventSink(GetSingleton());
+			}
+		}
+
+		return EventResult::kContinue;
+	}
+
+private:
+	DistributionManager() = default;
+	DistributionManager(const DistributionManager&) = delete;
+	DistributionManager(DistributionManager&&) = delete;
+
+	~DistributionManager() = default;
+
+	DistributionManager& operator=(const DistributionManager&) = delete;
+	DistributionManager& operator=(DistributionManager&&) = delete;
+};
 
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
@@ -55,9 +97,17 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
 	SKSE::Init(a_skse);
 
+	const auto kidHandle = GetModuleHandle(L"po3_KeywordItemDistributor");
+	logger::info("Keyword Item Distributor (KID) detected : {}", kidHandle != nullptr);
+
 	if (INI::Read()) {
-		auto messaging = SKSE::GetMessagingInterface();
-		messaging->RegisterListener(MessageHandler);
+		if (kidHandle != nullptr) {
+			auto modEvent = SKSE::GetModCallbackEventSource();
+			modEvent->AddEventSink(DistributionManager::GetSingleton());
+		} else {
+			auto messaging = SKSE::GetMessagingInterface();
+			messaging->RegisterListener(MessageHandler);
+		}
 	}
 
 	return true;
