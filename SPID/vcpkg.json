@@ -1,6 +1,6 @@
 {
   "name": "spid",
-  "version-string": "5.0.0",
+  "version-string": "5.0.5",
   "description": "Spell Perk Item Distributor",
   "homepage": "https://github.com/powerof3/Spell-Perk-Item-Distributor",
   "license": "MIT",
@@ -10,7 +10,6 @@
     "frozen",
     "robin-hood-hashing",
     "simpleini",
-    "spdlog",
-    "xbyak"
+    "spdlog"
   ]
 }

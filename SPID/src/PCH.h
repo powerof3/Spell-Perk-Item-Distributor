@@ -11,7 +11,6 @@
 #include <frozen/map.h>
 #include <robin_hood.h>
 #include <spdlog/sinks/basic_file_sink.h>
-#include <xbyak/xbyak.h>
 
 #define DLLEXPORT __declspec(dllexport)
 
@@ -25,20 +24,11 @@ using RNG = SKSE::stl::RNG;
 
 namespace stl
 {
-	using SKSE::stl::to_underlying;
-
 	template <class F, std::size_t idx, class T>
 	void write_vfunc()
 	{
 		REL::Relocation<std::uintptr_t> vtbl{ F::VTABLE[0] };
 		T::func = vtbl.write_vfunc(idx, T::thunk);
-	}
-
-	template <class T>
-	void write_thunk_call(std::uintptr_t a_src)
-	{
-		auto& trampoline = SKSE::GetTrampoline();
-		T::func = trampoline.write_call<5>(a_src, T::thunk);
 	}
 }
 

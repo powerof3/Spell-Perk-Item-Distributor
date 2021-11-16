@@ -60,10 +60,6 @@ endif()
 
 # ---- Globals ----
 
-add_compile_definitions(
-	SKSE_SUPPORT_XBYAK
-)
-
 if (MSVC)
 	if (NOT ${CMAKE_GENERATOR} STREQUAL "Ninja")
 		add_compile_options(
@@ -96,7 +92,6 @@ find_package(Boost
 )
 find_package(frozen REQUIRED CONFIG)
 find_package(spdlog REQUIRED CONFIG)
-find_package(xbyak REQUIRED CONFIG)
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 
@@ -155,12 +150,10 @@ target_include_directories(
 target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
-		Boost::headers
 		Boost::regex
 		CommonLibSSE::CommonLibSSE
 		frozen::frozen
 		spdlog::spdlog
-		xbyak::xbyak
 )
 
 target_precompile_headers(

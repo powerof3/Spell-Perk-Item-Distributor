@@ -7,7 +7,6 @@
     "frozen",
     "robin-hood-hashing",
     "simpleini",
-    "spdlog",
-    "xbyak"
+    "spdlog"
   ]
 }
