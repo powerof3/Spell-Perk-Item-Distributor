@@ -78,8 +78,8 @@ namespace INI
 
 		//[FORMID/ESP] / string
 		std::variant<FormIDPair, std::string> item_ID;
-		if (kFormID < size) {
-			const auto& formSection = sections[kFormID];
+		try {
+			auto& formSection = sections.at(kFormID);
 			if (formSection.find('~') != std::string::npos || string::is_only_hex(formSection)) {
 				FormIDPair pair;
 				pair.second = std::nullopt;
@@ -96,17 +96,17 @@ namespace INI
 			} else {
 				item_ID.emplace<std::string>(formSection);
 			}
-		} else {
+		} catch (...) {
 			FormIDPair pair = { 0, std::nullopt };
 			item_ID.emplace<FormIDPair>(pair);
 		}
 		formIDPair_ini = item_ID;
 
 		//KEYWORDS
-		if (kStrings < size) {
+		try {
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
 
-			auto split_str = detail::split_sub_string(sections[kStrings]);
+			auto split_str = detail::split_sub_string(sections.at(kStrings));
 			for (auto& str : split_str) {
 				if (str.find("+"sv) != std::string::npos) {
 					auto strings = detail::split_sub_string(str, "+");
@@ -124,13 +124,14 @@ namespace INI
 					strings_MATCH.emplace_back(str);
 				}
 			}
+		} catch (...) {
 		}
 
 		//FILTER FORMS
-		if (kStrings < size) {
+		try {
 			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
 
-			auto split_IDs = detail::split_sub_string(sections[kFilterIDs]);
+			auto split_IDs = detail::split_sub_string(sections.at(kFilterIDs));
 			for (auto& IDs : split_IDs) {
 				if (IDs.find("+"sv) != std::string::npos) {
 					auto splitIDs_ALL = detail::split_sub_string(IDs, "+");
@@ -145,13 +146,15 @@ namespace INI
 					filterIDs_MATCH.push_back(detail::get_formID(IDs));
 				}
 			}
+		} catch (...) {
+			logger::info("caught filter");
 		}
 
 		//LEVEL
 		ActorLevel actorLevelPair = { UINT16_MAX, UINT16_MAX };
 		std::vector<SkillLevel> skillLevelPairs;
-		if (kLevel < size) {
-			auto split_levels = detail::split_sub_string(sections[kLevel]);
+		try {
+			auto split_levels = detail::split_sub_string(sections.at(kLevel));
 			for (auto& levels : split_levels) {
 				if (levels.find('(') != std::string::npos) {
 					//skill(min/max)
@@ -186,14 +189,15 @@ namespace INI
 					}
 				}
 			}
+		} catch (...) {
 		}
 		level_ini = { actorLevelPair, skillLevelPairs };
 
 		//TRAITS
-		if (kTraits < size) {
+		try {
 			auto& [sex, unique, summonable] = traits_ini;
 
-			auto split_traits = detail::split_sub_string(sections[kTraits], "/");
+			auto split_traits = detail::split_sub_string(sections.at(kTraits), "/");
 			for (auto& trait : split_traits) {
 				if (trait == "M") {
 					sex = RE::SEX::kMale;
@@ -209,26 +213,27 @@ namespace INI
 					summonable = false;
 				}
 			}
+		} catch (...) {
 		}
 
 		//ITEMCOUNT
-		if (kItemCount < size) {
-			const auto& itemCountStr = sections[kItemCount];
+		itemCount_ini = 1;
+		try {
+			const auto& itemCountStr = sections.at(kItemCount);
 			if (!itemCountStr.empty() && itemCountStr.find("NONE"sv) == std::string::npos) {
 				itemCount_ini = string::lexical_cast<std::int32_t>(itemCountStr);
 			}
-		} else {
-			itemCount_ini = 1;
+		} catch (...) {
 		}
 
 		//CHANCE
-		if (kChance < size) {
-			const auto& chanceStr = sections[kChance];
+		chance_ini = 100;
+		try {
+			const auto& chanceStr = sections.at(kChance);
 			if (!chanceStr.empty() && chanceStr.find("NONE"sv) == std::string::npos) {
 				chance_ini = string::lexical_cast<float>(chanceStr);
 			}
-		} else {
-			chance_ini = 100.0f;
+		} catch (...) {
 		}
 
 		if (sanitized_value != a_value) {

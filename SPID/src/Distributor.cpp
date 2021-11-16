@@ -57,19 +57,23 @@ bool INI::Read()
 
 			for (auto& [key, entry] : *values) {
 				auto [data, sanitized_str] = parse_ini(entry);
+				
 				INIs[key.pItem].emplace_back(data);
-				if (sanitized_str.has_value()) {
-					oldFormatMap.emplace(key, std::make_pair(entry, sanitized_str.value()));
+				
+				if (sanitized_str) {
+					oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
 				}
 			}
 
 			if (!oldFormatMap.empty()) {
 				logger::info("		sanitizing {} entries", oldFormatMap.size());
-				for (auto [key, entry] : oldFormatMap) {
+				
+				for (auto& [key, entry] : oldFormatMap) {
 					auto& [original, sanitized] = entry;
 					ini.DeleteValue("", key.pItem, original.c_str());
 					ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
 				}
+				
 				ini.SaveFile(path.c_str());
 			}
 		}
