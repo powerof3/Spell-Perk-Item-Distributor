@@ -67,7 +67,6 @@ namespace DATA
 }
 using DATA_TYPE = DATA::TYPE;
 
-
 using FormIDPair = std::pair<
 	std::optional<RE::FormID>,
 	std::optional<std::string>>;
@@ -91,7 +90,7 @@ using INIData = std::tuple<
 	std::variant<FormIDPair, std::string>,
 	std::array<StringVec, 4>,
 	std::array<FormIDPairVec, 3>,
-	std::pair<ActorLevel, SkillLevel>,
+	std::pair<ActorLevel, std::vector<SkillLevel>>,
 	Traits,
 	ItemCount,
 	Chance>;
@@ -106,7 +105,7 @@ using FormData = std::tuple<
 	FormCountPair<Form>,
 	std::array<StringVec, 4>,
 	std::array<FormVec, 3>,
-	std::pair<ActorLevel, SkillLevel>,
+	std::pair<ActorLevel, std::vector<SkillLevel>>,
 	Traits,
 	Chance,
 	NPCCount>;

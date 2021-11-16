@@ -4,6 +4,9 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
 	if (a_message->type == SKSE::MessagingInterface::kDataLoaded) {
 		logger::info("{:*^30}", "LOOKUP");
+
+		Cache::EditorID::GetSingleton()->FillMap();
+		
 		if (Lookup::GetForms()) {
 			Distribute::ApplyToNPCs();
 			Distribute::LeveledActor::Install();
@@ -29,6 +32,9 @@ protected:
 		if (a_event && a_event->eventName == "KID_KeywordDistributionDone") {
 			logger::info("{:*^30}", "LOOKUP");
 			logger::info("Starting distribution since KID is done...");
+			
+			Cache::EditorID::GetSingleton()->FillMap();
+			
 			if (Lookup::GetForms()) {
 				Distribute::ApplyToNPCs();
 				Distribute::LeveledActor::Install();

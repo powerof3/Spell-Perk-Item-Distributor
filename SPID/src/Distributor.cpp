@@ -125,6 +125,15 @@ void Distribute::ApplyToNPCs()
 					return false;
 				});
 
+				for_each_form<RE::TESFaction>(*actorbase, factions, [&](const auto& a_factionPair) {
+					if (!actorbase->IsInFaction(a_factionPair.first)) {
+						RE::FACTION_RANK faction{ a_factionPair.first, 1 };
+						actorbase->factions.push_back(faction);
+						return true;
+					}
+					return false;
+				});
+
 				for_each_form<RE::SpellItem>(*actorbase, spells, [&](const auto& a_spellPair) {
 					const auto spell = a_spellPair.first;
 					const auto actorEffects = actorbase->GetSpellList();
@@ -151,17 +160,6 @@ void Distribute::ApplyToNPCs()
 				for_each_form<RE::BGSOutfit>(*actorbase, outfits, [&](const auto& a_outfitPair) {
 					actorbase->defaultOutfit = a_outfitPair.first;
 					return true;
-				});
-
-				for_each_form<RE::TESFaction>(*actorbase, factions, [&](const auto& a_factionPair) {
-					if (!actorbase->IsInFaction(a_factionPair.first)) {
-						RE::FACTION_RANK faction;
-						faction.faction = a_factionPair.first;
-						faction.rank = 1;
-						actorbase->factions.push_back(faction);
-						return true;
-					}
-					return false;
 				});
 
 				for_each_form<RE::TESBoundObject>(*actorbase, items, [&](const auto& a_itemPair) {

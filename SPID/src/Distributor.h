@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Cache.h"
 #include "Defs.h"
 
 namespace INI
@@ -14,6 +15,11 @@ namespace INI
 			return std::vector<std::string>();
 		}
 
+		inline bool is_mod_name(const std::string& a_str)
+		{
+			return a_str.rfind(".esp") != std::string::npos || a_str.rfind(".esl") != std::string::npos || a_str.rfind(".esm ") != std::string::npos;
+		}
+
 		inline FormIDPair get_formID(const std::string& a_str)
 		{
 			if (a_str.find("~"sv) != std::string::npos) {
@@ -21,7 +27,7 @@ namespace INI
 				return std::make_pair(
 					string::lexical_cast<RE::FormID>(splitID.at(kFormID), true),
 					splitID.at(kESP));
-			} else if (string::icontains(a_str, ".esp") || string::icontains(a_str, ".esl") || string::icontains(a_str, ".esm")) {
+			} else if (is_mod_name(a_str) || !string::is_only_hex(a_str)) {
 				return std::make_pair(
 					std::nullopt,
 					a_str);
@@ -41,9 +47,13 @@ namespace INI
 				string::replace_first_instance(newValue, " - ", "~");
 			}
 
-			//strip spaces
-			static const boost::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_spaces, "$1");
+			//strip spaces between " | "
+			static const boost::regex re_bar(R"(\s*\|\s*)", boost::regex_constants::optimize);
+			newValue = regex_replace(newValue, re_bar, "|");
+
+			//strip spaces between " , "
+			static const boost::regex re_comma(R"(\s*,\s*)", boost::regex_constants::optimize);
+			newValue = regex_replace(newValue, re_comma, ",");
 
 			//strip leading zeros
 			static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
@@ -62,12 +72,15 @@ namespace INI
 		auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, traits_ini, itemCount_ini, chance_ini] = data;
 
 		auto sanitized_value = detail::sanitize(a_value);
-		auto sections = string::split(sanitized_value, "|");
+
+		const auto sections = string::split(sanitized_value, "|");
+		const auto size = sections.size();
 
 		//[FORMID/ESP] / string
 		std::variant<FormIDPair, std::string> item_ID;
-		try {
-			if (auto formSection = sections.at(kFormID); formSection.find('~') != std::string::npos || string::is_only_hex(formSection)) {
+		if (kFormID < size) {
+			const auto& formSection = sections[kFormID];
+			if (formSection.find('~') != std::string::npos || string::is_only_hex(formSection)) {
 				FormIDPair pair;
 				pair.second = std::nullopt;
 
@@ -83,17 +96,18 @@ namespace INI
 			} else {
 				item_ID.emplace<std::string>(formSection);
 			}
-		} catch (...) {
+		} else {
 			FormIDPair pair = { 0, std::nullopt };
 			item_ID.emplace<FormIDPair>(pair);
 		}
 		formIDPair_ini = item_ID;
 
 		//KEYWORDS
-		try {
+		if (kStrings < size) {
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
 
-			for (auto split_str = detail::split_sub_string(sections.at(kStrings)); auto& str : split_str) {
+			auto split_str = detail::split_sub_string(sections[kStrings]);
+			for (auto& str : split_str) {
 				if (str.find("+"sv) != std::string::npos) {
 					auto strings = detail::split_sub_string(str, "+");
 					strings_ALL.insert(strings_ALL.end(), strings.begin(), strings.end());
@@ -110,14 +124,14 @@ namespace INI
 					strings_MATCH.emplace_back(str);
 				}
 			}
-		} catch (...) {
 		}
 
 		//FILTER FORMS
-		try {
+		if (kStrings < size) {
 			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
 
-			for (auto split_IDs = detail::split_sub_string(sections.at(kFilterIDs)); auto& IDs : split_IDs) {
+			auto split_IDs = detail::split_sub_string(sections[kFilterIDs]);
+			for (auto& IDs : split_IDs) {
 				if (IDs.find("+"sv) != std::string::npos) {
 					auto splitIDs_ALL = detail::split_sub_string(IDs, "+");
 					for (auto& IDs_ALL : splitIDs_ALL) {
@@ -131,14 +145,14 @@ namespace INI
 					filterIDs_MATCH.push_back(detail::get_formID(IDs));
 				}
 			}
-		} catch (...) {
 		}
 
 		//LEVEL
 		ActorLevel actorLevelPair = { UINT16_MAX, UINT16_MAX };
-		SkillLevel skillLevelPair = { UINT32_MAX, { UINT8_MAX, UINT8_MAX } };
-		try {
-			for (auto split_levels = detail::split_sub_string(sections.at(kLevel)); auto& levels : split_levels) {
+		std::vector<SkillLevel> skillLevelPairs;
+		if (kLevel < size) {
+			auto split_levels = detail::split_sub_string(sections[kLevel]);
+			for (auto& levels : split_levels) {
 				if (levels.find('(') != std::string::npos) {
 					//skill(min/max)
 					auto sanitizedLevel = string::remove_non_alphanumeric(levels);
@@ -149,11 +163,13 @@ namespace INI
 							auto type = string::lexical_cast<std::uint32_t>(skills.at(0));
 							auto minLevel = string::lexical_cast<std::uint8_t>(skills.at(1));
 							auto maxLevel = string::lexical_cast<std::uint8_t>(skills.at(2));
-							skillLevelPair = { type, { minLevel, maxLevel } };
+
+							skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
 						} else {
 							auto type = string::lexical_cast<std::uint32_t>(skills.at(0));
 							auto minLevel = string::lexical_cast<std::uint8_t>(skills.at(1));
-							skillLevelPair = { type, { minLevel, UINT8_MAX } };
+
+							skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
 						}
 					}
 				} else {
@@ -161,21 +177,24 @@ namespace INI
 					if (split_level.size() > 1) {
 						auto minLevel = string::lexical_cast<std::uint16_t>(split_level.at(0));
 						auto maxLevel = string::lexical_cast<std::uint16_t>(split_level.at(1));
+
 						actorLevelPair = { minLevel, maxLevel };
 					} else {
 						auto level = string::lexical_cast<std::uint16_t>(levels);
+
 						actorLevelPair = { level, UINT16_MAX };
 					}
 				}
 			}
-		} catch (...) {
 		}
-		level_ini = { actorLevelPair, skillLevelPair };
+		level_ini = { actorLevelPair, skillLevelPairs };
 
 		//TRAITS
-		try {
+		if (kTraits < size) {
 			auto& [sex, unique, summonable] = traits_ini;
-			for (auto split_traits = detail::split_sub_string(sections.at(kTraits), "/"); auto& trait : split_traits) {
+
+			auto split_traits = detail::split_sub_string(sections[kTraits], "/");
+			for (auto& trait : split_traits) {
 				if (trait == "M") {
 					sex = RE::SEX::kMale;
 				} else if (trait == "F") {
@@ -190,25 +209,26 @@ namespace INI
 					summonable = false;
 				}
 			}
-		} catch (...) {
 		}
 
 		//ITEMCOUNT
-		itemCount_ini = 1;
-		try {
-			if (const auto itemCountStr = sections.at(kItemCount); !itemCountStr.empty() && itemCountStr.find("NONE"sv) == std::string::npos) {
+		if (kItemCount < size) {
+			const auto& itemCountStr = sections[kItemCount];
+			if (!itemCountStr.empty() && itemCountStr.find("NONE"sv) == std::string::npos) {
 				itemCount_ini = string::lexical_cast<std::int32_t>(itemCountStr);
 			}
-		} catch (...) {
+		} else {
+			itemCount_ini = 1;
 		}
 
 		//CHANCE
-		chance_ini = 100;
-		try {
-			if (const auto chanceStr = sections.at(kChance); !chanceStr.empty() && chanceStr.find("NONE"sv) == std::string::npos) {
+		if (kChance < size) {
+			const auto& chanceStr = sections[kChance];
+			if (!chanceStr.empty() && chanceStr.find("NONE"sv) == std::string::npos) {
 				chance_ini = string::lexical_cast<float>(chanceStr);
 			}
-		} catch (...) {
+		} else {
+			chance_ini = 100.0f;
 		}
 
 		if (sanitized_value != a_value) {
@@ -224,42 +244,41 @@ namespace Lookup
 {
 	namespace detail
 	{
-		inline constexpr frozen::map<RE::FormType, std::string_view, 7> filterMap = {
-			{ RE::FormType::Faction, "Faction"sv },
-			{ RE::FormType::Class, "Class"sv },
-			{ RE::FormType::CombatStyle, "CombatStyle"sv },
-			{ RE::FormType::Race, "Race"sv },
-			{ RE::FormType::Outfit, "Outfit"sv },
-			{ RE::FormType::NPC, "NPC"sv },
-			{ RE::FormType::VoiceType, "VoiceType"sv }
-		};
-
 		inline void formID_to_form(RE::TESDataHandler* a_dataHandler, const FormIDPairVec& a_formIDVec, FormVec& a_formVec)
 		{
 			if (!a_formIDVec.empty()) {
-				constexpr auto lookup_form_type = [](const RE::FormType a_type) {
-					auto it = filterMap.find(a_type);
-					return it != filterMap.end() ? it->second : "";
-				};
-
 				for (auto& [formID, modName] : a_formIDVec) {
 					if (modName && !formID) {
-						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
-							logger::info("			Filter ({}) INFO - mod found", filterMod->fileName);
-							a_formVec.push_back(filterMod);
+						if (INI::detail::is_mod_name(*modName)) {
+							if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
+								logger::info("			Filter ({}) INFO - mod found", filterMod->fileName);
+								a_formVec.push_back(filterMod);
+							} else {
+								logger::error("			Filter ({}) SKIP - mod cannot be found", *modName);
+							}
 						} else {
-							logger::error("			Filter ({}) SKIP - mod cannot be found", *modName);
+							auto filterForm = RE::TESForm::LookupByEditorID(*modName);
+							if (filterForm) {
+								const auto formType = filterForm->GetFormType();
+								if (const auto type = Cache::FormType::GetWhitelistFormString(formType); !type.empty()) {
+									a_formVec.push_back(filterForm);
+								} else {
+									logger::error("			Filter ({}) SKIP - invalid formtype ({})", *modName, Cache::FormType::GetBlacklistFormString(formType));
+								}
+							} else {
+								logger::error("			Filter ({}) SKIP - form doesn't exist", *modName);
+							}
 						}
 					} else if (formID) {
 						auto filterForm = modName ?
-                                         a_dataHandler->LookupForm(*formID, *modName) :
-                                         RE::TESForm::LookupByID(*formID);
+                                              a_dataHandler->LookupForm(*formID, *modName) :
+                                              RE::TESForm::LookupByID(*formID);
 						if (filterForm) {
 							const auto formType = filterForm->GetFormType();
-							if (const auto type = lookup_form_type(formType); !type.empty()) {
+							if (const auto type = Cache::FormType::GetWhitelistFormString(formType); !type.empty()) {
 								a_formVec.push_back(filterForm);
 							} else {
-								logger::error("			Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", *formID, modName.value_or(""), formType);
+								logger::error("			Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", *formID, modName.value_or(""), Cache::FormType::GetBlacklistFormString(formType));
 							}
 						} else {
 							logger::error("			Filter [0x{:X}] ({}) SKIP - form doesn't exist", *formID, modName.value_or(""));
@@ -280,7 +299,7 @@ namespace Lookup
 		logger::info("	Starting {} lookup", a_type);
 
 		for (auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, gender_ini, itemCount_ini, chance_ini] : a_INIDataVec) {
-			Form* form;
+			Form* form = nullptr;
 
 			if (std::holds_alternative<FormIDPair>(formIDPair_ini)) {
 				if (auto [formID, modName] = std::get<FormIDPair>(formIDPair_ini); formID) {
@@ -302,8 +321,7 @@ namespace Lookup
 						}
 					}
 					if (!form) {
-						logger::error("		{} [0x{:X}] ({}) FAIL - doesn't exist", a_type, *formID, modName.value_or(""));
-						continue;
+						logger::error("		{} [0x{:X}] ({}) FAIL - formID doesn't exist", a_type, *formID, modName.value_or(""));
 					}
 				}
 			} else if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
@@ -339,10 +357,26 @@ namespace Lookup
 							form = keyword;
 						} else {
 							logger::critical("		{} FAIL - couldn't create keyword", keywordName);
-							continue;
 						}
 					}
 				}
+			} else if (std::holds_alternative<std::string>(formIDPair_ini)) {
+				if (auto editorID = std::get<std::string>(formIDPair_ini); !editorID.empty()) {
+					form = RE::TESForm::LookupByEditorID<Form>(editorID);
+					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
+						if (!form) {
+							const auto base = RE::TESForm::LookupByEditorID(editorID);
+							form = base ? static_cast<Form*>(base) : nullptr;
+						}
+					}
+					if (!form) {
+						logger::error("		{} {} FAIL - editorID doesn't exist", a_type, editorID);
+					}
+				}
+			}
+
+			if (!form) {
+				continue;
 			}
 
 			std::array<FormVec, 3> filterForms;
@@ -471,10 +505,14 @@ namespace Filter
 		}
 
 		const std::string name = a_actorbase.GetName();
+		const std::string editorID = Cache::EditorID::GetSingleton()->GetEditorID(a_actorbase.GetFormID());
 
 		if (!strings_NOT.empty()) {
 			bool result = false;
 			if (!name.empty() && detail::name::matches(name, strings_NOT)) {
+				result = true;
+			}
+			if (!result && !editorID.empty() && detail::name::matches(editorID, strings_NOT)) {
 				result = true;
 			}
 			if (!result && detail::keyword::matches(a_actorbase, strings_NOT)) {
@@ -484,9 +522,13 @@ namespace Filter
 				return false;
 			}
 		}
+
 		if (!strings_MATCH.empty()) {
 			bool result = false;
 			if (!name.empty() && detail::name::matches(name, strings_MATCH)) {
+				result = true;
+			}
+			if (!result && !editorID.empty() && detail::name::matches(editorID, strings_MATCH)) {
 				result = true;
 			}
 			if (!result && detail::keyword::matches(a_actorbase, strings_MATCH)) {
@@ -496,9 +538,13 @@ namespace Filter
 				return false;
 			}
 		}
+
 		if (!strings_ANY.empty()) {
 			bool result = false;
 			if (!name.empty() && detail::name::contains(name, strings_ANY)) {
+				result = true;
+			}
+			if (!result && !editorID.empty() && detail::name::contains(editorID, strings_ANY)) {
 				result = true;
 			}
 			if (!result && detail::keyword::contains(a_actorbase, strings_ANY)) {
@@ -536,17 +582,17 @@ namespace Filter
 	bool secondary(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
 	{
 		const auto& [sex, isUnique, isSummonable] = std::get<DATA_TYPE::kTraits>(a_formData);
-		if (sex.has_value() && a_actorbase.GetSex() != sex.value()) {
+		if (sex && a_actorbase.GetSex() != *sex) {
 			return false;
 		}
-		if (isUnique.has_value() && a_actorbase.IsUnique() != isUnique.value()) {
+		if (isUnique && a_actorbase.IsUnique() != *isUnique) {
 			return false;
 		}
-		if (isSummonable.has_value() && a_actorbase.IsSummonable() != isSummonable.value()) {
+		if (isSummonable && a_actorbase.IsSummonable() != *isSummonable) {
 			return false;
 		}
 
-		const auto& [actorLevelPair, skillLevelPair] = std::get<DATA_TYPE::kLevel>(a_formData);
+		const auto& [actorLevelPair, skillLevelPairs] = std::get<DATA_TYPE::kLevel>(a_formData);
 
 		if (!a_actorbase.HasPCLevelMult()) {
 			auto [actorMin, actorMax] = actorLevelPair;
@@ -563,20 +609,21 @@ namespace Filter
 			}
 		}
 
-		auto skillType = skillLevelPair.first;
-		auto [skillMin, skillMax] = skillLevelPair.second;
+		for (auto& [skillType, skill] : skillLevelPairs) {
+			auto [skillMin, skillMax] = skill;
 
-		if (skillType >= 0 && skillType < 18) {
-			auto const skillLevel = a_actorbase.playerSkills.values[skillType];
+			if (skillType >= 0 && skillType < 18) {
+				auto const skillLevel = a_actorbase.playerSkills.values[skillType];
 
-			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-				if (skillLevel < skillMin || skillLevel > skillMax) {
+				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+					if (skillLevel < skillMin || skillLevel > skillMax) {
+						return false;
+					}
+				} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
+					return false;
+				} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
 					return false;
 				}
-			} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
-				return false;
-			} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
-				return false;
 			}
 		}
 
@@ -659,10 +706,13 @@ namespace Distribute
 				auto npcCount = std::get<DATA_TYPE::kNPCCount>(formData);
 
 				if (form) {
-					std::string name = form->GetName();
-					if (name.empty()) {
+					std::string name;
+					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 						name = form->GetFormEditorID();
+					} else {
+						name = Cache::EditorID::GetSingleton()->GetEditorID(form->GetFormID());
 					}
+
 					logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
 				}
 			}

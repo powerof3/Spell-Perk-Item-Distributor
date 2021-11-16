@@ -61,9 +61,13 @@ namespace INI
 			replace_all(newValue, "|", " | ");
 			replace_all(newValue, ",", " , ");
 
-			//remove excess spaces
-			static const boost::regex re_spaces(R"(\B\s+|\s+\B)", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_spaces, " ");
+			//strip spaces between " | "
+			static const boost::regex re_bar(R"(\s*\|\s*)", boost::regex_constants::optimize);
+			newValue = regex_replace(newValue, re_bar, "|");
+
+			//strip spaces between " , "
+			static const boost::regex re_comma(R"(\s*,\s*)", boost::regex_constants::optimize);
+			newValue = regex_replace(newValue, re_comma, ",");
 
 			//strip leading zeros
 			static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);

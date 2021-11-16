@@ -5,6 +5,7 @@
     "boost-stl-interfaces",
     "boost-regex",
     "frozen",
+    "robin-hood-hashing",
     "simpleini",
     "spdlog",
     "xbyak"
