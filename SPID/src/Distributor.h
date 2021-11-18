@@ -72,9 +72,7 @@ namespace INI
 		auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, traits_ini, itemCount_ini, chance_ini] = data;
 
 		auto sanitized_value = detail::sanitize(a_value);
-
 		const auto sections = string::split(sanitized_value, "|");
-		const auto size = sections.size();
 
 		//[FORMID/ESP] / string
 		std::variant<FormIDPair, std::string> item_ID;
