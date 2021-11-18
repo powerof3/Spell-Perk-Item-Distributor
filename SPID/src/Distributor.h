@@ -145,7 +145,6 @@ namespace INI
 				}
 			}
 		} catch (...) {
-			logger::info("caught filter");
 		}
 
 		//LEVEL
