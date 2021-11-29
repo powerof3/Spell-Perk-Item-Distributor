@@ -9,6 +9,7 @@
     "boost-regex",
     "frozen",
     "robin-hood-hashing",
+    "rsm-binary-io",
     "simpleini",
     "spdlog"
   ]
