@@ -31,7 +31,8 @@ Distributes spells/perks/items/shouts/leveled-spells/packages/outfits/death-item
 ## Building
 ```
 git clone https://github.com/powerof3/Spell-Perk-Item-Distributor.git
-cd Spell-Perk-Item-Distributor
+# note need to go to SPID subdirectory due to cmake issues
+cd Spell-Perk-Item-Distributor/SPID
 ```
 ### SSE
 ```
