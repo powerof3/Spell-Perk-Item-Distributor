@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_SpellPerkItemDistributor" CACHE STRING "")
 set(VERSION 6.0.3 CACHE STRING "")
 set(AE_VERSION 1)
+set(VR_VERSION 1)
 
 # ---- Options ----
 
 option(COPY_BUILD "Copy the build output to the Skyrim directory." TRUE)
 option(BUILD_SKYRIMAE "Build for Skyrim AE" OFF)
+option(BUILD_SKYRIMVR "Build for Skyrim VR" OFF)
 
 # ---- Cache build vars ----
 
@@ -39,6 +41,13 @@ if(BUILD_SKYRIMAE)
 	set(SkyrimPath ${SkyrimAEPath})
 	set(SkyrimVersion "Skyrim AE")
 	set(VERSION ${VERSION}.${AE_VERSION})
+elseif(BUILD_SKYRIMVR)
+	add_compile_definitions(SKYRIMVR)
+	set(CommonLibName "CommonLibVR")
+	set_from_environment(SkyrimVRPath)
+	set(SkyrimPath ${SkyrimVRPath})
+	set(SkyrimVersion "Skyrim VR")
+	set(VERSION ${VERSION}.${VR_VERSION})
 else()
 	set(CommonLibName "CommonLibSSE")
 	set_from_environment(Skyrim64Path)
