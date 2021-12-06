@@ -19,11 +19,12 @@ namespace numeric = SKSE::stl::numeric;
 namespace string = SKSE::stl::string;
 
 using namespace std::literals;
-
 using RNG = SKSE::stl::RNG;
 
 namespace stl
 {
+	using namespace SKSE::stl;
+	
 	template <class F, std::size_t idx, class T>
 	void write_vfunc()
 	{
