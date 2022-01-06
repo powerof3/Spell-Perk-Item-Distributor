@@ -25,12 +25,14 @@ namespace stl
 {
 	using namespace SKSE::stl;
 	
-	template <class F, std::size_t idx, class T>
+	template <class F, class T>
 	void write_vfunc()
 	{
-		REL::Relocation<std::uintptr_t> vtbl{ F::VTABLE[0] };
-		T::func = vtbl.write_vfunc(idx, T::thunk);
+		REL::Relocation<std::uintptr_t> vtbl{ F::VTABLE[T::index] };
+		T::func = vtbl.write_vfunc(T::size, T::thunk);
 	}
 }
 
 #include "Version.h"
+#include "Cache.h"
+#include "Defs.h"

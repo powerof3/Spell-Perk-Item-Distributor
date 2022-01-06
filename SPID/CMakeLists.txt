@@ -33,7 +33,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STR
 
 project(
 	po3_SpellPerkItemDistributor
-	VERSION 5.2.0
+	VERSION 6.0.0
 	LANGUAGES CXX
 )
 
@@ -91,7 +91,6 @@ find_package(Boost
 		regex
 )
 find_package(frozen REQUIRED CONFIG)
-find_package(spdlog REQUIRED CONFIG)
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 
@@ -143,7 +142,7 @@ target_include_directories(
 	${PROJECT_NAME}
 	PRIVATE
 		${CMAKE_CURRENT_BINARY_DIR}/include
-		${CMAKE_CURRENT_SOURCE_DIR}/src
+		${CMAKE_CURRENT_SOURCE_DIR}/include
 		${SIMPLEINI_INCLUDE_DIRS}
 )
 
@@ -153,13 +152,12 @@ target_link_libraries(
 		Boost::regex
 		CommonLibSSE::CommonLibSSE
 		frozen::frozen
-		spdlog::spdlog
 )
 
 target_precompile_headers(
 	${PROJECT_NAME}
 	PRIVATE
-		src/PCH.h
+		include/PCH.h
 )
 
 if (MSVC)

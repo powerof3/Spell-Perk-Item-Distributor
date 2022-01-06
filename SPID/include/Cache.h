@@ -183,8 +183,8 @@ namespace Cache
 			{ RE::FormType::VolumetricLighting, "VOLI"sv }
 		};
 
-		std::string GetWhitelistFormString(const RE::FormType a_type);
+		std::string GetWhitelistFormString(RE::FormType a_type);
 
-		std::string GetBlacklistFormString(const RE::FormType a_type);
+		std::string GetBlacklistFormString(RE::FormType a_type);
 	}
 }

@@ -1,6 +1,8 @@
 set(headers ${headers}
-	src/Cache.h
-	src/Defs.h
-	src/Distributor.h
-	src/PCH.h
+	include/Cache.h
+	include/Defs.h
+	include/Distribute.h
+	include/LookupConfigs.h
+	include/LookupForms.h
+	include/PCH.h
 )

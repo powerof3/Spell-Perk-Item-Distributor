@@ -1,4 +1,6 @@
-#include "Distributor.h"
+#include "Distribute.h"
+#include "LookupConfigs.h"
+#include "LookupForms.h"
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
@@ -6,7 +8,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		logger::info("{:*^30}", "LOOKUP");
 
 		Cache::EditorID::GetSingleton()->FillMap();
-		
+
 		if (Lookup::GetForms()) {
 			Distribute::ApplyToNPCs();
 			Distribute::LeveledActor::Install();
@@ -32,9 +34,9 @@ protected:
 		if (a_event && a_event->eventName == "KID_KeywordDistributionDone") {
 			logger::info("{:*^30}", "LOOKUP");
 			logger::info("Starting distribution since KID is done...");
-			
+
 			Cache::EditorID::GetSingleton()->FillMap();
-			
+
 			if (Lookup::GetForms()) {
 				Distribute::ApplyToNPCs();
 				Distribute::LeveledActor::Install();
@@ -53,7 +55,7 @@ private:
 	DistributionManager(const DistributionManager&) = delete;
 	DistributionManager(DistributionManager&&) = delete;
 
-	~DistributionManager() = default;
+	~DistributionManager() override = default;
 
 	DistributionManager& operator=(const DistributionManager&) = delete;
 	DistributionManager& operator=(DistributionManager&&) = delete;
