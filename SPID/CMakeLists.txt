@@ -53,6 +53,7 @@ else()
 	set_from_environment(Skyrim64Path)
 	set(SkyrimPath ${Skyrim64Path})
 	set(SkyrimVersion "Skyrim SSE")
+	set(VERSION ${VERSION}.0)
 endif()
 find_commonlib_path()
 message(
