@@ -1,4 +1,5 @@
 #pragma once
+#include "LookupForms.h"
 
 namespace Filter
 {
@@ -55,11 +56,11 @@ namespace Filter
 						auto form = std::get<RE::TESForm*>(a_formFile);
 						return form && get_type(a_actorbase, form);
 					}
-                    if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
-                        auto file = std::get<const RE::TESFile*>(a_formFile);
-                        return file && file->IsFormInMod(a_actorbase.GetFormID());
-                    }
-                    return false;
+					if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
+						auto file = std::get<const RE::TESFile*>(a_formFile);
+						return file && file->IsFormInMod(a_actorbase.GetFormID());
+					}
+					return false;
 				});
 			}
 
@@ -70,11 +71,11 @@ namespace Filter
 						auto form = std::get<RE::TESForm*>(a_formFile);
 						return form && get_type(a_actorbase, form);
 					}
-                    if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
-                        auto file = std::get<const RE::TESFile*>(a_formFile);
-                        return file && file->IsFormInMod(a_actorbase.GetFormID());
-                    }
-                    return false;
+					if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
+						auto file = std::get<const RE::TESFile*>(a_formFile);
+						return file && file->IsFormInMod(a_actorbase.GetFormID());
+					}
+					return false;
 				});
 			}
 		}
@@ -90,20 +91,19 @@ namespace Filter
 
 			inline bool matches(RE::TESNPC& a_actorbase, const StringVec& a_strings, bool a_matchesAll = false)
 			{
+				const auto has_keyword = [&](const auto& str) {
+					return a_actorbase.HasApplicableKeywordString(str);
+				};
+
 				if (a_matchesAll) {
-					return std::ranges::all_of(a_strings, [&a_actorbase](const auto& str) {
-						return a_actorbase.HasKeyword(str);
-					});
+					return std::ranges::all_of(a_strings, has_keyword);
 				}
-				return std::ranges::any_of(a_strings, [&a_actorbase](const auto& str) {
-					return a_actorbase.HasKeyword(str);
-				});
+				return std::ranges::any_of(a_strings, has_keyword);
 			}
 		}
 	}
 
-	template <class Form>
-	bool strings(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
+	inline bool strings(RE::TESNPC& a_actorbase, const FormData& a_formData)
 	{
 		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = std::get<DATA::TYPE::kStrings>(a_formData);
 
@@ -165,8 +165,7 @@ namespace Filter
 		return true;
 	}
 
-	template <class Form>
-	bool forms(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
+	inline bool forms(RE::TESNPC& a_actorbase, const FormData& a_formData)
 	{
 		auto& [filterForms_ALL, filterForms_NOT, filterForms_MATCH] = std::get<DATA::TYPE::kFilterForms>(a_formData);
 
@@ -185,8 +184,7 @@ namespace Filter
 		return true;
 	}
 
-	template <class Form>
-	bool secondary(RE::TESNPC& a_actorbase, const FormData<Form>& a_formData)
+	inline bool secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData)
 	{
 		const auto& [sex, isUnique, isSummonable] = std::get<DATA::TYPE::kTraits>(a_formData);
 		if (sex && a_actorbase.GetSex() != *sex) {
@@ -202,8 +200,8 @@ namespace Filter
 		const auto& [actorLevelPair, skillLevelPairs] = std::get<DATA::TYPE::kLevel>(a_formData);
 
 		if (!a_actorbase.HasPCLevelMult()) {
-			auto [actorMin, actorMax] = actorLevelPair;
-			auto actorLevel = a_actorbase.actorData.level;
+			auto& [actorMin, actorMax] = actorLevelPair;
+			const auto actorLevel = a_actorbase.actorData.level;
 
 			if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
 				if (actorLevel < actorMin || actorLevel > actorMax) {
@@ -217,9 +215,9 @@ namespace Filter
 		}
 
 		for (auto& [skillType, skill] : skillLevelPairs) {
-			auto [skillMin, skillMax] = skill;
+			auto& [skillMin, skillMax] = skill;
 
-			if (skillType >= 0 && skillType < 18) {
+			if (skillType < 18) {
 				auto const skillLevel = a_actorbase.playerSkills.values[skillType];
 
 				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
@@ -248,38 +246,39 @@ namespace Filter
 namespace Distribute
 {
 	template <class Form>
-	void for_each_form(RE::TESNPC& a_actorbase, FormDataVec<Form>& a_formDataVec, std::function<bool(const FormCountPair<Form>&)> a_fn)
+	void for_each_form(RE::TESNPC& a_actorbase, Forms::FormMap<Form>& a_formDataMap, std::function<bool(const FormCount<Form>&)> a_fn)
 	{
-		for (auto& formData : a_formDataVec) {
-			if (!Filter::strings(a_actorbase, formData) || !Filter::forms(a_actorbase, formData) || !Filter::secondary(a_actorbase, formData)) {
-				continue;
-			}
-			if (auto const formCountPair = std::get<DATA::TYPE::kForm>(formData); formCountPair.first != nullptr && a_fn(formCountPair)) {
-				++std::get<DATA::TYPE::kNPCCount>(formData);
+		for (auto& [form, data] : a_formDataMap.forms) {
+			if (form != nullptr) {
+				auto& [npcCount, formDataVec] = data;
+				for (auto& formData : formDataVec) {
+					if (!Filter::strings(a_actorbase, formData) || !Filter::forms(a_actorbase, formData) || !Filter::secondary(a_actorbase, formData)) {
+						continue;
+					}
+					auto itemCount = std::get<DATA::TYPE::kItemCount>(formData);
+					if (a_fn({ form, itemCount })) {
+						++npcCount;
+					}
+				}
 			}
 		}
 	}
 
 	template <class Form>
-	void list_npc_count(const std::string& a_type, const FormDataVec<Form>& a_formDataVec, const size_t a_totalNPCCount)
+	void list_npc_count(const std::string& a_type, Forms::FormMap<Form>& a_formDataMap, const size_t a_totalNPCCount)
 	{
-		if (!a_formDataVec.empty()) {
-			logger::info("	{}", a_type);
+		logger::info("	{}", a_type);
 
-			for (auto& formData : a_formDataVec) {
-				auto [form, itemCount] = std::get<DATA::TYPE::kForm>(formData);
-				auto npcCount = std::get<DATA::TYPE::kNPCCount>(formData);
-
-				if (form) {
-					std::string name;
-					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-						name = form->GetFormEditorID();
-					} else {
-						name = Cache::EditorID::GetSingleton()->GetEditorID(form->GetFormID());
-					}
-
-					logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
+		for (auto& [form, formData] : a_formDataMap.forms) {
+			if (form != nullptr) {
+				auto& [npcCount, data] = formData;
+				std::string name;
+				if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
+					name = form->GetFormEditorID();
+				} else {
+					name = Cache::EditorID::GetSingleton()->GetEditorID(form->GetFormID());
 				}
+				logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
 			}
 		}
 	}
@@ -324,7 +323,7 @@ namespace Distribute
 	};
 
 	namespace LeveledActor
-	{	
+	{
 		void Install();
 	}
 

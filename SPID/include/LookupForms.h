@@ -2,23 +2,34 @@
 
 namespace Forms
 {
-	inline FormDataVec<RE::SpellItem> spells;
-	inline FormDataVec<RE::BGSPerk> perks;
-	inline FormDataVec<RE::TESBoundObject> items;
-	inline FormDataVec<RE::TESShout> shouts;
-	inline FormDataVec<RE::TESLevSpell> levSpells;
-	inline FormDataVec<RE::TESPackage> packages;
-	inline FormDataVec<RE::BGSOutfit> outfits;
-	inline FormDataVec<RE::BGSKeyword> keywords;
-	inline FormDataVec<RE::TESBoundObject> deathItems;
-	inline FormDataVec<RE::TESFaction> factions;
+	template <class T>
+	struct FormMap
+	{
+		FormDataMap<T> forms;
+
+		explicit operator bool()
+		{
+			return !forms.empty();
+		}
+	};
+
+	inline FormMap<RE::SpellItem> spells;
+	inline FormMap<RE::BGSPerk> perks;
+	inline FormMap<RE::TESBoundObject> items;
+	inline FormMap<RE::TESShout> shouts;
+	inline FormMap<RE::TESLevSpell> levSpells;
+	inline FormMap<RE::TESPackage> packages;
+	inline FormMap<RE::BGSOutfit> outfits;
+	inline FormMap<RE::BGSKeyword> keywords;
+	inline FormMap<RE::TESBoundObject> deathItems;
+	inline FormMap<RE::TESFaction> factions;
 }
 
 namespace Lookup
 {
 	using namespace Forms;
 
-    namespace detail
+	namespace detail
 	{
 		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, const FormIDPairVec& a_formIDVec, FormVec& a_formVec)
 		{
@@ -68,19 +79,19 @@ namespace Lookup
 	}
 
 	template <class Form>
-	void get_forms(RE::TESDataHandler* a_dataHandler, const std::string& a_type, const INIDataVec& a_INIDataVec, FormDataVec<Form>& a_formDataVec)
+	void get_forms(RE::TESDataHandler* a_dataHandler, const std::string& a_type, const INIDataMap& a_INIDataMap, FormMap<Form>& a_FormDataMap)
 	{
-		if (a_INIDataVec.empty()) {
+		if (a_INIDataMap.empty()) {
 			return;
 		}
 
 		logger::info("	Starting {} lookup", a_type);
 
-		for (auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, gender_ini, itemCount_ini, chance_ini] : a_INIDataVec) {
+		for (auto& [formOrEditorID, INIDataVec] : a_INIDataMap) {
 			Form* form = nullptr;
 
-			if (std::holds_alternative<FormIDPair>(formIDPair_ini)) {
-				if (auto [formID, modName] = std::get<FormIDPair>(formIDPair_ini); formID) {
+			if (std::holds_alternative<FormIDPair>(formOrEditorID)) {
+				if (auto [formID, modName] = std::get<FormIDPair>(formOrEditorID); formID) {
 					if (modName) {
 						form = a_dataHandler->LookupForm<Form>(*formID, *modName);
 						if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
@@ -103,11 +114,11 @@ namespace Lookup
 					}
 				}
 			} else if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-				if (!std::holds_alternative<std::string>(formIDPair_ini)) {
+				if (!std::holds_alternative<std::string>(formOrEditorID)) {
 					continue;
 				}
 
-				if (auto keywordName = std::get<std::string>(formIDPair_ini); !keywordName.empty()) {
+				if (auto keywordName = std::get<std::string>(formOrEditorID); !keywordName.empty()) {
 					auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
 
 					auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
@@ -138,8 +149,8 @@ namespace Lookup
 						}
 					}
 				}
-			} else if (std::holds_alternative<std::string>(formIDPair_ini)) {
-				if (auto editorID = std::get<std::string>(formIDPair_ini); !editorID.empty()) {
+			} else if (std::holds_alternative<std::string>(formOrEditorID)) {
+				if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
 					form = RE::TESForm::LookupByEditorID<Form>(editorID);
 					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
 						if (!form) {
@@ -157,25 +168,25 @@ namespace Lookup
 				continue;
 			}
 
-			bool invalidEntry = false;
+			std::vector<FormData> formDataVec;
+			for (auto& [strings, filterIDs, level, gender, itemCount, chance] : INIDataVec) {
+				bool invalidEntry = false;
 
-			std::array<FormVec, 3> filterForms;
-			for (std::uint32_t i = 0; i < 3; i++) {
-				if (!detail::formID_to_form(a_dataHandler, filterIDs_ini[i], filterForms[i])) {
-					invalidEntry = true;
-					break;
+				std::array<FormVec, 3> filterForms;
+				for (std::uint32_t i = 0; i < 3; i++) {
+					if (!detail::formID_to_form(a_dataHandler, filterIDs[i], filterForms[i])) {
+						invalidEntry = true;
+						break;
+					}
+				}
+
+				if (!invalidEntry) {
+					FormData formData{ strings, filterForms, level, gender, chance, itemCount };
+					formDataVec.emplace_back(formData);
 				}
 			}
 
-			if (invalidEntry) {
-				continue;
-			}
-
-			FormCountPair<Form> formCountPair = { form, itemCount_ini };
-			std::uint32_t npcCount = 0;
-
-			FormData<Form> formData = { formCountPair, strings_ini, filterForms, level_ini, gender_ini, chance_ini, npcCount };
-			a_formDataVec.emplace_back(formData);
+			a_FormDataMap.forms[form] = { 0, formDataVec };
 		}
 	}
 

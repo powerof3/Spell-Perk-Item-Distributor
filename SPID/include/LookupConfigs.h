@@ -2,7 +2,7 @@
 
 namespace INI
 {
-	inline std::map<std::string, INIDataVec> configs;
+	inline std::map<std::string, INIDataMap> configs;
 
     namespace detail
 	{
@@ -11,7 +11,7 @@ namespace INI
 			if (!a_str.empty() && a_str.find("NONE"sv) == std::string::npos) {
 				return string::split(a_str, a_delimiter);
 			}
-			return std::vector<std::string>();
+			return {};
 		}
 
 		inline FormIDPair get_formID(const std::string& a_str)
@@ -60,16 +60,17 @@ namespace INI
 		}
 	}
 
-	inline std::pair<INIData, std::optional<std::string>> parse_ini(const std::string& a_value)
+	inline std::tuple<FormOrEditorID, INIData, std::optional<std::string>> parse_ini(const std::string& a_value)
 	{
-		INIData data;
-		auto& [formIDPair_ini, strings_ini, filterIDs_ini, level_ini, traits_ini, itemCount_ini, chance_ini] = data;
+		FormOrEditorID recordID;
+
+        INIData data;
+		auto& [strings_ini, filterIDs_ini, level_ini, traits_ini, itemCount_ini, chance_ini] = data;
 
 		auto sanitized_value = detail::sanitize(a_value);
 		const auto sections = string::split(sanitized_value, "|");
 
-		//[FORMID/ESP] / string
-		std::variant<FormIDPair, std::string> item_ID;
+		//[FORMID/ESP] / EDITORID
 		try {
 			auto& formSection = sections.at(kFormID);
 			if (formSection.find('~') != std::string::npos || string::is_only_hex(formSection)) {
@@ -84,15 +85,14 @@ namespace INI
 					pair = detail::get_formID(formSection);
 				}
 
-				item_ID.emplace<FormIDPair>(pair);
+				recordID.emplace<FormIDPair>(pair);
 			} else {
-				item_ID.emplace<std::string>(formSection);
+				recordID.emplace<std::string>(formSection);
 			}
 		} catch (...) {
 			FormIDPair pair = { 0, std::nullopt };
-			item_ID.emplace<FormIDPair>(pair);
+			recordID.emplace<FormIDPair>(pair);
 		}
-		formIDPair_ini = item_ID;
 
 		//KEYWORDS
 		try {
@@ -228,9 +228,9 @@ namespace INI
 		}
 
 		if (sanitized_value != a_value) {
-			return std::make_pair(data, sanitized_value);
+			return std::make_tuple(recordID, data, sanitized_value);
 		}
-		return std::make_pair(data, std::nullopt);
+		return std::make_tuple(recordID, data, std::nullopt);
 	}
 
 	bool Read();

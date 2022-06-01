@@ -59,14 +59,12 @@ namespace DATA
 {
 	enum TYPE : std::uint32_t
 	{
-		kForm = 0,
-		kItemCount,
-		kStrings = kItemCount,
+		kStrings = 0,
 		kFilterForms,
 		kLevel,
 		kTraits,
 		kChance,
-		kNPCCount
+		kItemCount
 	};
 }
 
@@ -77,6 +75,7 @@ using FormIDPairVec = std::vector<FormIDPair>;
 using StringVec = std::vector<std::string>;
 using FormVec = std::vector<
 	std::variant<RE::TESForm*, const RE::TESFile*>>;
+using FormOrEditorID = std::variant<FormIDPair, std::string>;
 
 using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;
 using SkillLevel = std::pair<
@@ -88,29 +87,25 @@ using Traits = std::tuple<
 	std::optional<bool>,
 	std::optional<bool>>;
 using Chance = float;
+using NPCCount = std::uint32_t;
 
 using INIData = std::tuple<
-	std::variant<FormIDPair, std::string>,
 	std::array<StringVec, 4>,
 	std::array<FormIDPairVec, 3>,
 	std::pair<ActorLevel, std::vector<SkillLevel>>,
 	Traits,
 	ItemCount,
 	Chance>;
-using INIDataVec = std::vector<INIData>;
+using INIDataMap = std::map<FormOrEditorID, std::vector<INIData>>;
 
-using NPCCount = std::uint32_t;
-
-template <class Form>
-using FormCountPair = std::pair<Form*, ItemCount>;
-template <class Form>
 using FormData = std::tuple<
-	FormCountPair<Form>,
 	std::array<StringVec, 4>,
 	std::array<FormVec, 3>,
 	std::pair<ActorLevel, std::vector<SkillLevel>>,
 	Traits,
 	Chance,
-	NPCCount>;
-template <class Form>
-using FormDataVec = std::vector<FormData<Form>>;
+	ItemCount>;
+template <class T>
+using FormCount = std::pair<T*, ItemCount>;
+template <class T>
+using FormDataMap = std::map<T*, std::pair<NPCCount, std::vector<FormData>>>;

@@ -5,7 +5,7 @@ void Distribute::Distribute(RE::TESNPC* a_actorbase)
 {
     for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, [&](const auto& a_keywordsPair) {
 		const auto keyword = a_keywordsPair.first;
-		if (!a_actorbase->HasKeyword(keyword->formEditorID)) {
+		if (!a_actorbase->HasKeywordString(keyword->formEditorID)) {
 			return a_actorbase->AddKeyword(keyword);
 		}
 		return false;
@@ -81,8 +81,8 @@ void Distribute::ApplyToNPCs()
 
 		logger::info("{:*^30}", "RESULT");
 
-		const auto list_result = [&totalNPCs]<class Form>(const std::string& a_formType, const FormDataVec<Form>& a_forms) {
-			if (!a_forms.empty()) {
+		const auto list_result = [&totalNPCs]<class Form>(const std::string& a_formType, Forms::FormMap<Form>& a_forms) {
+			if (a_forms) {
 				list_npc_count(a_formType, a_forms, totalNPCs);
 			}
 		};
@@ -103,12 +103,11 @@ namespace Distribute
 {
 	void DeathItemManager::Register()
 	{
-		if (Forms::deathItems.empty()) {
+		if (!Forms::deathItems) {
 			return;
 		}
 
-		auto scripts = RE::ScriptEventSourceHolder::GetSingleton();
-		if (scripts) {
+        if (auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink(GetSingleton());
 			logger::info("	Registered {}"sv, typeid(DeathItemManager).name());
 		}
