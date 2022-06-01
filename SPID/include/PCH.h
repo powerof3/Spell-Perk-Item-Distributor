@@ -7,10 +7,10 @@
 #include "SKSE/SKSE.h"
 
 #include <SimpleIni.h>
-#include <boost/regex.hpp>
 #include <frozen/map.h>
 #include <robin_hood.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <srell.hpp>
 
 #define DLLEXPORT __declspec(dllexport)
 
@@ -24,7 +24,7 @@ using RNG = SKSE::stl::RNG;
 namespace stl
 {
 	using namespace SKSE::stl;
-	
+
 	template <class F, class T>
 	void write_vfunc()
 	{
@@ -33,6 +33,6 @@ namespace stl
 	}
 }
 
-#include "Version.h"
 #include "Cache.h"
 #include "Defs.h"
+#include "Version.h"

@@ -61,7 +61,7 @@ bool INI::Format(TYPE a_type)
 				    ini.DeleteValue("", key.pItem, original.c_str());
 					ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
 				}
-				ini.SaveFile(path.c_str());
+				(void)ini.SaveFile(path.c_str());
 
 				std::cout << "	Sanitized " << oldFormatMap.size() << " entries \n";
 			}

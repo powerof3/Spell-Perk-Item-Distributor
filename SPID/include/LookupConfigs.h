@@ -42,16 +42,16 @@ namespace INI
 			}
 
 			//strip spaces between " | "
-			static const boost::regex re_bar(R"(\s*\|\s*)", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_bar, "|");
+			static const srell::regex re_bar(R"(\s*\|\s*)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_bar, "|");
 
 			//strip spaces between " , "
-			static const boost::regex re_comma(R"(\s*,\s*)", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_comma, ",");
+			static const srell::regex re_comma(R"(\s*,\s*)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_comma, ",");
 
 			//strip leading zeros
-			static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_zeros, "0x$2");
+			static const srell::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
 
 			//NOT to hyphen
 			string::replace_all(newValue, "NOT ", "-");

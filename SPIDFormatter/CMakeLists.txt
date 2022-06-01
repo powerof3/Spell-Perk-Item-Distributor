@@ -9,11 +9,4 @@ add_project(
 		"src/main.cpp"
 )
 
-find_package(Boost MODULE REQUIRED COMPONENTS regex)
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
-
-target_link_libraries(
-	"${PROJECT_NAME}"
-	PRIVATE
-		Boost::regex
-)

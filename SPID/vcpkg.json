@@ -6,11 +6,11 @@
   "license": "MIT",
   "dependencies": [
     "boost-stl-interfaces",
-    "boost-regex",
     "frozen",
     "robin-hood-hashing",
     "rsm-binary-io",
     "simpleini",
+    "srell",
     "spdlog"
   ]
 }

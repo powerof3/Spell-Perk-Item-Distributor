@@ -84,12 +84,6 @@ else ()
 	)
 endif ()
 
-find_package(Boost
-	MODULE
-	REQUIRED
-	COMPONENTS
-		regex
-)
 find_package(frozen REQUIRED CONFIG)
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
@@ -129,7 +123,7 @@ add_library(
 target_compile_features(
 	${PROJECT_NAME}
 	PRIVATE
-		cxx_std_20
+		cxx_std_23
 )
 
 target_compile_definitions(
@@ -149,7 +143,6 @@ target_include_directories(
 target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
-		Boost::regex
 		CommonLibSSE::CommonLibSSE
 		frozen::frozen
 )

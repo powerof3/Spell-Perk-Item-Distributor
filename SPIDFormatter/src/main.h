@@ -17,7 +17,7 @@
 #include <vector>
 
 #include <SimpleIni.h>
-#include <boost/regex.hpp>
+#include <srell.hpp>
 
 namespace INI
 {
@@ -62,20 +62,20 @@ namespace INI
 			replace_all(newValue, ",", " , ");
 
 			//strip spaces between " | "
-			static const boost::regex re_bar(R"(\s*\|\s*)", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_bar, "|");
+			static const srell::regex re_bar(R"(\s*\|\s*)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_bar, "|");
 
 			//strip spaces between " , "
-			static const boost::regex re_comma(R"(\s*,\s*)", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_comma, ",");
+			static const srell::regex re_comma(R"(\s*,\s*)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_comma, ",");
 
 			//strip leading zeros
-			static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_zeros, "0x$2");
+			static const srell::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
 
 			//match NOT hypens
-			static const boost::regex re_hypen(R"((, |\| )(-)(\w+|\d+))", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_hypen, "$1NOT $3");
+			static const srell::regex re_hypen(R"((, |\| )(-)(\w+|\d+))", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_hypen, "$1NOT $3");
 
 			replace_first_instance(newValue, "~", " - ");
 
@@ -91,12 +91,12 @@ namespace INI
 			}
 
 			//strip spaces
-		    static const boost::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_spaces, "$1");
+		    static const srell::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_spaces, "$1");
 
 			//strip leading zeros
-			static const boost::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", boost::regex_constants::optimize);
-			newValue = regex_replace(newValue, re_zeros, "0x$2");
+			static const srell::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
 
 		    replace_all(newValue, "NOT ", "-");
 
