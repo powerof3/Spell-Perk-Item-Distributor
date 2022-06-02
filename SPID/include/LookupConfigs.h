@@ -8,7 +8,7 @@ namespace INI
 	{
 		inline std::vector<std::string> split_sub_string(const std::string& a_str, const std::string& a_delimiter = ",")
 		{
-			if (!a_str.empty() && a_str.find("NONE"sv) == std::string::npos) {
+			if (!a_str.empty() && !a_str.contains("NONE"sv)) {
 				return string::split(a_str, a_delimiter);
 			}
 			return {};
@@ -16,7 +16,7 @@ namespace INI
 
 		inline FormIDPair get_formID(const std::string& a_str)
 		{
-			if (a_str.find("~"sv) != std::string::npos) {
+			if (a_str.contains("~"sv)) {
 				auto splitID = string::split(a_str, "~");
 				return std::make_pair(
 					string::lexical_cast<RE::FormID>(splitID.at(kFormID), true),
@@ -37,7 +37,7 @@ namespace INI
 			auto newValue = a_value;
 
 			//formID hypen
-			if (newValue.find('~') == std::string::npos) {
+			if (!newValue.contains('~')) {
 				string::replace_first_instance(newValue, " - ", "~");
 			}
 
@@ -71,9 +71,9 @@ namespace INI
 		const auto sections = string::split(sanitized_value, "|");
 
 		//[FORMID/ESP] / EDITORID
-		try {
-			auto& formSection = sections.at(kFormID);
-			if (formSection.find('~') != std::string::npos || string::is_only_hex(formSection)) {
+		if (!sections.empty()){
+			auto& formSection = sections[kFormID];
+			if (formSection.contains('~') || string::is_only_hex(formSection)) {
 				FormIDPair pair;
 				pair.second = std::nullopt;
 
@@ -89,18 +89,18 @@ namespace INI
 			} else {
 				recordID.emplace<std::string>(formSection);
 			}
-		} catch (...) {
+		} else {
 			FormIDPair pair = { 0, std::nullopt };
 			recordID.emplace<FormIDPair>(pair);
 		}
 
 		//KEYWORDS
-		try {
+		if (sections.size() > 1) {
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
 
-			auto split_str = detail::split_sub_string(sections.at(kStrings));
+			auto split_str = detail::split_sub_string(sections[kStrings]);
 			for (auto& str : split_str) {
-				if (str.find("+"sv) != std::string::npos) {
+				if (str.contains("+"sv)) {
 					auto strings = detail::split_sub_string(str, "+");
 					strings_ALL.insert(strings_ALL.end(), strings.begin(), strings.end());
 
@@ -116,16 +116,15 @@ namespace INI
 					strings_MATCH.emplace_back(str);
 				}
 			}
-		} catch (...) {
 		}
 
 		//FILTER FORMS
-		try {
+		if (sections.size() > 2) {
 			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
 
-			auto split_IDs = detail::split_sub_string(sections.at(kFilterIDs));
+			auto split_IDs = detail::split_sub_string(sections[kFilterIDs]);
 			for (auto& IDs : split_IDs) {
-				if (IDs.find("+"sv) != std::string::npos) {
+				if (IDs.contains("+"sv)) {
 					auto splitIDs_ALL = detail::split_sub_string(IDs, "+");
 					for (auto& IDs_ALL : splitIDs_ALL) {
 						filterIDs_ALL.push_back(detail::get_formID(IDs_ALL));
@@ -138,16 +137,15 @@ namespace INI
 					filterIDs_MATCH.push_back(detail::get_formID(IDs));
 				}
 			}
-		} catch (...) {
 		}
 
 		//LEVEL
 		ActorLevel actorLevelPair = { UINT16_MAX, UINT16_MAX };
 		std::vector<SkillLevel> skillLevelPairs;
-		try {
-			auto split_levels = detail::split_sub_string(sections.at(kLevel));
+		if (sections.size() > 3) {
+			auto split_levels = detail::split_sub_string(sections[kLevel]);
 			for (auto& levels : split_levels) {
-				if (levels.find('(') != std::string::npos) {
+				if (levels.contains('(')) {
 					//skill(min/max)
 					auto sanitizedLevel = string::remove_non_alphanumeric(levels);
 					auto skills = string::split(sanitizedLevel, " ");
@@ -180,15 +178,14 @@ namespace INI
 					}
 				}
 			}
-		} catch (...) {
 		}
 		level_ini = { actorLevelPair, skillLevelPairs };
 
 		//TRAITS
-		try {
+		if (sections.size() > 4) {
 			auto& [sex, unique, summonable] = traits_ini;
 
-			auto split_traits = detail::split_sub_string(sections.at(kTraits), "/");
+			auto split_traits = detail::split_sub_string(sections[kTraits], "/");
 			for (auto& trait : split_traits) {
 				if (trait == "M") {
 					sex = RE::SEX::kMale;
@@ -204,27 +201,24 @@ namespace INI
 					summonable = false;
 				}
 			}
-		} catch (...) {
 		}
 
 		//ITEMCOUNT
 		itemCount_ini = 1;
-		try {
-			const auto& itemCountStr = sections.at(kItemCount);
-			if (!itemCountStr.empty() && itemCountStr.find("NONE"sv) == std::string::npos) {
+		if (sections.size() > 5) {
+			const auto& itemCountStr = sections[kItemCount];
+			if (!itemCountStr.empty() && !itemCountStr.contains("NONE"sv)) {
 				itemCount_ini = string::lexical_cast<std::int32_t>(itemCountStr);
 			}
-		} catch (...) {
 		}
 
 		//CHANCE
 		chance_ini = 100;
-		try {
-			const auto& chanceStr = sections.at(kChance);
-			if (!chanceStr.empty() && chanceStr.find("NONE"sv) == std::string::npos) {
+		if (sections.size() > 6) {
+			const auto& chanceStr = sections[kChance];
+			if (!chanceStr.empty() && !chanceStr.contains("NONE"sv)) {
 				chance_ini = string::lexical_cast<float>(chanceStr);
 			}
-		} catch (...) {
 		}
 
 		if (sanitized_value != a_value) {

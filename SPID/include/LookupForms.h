@@ -52,7 +52,7 @@ namespace Lookup
 							if (const auto type = Cache::FormType::GetWhitelistFormString(formType); !type.empty()) {
 								a_formVec.push_back(filterForm);
 							} else {
-								logger::error("			Filter ({}) SKIP - invalid formtype ({})", *modName, Cache::FormType::GetBlacklistFormString(formType));
+								logger::error("			Filter ({}) SKIP - invalid formtype ({})", *modName, formType);
 							}
 						} else {
 							logger::error("			Filter ({}) SKIP - form doesn't exist", *modName);
@@ -67,7 +67,7 @@ namespace Lookup
 						if (const auto type = Cache::FormType::GetWhitelistFormString(formType); !type.empty()) {
 							a_formVec.push_back(filterForm);
 						} else {
-							logger::error("			Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", *formID, modName.value_or(""), Cache::FormType::GetBlacklistFormString(formType));
+							logger::error("			Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", *formID, modName.value_or(""), formType);
 						}
 					} else {
 						logger::error("			Filter [0x{:X}] ({}) SKIP - form doesn't exist", *formID, modName.value_or(""));

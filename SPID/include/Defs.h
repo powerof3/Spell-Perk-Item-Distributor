@@ -51,7 +51,7 @@ namespace INI
 
 	inline bool is_mod_name(const std::string& a_str)
 	{
-		return a_str.rfind(".esp") != std::string::npos || a_str.rfind(".esl") != std::string::npos || a_str.rfind(".esm ") != std::string::npos;
+		return a_str.rfind(".esp") != std::string::npos || a_str.rfind(".esl") != std::string::npos || a_str.rfind(".esm") != std::string::npos;
 	}
 }
 

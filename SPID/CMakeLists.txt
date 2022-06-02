@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
+set(NAME "po3_SpellPerkItemDistributor")
+set(VERSION 6.0.0)
+set(AE_VERSION 1)
 
 # ---- Options ----
 
 option(COPY_BUILD "Copy the build output to the Skyrim directory." TRUE)
+option(BUILD_SKYRIMAE "Build for Skyrim AE" OFF)
 
 # ---- Cache build vars ----
 
@@ -12,9 +16,39 @@ macro(set_from_environment VARIABLE)
 	endif ()
 endmacro()
 
-set_from_environment(Skyrim64Path)
+macro(find_commonlib_path)
+	if (CommonLibName AND NOT ${CommonLibName} STREQUAL "")
+		# Check extern
+		find_path(CommonLibPath
+		include/REL/Relocation.h
+		PATHS external/${CommonLibName})
+		if (${CommonLibPath} STREQUAL "CommonLibPath-NOTFOUND")
+			#Check path
+			set_from_environment(${CommonLibName}Path)
+			set(CommonLibPath ${${CommonLibName}Path})
+		endif()
+	endif()
+endmacro()
+
 set_from_environment(VCPKG_ROOT)
-set_from_environment(CommonLibSSEPath)
+if(BUILD_SKYRIMAE)
+	add_compile_definitions(SKYRIM_AE)
+	set(CommonLibName "CommonLibSSE")
+	set_from_environment(SkyrimAEPath)
+	set(SkyrimPath ${SkyrimAEPath})
+	set(SkyrimVersion "Skyrim AE")
+	set(VERSION ${VERSION}.${AE_VERSION})
+else()
+	set(CommonLibName "CommonLibSSE")
+	set_from_environment(Skyrim64Path)
+	set(SkyrimPath ${Skyrim64Path})
+	set(SkyrimVersion "Skyrim SSE")
+endif()
+find_commonlib_path()
+message(
+	STATUS
+	"Building ${NAME} ${VERSION} for ${SkyrimVersion} at ${SkyrimPath} with ${CommonLibName} at ${CommonLibPath}."
+)
 
 if (DEFINED VCPKG_ROOT)
 	set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
@@ -27,13 +61,12 @@ else ()
 endif ()
 
 set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "")
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
 # ---- Project ----
 
 project(
-	po3_SpellPerkItemDistributor
-	VERSION 6.0.0
+	${NAME}
+	VERSION ${VERSION}
 	LANGUAGES CXX
 )
 
@@ -60,7 +93,17 @@ endif()
 
 # ---- Globals ----
 
+if (BUILD_SKYRIMAE)
+	add_compile_definitions(
+		SKYRIM_SUPPORT_AE
+	)
+endif()
+
 if (MSVC)
+	add_compile_definitions(
+		_UNICODE
+	)
+
 	if (NOT ${CMAKE_GENERATOR} STREQUAL "Ninja")
 		add_compile_options(
 			/MP	# Build with Multiple Processes
@@ -72,21 +115,23 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 
 set(Boost_USE_STATIC_LIBS ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
 # ---- Dependencies ----
 
-if (DEFINED CommonLibSSEPath AND NOT ${CommonLibSSEPath} STREQUAL "" AND IS_DIRECTORY ${CommonLibSSEPath})
-	add_subdirectory(${CommonLibSSEPath} CommonLibSSE)
+if (DEFINED CommonLibPath AND NOT ${CommonLibPath} STREQUAL "" AND IS_DIRECTORY ${CommonLibPath})
+	add_subdirectory(${CommonLibPath} ${CommonLibName})
 else ()
 	message(
 		FATAL_ERROR
-		"Variable CommonLibSSEPath is not set."
+		"Variable ${CommonLibName}Path is not set."
 	)
-endif ()
+endif()
 
-find_package(frozen REQUIRED CONFIG)
+find_package(frozen CONFIG REQUIRED)
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
+find_path(SRELL_INCLUDE_DIRS "srell.hpp")
 
 # ---- Add source files ----
 
@@ -118,6 +163,7 @@ add_library(
 	${CMAKE_CURRENT_BINARY_DIR}/include/Version.h
 	${CMAKE_CURRENT_BINARY_DIR}/version.rc
 	.clang-format
+	.editorconfig
 )
 
 target_compile_features(
@@ -126,31 +172,22 @@ target_compile_features(
 		cxx_std_23
 )
 
-target_compile_definitions(
-	${PROJECT_NAME}
-	PRIVATE
-		_UNICODE
-)
-
 target_include_directories(
 	${PROJECT_NAME}
 	PRIVATE
 		${CMAKE_CURRENT_BINARY_DIR}/include
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 		${SIMPLEINI_INCLUDE_DIRS}
+		${SRELL_INCLUDE_DIRS}
+		${CommonLibPath}/x64/Release
 )
+
 
 target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
-		CommonLibSSE::CommonLibSSE
+		${CommonLibName}::${CommonLibName}
 		frozen::frozen
-)
-
-target_precompile_headers(
-	${PROJECT_NAME}
-	PRIVATE
-		include/PCH.h
 )
 
 if (MSVC)
@@ -189,7 +226,7 @@ if (MSVC)
 			/external:W0
 
 			/W4	# Warning level
-			/WX	# Warning level (warnings are errors)
+			/WX # Warning level (warnings are errors)
 
 			"$<$<CONFIG:DEBUG>:>"
 			"$<$<CONFIG:RELEASE>:/Zc:inline;/JMC-;/Ob3>"
@@ -204,22 +241,31 @@ if (MSVC)
 			"$<$<CONFIG:RELEASE>:/INCREMENTAL:NO;/OPT:REF;/OPT:ICF;/DEBUG:FULL>"
 	)
 	
+	# fix a warning with /Ob2 being overridden with /Ob3
+	string(REPLACE "/Ob2" "/Ob3" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+	
 endif ()
+
+target_precompile_headers(
+	${PROJECT_NAME}
+	PRIVATE
+		include/PCH.h
+)
 
 # ---- Post build ----
 
 if (COPY_BUILD)
-	if (DEFINED Skyrim64Path)
+	if (DEFINED SkyrimPath)
 		add_custom_command(
 			TARGET ${PROJECT_NAME}
 			POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${Skyrim64Path}/Data/SKSE/Plugins/
-			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> ${Skyrim64Path}/Data/SKSE/Plugins/
+			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${SkyrimPath}/Data/SKSE/Plugins/
+			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> ${SkyrimPath}/Data/SKSE/Plugins/
 		)
 	else ()
 		message(
 			WARNING
-			"Variable Skyrim64Path is not defined. Skipping post-build copy command."
+			"Variable ${SkyrimPath} is not defined. Skipping post-build copy command."
 		)
 	endif ()
 endif ()
