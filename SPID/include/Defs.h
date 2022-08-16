@@ -108,4 +108,4 @@ using FormData = std::tuple<
 template <class T>
 using FormCount = std::pair<T*, ItemCount>;
 template <class T>
-using FormDataMap = std::map<T*, std::pair<NPCCount, std::vector<FormData>>>;
+using FormDataMap = std::unordered_map<T*, std::pair<NPCCount, std::vector<FormData>>>;

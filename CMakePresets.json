@@ -44,7 +44,7 @@
     },
     {
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX $penv{CXXFLAGS}"
+        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /external:W0"
       },
       "generator": "Visual Studio 17 2022",
       "inherits": [
@@ -58,7 +58,7 @@
     {
       "binaryDir": "${sourceDir}/buildae",
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX $penv{CXXFLAGS}",
+        "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /external:W0",
         "BUILD_SKYRIMAE": true
       },
       "generator": "Visual Studio 17 2022",

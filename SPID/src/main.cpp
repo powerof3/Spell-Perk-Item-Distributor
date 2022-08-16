@@ -2,6 +2,21 @@
 #include "LookupConfigs.h"
 #include "LookupForms.h"
 
+void MessageHandler(SKSE::MessagingInterface::Message* a_message)
+{
+	if (a_message->type == SKSE::MessagingInterface::kDataLoaded) {
+		logger::info("{:*^30}", "LOOKUP");
+
+		Cache::EditorID::GetSingleton()->FillMap();
+
+		if (Lookup::GetForms()) {
+			Distribute::ApplyToNPCs();
+			Distribute::LeveledActor::Install();
+			Distribute::DeathItemManager::Register();
+		}
+	}
+}
+
 class DistributionManager : public RE::BSTEventSink<SKSE::ModCallbackEvent>
 {
 public:
@@ -27,8 +42,7 @@ protected:
 				Distribute::LeveledActor::Install();
 				Distribute::DeathItemManager::Register();
 
-				auto modEvent = SKSE::GetModCallbackEventSource();
-				modEvent->RemoveEventSink(GetSingleton());
+				SKSE::GetModCallbackEventSource()->RemoveEventSink(GetSingleton());
 			}
 		}
 
@@ -114,19 +128,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 		if (kidHandle != nullptr) {
 			SKSE::GetModCallbackEventSource()->AddEventSink(DistributionManager::GetSingleton());
 		} else {
-			SKSE::GetMessagingInterface()->RegisterListener([](SKSE::MessagingInterface::Message* a_msg) {
-				if (a_msg->type == SKSE::MessagingInterface::kDataLoaded) {
-					logger::info("{:*^30}", "LOOKUP");
-
-					Cache::EditorID::GetSingleton()->FillMap();
-
-					if (Lookup::GetForms()) {
-						Distribute::ApplyToNPCs();
-						Distribute::LeveledActor::Install();
-						Distribute::DeathItemManager::Register();
-					}
-				}
-			});
+			SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
 		}
 	}
 

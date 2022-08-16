@@ -2,7 +2,7 @@
 
 namespace INI
 {
-	inline std::map<std::string, INIDataMap> configs;
+	inline std::unordered_map<std::string, INIDataMap> configs;
 
     namespace detail
 	{
@@ -69,9 +69,10 @@ namespace INI
 
 		auto sanitized_value = detail::sanitize(a_value);
 		const auto sections = string::split(sanitized_value, "|");
+		const auto size = sections.size();
 
 		//[FORMID/ESP] / EDITORID
-		if (!sections.empty()){
+		if (kFormID < size) {
 			auto& formSection = sections[kFormID];
 			if (formSection.contains('~') || string::is_only_hex(formSection)) {
 				FormIDPair pair;
@@ -95,7 +96,7 @@ namespace INI
 		}
 
 		//KEYWORDS
-		if (sections.size() > 1) {
+		if (kStrings < size) {
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
 
 			auto split_str = detail::split_sub_string(sections[kStrings]);
@@ -119,7 +120,7 @@ namespace INI
 		}
 
 		//FILTER FORMS
-		if (sections.size() > 2) {
+		if (kFilterIDs < size) {
 			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
 
 			auto split_IDs = detail::split_sub_string(sections[kFilterIDs]);
@@ -142,7 +143,7 @@ namespace INI
 		//LEVEL
 		ActorLevel actorLevelPair = { UINT16_MAX, UINT16_MAX };
 		std::vector<SkillLevel> skillLevelPairs;
-		if (sections.size() > 3) {
+		if (kLevel < size) {
 			auto split_levels = detail::split_sub_string(sections[kLevel]);
 			for (auto& levels : split_levels) {
 				if (levels.contains('(')) {
@@ -182,7 +183,7 @@ namespace INI
 		level_ini = { actorLevelPair, skillLevelPairs };
 
 		//TRAITS
-		if (sections.size() > 4) {
+		if (kTraits < size) {
 			auto& [sex, unique, summonable] = traits_ini;
 
 			auto split_traits = detail::split_sub_string(sections[kTraits], "/");
@@ -205,7 +206,7 @@ namespace INI
 
 		//ITEMCOUNT
 		itemCount_ini = 1;
-		if (sections.size() > 5) {
+		if (kItemCount < size) {
 			const auto& itemCountStr = sections[kItemCount];
 			if (!itemCountStr.empty() && !itemCountStr.contains("NONE"sv)) {
 				itemCount_ini = string::lexical_cast<std::int32_t>(itemCountStr);
@@ -214,7 +215,7 @@ namespace INI
 
 		//CHANCE
 		chance_ini = 100;
-		if (sections.size() > 6) {
+		if (kChance < size) {
 			const auto& chanceStr = sections[kChance];
 			if (!chanceStr.empty() && !chanceStr.contains("NONE"sv)) {
 				chance_ini = string::lexical_cast<float>(chanceStr);
