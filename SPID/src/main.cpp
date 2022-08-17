@@ -2,19 +2,22 @@
 #include "LookupConfigs.h"
 #include "LookupForms.h"
 
-void MessageHandler(SKSE::MessagingInterface::Message* a_message)
+HMODULE kid{ nullptr };
+HMODULE tweaks{ nullptr };
+
+bool shouldDistribute{ false };
+
+bool DoDistribute()
 {
-	if (a_message->type == SKSE::MessagingInterface::kDataLoaded) {
-		logger::info("{:*^30}", "LOOKUP");
+	if (Lookup::GetForms()) {
+		Distribute::ApplyToNPCs();
+		Distribute::LeveledActor::Install();
+		Distribute::DeathItemManager::Register();
 
-		Cache::EditorID::GetSingleton()->FillMap();
-
-		if (Lookup::GetForms()) {
-			Distribute::ApplyToNPCs();
-			Distribute::LeveledActor::Install();
-			Distribute::DeathItemManager::Register();
-		}
+		return true;
 	}
+
+	return false;
 }
 
 class DistributionManager : public RE::BSTEventSink<SKSE::ModCallbackEvent>
@@ -35,15 +38,8 @@ protected:
 			logger::info("{:*^30}", "LOOKUP");
 			logger::info("Starting distribution since KID is done...");
 
-			Cache::EditorID::GetSingleton()->FillMap();
-
-			if (Lookup::GetForms()) {
-				Distribute::ApplyToNPCs();
-				Distribute::LeveledActor::Install();
-				Distribute::DeathItemManager::Register();
-
-				SKSE::GetModCallbackEventSource()->RemoveEventSink(GetSingleton());
-			}
+			DoDistribute();
+			SKSE::GetModCallbackEventSource()->RemoveEventSink(GetSingleton());
 		}
 
 		return EventResult::kContinue;
@@ -59,6 +55,35 @@ private:
 	DistributionManager& operator=(const DistributionManager&) = delete;
 	DistributionManager& operator=(DistributionManager&&) = delete;
 };
+
+void MessageHandler(SKSE::MessagingInterface::Message* a_message)
+{
+	switch (a_message->type) {
+	case SKSE::MessagingInterface::kPostLoad:
+		{
+			kid = GetModuleHandle(L"po3_KeywordItemDistributor");
+			logger::info("Keyword Item Distributor (KID) detected : {}", kid != nullptr);
+
+			tweaks = GetModuleHandle(L"po3_Tweaks");
+			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
+
+			if (shouldDistribute = INI::Read(); shouldDistribute && kid != nullptr) {
+				SKSE::GetModCallbackEventSource()->AddEventSink(DistributionManager::GetSingleton());
+			}
+		}
+		break;
+	case SKSE::MessagingInterface::kDataLoaded:
+		{
+			if (shouldDistribute && kid == nullptr) {
+				logger::info("{:*^30}", "LOOKUP");
+				DoDistribute();
+			}
+		}
+		break;
+	default:
+		break;
+	}
+}
 
 #ifdef SKYRIM_AE
 extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
@@ -121,16 +146,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
 	SKSE::Init(a_skse);
 
-	const auto kidHandle = GetModuleHandle(L"po3_KeywordItemDistributor");
-	logger::info("Keyword Item Distributor (KID) detected : {}", kidHandle != nullptr);
-
-	if (INI::Read()) {
-		if (kidHandle != nullptr) {
-			SKSE::GetModCallbackEventSource()->AddEventSink(DistributionManager::GetSingleton());
-		} else {
-			SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
-		}
-	}
+	SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
 
 	return true;
 }

@@ -112,7 +112,7 @@ namespace Filter
 		}
 
 		const std::string name = a_actorbase.GetName();
-		const std::string editorID = Cache::EditorID::GetSingleton()->GetEditorID(a_actorbase.GetFormID());
+		const std::string editorID = Cache::EditorID::GetEditorID(a_actorbase.GetFormID());
 
 		if (!strings_NOT.empty()) {
 			bool result = false;
@@ -276,7 +276,7 @@ namespace Distribute
 				if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 					name = form->GetFormEditorID();
 				} else {
-					name = Cache::EditorID::GetSingleton()->GetEditorID(form->GetFormID());
+					name = Cache::EditorID::GetEditorID(form->GetFormID());
 				}
 				logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
 			}
