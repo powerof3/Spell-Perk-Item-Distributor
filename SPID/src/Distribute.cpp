@@ -73,7 +73,8 @@ void Distribute::ApplyToNPCs()
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 		std::size_t totalNPCs = 0;
 		for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-			if (actorbase && !actorbase->IsPlayer() && !actorbase->UsesTemplate()) {
+			
+			if (actorbase && !actorbase->IsPlayer() && (!actorbase->UsesTemplate() || actorbase->IsUnique())) {
 				Distribute(actorbase);
 				totalNPCs++;
 			}
