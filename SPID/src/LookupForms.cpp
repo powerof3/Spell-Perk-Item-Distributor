@@ -1,5 +1,6 @@
 #include "LookupConfigs.h"
 #include "LookupForms.h"
+#include "KeywordDependencies.h"
 
 bool Lookup::GetForms()
 {
@@ -8,7 +9,7 @@ bool Lookup::GetForms()
 			get_forms(dataHandler, a_formType, INI::configs[a_formType], a_map);
 		};
 
-	    lookup_forms("Spell", spells);
+		lookup_forms("Spell", spells);
 		lookup_forms("Perk", perks);
 		lookup_forms("Item", items);
 		lookup_forms("Shout", shouts);
@@ -18,6 +19,10 @@ bool Lookup::GetForms()
 		lookup_forms("Keyword", keywords);
 		lookup_forms("DeathItem", deathItems);
 		lookup_forms("Faction", factions);
+
+		if (keywords) {
+			Dependencies::ResolveKeywords();
+		}
 	}
 
 	const auto result = spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions;
