@@ -3,6 +3,7 @@ set(sources ${sources}
 	src/Distribute.cpp
 	src/LookupConfigs.cpp
 	src/LookupForms.cpp
+	src/KeywordDependencies.cpp
 	src/main.cpp
 	src/PCH.cpp
 )

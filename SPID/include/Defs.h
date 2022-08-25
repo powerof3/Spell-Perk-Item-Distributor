@@ -68,6 +68,25 @@ namespace DATA
 	};
 }
 
+/// Trait that is used to infer default sorter for Forms.
+template <class TForm>
+struct form_sorter
+{
+	using Sorter = std::less<TForm*>;
+};
+
+/// Custom ordering for keywords that ensures that dependent keywords are disitrbuted after the keywords that they depend on.
+struct KeywordDependencySorter
+{
+	bool operator()(RE::BGSKeyword* a, RE::BGSKeyword* b) const;
+};
+
+template <>
+struct form_sorter<RE::BGSKeyword>
+{
+	using Sorter = KeywordDependencySorter;
+};
+
 using FormIDPair = std::pair<
 	std::optional<RE::FormID>,
 	std::optional<std::string>>;
@@ -108,4 +127,4 @@ using FormData = std::tuple<
 template <class T>
 using FormCount = std::pair<T*, ItemCount>;
 template <class T>
-using FormDataMap = std::unordered_map<T*, std::pair<NPCCount, std::vector<FormData>>>;
+using FormDataMap = std::map<T*, std::pair<NPCCount, std::vector<FormData>>, typename form_sorter<T>::Sorter>;
