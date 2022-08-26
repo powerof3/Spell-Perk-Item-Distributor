@@ -4,11 +4,16 @@ namespace INI
 {
 	inline std::unordered_map<std::string, INIDataMap> configs;
 
-    namespace detail
+	namespace detail
 	{
+		inline bool is_valid_entry(const std::string& a_str)
+		{
+			return !a_str.empty() && !a_str.contains("NONE"sv);
+		}
+
 		inline std::vector<std::string> split_sub_string(const std::string& a_str, const std::string& a_delimiter = ",")
 		{
-			if (!a_str.empty() && !a_str.contains("NONE"sv)) {
+			if (is_valid_entry(a_str)) {
 				return string::split(a_str, a_delimiter);
 			}
 			return {};
@@ -22,15 +27,15 @@ namespace INI
 					string::lexical_cast<RE::FormID>(splitID.at(kFormID), true),
 					splitID.at(kESP));
 			}
-            if (is_mod_name(a_str) || !string::is_only_hex(a_str)) {
-                return std::make_pair(
-                    std::nullopt,
-                    a_str);
-            }
-            return std::make_pair(
-                string::lexical_cast<RE::FormID>(a_str, true),
-                std::nullopt);
-        }
+			if (is_mod_name(a_str) || !string::is_only_hex(a_str)) {
+				return std::make_pair(
+					std::nullopt,
+					a_str);
+			}
+			return std::make_pair(
+				string::lexical_cast<RE::FormID>(a_str, true),
+				std::nullopt);
+		}
 
 		inline std::string sanitize(const std::string& a_value)
 		{
@@ -60,12 +65,12 @@ namespace INI
 		}
 	}
 
-	inline std::tuple<FormOrEditorID, INIData, std::optional<std::string>> parse_ini(const std::string& a_value)
+	inline std::tuple<FormOrEditorID, INIData, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value)
 	{
 		FormOrEditorID recordID;
 
-        INIData data;
-		auto& [strings_ini, filterIDs_ini, level_ini, traits_ini, itemCount_ini, chance_ini] = data;
+		INIData data;
+		auto& [strings_ini, filterIDs_ini, level_ini, traits_ini, idxOrCount_ini, chance_ini] = data;
 
 		auto sanitized_value = detail::sanitize(a_value);
 		const auto sections = string::split(sanitized_value, "|");
@@ -204,21 +209,21 @@ namespace INI
 			}
 		}
 
-		//ITEMCOUNT
-		itemCount_ini = 1;
-		if (kItemCount < size) {
-			const auto& itemCountStr = sections[kItemCount];
-			if (!itemCountStr.empty() && !itemCountStr.contains("NONE"sv)) {
-				itemCount_ini = string::lexical_cast<std::int32_t>(itemCountStr);
+		//ITEMCOUNT/INDEX
+		idxOrCount_ini = a_key == "Package" ? 0 : 1;  //reuse item count for package stack index
+		if (kIdxOrCount < size) {
+			const auto& str = sections[kIdxOrCount];
+			if (detail::is_valid_entry(str)) {
+				idxOrCount_ini = string::lexical_cast<std::int32_t>(str);
 			}
 		}
 
 		//CHANCE
 		chance_ini = 100;
 		if (kChance < size) {
-			const auto& chanceStr = sections[kChance];
-			if (!chanceStr.empty() && !chanceStr.contains("NONE"sv)) {
-				chance_ini = string::lexical_cast<float>(chanceStr);
+			const auto& str = sections[kChance];
+			if (detail::is_valid_entry(str)) {
+				chance_ini = string::lexical_cast<float>(str);
 			}
 		}
 

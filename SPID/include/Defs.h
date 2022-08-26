@@ -43,7 +43,7 @@ namespace INI
 		kFilterIDs,
 		kLevel,
 		kTraits,
-		kItemCount,
+		kIdxOrCount,
 		kChance
 	};
 
@@ -64,7 +64,7 @@ namespace DATA
 		kLevel,
 		kTraits,
 		kChance,
-		kItemCount
+		kIdxOrCount
 	};
 }
 
@@ -100,7 +100,7 @@ using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;
 using SkillLevel = std::pair<
 	std::uint32_t,
 	std::pair<std::uint8_t, std::uint8_t>>;
-using ItemCount = std::int32_t;
+using IdxOrCount = std::int32_t;
 using Traits = std::tuple<
     std::optional<RE::SEX>,
 	std::optional<bool>,
@@ -113,7 +113,7 @@ using INIData = std::tuple<
 	std::array<FormIDPairVec, 3>,
 	std::pair<ActorLevel, std::vector<SkillLevel>>,
 	Traits,
-	ItemCount,
+	IdxOrCount,
 	Chance>;
 using INIDataMap = std::map<FormOrEditorID, std::vector<INIData>>;
 
@@ -123,8 +123,8 @@ using FormData = std::tuple<
 	std::pair<ActorLevel, std::vector<SkillLevel>>,
 	Traits,
 	Chance,
-	ItemCount>;
+	IdxOrCount>;
 template <class T>
-using FormCount = std::pair<T*, ItemCount>;
+using FormCount = std::pair<T*, IdxOrCount>;
 template <class T>
 using FormDataMap = std::map<T*, std::pair<NPCCount, std::vector<FormData>>, typename form_sorter<T>::Sorter>;

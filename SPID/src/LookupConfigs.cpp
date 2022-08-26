@@ -43,7 +43,7 @@ bool INI::Read()
 			std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
 
 			for (auto& [key, entry] : *values) {
-				auto [recordID, data, sanitized_str] = parse_ini(entry);
+				auto [recordID, data, sanitized_str] = parse_ini(key.pItem, entry);
 
 				configs[key.pItem][recordID].emplace_back(data);
 

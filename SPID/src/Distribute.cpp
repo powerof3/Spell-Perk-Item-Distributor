@@ -3,7 +3,7 @@
 
 void Distribute::Distribute(RE::TESNPC* a_actorbase)
 {
-    for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, [&](const auto& a_keywordsPair) {
+	for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, [&](const auto& a_keywordsPair) {
 		const auto keyword = a_keywordsPair.first;
 		if (!a_actorbase->HasKeywordString(keyword->formEditorID)) {
 			return a_actorbase->AddKeyword(keyword);
@@ -13,7 +13,7 @@ void Distribute::Distribute(RE::TESNPC* a_actorbase)
 
 	for_each_form<RE::TESFaction>(*a_actorbase, Forms::factions, [&](const auto& a_factionPair) {
 		if (!a_actorbase->IsInFaction(a_factionPair.first)) {
-            const RE::FACTION_RANK faction{ a_factionPair.first, 1 };
+			const RE::FACTION_RANK faction{ a_factionPair.first, 1 };
 			a_actorbase->factions.push_back(faction);
 			return true;
 		}
@@ -54,17 +54,33 @@ void Distribute::Distribute(RE::TESNPC* a_actorbase)
 	});
 
 	for_each_form<RE::TESPackage>(*a_actorbase, Forms::packages, [&](const auto& a_packagePair) {
-		const auto package = a_packagePair.first;
-		auto& packagesList = a_actorbase->aiPackages.packages;
-		if (std::ranges::find(packagesList, package) == packagesList.end()) {
-			packagesList.push_front(package);
-			const auto packageList = a_actorbase->defaultPackList;
-			if (packageList && !packageList->HasForm(package)) {
-				packageList->AddForm(package);
-				return true;
-			}
+		auto package = a_packagePair.first;
+		auto packageIdx = a_packagePair.second;
+
+		if (packageIdx > 0) {
+			--packageIdx; //get actual position we want to insert at
 		}
-		return false;
+
+		auto& packageList = a_actorbase->aiPackages.packages;
+		if (std::ranges::find(packageList, package) == packageList.end()) {
+			if (packageList.empty() || packageIdx == 0) {
+				packageList.push_front(package);
+			} else {
+				auto idxIt = packageList.begin();
+				for (idxIt; idxIt != packageList.end(); ++idxIt) {
+					auto idx = std::distance(packageList.begin(), idxIt);
+					if (packageIdx == idx) {
+						break;
+					}
+				}
+				if (idxIt != packageList.end()) {
+					packageList.insert_after(idxIt, package);
+				}
+			}
+			return true;
+		}
+
+	    return false;
 	});
 }
 
@@ -73,7 +89,6 @@ void Distribute::ApplyToNPCs()
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 		std::size_t totalNPCs = 0;
 		for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-			
 			if (actorbase && !actorbase->IsPlayer() && (!actorbase->UsesTemplate() || actorbase->IsUnique())) {
 				Distribute(actorbase);
 				totalNPCs++;
@@ -108,7 +123,7 @@ namespace Distribute
 			return;
 		}
 
-        if (auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+		if (auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink(GetSingleton());
 			logger::info("	Registered {}"sv, typeid(DeathItemManager).name());
 		}

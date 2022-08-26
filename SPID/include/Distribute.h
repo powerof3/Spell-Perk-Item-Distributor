@@ -255,8 +255,8 @@ namespace Distribute
 					if (!Filter::strings(a_actorbase, formData) || !Filter::forms(a_actorbase, formData) || !Filter::secondary(a_actorbase, formData)) {
 						continue;
 					}
-					auto itemCount = std::get<DATA::TYPE::kItemCount>(formData);
-					if (a_fn({ form, itemCount })) {
+					auto idxOrCount = std::get<DATA::TYPE::kIdxOrCount>(formData);
+					if (a_fn({ form, idxOrCount })) {
 						++npcCount;
 					}
 				}
