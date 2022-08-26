@@ -53,34 +53,62 @@ void Distribute::Distribute(RE::TESNPC* a_actorbase)
 		return true;
 	});
 
-	for_each_form<RE::TESPackage>(*a_actorbase, Forms::packages, [&](const auto& a_packagePair) {
-		auto package = a_packagePair.first;
+	for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, [&](const auto& a_packagePair) {
+		auto packageForm = a_packagePair.first;
 		auto packageIdx = a_packagePair.second;
 
-		if (packageIdx > 0) {
-			--packageIdx; //get actual position we want to insert at
-		}
+		if (packageForm->Is(RE::FormType::Package)) {
+			auto package = packageForm->As<RE::TESPackage>();
 
-		auto& packageList = a_actorbase->aiPackages.packages;
-		if (std::ranges::find(packageList, package) == packageList.end()) {
-			if (packageList.empty() || packageIdx == 0) {
-				packageList.push_front(package);
-			} else {
-				auto idxIt = packageList.begin();
-				for (idxIt; idxIt != packageList.end(); ++idxIt) {
-					auto idx = std::distance(packageList.begin(), idxIt);
-					if (packageIdx == idx) {
-						break;
+			if (packageIdx > 0) {
+				--packageIdx;  //get actual position we want to insert at
+			}
+
+			auto& packageList = a_actorbase->aiPackages.packages;
+			if (std::ranges::find(packageList, package) == packageList.end()) {
+				if (packageList.empty() || packageIdx == 0) {
+					packageList.push_front(package);
+				} else {
+					auto idxIt = packageList.begin();
+					for (idxIt; idxIt != packageList.end(); ++idxIt) {
+						auto idx = std::distance(packageList.begin(), idxIt);
+						if (packageIdx == idx) {
+							break;
+						}
+					}
+					if (idxIt != packageList.end()) {
+						packageList.insert_after(idxIt, package);
 					}
 				}
-				if (idxIt != packageList.end()) {
-					packageList.insert_after(idxIt, package);
-				}
+				return true;
 			}
+		} else if (packageForm->Is(RE::FormType::FormList)) {
+			auto packageList = packageForm->As<RE::BGSListForm>();
+
+			switch (packageIdx) {
+			case 0:
+				a_actorbase->defaultPackList = packageList;
+				break;
+			case 1:
+				a_actorbase->spectatorOverRidePackList = packageList;
+				break;
+			case 2:
+				a_actorbase->observeCorpseOverRidePackList = packageList;
+				break;
+			case 3:
+				a_actorbase->guardWarnOverRidePackList = packageList;
+				break;
+			case 4:
+				a_actorbase->enterCombatOverRidePackList = packageList;
+				break;
+			default:
+				break;
+			}
+
 			return true;
 		}
 
-	    return false;
+		return false;
 	});
 }
 

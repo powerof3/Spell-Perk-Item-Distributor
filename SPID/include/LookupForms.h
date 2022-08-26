@@ -18,7 +18,7 @@ namespace Forms
 	inline FormMap<RE::TESBoundObject> items;
 	inline FormMap<RE::TESShout> shouts;
 	inline FormMap<RE::TESLevSpell> levSpells;
-	inline FormMap<RE::TESPackage> packages;
+	inline FormMap<RE::TESForm> packages;
 	inline FormMap<RE::BGSOutfit> outfits;
 	inline FormMap<RE::BGSKeyword> keywords;
 	inline FormMap<RE::TESBoundObject> deathItems;
@@ -46,8 +46,7 @@ namespace Lookup
 							logger::error("			Filter ({}) SKIP - mod cannot be found", *modName);
 						}
 					} else {
-						auto filterForm = RE::TESForm::LookupByEditorID(*modName);
-						if (filterForm) {
+						if (auto filterForm = RE::TESForm::LookupByEditorID(*modName); filterForm) {
 							const auto formType = filterForm->GetFormType();
 							if (const auto type = Cache::FormType::GetWhitelistFormString(formType); !type.empty()) {
 								a_formVec.push_back(filterForm);
