@@ -1,12 +1,13 @@
-#include "LookupConfigs.h"
 #include "LookupForms.h"
 #include "KeywordDependencies.h"
+#include "LookupConfigs.h"
 
 bool Lookup::GetForms()
 {
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 		const auto lookup_forms = [&]<class Form>(const std::string& a_formType, FormMap<Form>& a_map) {
 			get_forms(dataHandler, a_formType, INI::configs[a_formType], a_map);
+			get_forms_with_level_filters(a_map);
 		};
 
 		lookup_forms("Spell", spells);

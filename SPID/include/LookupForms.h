@@ -6,6 +6,7 @@ namespace Forms
 	struct FormMap
 	{
 		FormDataMap<T> forms;
+		FormDataMap<T> formsWithLevels;
 
 		explicit operator bool()
 		{
@@ -59,7 +60,7 @@ namespace Lookup
 					}
 				} else if (formID) {
 					auto filterForm = modName ?
-                                          a_dataHandler->LookupForm(*formID, *modName) :
+					                      a_dataHandler->LookupForm(*formID, *modName) :
                                           RE::TESForm::LookupByID(*formID);
 					if (filterForm) {
 						const auto formType = filterForm->GetFormType();
@@ -74,6 +75,26 @@ namespace Lookup
 				}
 			}
 			return !a_formVec.empty();
+		}
+
+		inline bool has_level_filters(std::pair<ActorLevel, std::vector<SkillLevel>>& a_levelFilters)
+		{
+			const auto& [actorLevelPair, skillLevelPairs] = a_levelFilters;
+
+			auto& [actorMin, actorMax] = actorLevelPair;
+			if (actorMin < UINT16_MAX || actorMax < UINT16_MAX) {
+				return true;
+			}
+
+			for (auto& [skillType, skill] : skillLevelPairs) {
+				auto& [skillMin, skillMax] = skill;
+
+				if (skillType < 18 && (skillMin < UINT8_MAX || skillMax < UINT8_MAX)) {
+					return true;
+				}
+			}
+
+			return false;
 		}
 	}
 
@@ -186,6 +207,25 @@ namespace Lookup
 			}
 
 			a_FormDataMap.forms[form] = { 0, formDataVec };
+		}
+	}
+
+	template <class Form>
+	void get_forms_with_level_filters(FormMap<Form>& a_formDataMap)
+	{
+		if (a_formDataMap.forms.empty()) {
+			return;
+		}
+
+		for (auto& [form, data] : a_formDataMap.forms) {
+			if (form != nullptr) {
+				for (auto& formData : data.second) {
+					auto& levelEntry = std::get<DATA::TYPE::kLevel>(formData);
+					if (detail::has_level_filters(levelEntry)) {
+						a_formDataMap.formsWithLevels[form].second.push_back(formData);
+					}
+				}
+			}
 		}
 	}
 

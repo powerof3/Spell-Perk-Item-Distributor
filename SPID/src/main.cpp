@@ -12,6 +12,7 @@ bool DoDistribute()
 	if (Lookup::GetForms()) {
 		Distribute::ApplyToNPCs();
 		Distribute::LeveledActor::Install();
+		Distribute::PlayerLeveledActor::Install();
 		Distribute::DeathItem::Manager::Register();
 
 		return true;

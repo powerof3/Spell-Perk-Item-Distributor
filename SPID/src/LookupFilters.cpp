@@ -189,7 +189,7 @@ namespace Filter
 		return true;
 	}
 
-	bool secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData)
+	bool secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData, bool a_noPlayerLevelDistribution)
 	{
 		const auto& [sex, isUnique, isSummonable] = std::get<DATA::TYPE::kTraits>(a_formData);
 		if (sex && a_actorbase.GetSex() != *sex) {
@@ -204,7 +204,7 @@ namespace Filter
 
 		const auto& [actorLevelPair, skillLevelPairs] = std::get<DATA::TYPE::kLevel>(a_formData);
 
-		if (!a_actorbase.HasPCLevelMult()) {
+		if (!a_noPlayerLevelDistribution || !a_actorbase.HasPCLevelMult()) {
 			auto& [actorMin, actorMax] = actorLevelPair;
 			const auto actorLevel = a_actorbase.actorData.level;
 
@@ -217,22 +217,22 @@ namespace Filter
 			} else if (actorMax < UINT16_MAX && actorLevel > actorMax) {
 				return false;
 			}
-		}
 
-		for (auto& [skillType, skill] : skillLevelPairs) {
-			auto& [skillMin, skillMax] = skill;
+			for (auto& [skillType, skill] : skillLevelPairs) {
+				auto& [skillMin, skillMax] = skill;
 
-			if (skillType < 18) {
-				auto const skillLevel = a_actorbase.playerSkills.values[skillType];
+				if (skillType < 18) {
+					auto const skillLevel = a_actorbase.playerSkills.values[skillType];
 
-				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-					if (skillLevel < skillMin || skillLevel > skillMax) {
+					if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+						if (skillLevel < skillMin || skillLevel > skillMax) {
+							return false;
+						}
+					} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
+						return false;
+					} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
 						return false;
 					}
-				} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
-					return false;
-				} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
-					return false;
 				}
 			}
 		}

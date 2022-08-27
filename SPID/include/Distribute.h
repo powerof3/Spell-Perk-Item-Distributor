@@ -1,18 +1,25 @@
 #pragma once
 
-#include "LookupForms.h"
 #include "LookupFilters.h"
+#include "LookupForms.h"
 
 namespace Distribute
 {
 	template <class Form>
-	void for_each_form(RE::TESNPC& a_actorbase, Forms::FormMap<Form>& a_formDataMap, std::function<bool(const FormCount<Form>&)> a_fn)
+	void for_each_form(
+		RE::TESNPC& a_actorbase,
+		Forms::FormMap<Form>& a_formDataMap,
+		bool a_onlyPlayerLevelEntries,
+		bool a_noPlayerLevelDistribution,
+		std::function<bool(const FormCount<Form>&)> a_fn)
 	{
-		for (auto& [form, data] : a_formDataMap.forms) {
+		auto& map = a_onlyPlayerLevelEntries ? a_formDataMap.formsWithLevels : a_formDataMap.forms;
+
+		for (auto& [form, data] : map) {
 			if (form != nullptr) {
 				auto& [npcCount, formDataVec] = data;
 				for (auto& formData : formDataVec) {
-					if (!Filter::strings(a_actorbase, formData) || !Filter::forms(a_actorbase, formData) || !Filter::secondary(a_actorbase, formData)) {
+					if (!Filter::strings(a_actorbase, formData) || !Filter::forms(a_actorbase, formData) || !Filter::secondary(a_actorbase, formData, a_noPlayerLevelDistribution)) {
 						continue;
 					}
 					auto idxOrCount = std::get<DATA::TYPE::kIdxOrCount>(formData);
@@ -78,7 +85,12 @@ namespace Distribute
 		void Install();
 	}
 
-	void Distribute(RE::TESNPC* a_actorbase);
+	namespace PlayerLeveledActor
+	{
+		void Install();
+	}
+
+	void Distribute(RE::TESNPC* a_actorbase, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
 
 	void ApplyToNPCs();
 }
