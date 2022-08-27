@@ -22,6 +22,9 @@ bool INI::Read()
 
 	logger::info("	{} matching inis found", files.size());
 
+	//sort files
+	std::ranges::sort(files);
+
 	//initialize map
 	for (size_t i = 0; i < RECORD::kTotal; i++) {
 		configs[RECORD::add[i]] = INIDataMap{};
