@@ -33,7 +33,7 @@ namespace Filter
 				case RE::FormType::Faction:
 					{
 						const auto faction = a_filter->As<RE::TESFaction>();
-						return faction && a_actorbase.IsInFaction(faction);
+						return a_actorbase.IsInFaction(faction);
 					}
 				case RE::FormType::Race:
 					return a_actorbase.GetRace() == a_filter;
@@ -43,6 +43,20 @@ namespace Filter
 					return &a_actorbase == a_filter;
 				case RE::FormType::VoiceType:
 					return a_actorbase.voiceType == a_filter;
+				case RE::FormType::FormList:
+					{
+						bool result = false;
+
+				        auto list = a_filter->As<RE::BGSListForm>();
+						list->ForEachForm([&](RE::TESForm& a_form) {
+							if (result = get_type(a_actorbase, &a_form); result) {
+								return RE::BSContainer::ForEachResult::kStop;
+							}
+							return RE::BSContainer::ForEachResult::kContinue;
+						});
+
+						return result;
+					}
 				default:
 					return false;
 				}

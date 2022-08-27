@@ -11,9 +11,8 @@ namespace Cache
 		return std::string();
 	}
 
-	std::string FormType::GetWhitelistFormString(const RE::FormType a_type)
+	bool FormType::GetWhitelisted(const RE::FormType a_type)
 	{
-		auto it = whitelistMap.find(a_type);
-		return it != whitelistMap.end() ? std::string(it->second) : std::string();
+		return whitelist.find(a_type) != whitelist.end();
 	}
 }

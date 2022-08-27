@@ -48,7 +48,7 @@ namespace Lookup
 					} else {
 						if (auto filterForm = RE::TESForm::LookupByEditorID(*modName); filterForm) {
 							const auto formType = filterForm->GetFormType();
-							if (const auto type = Cache::FormType::GetWhitelistFormString(formType); !type.empty()) {
+							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
 							} else {
 								logger::error("			Filter ({}) SKIP - invalid formtype ({})", *modName, formType);
@@ -63,7 +63,7 @@ namespace Lookup
                                           RE::TESForm::LookupByID(*formID);
 					if (filterForm) {
 						const auto formType = filterForm->GetFormType();
-						if (const auto type = Cache::FormType::GetWhitelistFormString(formType); !type.empty()) {
+						if (Cache::FormType::GetWhitelisted(formType)) {
 							a_formVec.push_back(filterForm);
 						} else {
 							logger::error("			Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", *formID, modName.value_or(""), formType);

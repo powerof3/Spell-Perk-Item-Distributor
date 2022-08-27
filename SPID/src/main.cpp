@@ -12,7 +12,7 @@ bool DoDistribute()
 	if (Lookup::GetForms()) {
 		Distribute::ApplyToNPCs();
 		Distribute::LeveledActor::Install();
-		Distribute::DeathItemManager::Register();
+		Distribute::DeathItem::Manager::Register();
 
 		return true;
 	}
