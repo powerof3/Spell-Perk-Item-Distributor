@@ -206,7 +206,7 @@ namespace Filter
 
 		if (!a_noPlayerLevelDistribution || !a_actorbase.HasPCLevelMult()) {
 			auto& [actorMin, actorMax] = actorLevelPair;
-			const auto actorLevel = a_actorbase.actorData.level;
+			const auto actorLevel = a_actorbase.GetLevel();
 
 			if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
 				if (actorLevel < actorMin || actorLevel > actorMax) {
@@ -235,6 +235,8 @@ namespace Filter
 					}
 				}
 			}
+		} else {
+			return false;
 		}
 
 		const auto chance = std::get<DATA::TYPE::kChance>(a_formData);

@@ -226,7 +226,7 @@ namespace Distribute::PlayerLeveledActor
 		{
 			func(a_actorbase);
 
-			if (a_actorbase->HasPCLevelMult()) {
+			if (!a_actorbase->IsPlayer() && a_actorbase->HasPCLevelMult()) {
 				Distribute(a_actorbase, true, false);
 			}
 		}
