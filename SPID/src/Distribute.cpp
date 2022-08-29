@@ -109,6 +109,11 @@ namespace Distribute
 
 			return false;
 		});
+
+		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepingOutfits, [&](const auto& a_outfitPair) {
+			a_actorbase->sleepOutfit = a_outfitPair.first;
+			return true;
+		});
 	}
 
 	void ApplyToNPCs()
@@ -145,6 +150,7 @@ namespace Distribute
 			list_result("Packages", Forms::packages);
 			list_result("Outfits", Forms::outfits);
 			list_result("Factions", Forms::factions);
+			list_result("SleepingOutfits", Forms::sleepingOutfits);
 		}
 	}
 }

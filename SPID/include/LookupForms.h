@@ -23,6 +23,7 @@ namespace Forms
 	inline FormMap<RE::BGSKeyword> keywords;
 	inline FormMap<RE::TESBoundObject> deathItems;
 	inline FormMap<RE::TESFaction> factions;
+	inline FormMap<RE::BGSOutfit> sleepingOutfits;
 }
 
 namespace Lookup

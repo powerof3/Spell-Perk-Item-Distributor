@@ -19,6 +19,7 @@ bool Lookup::GetForms()
 		lookup_forms("Keyword", keywords);
 		lookup_forms("DeathItem", deathItems);
 		lookup_forms("Faction", factions);
+		lookup_forms("SleepingOutfit", factions);
 
 		if (keywords) {
 			Dependencies::ResolveKeywords();
@@ -44,6 +45,7 @@ bool Lookup::GetForms()
 		list_lookup_result("Keyword", keywords);
 		list_lookup_result("DeathItem", deathItems);
 		list_lookup_result("Faction", factions);
+		list_lookup_result("SleepingOutfit", sleepingOutfits);
 	}
 	return result;
 }
