@@ -3,14 +3,14 @@
 
 namespace Distribute
 {
-	void Distribute(RE::TESNPC* a_actorbase, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution)
+	void Distribute(RE::TESNPC* a_actorbase)
 	{
-		for_each_form<RE::BGSKeyword>( *a_actorbase, Forms::keywords, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_keywordsPair) {
+		for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, [&](const auto& a_keywordsPair) {
 			const auto keyword = a_keywordsPair.first;
 			return a_actorbase->AddKeyword(keyword);
 		});
 
-		for_each_form<RE::TESFaction>(*a_actorbase, Forms::factions, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_factionPair) {
+		for_each_form<RE::TESFaction>(*a_actorbase, Forms::factions, [&](const auto& a_factionPair) {
 			if (!a_actorbase->IsInFaction(a_factionPair.first)) {
 				const RE::FACTION_RANK faction{ a_factionPair.first, 1 };
 				a_actorbase->factions.push_back(faction);
@@ -19,40 +19,40 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::SpellItem>(*a_actorbase, Forms::spells, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_spellPair) {
+		for_each_form<RE::SpellItem>(*a_actorbase, Forms::spells, [&](const auto& a_spellPair) {
 			const auto spell = a_spellPair.first;
 			const auto actorEffects = a_actorbase->GetSpellList();
 			return actorEffects && actorEffects->AddSpell(spell);
 		});
 
-		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_perkPair) {
+		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, [&](const auto& a_perkPair) {
 			const auto perk = a_perkPair.first;
 			return a_actorbase->AddPerk(perk, 1);
 		});
 
-		for_each_form<RE::TESShout>(*a_actorbase, Forms::shouts, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_shoutPair) {
+		for_each_form<RE::TESShout>(*a_actorbase, Forms::shouts, [&](const auto& a_shoutPair) {
 			const auto shout = a_shoutPair.first;
 			const auto actorEffects = a_actorbase->GetSpellList();
 			return actorEffects && actorEffects->AddShout(shout);
 		});
 
-		for_each_form<RE::TESLevSpell>(*a_actorbase, Forms::levSpells, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_levSpellPair) {
+		for_each_form<RE::TESLevSpell>(*a_actorbase, Forms::levSpells, [&](const auto& a_levSpellPair) {
 			const auto levSpell = a_levSpellPair.first;
 			const auto actorEffects = a_actorbase->GetSpellList();
 			return actorEffects && actorEffects->AddLevSpell(levSpell);
 		});
 
-		for_each_form<RE::TESBoundObject>(*a_actorbase, Forms::items, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_itemPair) {
+		for_each_form<RE::TESBoundObject>(*a_actorbase, Forms::items, [&](const auto& a_itemPair) {
 			const auto& [item, count] = a_itemPair;
 			return a_actorbase->AddObjectToContainer(item, count, a_actorbase);
 		});
 
-		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::outfits, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_outfitPair) {
+		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::outfits, [&](const auto& a_outfitPair) {
 			a_actorbase->defaultOutfit = a_outfitPair.first;
 			return true;
 		});
 
-		for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, a_onlyPlayerLevelEntries, a_noPlayerLevelDistribution, [&](const auto& a_packagePair) {
+		for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, [&](const auto& a_packagePair) {
 			auto packageForm = a_packagePair.first;
 			auto packageIdx = a_packagePair.second;
 
@@ -116,9 +116,15 @@ namespace Distribute
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			std::size_t totalNPCs = 0;
 			for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-				if (actorbase && !actorbase->IsPlayer() && (!actorbase->UsesTemplate() || actorbase->IsUnique())) {
-					Distribute(actorbase, false, true);
-					totalNPCs++;
+				if (actorbase && !actorbase->IsPlayer()) {
+					if (!actorbase->HasPCLevelMult()) {
+						if (!actorbase->UsesTemplate() || actorbase->IsUnique()) {
+							Distribute(actorbase);
+							totalNPCs++;
+						}
+					} else {
+						pcMultNPCs.insert(actorbase->GetFormID());
+					}
 				}
 			}
 
@@ -177,7 +183,7 @@ namespace Distribute::DeathItem
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto base = actor ? actor->GetActorBase() : nullptr;
 			if (actor && base) {
-				for_each_form<RE::TESBoundObject>(*base, Forms::deathItems, false, false, [&](const auto& a_deathItemPair) {
+				for_each_form<RE::TESBoundObject>(*base, Forms::deathItems, [&](const auto& a_deathItemPair) {
 					const auto& [deathItem, count] = a_deathItemPair;
 					detail::add_item(actor, deathItem, count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
@@ -202,7 +208,7 @@ namespace Distribute::LeveledActor
 			}
 
 			if (const auto actorbase = stl::adjust_pointer<RE::TESNPC>(a_this, -0x30); actorbase) {
-				Distribute(actorbase, false, true);
+				Distribute(actorbase);
 			}
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -226,8 +232,11 @@ namespace Distribute::PlayerLeveledActor
 		{
 			func(a_actorbase);
 
-			if (!a_actorbase->IsPlayer() && a_actorbase->HasPCLevelMult()) {
-				Distribute(a_actorbase, true, false);
+			const auto formID = a_actorbase->GetFormID();
+
+		    if (pcMultNPCs.contains(formID)) {
+				Distribute(a_actorbase);
+				pcMultNPCs.erase(formID);
 			}
 		}
 		static inline REL::Relocation<decltype(thunk)> func;

@@ -47,7 +47,7 @@ namespace Filter
 					{
 						bool result = false;
 
-				        auto list = a_filter->As<RE::BGSListForm>();
+						auto list = a_filter->As<RE::BGSListForm>();
 						list->ForEachForm([&](RE::TESForm& a_form) {
 							if (result = get_type(a_actorbase, &a_form); result) {
 								return RE::BSContainer::ForEachResult::kStop;
@@ -189,7 +189,7 @@ namespace Filter
 		return true;
 	}
 
-	bool secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData, bool a_noPlayerLevelDistribution)
+	bool secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData)
 	{
 		const auto& [sex, isUnique, isSummonable] = std::get<DATA::TYPE::kTraits>(a_formData);
 		if (sex && a_actorbase.GetSex() != *sex) {
@@ -204,46 +204,40 @@ namespace Filter
 
 		const auto& [actorLevelPair, skillLevelPairs] = std::get<DATA::TYPE::kLevel>(a_formData);
 
-		if (!a_noPlayerLevelDistribution || !a_actorbase.HasPCLevelMult()) {
-			auto& [actorMin, actorMax] = actorLevelPair;
-			const auto actorLevel = a_actorbase.GetLevel();
+		auto& [actorMin, actorMax] = actorLevelPair;
+		const auto actorLevel = a_actorbase.GetLevel();
 
-			if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
-				if (actorLevel < actorMin || actorLevel > actorMax) {
-					return false;
-				}
-			} else if (actorMin < UINT16_MAX && actorLevel < actorMin) {
-				return false;
-			} else if (actorMax < UINT16_MAX && actorLevel > actorMax) {
+		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
+			if (actorLevel < actorMin || actorLevel > actorMax) {
 				return false;
 			}
+		} else if (actorMin < UINT16_MAX && actorLevel < actorMin) {
+			return false;
+		} else if (actorMax < UINT16_MAX && actorLevel > actorMax) {
+			return false;
+		}
 
-			for (auto& [skillType, skill] : skillLevelPairs) {
-				auto& [skillMin, skillMax] = skill;
+		for (auto& [skillType, skill] : skillLevelPairs) {
+			auto& [skillMin, skillMax] = skill;
 
-				if (skillType < 18) {
-					auto const skillLevel = a_actorbase.playerSkills.values[skillType];
+			if (skillType < 18) {
+				auto const skillLevel = a_actorbase.playerSkills.values[skillType];
 
-					if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-						if (skillLevel < skillMin || skillLevel > skillMax) {
-							return false;
-						}
-					} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
-						return false;
-					} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+					if (skillLevel < skillMin || skillLevel > skillMax) {
 						return false;
 					}
+				} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
+					return false;
+				} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+					return false;
 				}
 			}
-		} else {
-			return false;
 		}
 
 		const auto chance = std::get<DATA::TYPE::kChance>(a_formData);
 		if (!numeric::essentially_equal(chance, 100.0f)) {
-			if (auto rng = RNG::GetSingleton()->Generate<float>(0.0f, 100.0f); rng > chance) {
-				return false;
-			}
+			return RNG::GetSingleton()->Generate<float>(0.0f, 100.0f) <= chance;
 		}
 
 		return true;
