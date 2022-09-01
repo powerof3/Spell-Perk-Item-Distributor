@@ -189,17 +189,19 @@ namespace Filter
 		return true;
 	}
 
-	bool secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData, bool a_noPlayerLevelDistribution)
+	SECONDARY_RESULT secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData, bool a_noPlayerLevelDistribution)
 	{
-		const auto& [sex, isUnique, isSummonable] = std::get<DATA::TYPE::kTraits>(a_formData);
+		const auto failed = SECONDARY_RESULT::kFail;
+
+	    const auto& [sex, isUnique, isSummonable] = std::get<DATA::TYPE::kTraits>(a_formData);
 		if (sex && a_actorbase.GetSex() != *sex) {
-			return false;
+			return failed;
 		}
 		if (isUnique && a_actorbase.IsUnique() != *isUnique) {
-			return false;
+			return failed;
 		}
 		if (isSummonable && a_actorbase.IsSummonable() != *isSummonable) {
-			return false;
+			return failed;
 		}
 
 		const auto& [actorLevelPair, skillLevelPairs] = std::get<DATA::TYPE::kLevel>(a_formData);
@@ -210,12 +212,12 @@ namespace Filter
 
 			if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
 				if (actorLevel < actorMin || actorLevel > actorMax) {
-					return false;
+					return failed;
 				}
 			} else if (actorMin < UINT16_MAX && actorLevel < actorMin) {
-				return false;
+				return failed;
 			} else if (actorMax < UINT16_MAX && actorLevel > actorMax) {
-				return false;
+				return failed;
 			}
 
 			for (auto& [skillType, skill] : skillLevelPairs) {
@@ -226,26 +228,26 @@ namespace Filter
 
 					if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
 						if (skillLevel < skillMin || skillLevel > skillMax) {
-							return false;
+							return failed;
 						}
 					} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
-						return false;
+						return failed;
 					} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
-						return false;
+						return failed;
 					}
 				}
 			}
 		} else {
-			return false;
+			return failed;
 		}
 
 		const auto chance = std::get<DATA::TYPE::kChance>(a_formData);
 		if (!numeric::essentially_equal(chance, 100.0f)) {
 			if (auto rng = RNG::GetSingleton()->Generate<float>(0.0f, 100.0f); rng > chance) {
-				return false;
+				return SECONDARY_RESULT::kFailDueToRNG;
 			}
 		}
 
-		return true;
+		return SECONDARY_RESULT::kPass;
 	}
 }

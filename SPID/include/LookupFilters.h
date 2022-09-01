@@ -2,9 +2,16 @@
 
 namespace Filter
 {
-	bool strings(RE::TESNPC& a_actorbase, const FormData& a_formData);
+	enum class SECONDARY_RESULT
+	{
+	    kFail = 0,
+		kFailDueToRNG,
+		kPass
+	};
+
+    bool strings(RE::TESNPC& a_actorbase, const FormData& a_formData);
 
     bool forms(RE::TESNPC& a_actorbase, const FormData& a_formData);
 
-    bool secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData, bool a_noPlayerLevelDistribution);
+    SECONDARY_RESULT secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData, bool a_noPlayerLevelDistribution);
 }
