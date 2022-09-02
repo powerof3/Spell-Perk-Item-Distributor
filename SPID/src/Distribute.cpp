@@ -56,8 +56,11 @@ namespace Distribute
 		});
 
 		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::outfits, input, [&](const auto& a_outfitPair) {
-			a_actorbase->defaultOutfit = a_outfitPair.first;
-			return true;
+			if (a_actorbase->defaultOutfit != a_outfitPair.first) {
+				a_actorbase->defaultOutfit = a_outfitPair.first;
+				return true;
+			}
+			return false;
 		});
 
 		for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, input, [&](const auto& a_packagePair) {
@@ -119,8 +122,10 @@ namespace Distribute
 		});
 
 		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepingOutfits, input, [&](const auto& a_outfitPair) {
-			a_actorbase->sleepOutfit = a_outfitPair.first;
-			return true;
+			if (a_actorbase->sleepOutfit != a_outfitPair.first) {
+				a_actorbase->sleepOutfit = a_outfitPair.first;
+				return true;
+			}
 		});
 	}
 
@@ -252,7 +257,6 @@ namespace Distribute::PlayerLeveledActor
 			}
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
-		static inline std::uint64_t playerID = static_cast<std::uint64_t>(-1);
 	};
 
 	void Install()

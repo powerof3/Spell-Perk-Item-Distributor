@@ -11,10 +11,7 @@ bool DoDistribute()
 {
 	if (Lookup::GetForms()) {
 		Distribute::ApplyToNPCs();
-		Distribute::LeveledActor::Install();
-		Distribute::PlayerLeveledActor::Install();
 		Distribute::DeathItem::Manager::Register();
-
 		return true;
 	}
 
@@ -68,8 +65,12 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
-			if (shouldDistribute = INI::Read(); shouldDistribute && kid != nullptr) {
-				SKSE::GetModCallbackEventSource()->AddEventSink(DistributionManager::GetSingleton());
+			if (shouldDistribute = INI::Read(); shouldDistribute) {
+				Distribute::LeveledActor::Install();
+				Distribute::PlayerLeveledActor::Install();
+				if (kid != nullptr) {
+					SKSE::GetModCallbackEventSource()->AddEventSink(DistributionManager::GetSingleton());
+				}
 			}
 		}
 		break;
