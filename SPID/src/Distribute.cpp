@@ -126,6 +126,7 @@ namespace Distribute
 				a_actorbase->sleepOutfit = a_outfitPair.first;
 				return true;
 			}
+			return false;
 		});
 	}
 
