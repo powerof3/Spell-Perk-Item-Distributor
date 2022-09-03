@@ -78,7 +78,7 @@ namespace Lookup
 			return !a_formVec.empty();
 		}
 
-		inline bool has_level_filters(std::pair<ActorLevel, std::vector<SkillLevel>>& a_levelFilters)
+		inline bool has_level_filters(const std::pair<ActorLevel, std::vector<SkillLevel>>& a_levelFilters)
 		{
 			const auto& [actorLevelPair, skillLevelPairs] = a_levelFilters;
 

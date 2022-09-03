@@ -229,7 +229,7 @@ namespace Distribute::LeveledActor
 			}
 
 			if (const auto actorbase = stl::adjust_pointer<RE::TESNPC>(a_this, -0x30); actorbase) {
-				Distribute(actorbase, false, true);
+				Distribute(actorbase, false, false);
 			}
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
