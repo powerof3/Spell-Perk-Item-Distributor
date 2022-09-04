@@ -20,14 +20,14 @@ bool Lookup::GetForms()
 		lookup_forms("Keyword", keywords);
 		lookup_forms("DeathItem", deathItems);
 		lookup_forms("Faction", factions);
-		lookup_forms("SleepingOutfit", factions);
+		lookup_forms("SleepOutfit", sleepOutfits);
 
 		if (keywords) {
 			Dependencies::ResolveKeywords();
 		}
 	}
 
-	const auto result = spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions;
+	const auto result = spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions || sleepOutfits;
 
 	if (result) {
 		logger::info("{:*^30}", "PROCESSING");
@@ -46,7 +46,7 @@ bool Lookup::GetForms()
 		list_lookup_result("Keyword", keywords);
 		list_lookup_result("DeathItem", deathItems);
 		list_lookup_result("Faction", factions);
-		list_lookup_result("SleepingOutfit", sleepingOutfits);
+		list_lookup_result("SleepOutfit", sleepOutfits);
 	}
 	return result;
 }

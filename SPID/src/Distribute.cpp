@@ -121,7 +121,7 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepingOutfits, input, [&](const auto& a_outfitPair) {
+		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepOutfits, input, [&](const auto& a_outfitPair) {
 			if (a_actorbase->sleepOutfit != a_outfitPair.first) {
 				a_actorbase->sleepOutfit = a_outfitPair.first;
 				return true;
@@ -158,7 +158,7 @@ namespace Distribute
 			list_result("Packages", Forms::packages);
 			list_result("Outfits", Forms::outfits);
 			list_result("Factions", Forms::factions);
-			list_result("SleepingOutfits", Forms::sleepingOutfits);
+			list_result("SleepOutfits", Forms::sleepOutfits);
 		}
 	}
 }

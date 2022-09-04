@@ -24,7 +24,7 @@ namespace Forms
 	inline FormMap<RE::BGSKeyword> keywords;
 	inline FormMap<RE::TESBoundObject> deathItems;
 	inline FormMap<RE::TESFaction> factions;
-	inline FormMap<RE::BGSOutfit> sleepingOutfits;
+	inline FormMap<RE::BGSOutfit> sleepOutfits;
 }
 
 namespace Lookup
@@ -131,7 +131,7 @@ namespace Lookup
 						}
 					}
 					if (!form) {
-						logger::error("		{} [0x{:X}] ({}) FAIL - formID doesn't exist", a_type, *formID, modName.value_or(""));
+						logger::error("		[0x{:X}] ({}) FAIL - formID doesn't exist", *formID, modName.value_or(""));
 					}
 				}
 			} else if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
@@ -180,7 +180,7 @@ namespace Lookup
 						}
 					}
 					if (!form) {
-						logger::error("		{} {} FAIL - editorID doesn't exist", a_type, editorID);
+						logger::error("		{} FAIL - editorID doesn't exist", editorID);
 					}
 				}
 			}

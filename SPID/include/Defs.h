@@ -19,8 +19,8 @@ namespace RECORD
 		kTotal
 	};
 
-	inline constexpr std::array add{ "Spell", "Perk", "Item", "Shout", "LevSpell", "Package", "Outfit", "Keyword", "DeathItem", "Faction", "SleepingOutfit" };
-	inline constexpr std::array remove { "-Spell", "-Perk", "-Item", "-Shout", "-LevSpell", "-Package", "-Outfit", "-Keyword", "-DeathItem", "-Faction", "-SleepingOutfit" };
+	inline constexpr std::array add{ "Spell", "Perk", "Item", "Shout", "LevSpell", "Package", "Outfit", "Keyword", "DeathItem", "Faction", "SleepOutfit" };
+	inline constexpr std::array remove { "-Spell", "-Perk", "-Item", "-Shout", "-LevSpell", "-Package", "-Outfit", "-Keyword", "-DeathItem", "-Faction", "-SleepOutfit" };
 }
 
 namespace TRAITS
