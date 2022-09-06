@@ -5,7 +5,7 @@ namespace Distribute
 {
 	void Distribute(RE::TESNPC* a_actorbase, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution)
 	{
-		PCLevelExclusion::Input input{
+        const PCLevelExclusion::Input input{
 			RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID,
 			a_actorbase->GetFormID(),
 			a_actorbase->GetLevel(),
