@@ -97,6 +97,31 @@ namespace Distribute::PlayerLeveledActor
 						}
 					}
 					break;
+				case RE::FormType::Shout:
+					{
+						auto shout = a_form.As<RE::TESShout>();
+
+						if (auto actorEffects = actorbase->GetSpellList()) {
+							if (a_isBelowLevel) {
+								actorEffects->RemoveShout(shout);
+							} else {
+								actorEffects->AddShout(shout);
+							}
+						}
+					}
+					break;
+				default:
+					{
+						if (a_form.IsInventoryObject()) {
+							auto boundObject = static_cast<RE::TESBoundObject*>(&a_form);
+							if (a_isBelowLevel) {
+								actorbase->RemoveObjectFromContainer(boundObject, a_idx);
+							} else {
+								actorbase->AddObjectToContainer(boundObject, a_idx, actorbase);
+							}
+						}
+					}
+					break;
 				}
 			});
 		}
