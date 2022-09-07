@@ -5,7 +5,7 @@ namespace Distribute
 {
 	void Distribute(RE::TESNPC* a_actorbase, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution)
 	{
-        const PCLevelExclusion::Input input{
+        const PCLevelMult::Input input{
 			RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID,
 			a_actorbase->GetFormID(),
 			a_actorbase->GetLevel(),
@@ -27,15 +27,15 @@ namespace Distribute
 			return false;
 		});
 
+		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, input, [&](const auto& a_perkPair) {
+			const auto perk = a_perkPair.first;
+			return a_actorbase->AddPerk(perk, 1);
+		});
+
 		for_each_form<RE::SpellItem>(*a_actorbase, Forms::spells, input, [&](const auto& a_spellPair) {
 			const auto spell = a_spellPair.first;
 			const auto actorEffects = a_actorbase->GetSpellList();
 			return actorEffects && actorEffects->AddSpell(spell);
-		});
-
-		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, input, [&](const auto& a_perkPair) {
-			const auto perk = a_perkPair.first;
-			return a_actorbase->AddPerk(perk, 1);
 		});
 
 		for_each_form<RE::TESShout>(*a_actorbase, Forms::shouts, input, [&](const auto& a_shoutPair) {
@@ -197,7 +197,7 @@ namespace Distribute::DeathItem
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto actorBase = actor ? actor->GetActorBase() : nullptr;
 			if (actor && actorBase) {
-				PCLevelExclusion::Input input{
+				PCLevelMult::Input input{
 					RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID,
 					actorBase->GetFormID(),
 					actorBase->GetLevel(),
@@ -242,27 +242,5 @@ namespace Distribute::LeveledActor
 	{
 		stl::write_vfunc<RE::TESNPC, CopyFromTemplateForms>();
 		logger::info("	Hooked leveled actor init");
-	}
-}
-
-namespace Distribute::PlayerLeveledActor
-{
-	struct AutoCalcSkillsAttributes
-	{
-		static void thunk(RE::TESNPC* a_actorbase)
-		{
-			func(a_actorbase);
-
-			if (!a_actorbase->IsPlayer() && a_actorbase->HasPCLevelMult()) {
-				Distribute(a_actorbase, true, false);
-			}
-		}
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
-	void Install()
-	{
-		REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(24219, 24723), 0x2D };
-		stl::write_thunk_call<AutoCalcSkillsAttributes>(target.address());
 	}
 }
