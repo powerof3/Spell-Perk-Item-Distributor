@@ -73,7 +73,11 @@ namespace Distribute
 				}
 			}
 
-			bool insert_distributed_entry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx)
+			bool has_distributed_entry(const Input& a_input)
+			{
+				return !cache[a_input.playerID][a_input.npcFormID].empty();
+			}
+		    bool insert_distributed_entry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx)
 			{
 				if (a_input.noPlayerLevelDistribution) {
 					return false;
