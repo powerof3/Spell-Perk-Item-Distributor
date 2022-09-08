@@ -9,11 +9,7 @@ namespace Distribute::PlayerLeveledActor
 		{
 			func(a_dataHandler);
 
-			for (const auto& actorbase : a_dataHandler->GetFormArray<RE::TESNPC>()) {
-				if (actorbase && actorbase->HasPCLevelMult()) {
-					Distribute(actorbase, true, false);
-				}
-			}
+            ApplyToPCLevelMultNPCs(a_dataHandler);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
@@ -141,5 +137,14 @@ namespace Distribute::PlayerLeveledActor
 
 		stl::write_vfunc<RE::TESNPC, LoadGame>();
 		logger::info("	Hooked npc load save");
+	}
+}
+
+void Distribute::ApplyToPCLevelMultNPCs(RE::TESDataHandler* a_dataHandler)
+{
+	for (const auto& actorbase : a_dataHandler->GetFormArray<RE::TESNPC>()) {
+		if (actorbase && actorbase->HasPCLevelMult()) {
+			Distribute(actorbase, true, false);
+		}
 	}
 }

@@ -5,11 +5,12 @@
 HMODULE kid{ nullptr };
 HMODULE tweaks{ nullptr };
 
+bool shouldLookupForms{ false };
 bool shouldDistribute{ false };
 
 bool DoDistribute()
 {
-	if (Lookup::GetForms()) {
+	if (shouldDistribute = Lookup::GetForms(); shouldDistribute) {
 		Distribute::ApplyToNPCs();
 		Distribute::DeathItem::Manager::Register();
 		return true;
@@ -65,7 +66,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
-			if (shouldDistribute = INI::Read(); shouldDistribute) {
+			if (shouldLookupForms = INI::Read(); shouldLookupForms) {
 				Distribute::LeveledActor::Install();
 				Distribute::PlayerLeveledActor::Install();
 				if (kid != nullptr) {
@@ -76,9 +77,18 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
-			if (shouldDistribute && kid == nullptr) {
+			if (shouldLookupForms && kid == nullptr) {
 				logger::info("{:*^30}", "LOOKUP");
 				DoDistribute();
+			}
+		}
+		break;
+	case SKSE::MessagingInterface::kNewGame:
+		{
+			if (shouldDistribute) {
+				if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+					Distribute::ApplyToPCLevelMultNPCs(dataHandler);
+				}
 			}
 		}
 		break;

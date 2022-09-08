@@ -128,4 +128,6 @@ namespace Distribute
 	{
 		void Install();
 	}
+
+	void ApplyToPCLevelMultNPCs(RE::TESDataHandler* a_dataHandler);
 }
