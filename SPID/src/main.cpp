@@ -86,9 +86,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	case SKSE::MessagingInterface::kNewGame:
 		{
 			if (shouldDistribute) {
-				if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-					Distribute::ApplyToPCLevelMultNPCs(dataHandler);
-				}
+				Distribute::NewGameStart::Manager::Register();
 			}
 		}
 		break;

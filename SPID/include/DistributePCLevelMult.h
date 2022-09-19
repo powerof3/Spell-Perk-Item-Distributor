@@ -135,5 +135,35 @@ namespace Distribute
 		void Install();
 	}
 
+	namespace NewGameStart
+	{
+		class Manager : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+		{
+		public:
+			static Manager* GetSingleton()
+			{
+				static Manager singleton;
+				return &singleton;
+			}
+
+			static void Register();
+
+		protected:
+			using EventResult = RE::BSEventNotifyControl;
+
+			EventResult ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
+
+		private:
+			Manager() = default;
+			Manager(const Manager&) = delete;
+			Manager(Manager&&) = delete;
+
+			~Manager() override = default;
+
+			Manager& operator=(const Manager&) = delete;
+			Manager& operator=(Manager&&) = delete;
+		};
+	}
+
 	void ApplyToPCLevelMultNPCs(RE::TESDataHandler* a_dataHandler);
 }

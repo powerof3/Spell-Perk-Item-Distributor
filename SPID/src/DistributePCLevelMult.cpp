@@ -9,7 +9,7 @@ namespace Distribute::PlayerLeveledActor
 		{
 			func(a_dataHandler);
 
-            ApplyToPCLevelMultNPCs(a_dataHandler);
+			ApplyToPCLevelMultNPCs(a_dataHandler);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
@@ -31,10 +31,10 @@ namespace Distribute::PlayerLeveledActor
 				false
 			};
 
-			if (!pcLevelMultManager.has_distributed_entry(input)) { //start distribution for first time
+			if (!pcLevelMultManager.has_distributed_entry(input)) {  //start distribution for first time
 				Distribute(a_this, true, false);
 			} else {
-			    pcLevelMultManager.for_each_distributed_entry(input, [&](RE::TESForm& a_form, [[maybe_unused]] IdxOrCount a_count, bool a_isBelowLevel) { //handle redistribution and removal
+				pcLevelMultManager.for_each_distributed_entry(input, [&](RE::TESForm& a_form, [[maybe_unused]] IdxOrCount a_count, bool a_isBelowLevel) {  //handle redistribution and removal
 					switch (a_form.GetFormType()) {
 					case RE::FormType::Keyword:
 						{
@@ -131,11 +131,34 @@ namespace Distribute::PlayerLeveledActor
 
 	void Install()
 	{
-		REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(40560, 41567), OFFSET(0xB2, 0xC2) }; // SetLevel
+		REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(40560, 41567), OFFSET(0xB2, 0xC2) };  // SetLevel
 		stl::write_thunk_call<UpdateAutoCalcNPCs>(target.address());
 
 		stl::write_vfunc<RE::TESNPC, LoadGame>();
 		logger::info("	Hooked npc load save");
+	}
+}
+
+namespace Distribute::NewGameStart
+{
+	void Manager::Register()
+	{
+		if (auto UI = RE::UI::GetSingleton()) {
+			UI->AddEventSink(GetSingleton());
+			logger::info("	Registered {}"sv, typeid(Manager).name());
+		}
+	}
+
+	Manager::EventResult Manager::ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
+	{
+		if (a_event && a_event->menuName == RE::RaceSexMenu::MENU_NAME && !a_event->opening) {
+			currentPlayerID = 0;
+			if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
+				ApplyToPCLevelMultNPCs(dataHandler);
+			}
+			RE::UI::GetSingleton()->RemoveEventSink(GetSingleton());
+		}
+		return EventResult::kContinue;
 	}
 }
 
