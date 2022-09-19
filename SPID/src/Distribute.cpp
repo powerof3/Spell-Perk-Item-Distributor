@@ -6,7 +6,6 @@ namespace Distribute
 	void Distribute(RE::TESNPC* a_actorbase, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution)
 	{
         const PCLevelMult::Input input{
-			RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID,
 			a_actorbase->GetFormID(),
 			a_actorbase->GetLevel(),
 			a_onlyPlayerLevelEntries,
@@ -198,7 +197,6 @@ namespace Distribute::DeathItem
 			const auto actorBase = actor ? actor->GetActorBase() : nullptr;
 			if (actor && actorBase) {
 				PCLevelMult::Input input{
-					RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID,
 					actorBase->GetFormID(),
 					actorBase->GetLevel(),
 					false,

@@ -25,7 +25,6 @@ namespace Distribute::PlayerLeveledActor
 			}
 
 			const PCLevelMult::Input input{
-				RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID,
 				a_this->GetFormID(),
 				a_this->GetLevel(),
 				true,

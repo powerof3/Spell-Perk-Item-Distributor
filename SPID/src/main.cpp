@@ -92,6 +92,18 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			}
 		}
 		break;
+	case SKSE::MessagingInterface::kPreLoadGame:
+		{
+			if (shouldDistribute) {
+				std::string savePath{ static_cast<char*>(a_message->data), a_message->dataLen };
+				
+				// Quicksave0_2A73F01A_0_6E656C736F6E_Tamriel_000002_20220918174138_10_1.ess
+				// 2A73F01A is player ID
+
+				Distribute::currentPlayerID = string::lexical_cast<std::uint64_t>(string::split(savePath, "_")[1], true);
+			}
+		}
+		break;
 	default:
 		break;
 	}

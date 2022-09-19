@@ -2,18 +2,24 @@
 
 namespace Distribute
 {
+	inline std::uint64_t currentPlayerID{ 0 };
+
 	// Skip re-distribution of failed entries for PC Level Mult NPCs, when leveling up
 	struct PCLevelMult
 	{
 		struct Input
 		{
-			Input(std::uint64_t a_playerID, RE::FormID a_npcFormID, std::uint16_t a_npcLevel, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
-				playerID(a_playerID),
+			Input(RE::FormID a_npcFormID, std::uint16_t a_npcLevel, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
 				npcFormID(a_npcFormID),
 				npcLevel(a_npcLevel),
 				onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
 				noPlayerLevelDistribution(a_noPlayerLevelDistribution)
-			{}
+			{
+				playerID = RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID;
+				if (playerID == 0) {
+					playerID = currentPlayerID;
+				}
+			}
 
 			std::uint64_t playerID;
 			RE::FormID npcFormID;
@@ -77,7 +83,7 @@ namespace Distribute
 			{
 				return !cache[a_input.playerID][a_input.npcFormID].empty();
 			}
-		    bool insert_distributed_entry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx)
+			bool insert_distributed_entry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx)
 			{
 				if (a_input.noPlayerLevelDistribution) {
 					return false;
