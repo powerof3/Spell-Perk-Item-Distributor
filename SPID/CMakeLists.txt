@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
-set(NAME "po3_SpellPerkItemDistributor")
-set(VERSION 6.0.0)
+set(NAME "po3_SpellPerkItemDistributor" CACHE STRING "")
+set(VERSION 6.0.0 CACHE STRING "")
 set(AE_VERSION 1)
 
 # ---- Options ----
@@ -17,34 +17,52 @@ macro(set_from_environment VARIABLE)
 endmacro()
 
 macro(find_commonlib_path)
-	if (CommonLibName AND NOT ${CommonLibName} STREQUAL "")
-		# Check extern
-		find_path(CommonLibPath
+	set(CommonLibName "CommonLibSSE")
+	# Check submodule
+	find_path(CommonLibPath
 		include/REL/Relocation.h
-		PATHS external/${CommonLibName})
-		if (${CommonLibPath} STREQUAL "CommonLibPath-NOTFOUND")
-			#Check path
-			set_from_environment(${CommonLibName}Path)
-			set(CommonLibPath ${${CommonLibName}Path})
-		endif()
+		PATHS ${PROJECT_SOURCE_DIR}/${CommonLibName})
+	if (NOT ${CommonLibPath} STREQUAL "CommonLibPath-NOTFOUND")
+		message(
+			STATUS
+			"Using CommonLibSSE submodule at ${CommonLibPath}"
+		)
+	else()
+		message(
+			STATUS
+			"Using CommonLibSSE defined in ${CommonLibName}Path Environment variable: ${CommonLibName}Path"
+		)
+		#Check path
+		set_from_environment(${CommonLibName}Path)
+		set(CommonLibPath ${${CommonLibName}Path})
+	endif()
+
+	if (NOT DEFINED CommonLibPath OR ${CommonLibPath} STREQUAL "" OR NOT IS_DIRECTORY ${CommonLibPath})
+		message(
+			FATAL_ERROR
+			"Path to ${CommonLibName} is not set."
+		)
 	endif()
 endmacro()
 
 set_from_environment(VCPKG_ROOT)
+
+#set(CommonLibPath "${PROJECT_SOURCE_DIR}/${CommonLibName}")
+find_commonlib_path()
+
+
 if(BUILD_SKYRIMAE)
-	add_compile_definitions(SKYRIM_AE)
-	set(CommonLibName "CommonLibSSE")
+	add_compile_definitions(SKYRIM_AE)	
 	set_from_environment(SkyrimAEPath)
 	set(SkyrimPath ${SkyrimAEPath})
 	set(SkyrimVersion "Skyrim AE")
 	set(VERSION ${VERSION}.${AE_VERSION})
 else()
-	set(CommonLibName "CommonLibSSE")
 	set_from_environment(Skyrim64Path)
 	set(SkyrimPath ${Skyrim64Path})
 	set(SkyrimVersion "Skyrim SSE")
 endif()
-find_commonlib_path()
+
 message(
 	STATUS
 	"Building ${NAME} ${VERSION} for ${SkyrimVersion} at ${SkyrimPath} with ${CommonLibName} at ${CommonLibPath}."
@@ -118,15 +136,7 @@ set(Boost_USE_STATIC_LIBS ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
 # ---- Dependencies ----
-
-if (DEFINED CommonLibPath AND NOT ${CommonLibPath} STREQUAL "" AND IS_DIRECTORY ${CommonLibPath})
-	add_subdirectory(${CommonLibPath} ${CommonLibName})
-else ()
-	message(
-		FATAL_ERROR
-		"Variable ${CommonLibName}Path is not set."
-	)
-endif()
+add_subdirectory(${CommonLibPath} ${CommonLibName})
 
 find_package(frozen CONFIG REQUIRED)
 
