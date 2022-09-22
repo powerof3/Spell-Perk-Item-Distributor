@@ -1,0 +1,19 @@
+name: Main
+
+on:
+  push:
+    branches: '**'
+    tags: '*'
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    uses: adya/SKSE-Mod-Workflow/.github/workflows/pack.yml@main
+    with:
+      PROJECT_NAME: "SPID"
+      FOMOD_MOD_NAME: "Spell Perk Item Distributor"
+      FOMOD_MOD_AUTHOR: "powerofthree"
+      FOMOD_MOD_NEXUS_ID: "36869"
