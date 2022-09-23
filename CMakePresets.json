@@ -43,7 +43,6 @@
       "name": "windows"
     },
     {
-      "binaryDir": "${sourceDir}/buildse",
       "cacheVariables": {
         "CMAKE_CXX_FLAGS": "/EHsc /MP /W4 /WX /external:W0"
       },
@@ -70,18 +69,6 @@
       ],
       "name": "vs2022-windows-vcpkg-ae",
       "toolset": "v143"
-    },
-    {
-      "inherits": [
-        "vs2022-windows-vcpkg-se"
-      ],
-      "name": "githubci-se"
-    },
-    {
-      "inherits": [
-        "vs2022-windows-vcpkg-ae"
-      ],
-      "name": "githubci-ae"
     }
   ],
   "version": 3
