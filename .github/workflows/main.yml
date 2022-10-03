@@ -11,9 +11,14 @@ concurrency:
 
 jobs:
   run:
-    uses: adya/SKSE-Mod-Workflow/.github/workflows/pack.yml@main
+    uses: adya/pack-skse-mod/.github/workflows/pack.yml@main
     with:
-      PROJECT_NAME: "SPID"
+      CMAKE_PROJECT_DIR: "SPID"
+      FOMOD_INCLUDE_PDB: true
       FOMOD_MOD_NAME: "Spell Perk Item Distributor"
       FOMOD_MOD_AUTHOR: "powerofthree"
       FOMOD_MOD_NEXUS_ID: "36869"
+      FOMOD_DEFAULT_IMAGE: "FOMOD/images/cover.png"
+      PUBLISH_MOD_CHANGELOG_FILE: "FOMOD/changelog.txt"
+      PUBLISH_MOD_DESCRIPTION_FILE: "FOMOD/description.txt"
+      PUBLISH_ARCHIVE_TYPE: '7z'
