@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
-set(NAME "po3_SpellPerkItemDistributor")
-set(VERSION 6.0.0)
+set(NAME "po3_SpellPerkItemDistributor" CACHE STRING "")
+set(VERSION 6.0.0 CACHE STRING "")
 set(AE_VERSION 1)
 
 # ---- Options ----
@@ -21,7 +21,7 @@ macro(find_commonlib_path)
 		# Check extern
 		find_path(CommonLibPath
 		include/REL/Relocation.h
-		PATHS external/${CommonLibName})
+		PATHS ${PROJECT_SOURCE_DIR}/extern/${CommonLibName})
 		if (${CommonLibPath} STREQUAL "CommonLibPath-NOTFOUND")
 			#Check path
 			set_from_environment(${CommonLibName}Path)
