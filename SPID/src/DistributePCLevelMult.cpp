@@ -180,12 +180,7 @@ namespace Distribute::PlayerLeveledActor
 			return playerID;
 		}
 
-	    auto playerIDStr = fmt::format("{:X}", playerID);
-		if (const auto size = playerIDStr.size(); size > 8) {
-			playerIDStr = playerIDStr.substr(size - 8);  //trim extra digits not present in save filename
-		}
-
-		return string::lexical_cast<std::uint64_t>(playerIDStr, true);
+        return playerID & 0xFFFFFFFF;
     }
 }
 
