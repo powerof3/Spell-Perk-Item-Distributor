@@ -89,7 +89,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	case SKSE::MessagingInterface::kNewGame:
 		{
 			if (shouldDistribute) {
-				Distribute::newGameStarted = true;
+			    Distribute::newGameStarted = true;
 			}
 		}
 		break;
@@ -101,7 +101,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				// Quicksave0_2A73F01A_0_6E656C736F6E_Tamriel_000002_20220918174138_10_1.ess
 				// 2A73F01A is player ID
 
-				Distribute::currentPlayerID = string::lexical_cast<std::uint64_t>(string::split(savePath, "_")[1], true);
+				Distribute::currentPlayerIDStr = string::split(savePath, "_")[1];
+				Distribute::currentPlayerID = string::lexical_cast<std::uint64_t>(Distribute::currentPlayerIDStr, true);
 			}
 		}
 		break;
@@ -117,6 +118,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 	v.PluginName("Spell Perk Item Distributor");
 	v.AuthorName("powerofthree");
 	v.UsesAddressLibrary();
+	v.UsesUpdatedStructs();
 	v.CompatibleVersions({ SKSE::RUNTIME_LATEST });
 
 	return v;

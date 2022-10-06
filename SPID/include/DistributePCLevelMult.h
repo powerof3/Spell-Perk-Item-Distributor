@@ -3,6 +3,8 @@
 namespace Distribute
 {
 	inline std::uint64_t currentPlayerID{ 0 };
+	inline std::string currentPlayerIDStr{ "0" };
+
 	inline bool newGameStarted{ false };
 
 	// Skip re-distribution of failed entries for PC Level Mult NPCs, when leveling up
@@ -11,15 +13,12 @@ namespace Distribute
 		struct Input
 		{
 			Input(RE::FormID a_npcFormID, std::uint16_t a_npcLevel, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
+				playerID(currentPlayerID),
 				npcFormID(a_npcFormID),
 				npcLevel(a_npcLevel),
 				onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
 				noPlayerLevelDistribution(a_noPlayerLevelDistribution)
 			{
-				playerID = RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID;
-				if (playerID == 0) {
-					playerID = currentPlayerID;
-				}
 			}
 
 			std::uint64_t playerID;
@@ -64,7 +63,7 @@ namespace Distribute
 			void dump_rejected_entries()
 			{
 				for (auto& [playerID, npcFormIDs] : cache) {
-					logger::info("PlayerID : {}", playerID);
+					logger::info("PlayerID : {:X}", playerID);
 					for (auto& [npcFormID, levelMap] : npcFormIDs) {
 						logger::info("	NPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
 						for (auto& [level, distFormMap] : levelMap) {
@@ -82,7 +81,12 @@ namespace Distribute
 
 			bool has_distributed_entry(const Input& a_input)
 			{
-				return !cache[a_input.playerID][a_input.npcFormID].empty();
+				if (const auto it = cache.find(a_input.playerID); it != cache.end()) {
+					if (const auto npcIt = it->second.find(a_input.npcFormID); npcIt != it->second.end()) {
+						return !npcIt->second.empty();
+					}
+				}
+				return false;
 			}
 			bool insert_distributed_entry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx)
 			{
@@ -90,7 +94,7 @@ namespace Distribute
 					return false;
 				}
 
-				return cache[a_input.playerID][a_input.npcFormID][a_input.npcLevel].distributedEntries.insert(std::make_pair(a_distributedFormID, a_idx)).second;
+				return cache[a_input.playerID][a_input.npcFormID][a_input.npcLevel].distributedEntries.insert(DistributedEntry(a_distributedFormID, a_idx)).second;
 			}
 			void for_each_distributed_entry(const Input& a_input, std::function<void(RE::TESForm&, IdxOrCount a_idx, bool)> a_fn) const
 			{
@@ -113,12 +117,38 @@ namespace Distribute
 					}
 				}
 			}
+			void dump_distributed_entries()
+			{
+				for (auto& [playerID, npcFormIDs] : cache) {
+					logger::info("PlayerID : {:X}", playerID);
+					for (auto& [npcFormID, levelMap] : npcFormIDs) {
+						logger::info("	NPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
+						for (auto& [level, distFormMap] : levelMap) {
+							logger::info("		Level : {}", level);
+							for (auto& [distFormID, idxSet] : distFormMap.distributedEntries) {
+								logger::info("			Dist FormID : {} [{:X}] : {}", Cache::EditorID::GetEditorID(distFormID), distFormID, idxSet);
+							}
+						}
+					}
+				}
+			}
 
 		private:
+			struct DistributedEntry
+			{
+				RE::FormID form;
+				IdxOrCount idxOrCount;
+
+				bool operator<(const DistributedEntry& a_rhs) const
+				{
+					return this->form < a_rhs.form;
+				}
+			};
+
 			struct Data
 			{
-				std::map<RE::FormID, std::set<std::uint32_t>> rejectedEntries;   // Distributed formID, FormData vector index
-				std::set<std::pair<RE::FormID, IdxOrCount>> distributedEntries;  // Distributed formID
+				std::map<RE::FormID, std::set<std::uint32_t>> rejectedEntries;  // Distributed formID, FormData vector index
+				std::set<DistributedEntry> distributedEntries;                  // Distributed formID
 			};
 
 			std::map<std::uint64_t,          // PlayerID
@@ -158,7 +188,7 @@ namespace Distribute
 			Manager& operator=(Manager&&) = delete;
 		};
 
-	    void Install();
+		void Install();
 	}
 
 	void ApplyToPCLevelMultNPCs(RE::TESDataHandler* a_dataHandler);

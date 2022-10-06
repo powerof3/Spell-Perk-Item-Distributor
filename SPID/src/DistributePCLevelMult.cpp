@@ -152,18 +152,17 @@ namespace Distribute::PlayerLeveledActor
 	EventResult Manager::ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
 	{
 		if (a_event && a_event->menuName == RE::RaceSexMenu::MENU_NAME) {
-			std::uint64_t playerID = 0;
-		    if (a_event->opening) {
-				playerID = RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID;
-			} else {
-				if (newGameStarted) {
-					newGameStarted = false;
+			if (!a_event->opening && newGameStarted) {
+				newGameStarted = false;
 
-				    currentPlayerID = playerID;
+			    currentPlayerIDStr = fmt::format("{:X}",RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID);
+				if (auto size = currentPlayerIDStr.size(); size > 8) {
+					currentPlayerIDStr = currentPlayerIDStr.substr(size - 8); //trim extra digits not present in save filename
+				}
+				currentPlayerID = string::lexical_cast<std::uint64_t>(currentPlayerIDStr, true);
 
-					if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-						ApplyToPCLevelMultNPCs(dataHandler);
-					}
+			    if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
+					ApplyToPCLevelMultNPCs(dataHandler);
 				}
 			}
 		}
