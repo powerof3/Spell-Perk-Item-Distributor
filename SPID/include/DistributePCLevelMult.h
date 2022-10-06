@@ -3,8 +3,6 @@
 namespace Distribute
 {
 	inline std::uint64_t currentPlayerID{ 0 };
-	inline std::string currentPlayerIDStr{ "0" };
-
 	inline bool newGameStarted{ false };
 
 	// Skip re-distribution of failed entries for PC Level Mult NPCs, when leveling up
@@ -133,6 +131,16 @@ namespace Distribute
 				}
 			}
 
+			void remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID)
+			{
+				if (!cache.contains(a_newID)) {
+					if (auto it = cache.find(a_oldID); it != cache.end()) {
+						cache[a_newID] = it->second;
+					}
+				}
+				dump_distributed_entries();
+			}
+
 		private:
 			struct DistributedEntry
 			{
@@ -178,7 +186,9 @@ namespace Distribute
 			EventResult ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 
 		private:
-			Manager() = default;
+			static std::uint64_t get_sanitized_playerID();
+
+		    Manager() = default;
 			Manager(const Manager&) = delete;
 			Manager(Manager&&) = delete;
 
@@ -186,6 +196,8 @@ namespace Distribute
 
 			Manager& operator=(const Manager&) = delete;
 			Manager& operator=(Manager&&) = delete;
+
+			std::uint64_t oldPlayerID;
 		};
 
 		void Install();

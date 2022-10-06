@@ -152,22 +152,41 @@ namespace Distribute::PlayerLeveledActor
 	EventResult Manager::ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
 	{
 		if (a_event && a_event->menuName == RE::RaceSexMenu::MENU_NAME) {
-			if (!a_event->opening && newGameStarted) {
-				newGameStarted = false;
+			if (a_event->opening) {
+				oldPlayerID = get_sanitized_playerID();
+			} else {
+				const auto newPlayerID = get_sanitized_playerID();
+			    if (newGameStarted) {
+					newGameStarted = false;
 
-			    currentPlayerIDStr = fmt::format("{:X}",RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID);
-				if (auto size = currentPlayerIDStr.size(); size > 8) {
-					currentPlayerIDStr = currentPlayerIDStr.substr(size - 8); //trim extra digits not present in save filename
-				}
-				currentPlayerID = string::lexical_cast<std::uint64_t>(currentPlayerIDStr, true);
+					currentPlayerID = newPlayerID;
 
-			    if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-					ApplyToPCLevelMultNPCs(dataHandler);
+					if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
+						ApplyToPCLevelMultNPCs(dataHandler);
+					}
+				} else if (oldPlayerID != newPlayerID) {
+					pcLevelMultManager.remap_player_ids(oldPlayerID, newPlayerID);
 				}
 			}
 		}
 		return EventResult::kContinue;
 	}
+
+    std::uint64_t Manager::get_sanitized_playerID()
+    {
+		const auto playerID = RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID;
+
+		if (playerID == 0) {
+			return playerID;
+		}
+
+	    auto playerIDStr = fmt::format("{:X}", playerID);
+		if (const auto size = playerIDStr.size(); size > 8) {
+			playerIDStr = playerIDStr.substr(size - 8);  //trim extra digits not present in save filename
+		}
+
+		return string::lexical_cast<std::uint64_t>(playerIDStr, true);
+    }
 }
 
 void Distribute::ApplyToPCLevelMultNPCs(RE::TESDataHandler* a_dataHandler)
