@@ -77,8 +77,6 @@ namespace Distribute
 			static void Register();
 
 		protected:
-			using EventResult = RE::BSEventNotifyControl;
-
 			EventResult ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override;
 
 		private:

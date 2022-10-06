@@ -186,7 +186,7 @@ namespace Distribute::DeathItem
 		}
 	}
 
-	Manager::EventResult Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
+	EventResult Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
 	{
 		constexpr auto is_NPC = [](auto&& a_ref) {
 			return a_ref && !a_ref->IsPlayerRef();

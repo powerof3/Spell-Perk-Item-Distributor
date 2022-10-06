@@ -88,6 +88,8 @@ struct form_sorter<RE::BGSKeyword>
 	using Sorter = KeywordDependencySorter;
 };
 
+using EventResult = RE::BSEventNotifyControl;
+
 using FormIDPair = std::pair<
 	std::optional<RE::FormID>,
 	std::optional<std::string>>;

@@ -139,7 +139,7 @@ namespace Distribute::PlayerLeveledActor
 	}
 }
 
-namespace Distribute::NewGameStart
+namespace Distribute::PlayerLeveledActor
 {
 	void Manager::Register()
 	{
@@ -149,14 +149,23 @@ namespace Distribute::NewGameStart
 		}
 	}
 
-	Manager::EventResult Manager::ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
+	EventResult Manager::ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*)
 	{
-		if (a_event && a_event->menuName == RE::RaceSexMenu::MENU_NAME && !a_event->opening) {
-			currentPlayerID = 0;
-			if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-				ApplyToPCLevelMultNPCs(dataHandler);
+		if (a_event && a_event->menuName == RE::RaceSexMenu::MENU_NAME) {
+			std::uint64_t playerID = 0;
+		    if (a_event->opening) {
+				playerID = RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID;
+			} else {
+				if (newGameStarted) {
+					newGameStarted = false;
+
+				    currentPlayerID = playerID;
+
+					if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
+						ApplyToPCLevelMultNPCs(dataHandler);
+					}
+				}
 			}
-			RE::UI::GetSingleton()->RemoveEventSink(GetSingleton());
 		}
 		return EventResult::kContinue;
 	}

@@ -77,16 +77,19 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
-			if (shouldLookupForms && kid == nullptr) {
-				logger::info("{:*^30}", "LOOKUP");
-				DoDistribute();
+			if (shouldLookupForms) {
+				if (kid == nullptr) {
+					logger::info("{:*^30}", "LOOKUP");
+					DoDistribute();
+				}
+				Distribute::PlayerLeveledActor::Manager::Register();
 			}
 		}
 		break;
 	case SKSE::MessagingInterface::kNewGame:
 		{
 			if (shouldDistribute) {
-				Distribute::NewGameStart::Manager::Register();
+				Distribute::newGameStarted = true;
 			}
 		}
 		break;
