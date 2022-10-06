@@ -10,6 +10,7 @@
 #include <frozen/set.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
+#include <xbyak/xbyak.h>
 
 #define DLLEXPORT __declspec(dllexport)
 
