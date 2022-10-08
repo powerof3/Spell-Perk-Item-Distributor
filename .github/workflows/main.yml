@@ -14,6 +14,7 @@ jobs:
     uses: adya/pack-skse-mod/.github/workflows/pack.yml@main
     with:
       CMAKE_PROJECT_DIR: "SPID"
+      AE_353_BRANCH: master-1.6.353
       FOMOD_INCLUDE_PDB: true
       FOMOD_MOD_NAME: "Spell Perk Item Distributor"
       FOMOD_MOD_AUTHOR: "powerofthree"
