@@ -153,9 +153,9 @@ namespace Distribute::PlayerLeveledActor
 	{
 		if (a_event && a_event->menuName == RE::RaceSexMenu::MENU_NAME) {
 			if (a_event->opening) {
-				oldPlayerID = get_sanitized_playerID();
+				oldPlayerID = PCLevelMult::get_game_playerID();
 			} else {
-				const auto newPlayerID = get_sanitized_playerID();
+				const auto newPlayerID = PCLevelMult::get_game_playerID();
 			    if (newGameStarted) {
 					newGameStarted = false;
 
@@ -171,17 +171,6 @@ namespace Distribute::PlayerLeveledActor
 		}
 		return EventResult::kContinue;
 	}
-
-    std::uint64_t Manager::get_sanitized_playerID()
-    {
-		const auto playerID = RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID;
-
-		if (playerID == 0) {
-			return playerID;
-		}
-
-        return playerID & 0xFFFFFFFF;
-    }
 }
 
 void Distribute::ApplyToPCLevelMultNPCs(RE::TESDataHandler* a_dataHandler)

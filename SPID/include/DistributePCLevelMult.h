@@ -11,12 +11,15 @@ namespace Distribute
 		struct Input
 		{
 			Input(RE::FormID a_npcFormID, std::uint16_t a_npcLevel, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
-				playerID(currentPlayerID),
 				npcFormID(a_npcFormID),
 				npcLevel(a_npcLevel),
 				onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
 				noPlayerLevelDistribution(a_noPlayerLevelDistribution)
 			{
+				playerID = currentPlayerID;
+				if (playerID == 0) {
+					playerID = get_game_playerID();
+				}
 			}
 
 			std::uint64_t playerID;
@@ -165,6 +168,11 @@ namespace Distribute
 						Data>>>              // Data
 				cache{};
 		};
+
+        static std::uint64_t get_game_playerID()
+		{
+			return RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID & 0xFFFFFFFF;
+		}
 	};
 
 	inline PCLevelMult::Manager pcLevelMultManager;
@@ -186,9 +194,7 @@ namespace Distribute
 			EventResult ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 
 		private:
-			static std::uint64_t get_sanitized_playerID();
-
-		    Manager() = default;
+			Manager() = default;
 			Manager(const Manager&) = delete;
 			Manager(Manager&&) = delete;
 
