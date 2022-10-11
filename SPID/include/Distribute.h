@@ -2,7 +2,7 @@
 
 #include "LookupFilters.h"
 #include "LookupForms.h"
-#include "DistributePCLevelMult.h"
+#include "PCLevelMultManager.h"
 
 namespace Distribute
 {
@@ -15,6 +15,8 @@ namespace Distribute
 	{
 		auto& map = a_input.onlyPlayerLevelEntries ? a_formDataMap.formsWithLevels : a_formDataMap.forms;
 
+	    const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
+
 		for (auto& [form, data] : map) {
 			if (form != nullptr) {
 				auto formID = form->GetFormID();
@@ -22,21 +24,22 @@ namespace Distribute
 				auto& [npcCount, formDataVec] = data;
 				for (std::uint32_t idx = 0; auto& formData : formDataVec) {
 					++idx;
-					if (pcLevelMultManager.find_rejected_entry(a_input, formID, idx)) {
+					if (pcLevelMultManager->FindRejectedEntry(a_input, formID, idx)) {
 						continue;
 					}
 					if (!Filter::strings(a_actorbase, formData) || !Filter::forms(a_actorbase, formData)) {
 						continue;
 					}
-					if (auto result = Filter::secondary(a_actorbase, formData, a_input.noPlayerLevelDistribution); result != Filter::SECONDARY_RESULT::kPass) {
+					auto result = Filter::secondary(a_actorbase, formData, a_input.noPlayerLevelDistribution);
+				    if (result != Filter::SECONDARY_RESULT::kPass) {
 						if (result == Filter::SECONDARY_RESULT::kFailDueToRNG) {
-							pcLevelMultManager.insert_rejected_entry(a_input, formID, idx);
+							pcLevelMultManager->InsertRejectedEntry(a_input, formID, idx);
 						}
 						continue;
 					}
 					auto idxOrCount = std::get<DATA::TYPE::kIdxOrCount>(formData);
 					if (a_fn({ form, idxOrCount })) {
-						pcLevelMultManager.insert_distributed_entry(a_input, formID, idxOrCount);
+						pcLevelMultManager->InsertDistributedEntry(a_input, formID, idxOrCount);
 					    ++npcCount;
 					}
 				}

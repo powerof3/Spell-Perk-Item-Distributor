@@ -5,12 +5,15 @@ namespace Distribute
 {
 	void Distribute(RE::TESNPC* a_actorbase, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution)
 	{
-        const PCLevelMult::Input input{
-			a_actorbase->GetFormID(),
-			a_actorbase->GetLevel(),
+		const PCLevelMult::Input input{
+			a_actorbase,
 			a_onlyPlayerLevelEntries,
 			a_noPlayerLevelDistribution
 		};
+
+		if (a_onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input)) {
+			return;
+		}
 
 		for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, input, [&](const auto& a_keywordsPair) {
 			const auto keyword = a_keywordsPair.first;
@@ -197,8 +200,7 @@ namespace Distribute::DeathItem
 			const auto actorBase = actor ? actor->GetActorBase() : nullptr;
 			if (actor && actorBase) {
 				PCLevelMult::Input input{
-					actorBase->GetFormID(),
-					actorBase->GetLevel(),
+					actorBase,
 					false,
 					false,
 				};

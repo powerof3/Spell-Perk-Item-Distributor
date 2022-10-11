@@ -1,4 +1,5 @@
 #include "Distribute.h"
+#include "DistributePCLevelMult.h"
 #include "LookupConfigs.h"
 #include "LookupForms.h"
 
@@ -82,30 +83,22 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 					logger::info("{:*^30}", "LOOKUP");
 					DoDistribute();
 				}
-				Distribute::PlayerLeveledActor::Manager::Register();
+				PCLevelMult::Manager::GetSingleton()->Register();
 			}
 		}
 		break;
 	case SKSE::MessagingInterface::kNewGame:
 		{
 			if (shouldDistribute) {
-			    Distribute::newGameStarted = true;
+				PCLevelMult::Manager::GetSingleton()->SetNewGameStarted();
 			}
 		}
 		break;
 	case SKSE::MessagingInterface::kPreLoadGame:
 		{
 			if (shouldDistribute) {
-				std::string savePath{ static_cast<char*>(a_message->data), a_message->dataLen };
-				
-				// Quicksave0_2A73F01A_0_6E656C736F6E_Tamriel_000002_20220918174138_10_1.ess
-				// 2A73F01A is player ID
-
-				if (auto save = string::split(savePath, "_"); save.size() > 1) {
-					Distribute::currentPlayerID = string::lexical_cast<std::uint64_t>(save[1], true);
-				} else {
-					Distribute::currentPlayerID = 0; // non standard save name, use game playerID instead
-				}
+				const std::string savePath{ static_cast<char*>(a_message->data), a_message->dataLen };
+                PCLevelMult::Manager::GetSingleton()->GetPlayerIDFromSave(savePath);
 			}
 		}
 		break;

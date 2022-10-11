@@ -8,4 +8,5 @@ set(sources ${sources}
 	src/LookupForms.cpp
 	src/main.cpp
 	src/PCH.cpp
+	src/PCLevelMultManager.cpp
 )
