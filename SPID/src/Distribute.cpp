@@ -143,7 +143,8 @@ namespace Distribute
 				}
 			}
 
-			logger::info("{:*^30}", "RESULT");
+			logger::info("{:*^50}", "RESULTS");
+			logger::info("{:*^50}", "[unique or non-templated NPCs]");
 
 			const auto list_result = [&totalNPCs]<class Form>(const std::string& a_formType, Forms::FormMap<Form>& a_forms) {
 				if (a_forms) {

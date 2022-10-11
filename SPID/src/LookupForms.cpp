@@ -30,7 +30,7 @@ bool Lookup::GetForms()
 	const auto result = spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions || sleepOutfits;
 
 	if (result) {
-		logger::info("{:*^30}", "PROCESSING");
+		logger::info("{:*^50}", "PROCESSING");
 
 		const auto list_lookup_result = [&]<class Form>(const std::string& a_formType, FormMap<Form>& a_map) {
 			logger::info("	Adding {}/{} {}(s)", a_map.forms.size(), INI::configs[a_formType].size(), a_formType);

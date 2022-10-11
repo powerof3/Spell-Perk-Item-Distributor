@@ -28,13 +28,13 @@ public:
 	}
 
 	/// Checks whether current node has any dependencies.
-	bool HasDependencies()
+	bool HasDependencies() const
 	{
 		return !children.empty();
 	}
 
 	/// Returns number of dependencies that this node has.
-	size_t DependenciesCount()
+	size_t DependenciesCount() const
 	{
 		return children.size();
 	}
@@ -50,7 +50,7 @@ public:
 			return true;
 		}
 
-		for (const auto [kwd, dep] : children) {
+		for (const auto& dep : children | std::views::values) {
 			if (dep->IsNestedChild(keyword)) {
 				return true;
 			}
@@ -118,15 +118,13 @@ void AddDependency(RE::BGSKeyword* parent, RE::BGSKeyword* dependency)
 
 void Dependencies::ResolveKeywords()
 {
-	const auto dataHandler = RE::TESDataHandler::GetSingleton(); 
-	if (!dataHandler) { return; }
-
-	logger::info("{:*^30}", "RESOLVING KEYWORDS");
+	logger::info("{:*^50}", "RESOLVING KEYWORDS");
 
 	// Pre-build a map of all available keywords by names.
 	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords;
 
-	for (const auto kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
+	const auto dataHandler = RE::TESDataHandler::GetSingleton(); 
+    for (const auto kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
 		allKeywords[kwd->GetFormEditorID()] = kwd;
 	}
 
@@ -163,7 +161,7 @@ void Dependencies::ResolveKeywords()
 		}
 	}
 
-	// Re-add all keywords back after dependnecy list has been built.
+	// Re-add all keywords back after dependency list has been built.
 	auto keywordForms = Forms::keywords.forms;
 	Forms::keywords.forms.clear();
 	for (const auto& [keyword, data] : keywordForms) {
@@ -171,7 +169,7 @@ void Dependencies::ResolveKeywords()
 	}
 
 	logger::info("	Keywords have been sorted: ");
-	for (const auto& [keyword, _] : Forms::keywords.forms) {
+	for (const auto& keyword : Forms::keywords.forms | std::views::keys) {
 		logger::info("		{} [0x{:X}]", keyword->GetFormEditorID(), keyword->GetFormID());
 	}
 }

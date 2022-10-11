@@ -35,7 +35,7 @@ protected:
 	EventResult ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override
 	{
 		if (a_event && a_event->eventName == "KID_KeywordDistributionDone") {
-			logger::info("{:*^30}", "LOOKUP");
+			logger::info("{:*^50}", "LOOKUP");
 			logger::info("Starting distribution since KID is done...");
 
 			DoDistribute();
@@ -61,6 +61,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	switch (a_message->type) {
 	case SKSE::MessagingInterface::kPostLoad:
 		{
+			logger::info("{:*^50}", "DEPENDENCIES");
+
 			kid = GetModuleHandle(L"po3_KeywordItemDistributor");
 			logger::info("Keyword Item Distributor (KID) detected : {}", kid != nullptr);
 
@@ -68,6 +70,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
 			if (shouldLookupForms = INI::Read(); shouldLookupForms) {
+				logger::info("{:*^50}", "HOOKS");
 				Distribute::LeveledActor::Install();
 				Distribute::PlayerLeveledActor::Install();
 				if (kid != nullptr) {
@@ -80,9 +83,10 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		{
 			if (shouldLookupForms) {
 				if (kid == nullptr) {
-					logger::info("{:*^30}", "LOOKUP");
+					logger::info("{:*^50}", "LOOKUP");
 					DoDistribute();
 				}
+				logger::info("{:*^50}", "EVENTS");
 				PCLevelMult::Manager::GetSingleton()->Register();
 			}
 		}
@@ -98,7 +102,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		{
 			if (shouldDistribute) {
 				const std::string savePath{ static_cast<char*>(a_message->data), a_message->dataLen };
-                PCLevelMult::Manager::GetSingleton()->GetPlayerIDFromSave(savePath);
+				PCLevelMult::Manager::GetSingleton()->GetPlayerIDFromSave(savePath);
 			}
 		}
 		break;

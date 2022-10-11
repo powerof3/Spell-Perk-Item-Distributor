@@ -2,7 +2,7 @@
 
 bool INI::Read()
 {
-	logger::info("{:*^30}", "INI");
+	logger::info("{:*^50}", "INI");
 
 	std::vector<std::string> files;
 
