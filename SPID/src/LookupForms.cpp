@@ -38,7 +38,7 @@ bool Lookup::GetForms()
 		const auto list_lookup_result = [&]<class Form>(const RECORD::TYPE a_recordType, FormMap<Form>& a_map) {
 			const auto& recordName = RECORD::add[a_recordType];
 
-		    logger::info("	Adding {}/{} {}s", a_map.forms.size(), INI::configs[recordName].size(), recordName);
+		    logger::info("	Adding {}/{} {}(s)", a_map.forms.size(), INI::configs[recordName].size(), recordName);
 		};
 
 		list_lookup_result(RECORD::kSpell, spells);

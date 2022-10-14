@@ -61,7 +61,11 @@ namespace Distribute
 				} else {
 					name = Cache::EditorID::GetEditorID(form->GetFormID());
 				}
-				logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
+				if (auto file = form->GetFile(0)) {
+					logger::info("		{} [0x{:X}~{}] added to {}/{} NPCs", name, form->GetLocalFormID(), file->GetFilename(), npcCount, a_totalNPCCount);
+				} else {
+					logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
+				}
 			}
 		}
 	}
