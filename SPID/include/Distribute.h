@@ -48,9 +48,9 @@ namespace Distribute
 	}
 
 	template <class Form>
-	void list_npc_count(const std::string& a_type, Forms::FormMap<Form>& a_formDataMap, const size_t a_totalNPCCount)
+	void list_npc_count(std::string_view a_recordType, Forms::FormMap<Form>& a_formDataMap, const size_t a_totalNPCCount)
 	{
-		logger::info("	{}", a_type);
+		logger::info("	{}s", a_recordType);
 
 		for (auto& [form, formData] : a_formDataMap.forms) {
 			if (form != nullptr) {

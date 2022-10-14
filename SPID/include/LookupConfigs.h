@@ -2,7 +2,7 @@
 
 namespace INI
 {
-	inline std::unordered_map<std::string, INIDataMap> configs;
+	inline std::unordered_map<std::string_view, INIDataMap> configs;
 
 	namespace detail
 	{

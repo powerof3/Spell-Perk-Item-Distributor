@@ -25,6 +25,7 @@ namespace Forms
 	inline FormMap<RE::TESBoundObject> deathItems;
 	inline FormMap<RE::TESFaction> factions;
 	inline FormMap<RE::BGSOutfit> sleepOutfits;
+	inline FormMap<RE::TESObjectARMO> skins;
 }
 
 namespace Lookup
@@ -62,7 +63,7 @@ namespace Lookup
 				} else if (formID) {
 					auto filterForm = modName ?
 					                      a_dataHandler->LookupForm(*formID, *modName) :
-                                          RE::TESForm::LookupByID(*formID);
+					                      RE::TESForm::LookupByID(*formID);
 					if (filterForm) {
 						const auto formType = filterForm->GetFormType();
 						if (Cache::FormType::GetWhitelisted(formType)) {
@@ -87,20 +88,17 @@ namespace Lookup
 				return true;
 			}
 
-			for (auto& [skillType, skill] : skillLevelPairs) {
+			return std::ranges::any_of(skillLevelPairs, [](const auto& skillPair) {
+				auto& [skillType, skill] = skillPair;
 				auto& [skillMin, skillMax] = skill;
 
-				if (skillType < 18 && (skillMin < UINT8_MAX || skillMax < UINT8_MAX)) {
-					return true;
-				}
-			}
-
-			return false;
+				return skillType < 18 && (skillMin < UINT8_MAX || skillMax < UINT8_MAX);
+			});
 		}
 	}
 
 	template <class Form>
-	void get_forms(RE::TESDataHandler* a_dataHandler, const std::string& a_type, const INIDataMap& a_INIDataMap, FormMap<Form>& a_FormDataMap)
+	void get_forms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, const INIDataMap& a_INIDataMap, FormMap<Form>& a_FormDataMap)
 	{
 		if (a_INIDataMap.empty()) {
 			return;

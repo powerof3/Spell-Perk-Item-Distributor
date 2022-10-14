@@ -130,6 +130,14 @@ namespace Distribute
 			}
 			return false;
 		});
+
+		for_each_form<RE::TESObjectARMO>(*a_actorbase, Forms::skins, input, [&](const auto& a_skinPair) {
+			if (a_actorbase->skin != a_skinPair.first) {
+				a_actorbase->skin = a_skinPair.first;
+				return true;
+			}
+			return false;
+		});
 	}
 
 	void ApplyToNPCs()
@@ -146,22 +154,25 @@ namespace Distribute
 			logger::info("{:*^50}", "RESULTS");
 			logger::info("{:*^50}", "[unique or non-templated NPCs]");
 
-			const auto list_result = [&totalNPCs]<class Form>(const std::string& a_formType, Forms::FormMap<Form>& a_forms) {
+			const auto list_result = [&totalNPCs]<class Form>(const RECORD::TYPE a_recordType, Forms::FormMap<Form>& a_forms) {
 				if (a_forms) {
-					list_npc_count(a_formType, a_forms, totalNPCs);
+					const auto& recordName = RECORD::add[a_recordType];
+					list_npc_count(recordName, a_forms, totalNPCs);
 				}
 			};
 
-			list_result("Keywords", Forms::keywords);
-			list_result("Spells", Forms::spells);
-			list_result("Perks", Forms::perks);
-			list_result("Items", Forms::items);
-			list_result("Shouts", Forms::shouts);
-			list_result("LevSpells", Forms::levSpells);
-			list_result("Packages", Forms::packages);
-			list_result("Outfits", Forms::outfits);
-			list_result("Factions", Forms::factions);
-			list_result("SleepOutfits", Forms::sleepOutfits);
+			list_result(RECORD::kSpell, Forms::spells);
+			list_result(RECORD::kPerk, Forms::perks);
+			list_result(RECORD::kItem, Forms::items);
+			list_result(RECORD::kShout, Forms::shouts);
+			list_result(RECORD::kLevSpell, Forms::levSpells);
+			list_result(RECORD::kPackage, Forms::packages);
+			list_result(RECORD::kOutfit, Forms::outfits);
+			list_result(RECORD::kKeyword, Forms::keywords);
+			list_result(RECORD::kDeathItem, Forms::deathItems);
+			list_result(RECORD::kFaction, Forms::factions);
+			list_result(RECORD::kSleepOutfit, Forms::sleepOutfits);
+			list_result(RECORD::kSkin, Forms::skins);
 		}
 	}
 }

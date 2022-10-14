@@ -192,7 +192,7 @@ namespace Filter
 
 	SECONDARY_RESULT secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData, bool a_noPlayerLevelDistribution)
 	{
-		const auto failed = SECONDARY_RESULT::kFail;
+		constexpr auto failed = SECONDARY_RESULT::kFail;
 
 		const auto& [sex, isUnique, isSummonable] = std::get<DATA::TYPE::kTraits>(a_formData);
 		if (sex && a_actorbase.GetSex() != *sex) {
@@ -230,7 +230,7 @@ namespace Filter
 			auto& [skillMin, skillMax] = skill;
 
 			if (skillType < 18) {
-				auto const skillLevel = a_actorbase.playerSkills.values[skillType];
+				const auto skillLevel = a_actorbase.playerSkills.values[skillType];
 
 				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
 					if (skillLevel < skillMin || skillLevel > skillMax) {

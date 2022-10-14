@@ -14,13 +14,14 @@ namespace RECORD
 		kKeyword,
 		kDeathItem,
 		kFaction,
-		kSleepingOutfit,
+		kSleepOutfit,
+		kSkin,
 
 		kTotal
 	};
 
-	inline constexpr std::array add{ "Spell", "Perk", "Item", "Shout", "LevSpell", "Package", "Outfit", "Keyword", "DeathItem", "Faction", "SleepOutfit" };
-	inline constexpr std::array remove { "-Spell", "-Perk", "-Item", "-Shout", "-LevSpell", "-Package", "-Outfit", "-Keyword", "-DeathItem", "-Faction", "-SleepOutfit" };
+	inline constexpr std::array add{ "Spell"sv, "Perk"sv, "Item"sv, "Shout"sv, "LevSpell"sv, "Package"sv, "Outfit"sv, "Keyword"sv, "DeathItem"sv, "Faction"sv, "SleepOutfit"sv, "Skin"sv };
+	inline constexpr std::array remove{ "-Spell"sv, "-Perk"sv, "-Item"sv, "-Shout"sv, "-LevSpell"sv, "-Package"sv, "-Outfit"sv, "-Keyword"sv, "-DeathItem"sv, "-Faction"sv, "-SleepOutfit"sv, "-Skin"sv };
 }
 
 namespace TRAITS
