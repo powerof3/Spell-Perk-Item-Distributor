@@ -189,7 +189,7 @@ namespace INI
 
 		//TRAITS
 		if (kTraits < size) {
-			auto& [sex, unique, summonable] = traits_ini;
+			auto& [sex, unique, summonable, child] = traits_ini;
 
 			auto split_traits = detail::split_sub_string(sections[kTraits], "/");
 			for (auto& trait : split_traits) {
@@ -205,6 +205,10 @@ namespace INI
 					summonable = true;
 				} else if (trait == "-S") {
 					summonable = false;
+				} else if (trait == "C") {
+					child = true;
+				} else if (trait == "-C") {
+					child = false;
 				}
 			}
 		}

@@ -30,7 +30,8 @@ namespace TRAITS
 	{
 		kSex,
 		kUnique,
-		kSummonable
+		kSummonable,
+		kChild
 	};
 }
 
@@ -107,6 +108,7 @@ using SkillLevel = std::pair<
 using IdxOrCount = std::int32_t;
 using Traits = std::tuple<
     std::optional<RE::SEX>,
+	std::optional<bool>,
 	std::optional<bool>,
 	std::optional<bool>>;
 using Chance = float;
