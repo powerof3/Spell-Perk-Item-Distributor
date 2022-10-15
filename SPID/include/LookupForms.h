@@ -130,11 +130,12 @@ namespace Lookup
 					}
 					if (!form) {
 						logger::error("		[0x{:X}] ({}) FAIL - formID doesn't exist", *formID, modName.value_or(""));
-					}
-					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-						if (string::is_empty(form->GetFormEditorID())) {
-							form = nullptr;
-						    logger::error("		[0x{:X}] ({}) FAIL - keyword does not have a valid editorID", *formID, modName.value_or(""));
+					} else {
+						if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
+							if (string::is_empty(form->GetFormEditorID())) {
+								form = nullptr;
+								logger::error("		[0x{:X}] ({}) FAIL - keyword does not have a valid editorID", *formID, modName.value_or(""));
+							}
 						}
 					}
 				}
