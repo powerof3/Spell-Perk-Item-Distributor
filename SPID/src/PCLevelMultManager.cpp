@@ -187,29 +187,30 @@ namespace PCLevelMult
 		return currentPlayerID;
 	}
 
-    void Manager::GetPlayerIDFromSave(const std::string& a_saveName)
+	void Manager::GetPlayerIDFromSave(const std::string& a_saveName)
 	{
 		// Quicksave0_2A73F01A_0_6E656C736F6E_Tamriel_000002_20220918174138_10_1.ess
 		// 2A73F01A is player ID
 
-	    if (const auto save = string::split(a_saveName, "_"); save.size() > 1) {
+		if (const auto save = string::split(a_saveName, "_"); save.size() > 1 && !string::is_only_letter(save[1])) {
 			currentPlayerID = string::lexical_cast<std::uint64_t>(save[1], true);
 		} else {
-			currentPlayerID = 0;  // non standard save name, use game playerID instead
+			logger::info("Loaded non-standard save : {}", a_saveName);
+		    currentPlayerID = 0;  // non standard save name, use game playerID instead
 		}
 	}
 
-    void Manager::SetNewGameStarted()
+	void Manager::SetNewGameStarted()
 	{
 		newGameStarted = true;
 	}
 
-    std::uint64_t Manager::get_game_playerID()
-    {
+	std::uint64_t Manager::get_game_playerID()
+	{
 		return RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID & 0xFFFFFFFF;
-    }
+	}
 
-    void Manager::remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID)
+	void Manager::remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID)
 	{
 		if (!cache.contains(a_newID)) {
 			if (const auto it = cache.find(a_oldID); it != cache.end()) {

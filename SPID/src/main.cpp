@@ -88,6 +88,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				}
 				logger::info("{:*^50}", "EVENTS");
 				PCLevelMult::Manager::GetSingleton()->Register();
+				logger::info("{:*^50}", "SAVES");
 			}
 		}
 		break;
