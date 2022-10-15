@@ -46,12 +46,15 @@ bool INI::Read()
 			std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
 
 			for (auto& [key, entry] : *values) {
-				auto [recordID, data, sanitized_str] = parse_ini(key.pItem, entry);
+				try {
+					auto [recordID, data, sanitized_str] = parse_ini(key.pItem, entry);
+					configs[key.pItem][recordID].emplace_back(data);
 
-				configs[key.pItem][recordID].emplace_back(data);
-
-				if (sanitized_str) {
-					oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
+					if (sanitized_str) {
+						oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
+					}
+				} catch (...) {
+					logger::warn("		Failed to parse entry [{} = {}]", key.pItem, entry);
 				}
 			}
 
