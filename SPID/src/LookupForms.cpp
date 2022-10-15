@@ -12,14 +12,14 @@ bool Lookup::GetForms()
 			get_forms_with_level_filters(a_map);
 		};
 
-		lookup_forms(RECORD::kSpell, spells);
+		lookup_forms(RECORD::kKeyword, keywords);
+	    lookup_forms(RECORD::kSpell, spells);
 		lookup_forms(RECORD::kPerk, perks);
 		lookup_forms(RECORD::kItem, items);
 		lookup_forms(RECORD::kShout, shouts);
 		lookup_forms(RECORD::kLevSpell, levSpells);
 		lookup_forms(RECORD::kPackage, packages);
 		lookup_forms(RECORD::kOutfit, outfits);
-		lookup_forms(RECORD::kKeyword, keywords);
 		lookup_forms(RECORD::kDeathItem, deathItems);
 		lookup_forms(RECORD::kFaction, factions);
 		lookup_forms(RECORD::kSleepOutfit, sleepOutfits);
@@ -41,14 +41,14 @@ bool Lookup::GetForms()
 		    logger::info("	Adding {}/{} {}(s)", a_map.forms.size(), INI::configs[recordName].size(), recordName);
 		};
 
-		list_lookup_result(RECORD::kSpell, spells);
+		list_lookup_result(RECORD::kKeyword, keywords);
+	    list_lookup_result(RECORD::kSpell, spells);
 		list_lookup_result(RECORD::kPerk, perks);
 		list_lookup_result(RECORD::kItem, items);
 		list_lookup_result(RECORD::kShout, shouts);
 		list_lookup_result(RECORD::kLevSpell, levSpells);
 		list_lookup_result(RECORD::kPackage, packages);
 		list_lookup_result(RECORD::kOutfit, outfits);
-		list_lookup_result(RECORD::kKeyword, keywords);
 		list_lookup_result(RECORD::kDeathItem, deathItems);
 		list_lookup_result(RECORD::kFaction, factions);
 		list_lookup_result(RECORD::kSleepOutfit, sleepOutfits);

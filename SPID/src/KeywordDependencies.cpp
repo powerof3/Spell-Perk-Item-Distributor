@@ -1,6 +1,6 @@
+#include "KeywordDependencies.h"
 #include "Defs.h"
 #include "LookupForms.h"
-#include "KeywordDependencies.h"
 
 /// An object that describes a keyword dependencies.
 struct DependencyNode
@@ -65,7 +65,7 @@ inline std::unordered_map<RE::BGSKeyword*, DependencyNode*> keywordDependencies;
 
 /// Finds an existing dependency node for given keyword.
 /// If none found, a new node will be created and placed into the map.
-DependencyNode* NodeForKeyword(RE::BGSKeyword* keyword) 
+DependencyNode* NodeForKeyword(RE::BGSKeyword* keyword)
 {
 	if (keywordDependencies.contains(keyword)) {
 		return keywordDependencies.at(keyword);
@@ -86,13 +86,13 @@ size_t DependenciesCount(RE::BGSKeyword* keyword)
 /// Checks whether `parent` keyword is dependent on `dependency` keyword.
 bool IsDepending(RE::BGSKeyword* parent, RE::BGSKeyword* dependency)
 {
-	auto iter = keywordDependencies.find(parent); 
+	auto iter = keywordDependencies.find(parent);
 	return iter != keywordDependencies.end() && iter->second->IsNestedChild(dependency);
 }
 
 /// Makes `parent` keyword dependent on `dependency` keyword.
 /// If `dependency` keyword is already depending on `parent` then no association will be created for `parent` -> `dependency` to avoid circular dependencies.
-void AddDependency(RE::BGSKeyword* parent, RE::BGSKeyword* dependency) 
+void AddDependency(RE::BGSKeyword* parent, RE::BGSKeyword* dependency)
 {
 	if (parent == dependency) {
 		logger::warn("		{} SKIP - Keyword referencing itself in its filters.", parent->GetFormEditorID());
@@ -103,10 +103,10 @@ void AddDependency(RE::BGSKeyword* parent, RE::BGSKeyword* dependency)
 	if (IsDepending(parent, dependency)) {
 		return;
 	}
-	
+
 	// Skip circular dependencies.
 	if (IsDepending(dependency, parent)) {
-		logger::warn("		{} SKIP - Keywords {} and {} use each other in their filters.", parent->GetFormEditorID() , parent->GetFormEditorID(), dependency->GetFormEditorID(), parent->GetFormEditorID(), dependency->GetFormEditorID());
+		logger::warn("		{} SKIP - Keywords {} and {} use each other in their filters.", parent->GetFormEditorID(), parent->GetFormEditorID(), dependency->GetFormEditorID(), parent->GetFormEditorID(), dependency->GetFormEditorID());
 		return;
 	}
 
@@ -121,11 +121,19 @@ void Dependencies::ResolveKeywords()
 	logger::info("{:*^50}", "RESOLVING KEYWORDS");
 
 	// Pre-build a map of all available keywords by names.
-	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords;
+	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
 
-	const auto dataHandler = RE::TESDataHandler::GetSingleton(); 
-    for (const auto kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
-		allKeywords[kwd->GetFormEditorID()] = kwd;
+	const auto& dataHandler = RE::TESDataHandler::GetSingleton();
+	for (const auto& kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
+		if (kwd) {
+			if (const auto edid = kwd->GetFormEditorID(); !string::is_empty(edid)) {
+				allKeywords[edid] = kwd;
+			} else {
+				if (auto file = kwd->GetFile(0)) {
+					logger::error(" WARNING : [0x{:X}~{}] keyword has an empty editorID!", kwd->GetLocalFormID(), file->GetFilename());
+				}
+			}
+		}
 	}
 
 	// Fill keywordDependencies based on Keywords found in configs.
@@ -175,7 +183,7 @@ void Dependencies::ResolveKeywords()
 }
 
 /// Comparator that utilizes dependencies map created with Dependencies::ResolveKeywords() to sort keywords.
-/// 
+///
 /// Order is determined by the following rules:
 /// 1) If A is a dependency of B, then A must always be placed before B
 /// 2) If B is a dependency of A, then A must always be placed after B

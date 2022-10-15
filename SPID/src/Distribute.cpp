@@ -161,14 +161,14 @@ namespace Distribute
 				}
 			};
 
-			list_result(RECORD::kSpell, Forms::spells);
+			list_result(RECORD::kKeyword, Forms::keywords);
+		    list_result(RECORD::kSpell, Forms::spells);
 			list_result(RECORD::kPerk, Forms::perks);
 			list_result(RECORD::kItem, Forms::items);
 			list_result(RECORD::kShout, Forms::shouts);
 			list_result(RECORD::kLevSpell, Forms::levSpells);
 			list_result(RECORD::kPackage, Forms::packages);
 			list_result(RECORD::kOutfit, Forms::outfits);
-			list_result(RECORD::kKeyword, Forms::keywords);
 			list_result(RECORD::kDeathItem, Forms::deathItems);
 			list_result(RECORD::kFaction, Forms::factions);
 			list_result(RECORD::kSleepOutfit, Forms::sleepOutfits);
