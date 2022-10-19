@@ -46,6 +46,17 @@ namespace INI
 				string::replace_first_instance(newValue, " - ", "~");
 			}
 
+#ifdef SKYRIMVR
+			// swap dawnguard and dragonborn forms
+			// we do this during sanitize instead of in get_formID to squelch log errors
+			// VR apparently does not load masters in order so the lookup fails
+			static const srell::regex re_dawnguard(R"((0x0*2)([0-9a-f]{6}))", srell::regex_constants::optimize | srell::regex::icase);
+			newValue = regex_replace(newValue, re_dawnguard, "0x$2~Dawnguard.esm");
+
+			static const srell::regex re_dragonborn(R"((0x0*4)([0-9a-f]{6}))", srell::regex_constants::optimize | srell::regex::icase);
+			newValue = regex_replace(newValue, re_dragonborn, "0x$2~Dragonborn.esm");
+#endif
+
 			//strip spaces between " | "
 			static const srell::regex re_bar(R"(\s*\|\s*)", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_bar, "|");
@@ -65,12 +76,13 @@ namespace INI
 		}
 	}
 
-	inline std::tuple<FormOrEditorID, INIData, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value)
+	inline std::tuple<FormOrEditorID, INIData, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 	{
 		FormOrEditorID recordID;
 
 		INIData data;
-		auto& [strings_ini, filterIDs_ini, level_ini, traits_ini, idxOrCount_ini, chance_ini] = data;
+		auto& [strings_ini, filterIDs_ini, level_ini, traits_ini, idxOrCount_ini, chance_ini, path] = data;
+		path = a_path;
 
 		auto sanitized_value = detail::sanitize(a_value);
 		const auto sections = string::split(sanitized_value, "|");

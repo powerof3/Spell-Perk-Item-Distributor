@@ -4,6 +4,7 @@
   "dependencies": [
     "boost-stl-interfaces",
     "frozen",
+    "mergemapper",
     "rsm-binary-io",
     "simpleini",
     "srell",

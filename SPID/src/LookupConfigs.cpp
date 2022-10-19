@@ -44,10 +44,9 @@ bool INI::Read()
 
 		if (auto values = ini.GetSection(""); values) {
 			std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
-
 			for (auto& [key, entry] : *values) {
 				try {
-					auto [recordID, data, sanitized_str] = parse_ini(key.pItem, entry);
+					auto [recordID, data, sanitized_str] = parse_ini(key.pItem, entry, path);
 					configs[key.pItem][recordID].emplace_back(data);
 
 					if (sanitized_str) {

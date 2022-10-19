@@ -120,7 +120,8 @@ using INIData = std::tuple<
 	std::pair<ActorLevel, std::vector<SkillLevel>>,
 	Traits,
 	IdxOrCount,
-	Chance>;
+	Chance,
+	std::string>;
 using INIDataMap = std::map<FormOrEditorID, std::vector<INIData>>;
 
 using FormData = std::tuple<

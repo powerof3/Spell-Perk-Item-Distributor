@@ -137,6 +137,7 @@ find_package(frozen CONFIG REQUIRED)
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 find_path(SRELL_INCLUDE_DIRS "srell.hpp")
+find_path(MERGEMAPPER_INCLUDE_DIRS "MergeMapperPluginAPI.h")
 
 # ---- Add source files ----
 
@@ -169,6 +170,7 @@ add_library(
 	${CMAKE_CURRENT_BINARY_DIR}/version.rc
 	.clang-format
 	.editorconfig
+	${MERGEMAPPER_INCLUDE_DIRS}/MergeMapperPluginAPI.cpp
 )
 
 target_compile_features(
@@ -190,6 +192,7 @@ target_include_directories(
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 		${SIMPLEINI_INCLUDE_DIRS}
 		${SRELL_INCLUDE_DIRS}
+		${MERGEMAPPER_INCLUDE_DIRS}
 )
 
 target_link_libraries(

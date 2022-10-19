@@ -1,5 +1,6 @@
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
+#include "MergeMapperPluginAPI.h"
 #include "LookupConfigs.h"
 #include "LookupForms.h"
 
@@ -77,6 +78,17 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 					SKSE::GetModCallbackEventSource()->AddEventSink(DistributionManager::GetSingleton());
 				}
 			}
+		}
+		break;
+	case SKSE::MessagingInterface::kPostPostLoad:
+		{
+			logger::info("{:*^50}", "MERGES");
+			MergeMapperPluginAPI::GetMergeMapperInterface001();  // Request interface
+			if (g_mergeMapperInterface) {                        // Use Interface
+				const auto version = g_mergeMapperInterface->GetBuildNumber();
+				logger::info("Got MergeMapper interface buildnumber {}", version);
+			} else
+				logger::info("MergeMapper not detected");
 		}
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
