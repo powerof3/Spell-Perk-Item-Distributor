@@ -31,8 +31,7 @@ Distributes spells/perks/items/shouts/leveled-spells/packages/outfits/death-item
 ## Building
 ```
 git clone https://github.com/powerof3/Spell-Perk-Item-Distributor.git
-# note need to go to SPID subdirectory due to cmake issues
-cd Spell-Perk-Item-Distributor/SPID
+cd Spell-Perk-Item-Distributor
 # pull commonlib /extern to override the path settings
 git submodule init
 # to update submodules to checked in build
@@ -41,8 +40,13 @@ git submodule update
 
 ### SSE
 ```
-cmake --preset vs2022-windows-vcpkg
+cmake --preset vs2022-windows-vcpkg-se
 cmake --build build --config Release
+```
+### AE
+```
+cmake --preset vs2022-windows-vcpkg-ae
+cmake --build buildae --config Release
 ```
 ### VR
 ```
