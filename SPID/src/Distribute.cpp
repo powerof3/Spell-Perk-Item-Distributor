@@ -142,10 +142,14 @@ namespace Distribute
 
 	void ApplyToNPCs()
 	{
+		constexpr auto uses_template = [](const RE::TESNPC* a_actorbase) -> bool {
+			return a_actorbase->UsesTemplate() || a_actorbase->baseTemplateForm || a_actorbase->templateForms;
+		};
+
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			std::size_t totalNPCs = 0;
 			for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-				if (actorbase && !actorbase->IsPlayer() && (!actorbase->UsesTemplate() || actorbase->IsUnique())) {
+				if (actorbase && !actorbase->IsPlayer() && (!uses_template(actorbase) || actorbase->IsUnique())) {
 					Distribute(actorbase, false, true);
 					totalNPCs++;
 				}
@@ -162,7 +166,7 @@ namespace Distribute
 			};
 
 			list_result(RECORD::kKeyword, Forms::keywords);
-		    list_result(RECORD::kSpell, Forms::spells);
+			list_result(RECORD::kSpell, Forms::spells);
 			list_result(RECORD::kPerk, Forms::perks);
 			list_result(RECORD::kItem, Forms::items);
 			list_result(RECORD::kShout, Forms::shouts);

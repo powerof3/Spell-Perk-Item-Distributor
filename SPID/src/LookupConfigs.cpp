@@ -42,7 +42,7 @@ bool INI::Read()
 			continue;
 		}
 
-		if (auto values = ini.GetSection(""); values) {
+2		if (auto values = ini.GetSection(""); values && !values->empty()) {
 			std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
 			for (auto& [key, entry] : *values) {
 				try {
