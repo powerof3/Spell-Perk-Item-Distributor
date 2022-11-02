@@ -15,62 +15,55 @@ namespace Distribute
 			return;
 		}
 
-		for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, input, [&](const auto& a_keywordsPair) {
-			const auto keyword = a_keywordsPair.first;
-			return a_actorbase->AddKeyword(keyword);
+		for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, input, [&](auto* a_keyword, [[maybe_unused]] IdxOrCount a_count) {
+			return a_actorbase->AddKeyword(a_keyword);
 		});
 
-		for_each_form<RE::TESFaction>(*a_actorbase, Forms::factions, input, [&](const auto& a_factionPair) {
-			if (!a_actorbase->IsInFaction(a_factionPair.first)) {
-				const RE::FACTION_RANK faction{ a_factionPair.first, 1 };
+		for_each_form<RE::TESFaction>(*a_actorbase, Forms::factions, input, [&](auto* a_faction, [[maybe_unused]] IdxOrCount a_count) {
+			if (!a_actorbase->IsInFaction(a_faction)) {
+				const RE::FACTION_RANK faction{ a_faction, 1 };
 				a_actorbase->factions.push_back(faction);
 				return true;
 			}
 			return false;
 		});
 
-		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, input, [&](const auto& a_perkPair) {
-			const auto perk = a_perkPair.first;
-			return a_actorbase->AddPerk(perk, 1);
+		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, input, [&](auto* a_perk, [[maybe_unused]] IdxOrCount a_count) {
+			return a_actorbase->AddPerk(a_perk, 1);
 		});
 
-		for_each_form<RE::SpellItem>(*a_actorbase, Forms::spells, input, [&](const auto& a_spellPair) {
-			const auto spell = a_spellPair.first;
+		for_each_form<RE::SpellItem>(*a_actorbase, Forms::spells, input, [&](auto* a_spell, [[maybe_unused]] IdxOrCount a_count) {
 			const auto actorEffects = a_actorbase->GetSpellList();
-			return actorEffects && actorEffects->AddSpell(spell);
+			return actorEffects && actorEffects->AddSpell(a_spell);
 		});
 
-		for_each_form<RE::TESShout>(*a_actorbase, Forms::shouts, input, [&](const auto& a_shoutPair) {
-			const auto shout = a_shoutPair.first;
+		for_each_form<RE::TESShout>(*a_actorbase, Forms::shouts, input, [&](auto* a_shout, [[maybe_unused]] IdxOrCount a_count) {
 			const auto actorEffects = a_actorbase->GetSpellList();
-			return actorEffects && actorEffects->AddShout(shout);
+			return actorEffects && actorEffects->AddShout(a_shout);
 		});
 
-		for_each_form<RE::TESLevSpell>(*a_actorbase, Forms::levSpells, input, [&](const auto& a_levSpellPair) {
-			const auto levSpell = a_levSpellPair.first;
+		for_each_form<RE::TESLevSpell>(*a_actorbase, Forms::levSpells, input, [&](auto* a_levSpell, [[maybe_unused]] IdxOrCount a_count) {
 			const auto actorEffects = a_actorbase->GetSpellList();
-			return actorEffects && actorEffects->AddLevSpell(levSpell);
+			return actorEffects && actorEffects->AddLevSpell(a_levSpell);
 		});
 
-		for_each_form<RE::TESBoundObject>(*a_actorbase, Forms::items, input, [&](const auto& a_itemPair) {
-			const auto& [item, count] = a_itemPair;
-			return a_actorbase->AddObjectToContainer(item, count, a_actorbase);
+		for_each_form<RE::TESBoundObject>(*a_actorbase, Forms::items, input, [&](auto* a_item, IdxOrCount a_count) {
+			return a_actorbase->AddObjectToContainer(a_item, a_count, a_actorbase);
 		});
 
-		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::outfits, input, [&](const auto& a_outfitPair) {
-			if (a_actorbase->defaultOutfit != a_outfitPair.first) {
-				a_actorbase->defaultOutfit = a_outfitPair.first;
+		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::outfits, input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
+			if (a_actorbase->defaultOutfit != a_outfit) {
+				a_actorbase->defaultOutfit = a_outfit;
 				return true;
 			}
 			return false;
 		});
 
-		for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, input, [&](const auto& a_packagePair) {
-			auto packageForm = a_packagePair.first;
-			auto packageIdx = a_packagePair.second;
+		for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
+			auto packageIdx = a_idx;
 
-			if (packageForm->Is(RE::FormType::Package)) {
-				auto package = packageForm->As<RE::TESPackage>();
+			if (a_packageOrList->Is(RE::FormType::Package)) {
+				auto package = a_packageOrList->As<RE::TESPackage>();
 
 				if (packageIdx > 0) {
 					--packageIdx;  //get actual position we want to insert at
@@ -94,8 +87,8 @@ namespace Distribute
 					}
 					return true;
 				}
-			} else if (packageForm->Is(RE::FormType::FormList)) {
-				auto packageList = packageForm->As<RE::BGSListForm>();
+			} else if (a_packageOrList->Is(RE::FormType::FormList)) {
+				auto packageList = a_packageOrList->As<RE::BGSListForm>();
 
 				switch (packageIdx) {
 				case 0:
@@ -123,17 +116,17 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepOutfits, input, [&](const auto& a_outfitPair) {
-			if (a_actorbase->sleepOutfit != a_outfitPair.first) {
-				a_actorbase->sleepOutfit = a_outfitPair.first;
+		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepOutfits, input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
+			if (a_actorbase->sleepOutfit != a_outfit) {
+				a_actorbase->sleepOutfit = a_outfit;
 				return true;
 			}
 			return false;
 		});
 
-		for_each_form<RE::TESObjectARMO>(*a_actorbase, Forms::skins, input, [&](const auto& a_skinPair) {
-			if (a_actorbase->skin != a_skinPair.first) {
-				a_actorbase->skin = a_skinPair.first;
+		for_each_form<RE::TESObjectARMO>(*a_actorbase, Forms::skins, input, [&](auto* a_skin, [[maybe_unused]] IdxOrCount a_count) {
+			if (a_actorbase->skin != a_skin) {
+				a_actorbase->skin = a_skin;
 				return true;
 			}
 			return false;
@@ -220,9 +213,8 @@ namespace Distribute::DeathItem
 					false,
 					false,
 				};
-				for_each_form<RE::TESBoundObject>(*actorBase, Forms::deathItems, input, [&](const auto& a_deathItemPair) {
-					const auto& [deathItem, count] = a_deathItemPair;
-					detail::add_item(actor, deathItem, count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
+				for_each_form<RE::TESBoundObject>(*actorBase, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
+					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
 				});
 			}

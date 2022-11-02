@@ -142,8 +142,7 @@ void Dependencies::ResolveKeywords()
 
 	// Fill keywordDependencies based on Keywords found in configs.
 	for (auto& formData : Forms::keywords.forms) {
-		auto& [keyword, idxOrCount] = std::get<DATA::TYPE::kForm>(formData);
-		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = std::get<DATA::TYPE::kStrings>(formData);
+		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = formData.stringFilters;
 
 		const auto findKeyword = [&](const std::string& name) -> RE::BGSKeyword* {
 			return allKeywords[name];
@@ -152,7 +151,7 @@ void Dependencies::ResolveKeywords()
 		const auto addDependencies = [&](const StringVec& a_strings, std::function<RE::BGSKeyword*(const std::string&)> matchingKeyword) {
 			for (const auto& str : a_strings) {
 				if (const auto& kwd = matchingKeyword(str); kwd) {
-					AddDependency(keyword, kwd);
+					AddDependency(formData.form, kwd);
 				}
 			}
 		};
@@ -179,8 +178,7 @@ void Dependencies::ResolveKeywords()
 
 	logger::info("	Keywords have been sorted: ");
 	for (const auto& keywordData : Forms::keywords.forms) {
-		const auto& [keyword, idxOrCount] = std::get<DATA::TYPE::kForm>(keywordData);
-	    logger::info("		{} [0x{:X}]", keyword->GetFormEditorID(), keyword->GetFormID());
+		logger::info("		{} [0x{:X}]", keywordData.form->GetFormEditorID(), keywordData.form->GetFormID());
 	}
 }
 
@@ -191,7 +189,7 @@ void Dependencies::ResolveKeywords()
 /// 2) If B is a dependency of A, then A must always be placed after B
 /// 3) If A has less dependencies than B, then A must be placed before B and vise versa. ("leaf" keywords should be on top)
 /// 4) If A and B has the same number of dependencies they should be ordered alphabetically.
-bool KeywordDependencySorter::operator()(RE::BGSKeyword* a, RE::BGSKeyword* b) const
+bool KeywordDependencySorter::sort(RE::BGSKeyword* a, RE::BGSKeyword* b)
 {
 	if (IsDepending(b, a)) {
 		return true;

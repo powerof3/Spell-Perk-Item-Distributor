@@ -83,7 +83,7 @@ struct form_sorter
 /// Custom ordering for keywords that ensures that dependent keywords are disitrbuted after the keywords that they depend on.
 struct KeywordDependencySorter
 {
-	bool operator()(RE::BGSKeyword* a, RE::BGSKeyword* b) const;
+	static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
 };
 
 template <>
@@ -132,15 +132,26 @@ using FormFilters = std::array<FormVec, 3>;
 using LevelFilters = std::pair<ActorLevel, std::vector<SkillLevel>>;
 
 template <class Form>
-using FormCountPair = std::pair<Form*, IdxOrCount>;
-template <class Form>
-using FormData = std::tuple<
-	FormCountPair<Form>,
-	StringFilters,
-	FormFilters,
-	LevelFilters,
-	Traits,
-	Chance,
-	NPCCount>;
+struct FormData
+{
+	Form* form{ nullptr };
+	IdxOrCount idxOrCount{ 1 };
+	StringFilters stringFilters{};
+	FormFilters formFilters{};
+	LevelFilters levelFilters{};
+	Traits traits{};
+	Chance chance{ 100 };
+	NPCCount npcCount{ 0 };
+
+	bool operator<(const FormData& a_rhs) const
+	{
+		if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
+			return KeywordDependencySorter::sort(form, a_rhs.form);
+		} else {
+			return true;
+		}
+	}
+};
+
 template <class Form>
 using FormDataVec = std::vector<FormData<Form>>;

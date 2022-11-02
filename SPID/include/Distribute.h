@@ -11,7 +11,7 @@ namespace Distribute
 		RE::TESNPC& a_actorbase,
 		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input& a_input,
-		std::function<bool(const FormCountPair<Form>&)> a_fn)
+		std::function<bool(Form*, IdxOrCount&)> a_fn)
 	{
 		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
 
@@ -19,8 +19,7 @@ namespace Distribute
 
 		for (std::uint32_t idx = 0; auto& formData : vec) {
 			++idx;
-			auto& [formCountPair, stringFilters, formFilters, levelFilters, traits, chance, npcCount] = formData;
-			auto& [form, idxOrCount] = formCountPair;
+			auto& [form, idxOrCount, stringFilters, formFilters, levelFilters, traits, chance, npcCount] = formData;
 			auto distributedFormID = form->GetFormID();
 
 			if (pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
@@ -36,7 +35,7 @@ namespace Distribute
 				}
 				continue;
 			}
-			if (a_fn({ form, idxOrCount })) {
+			if (a_fn(form, idxOrCount)) {
 				pcLevelMultManager->InsertDistributedEntry(a_input, distributedFormID, idxOrCount);
 				++npcCount;
 			}
@@ -50,10 +49,7 @@ namespace Distribute
 			logger::info("	{}", a_recordType);
 
 			for (auto& formData : a_distributables.forms) {
-				auto& [form, itemCount] = std::get<DATA::TYPE::kForm>(formData);
-				auto npcCount = std::get<DATA::TYPE::kNPCCount>(formData);
-
-				if (form) {
+                if (const auto& form = formData.form) {
 					std::string name{};
 					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 						name = form->GetFormEditorID();
@@ -61,9 +57,9 @@ namespace Distribute
 						name = Cache::EditorID::GetEditorID(form->GetFormID());
 					}
 					if (auto file = form->GetFile(0)) {
-						logger::info("		{} [0x{:X}~{}] added to {}/{} NPCs", name, form->GetLocalFormID(), file->GetFilename(), npcCount, a_totalNPCCount);
+						logger::info("		{} [0x{:X}~{}] added to {}/{} NPCs", name, form->GetLocalFormID(), file->GetFilename(), formData.npcCount, a_totalNPCCount);
 					} else {
-						logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
+						logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), formData.npcCount, a_totalNPCCount);
 					}
 				}
 			}

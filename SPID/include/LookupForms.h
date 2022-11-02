@@ -1,13 +1,14 @@
 #pragma once
+
 #include "MergeMapperPluginAPI.h"
 
 namespace Forms
 {
-	template <class T>
+	template <class Form>
 	struct Distributables
 	{
-		FormDataVec<T> forms{};
-		FormDataVec<T> formsWithLevels{};
+		FormDataVec<Form> forms{};
+		FormDataVec<Form> formsWithLevels{};
 
 		explicit operator bool()
 		{
@@ -245,7 +246,7 @@ namespace Lookup
 				continue;
 			}
 
-			FormData<Form> formData{ { form, idxOrCount }, strings, filterForms, level, traits, chance, 0 };
+			FormData<Form> formData{ form, idxOrCount, strings, filterForms, level, traits, chance };
 			a_formDataVec.emplace_back(formData);
 		}
 	}
@@ -259,8 +260,7 @@ namespace Lookup
 
 		a_distributables.formsWithLevels.reserve(a_distributables.forms.size());
 		for (auto& formData : a_distributables.forms) {
-			auto& levelEntry = std::get<DATA::TYPE::kLevel>(formData);
-			if (detail::has_level_filters(levelEntry)) {
+			if (detail::has_level_filters(formData.levelFilters)) {
 				a_distributables.formsWithLevels.emplace_back(formData);
 			}
 		}
