@@ -5,15 +5,18 @@
 bool Lookup::GetForms()
 {
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-		const auto lookup_forms = [&]<class Form>(const RECORD::TYPE a_recordType, FormMap<Form>& a_map) {
+		const auto lookup_forms = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
 			const auto& recordName = RECORD::add[a_recordType];
 
-		    get_forms(dataHandler, recordName, INI::configs[recordName], a_map);
+			get_forms(dataHandler, recordName, INI::configs[recordName], a_map.forms);
+			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
+				Dependencies::ResolveKeywords();
+			}
 			get_forms_with_level_filters(a_map);
 		};
 
 		lookup_forms(RECORD::kKeyword, keywords);
-	    lookup_forms(RECORD::kSpell, spells);
+		lookup_forms(RECORD::kSpell, spells);
 		lookup_forms(RECORD::kPerk, perks);
 		lookup_forms(RECORD::kItem, items);
 		lookup_forms(RECORD::kShout, shouts);
@@ -24,10 +27,6 @@ bool Lookup::GetForms()
 		lookup_forms(RECORD::kFaction, factions);
 		lookup_forms(RECORD::kSleepOutfit, sleepOutfits);
 		lookup_forms(RECORD::kSkin, skins);
-
-		if (keywords) {
-			Dependencies::ResolveKeywords();
-		}
 	}
 
 	const auto result = spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions || sleepOutfits || skins;
@@ -35,14 +34,14 @@ bool Lookup::GetForms()
 	if (result) {
 		logger::info("{:*^50}", "PROCESSING");
 
-		const auto list_lookup_result = [&]<class Form>(const RECORD::TYPE a_recordType, FormMap<Form>& a_map) {
+		const auto list_lookup_result = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
 			const auto& recordName = RECORD::add[a_recordType];
 
-		    logger::info("	Adding {}/{} {}(s)", a_map.forms.size(), INI::configs[recordName].size(), recordName);
+			logger::info("	Adding {}/{} {}(s)", a_map.forms.size(), INI::configs[recordName].size(), recordName);
 		};
 
 		list_lookup_result(RECORD::kKeyword, keywords);
-	    list_lookup_result(RECORD::kSpell, spells);
+		list_lookup_result(RECORD::kSpell, spells);
 		list_lookup_result(RECORD::kPerk, perks);
 		list_lookup_result(RECORD::kItem, items);
 		list_lookup_result(RECORD::kShout, shouts);

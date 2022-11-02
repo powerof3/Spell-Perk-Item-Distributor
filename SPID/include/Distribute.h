@@ -9,62 +9,62 @@ namespace Distribute
 	template <class Form>
 	void for_each_form(
 		RE::TESNPC& a_actorbase,
-		Forms::FormMap<Form>& a_formDataMap,
+		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input& a_input,
-		std::function<bool(const FormCount<Form>&)> a_fn)
+		std::function<bool(const FormCountPair<Form>&)> a_fn)
 	{
-		auto& map = a_input.onlyPlayerLevelEntries ? a_formDataMap.formsWithLevels : a_formDataMap.forms;
+		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
 
-	    const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
+		const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 
-		for (auto& [form, data] : map) {
-			if (form != nullptr) {
-				auto formID = form->GetFormID();
+		for (std::uint32_t idx = 0; auto& formData : vec) {
+			++idx;
+			auto& [formCountPair, stringFilters, formFilters, levelFilters, traits, chance, npcCount] = formData;
+			auto& [form, idxOrCount] = formCountPair;
+			auto distributedFormID = form->GetFormID();
 
-				auto& [npcCount, formDataVec] = data;
-				for (std::uint32_t idx = 0; auto& formData : formDataVec) {
-					++idx;
-					if (pcLevelMultManager->FindRejectedEntry(a_input, formID, idx)) {
-						continue;
-					}
-					if (!Filter::strings(a_actorbase, formData) || !Filter::forms(a_actorbase, formData)) {
-						continue;
-					}
-					auto result = Filter::secondary(a_actorbase, formData, a_input.noPlayerLevelDistribution);
-				    if (result != Filter::SECONDARY_RESULT::kPass) {
-						if (result == Filter::SECONDARY_RESULT::kFailDueToRNG) {
-							pcLevelMultManager->InsertRejectedEntry(a_input, formID, idx);
-						}
-						continue;
-					}
-					auto idxOrCount = std::get<DATA::TYPE::kIdxOrCount>(formData);
-					if (a_fn({ form, idxOrCount })) {
-						pcLevelMultManager->InsertDistributedEntry(a_input, formID, idxOrCount);
-					    ++npcCount;
-					}
+			if (pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
+				continue;
+			}
+			if (!Filter::strings(a_actorbase, stringFilters) || !Filter::forms(a_actorbase, formFilters)) {
+				continue;
+			}
+			auto result = Filter::secondary(a_actorbase, levelFilters, traits, chance, a_input.noPlayerLevelDistribution);
+			if (result != SECONDARY_RESULT::kPass) {
+				if (result == SECONDARY_RESULT::kFailRNG) {
+					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
 				}
+				continue;
+			}
+			if (a_fn({ form, idxOrCount })) {
+				pcLevelMultManager->InsertDistributedEntry(a_input, distributedFormID, idxOrCount);
+				++npcCount;
 			}
 		}
 	}
 
 	template <class Form>
-	void list_npc_count(std::string_view a_recordType, Forms::FormMap<Form>& a_formDataMap, const size_t a_totalNPCCount)
+	void list_npc_count(std::string_view a_recordType, Forms::Distributables<Form>& a_distributables, const size_t a_totalNPCCount)
 	{
-		logger::info("	{}s", a_recordType);
+		if (!a_distributables) {
+			logger::info("	{}", a_recordType);
 
-		for (auto& [form, formData] : a_formDataMap.forms) {
-			if (form != nullptr) {
-				auto& [npcCount, data] = formData;
-				std::string name;
-				if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-					name = form->GetFormEditorID();
-				} else {
-					name = Cache::EditorID::GetEditorID(form->GetFormID());
-				}
-				if (auto file = form->GetFile(0)) {
-					logger::info("		{} [0x{:X}~{}] added to {}/{} NPCs", name, form->GetLocalFormID(), file->GetFilename(), npcCount, a_totalNPCCount);
-				} else {
-					logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
+			for (auto& formData : a_distributables.forms) {
+				auto& [form, itemCount] = std::get<DATA::TYPE::kForm>(formData);
+				auto npcCount = std::get<DATA::TYPE::kNPCCount>(formData);
+
+				if (form) {
+					std::string name{};
+					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
+						name = form->GetFormEditorID();
+					} else {
+						name = Cache::EditorID::GetEditorID(form->GetFormID());
+					}
+					if (auto file = form->GetFile(0)) {
+						logger::info("		{} [0x{:X}~{}] added to {}/{} NPCs", name, form->GetLocalFormID(), file->GetFilename(), npcCount, a_totalNPCCount);
+					} else {
+						logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), npcCount, a_totalNPCCount);
+					}
 				}
 			}
 		}

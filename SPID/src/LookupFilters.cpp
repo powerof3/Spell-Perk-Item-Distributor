@@ -109,9 +109,9 @@ namespace Filter
 		}
 	}
 
-	bool strings(RE::TESNPC& a_actorbase, const FormData& a_formData)
+	bool strings(RE::TESNPC& a_actorbase, const StringFilters& a_stringFilters)
 	{
-		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = std::get<DATA::TYPE::kStrings>(a_formData);
+		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = a_stringFilters;
 
 		if (!strings_ALL.empty() && !detail::keyword::matches(a_actorbase, strings_ALL, true)) {
 			return false;
@@ -171,9 +171,9 @@ namespace Filter
 		return true;
 	}
 
-	bool forms(RE::TESNPC& a_actorbase, const FormData& a_formData)
+	bool forms(RE::TESNPC& a_actorbase, const FormFilters& a_formFilters)
 	{
-		auto& [filterForms_ALL, filterForms_NOT, filterForms_MATCH] = std::get<DATA::TYPE::kFilterForms>(a_formData);
+		auto& [filterForms_ALL, filterForms_NOT, filterForms_MATCH] = a_formFilters;
 
 		if (!filterForms_ALL.empty() && !detail::form::matches(a_actorbase, filterForms_ALL, true)) {
 			return false;
@@ -190,11 +190,11 @@ namespace Filter
 		return true;
 	}
 
-	SECONDARY_RESULT secondary(const RE::TESNPC& a_actorbase, const FormData& a_formData, bool a_noPlayerLevelDistribution)
+	SECONDARY_RESULT secondary(const RE::TESNPC& a_actorbase, const LevelFilters& a_levelFilters, const Traits& a_traits, float a_chance, bool a_noPlayerLevelDistribution)
 	{
 		constexpr auto failed = SECONDARY_RESULT::kFail;
 
-		const auto& [sex, isUnique, isSummonable, isChild] = std::get<DATA::TYPE::kTraits>(a_formData);
+		const auto& [sex, isUnique, isSummonable, isChild] = a_traits;
 		if (sex && a_actorbase.GetSex() != *sex) {
 			return failed;
 		}
@@ -208,15 +208,13 @@ namespace Filter
 			return failed;
 		}
 
-		auto& levelEntry = std::get<DATA::TYPE::kLevel>(a_formData);
-
-		if (Lookup::detail::has_level_filters(levelEntry)) {
+		if (Lookup::detail::has_level_filters(a_levelFilters)) {
 			if (a_noPlayerLevelDistribution && a_actorbase.HasPCLevelMult()) {
 				return failed;
 			}
 		}
 
-		auto& [actorMin, actorMax] = levelEntry.first;
+		auto& [actorMin, actorMax] = a_levelFilters.first;
 		const auto actorLevel = a_actorbase.GetLevel();
 
 		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
@@ -229,7 +227,7 @@ namespace Filter
 			return failed;
 		}
 
-		for (auto& [skillType, skill] : levelEntry.second) {
+		for (auto& [skillType, skill] : a_levelFilters.second) {
 			auto& [skillMin, skillMax] = skill;
 
 			if (skillType < 18) {
@@ -247,10 +245,9 @@ namespace Filter
 			}
 		}
 
-		const auto chance = std::get<DATA::TYPE::kChance>(a_formData);
-		if (!numeric::essentially_equal(chance, 100.0f)) {
-			if (auto rng = RNG::GetSingleton()->Generate<float>(0.0f, 100.0f); rng > chance) {
-				return SECONDARY_RESULT::kFailDueToRNG;
+		if (!numeric::essentially_equal(a_chance, 100.0f)) {
+			if (const auto rng = RNG::GetSingleton()->Generate<float>(0.0f, 100.0f); rng > a_chance) {
+				return SECONDARY_RESULT::kFailRNG;
 			}
 		}
 

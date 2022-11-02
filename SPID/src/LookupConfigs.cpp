@@ -27,7 +27,7 @@ bool INI::Read()
 
 	//initialize map
 	for (size_t i = 0; i < RECORD::kTotal; i++) {
-		configs[RECORD::add[i]] = INIDataMap{};
+		configs[RECORD::add[i]] = INIDataVec{};
 	}
 
 	for (auto& path : files) {
@@ -42,12 +42,12 @@ bool INI::Read()
 			continue;
 		}
 
-2		if (auto values = ini.GetSection(""); values && !values->empty()) {
+		if (auto values = ini.GetSection(""); values && !values->empty()) {
 			std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
 			for (auto& [key, entry] : *values) {
 				try {
-					auto [recordID, data, sanitized_str] = parse_ini(key.pItem, entry, path);
-					configs[key.pItem][recordID].emplace_back(data);
+					auto [data, sanitized_str] = parse_ini(key.pItem, entry, path);
+					configs[key.pItem].emplace_back(data);
 
 					if (sanitized_str) {
 						oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));

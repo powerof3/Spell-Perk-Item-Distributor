@@ -118,7 +118,11 @@ void AddDependency(RE::BGSKeyword* parent, RE::BGSKeyword* dependency)
 
 void Dependencies::ResolveKeywords()
 {
-	logger::info("{:*^50}", "RESOLVING KEYWORDS");
+	if (!Forms::keywords) {
+		return;
+	}
+
+    logger::info("{:*^50}", "RESOLVING KEYWORDS");
 
 	// Pre-build a map of all available keywords by names.
 	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
@@ -129,7 +133,7 @@ void Dependencies::ResolveKeywords()
 			if (const auto edid = kwd->GetFormEditorID(); !string::is_empty(edid)) {
 				allKeywords[edid] = kwd;
 			} else {
-				if (auto file = kwd->GetFile(0)) {
+				if (const auto file = kwd->GetFile(0)) {
 					logger::error(" WARNING : [0x{:X}~{}] keyword has an empty editorID!", kwd->GetLocalFormID(), file->GetFilename());
 				}
 			}
@@ -137,48 +141,46 @@ void Dependencies::ResolveKeywords()
 	}
 
 	// Fill keywordDependencies based on Keywords found in configs.
-	for (auto& [targetKeyword, formData] : Forms::keywords.forms) {
-		const auto& keyword = targetKeyword;
+	for (auto& formData : Forms::keywords.forms) {
+		auto& [keyword, idxOrCount] = std::get<DATA::TYPE::kForm>(formData);
+		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = std::get<DATA::TYPE::kStrings>(formData);
 
-		for (auto& data : formData.second) {
-			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = std::get<DATA::TYPE::kStrings>(data);
+		const auto findKeyword = [&](const std::string& name) -> RE::BGSKeyword* {
+			return allKeywords[name];
+		};
 
-			const auto findKeyword = [&](const std::string& name) -> RE::BGSKeyword* {
-				return allKeywords[name];
-			};
-
-			const auto addDependencies = [&](const StringVec& a_strings, std::function<RE::BGSKeyword*(const std::string&)> matchingKeyword) {
-				for (const auto& str : a_strings) {
-					if (const auto& kwd = matchingKeyword(str); kwd) {
-						AddDependency(keyword, kwd);
-					}
+		const auto addDependencies = [&](const StringVec& a_strings, std::function<RE::BGSKeyword*(const std::string&)> matchingKeyword) {
+			for (const auto& str : a_strings) {
+				if (const auto& kwd = matchingKeyword(str); kwd) {
+					AddDependency(keyword, kwd);
 				}
-			};
+			}
+		};
 
-			addDependencies(strings_ALL, findKeyword);
-			addDependencies(strings_NOT, findKeyword);
-			addDependencies(strings_MATCH, findKeyword);
-			addDependencies(strings_ANY, [&](const std::string& name) -> RE::BGSKeyword* {
-				for (const auto& iter : allKeywords) {
-					if (string::icontains(iter.first, name)) {
-						return iter.second;
-					}
+		addDependencies(strings_ALL, findKeyword);
+		addDependencies(strings_NOT, findKeyword);
+		addDependencies(strings_MATCH, findKeyword);
+		addDependencies(strings_ANY, [&](const std::string& name) -> RE::BGSKeyword* {
+			for (const auto& iter : allKeywords) {
+				if (string::icontains(iter.first, name)) {
+					return iter.second;
 				}
-				return nullptr;
-			});
-		}
+			}
+			return nullptr;
+		});
 	}
 
 	// Re-add all keywords back after dependency list has been built.
 	auto keywordForms = Forms::keywords.forms;
 	Forms::keywords.forms.clear();
-	for (const auto& [keyword, data] : keywordForms) {
-		Forms::keywords.forms[keyword] = data;
+	for (const auto& keywordData : keywordForms) {
+		Forms::keywords.forms.emplace_back(keywordData);
 	}
 
 	logger::info("	Keywords have been sorted: ");
-	for (const auto& keyword : Forms::keywords.forms | std::views::keys) {
-		logger::info("		{} [0x{:X}]", keyword->GetFormEditorID(), keyword->GetFormID());
+	for (const auto& keywordData : Forms::keywords.forms) {
+		const auto& [keyword, idxOrCount] = std::get<DATA::TYPE::kForm>(keywordData);
+	    logger::info("		{} [0x{:X}]", keyword->GetFormEditorID(), keyword->GetFormID());
 	}
 }
 

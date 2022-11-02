@@ -2,7 +2,7 @@
 
 namespace INI
 {
-	inline std::unordered_map<std::string_view, INIDataMap> configs;
+	inline std::unordered_map<std::string_view, INIDataVec> configs;
 
 	namespace detail
 	{
@@ -76,12 +76,10 @@ namespace INI
 		}
 	}
 
-	inline std::tuple<FormOrEditorID, INIData, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+	inline std::tuple<INIData, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 	{
-		FormOrEditorID recordID;
-
 		INIData data;
-		auto& [strings_ini, filterIDs_ini, level_ini, traits_ini, idxOrCount_ini, chance_ini, path] = data;
+		auto& [recordID, strings_ini, filterIDs_ini, level_ini, traits_ini, idxOrCount_ini, chance_ini, path] = data;
 		path = a_path;
 
 		auto sanitized_value = detail::sanitize(a_value);
@@ -244,9 +242,9 @@ namespace INI
 		}
 
 		if (sanitized_value != a_value) {
-			return std::make_tuple(recordID, data, sanitized_value);
+			return std::make_tuple(data, sanitized_value);
 		}
-		return std::make_tuple(recordID, data, std::nullopt);
+		return std::make_tuple(data, std::nullopt);
 	}
 
 	bool Read();

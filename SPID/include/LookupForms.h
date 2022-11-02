@@ -4,10 +4,10 @@
 namespace Forms
 {
 	template <class T>
-	struct FormMap
+	struct Distributables
 	{
-		FormDataMap<T> forms;
-		FormDataMap<T> formsWithLevels;
+		FormDataVec<T> forms{};
+		FormDataVec<T> formsWithLevels{};
 
 		explicit operator bool()
 		{
@@ -15,18 +15,18 @@ namespace Forms
 		}
 	};
 
-	inline FormMap<RE::SpellItem> spells;
-	inline FormMap<RE::BGSPerk> perks;
-	inline FormMap<RE::TESBoundObject> items;
-	inline FormMap<RE::TESShout> shouts;
-	inline FormMap<RE::TESLevSpell> levSpells;
-	inline FormMap<RE::TESForm> packages;
-	inline FormMap<RE::BGSOutfit> outfits;
-	inline FormMap<RE::BGSKeyword> keywords;
-	inline FormMap<RE::TESBoundObject> deathItems;
-	inline FormMap<RE::TESFaction> factions;
-	inline FormMap<RE::BGSOutfit> sleepOutfits;
-	inline FormMap<RE::TESObjectARMO> skins;
+	inline Distributables<RE::SpellItem> spells;
+	inline Distributables<RE::BGSPerk> perks;
+	inline Distributables<RE::TESBoundObject> items;
+	inline Distributables<RE::TESShout> shouts;
+	inline Distributables<RE::TESLevSpell> levSpells;
+	inline Distributables<RE::TESForm> packages;
+	inline Distributables<RE::BGSOutfit> outfits;
+	inline Distributables<RE::BGSKeyword> keywords;
+	inline Distributables<RE::TESBoundObject> deathItems;
+	inline Distributables<RE::TESFaction> factions;
+	inline Distributables<RE::BGSOutfit> sleepOutfits;
+	inline Distributables<RE::TESObjectARMO> skins;
 }
 
 namespace Lookup
@@ -43,14 +43,13 @@ namespace Lookup
 			for (auto& [formID, modName] : a_formIDVec) {
 				if (g_mergeMapperInterface) {
 					const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetNewFormID(modName.value_or("").c_str(), formID.value_or(0));
-					std::string conversion_log = "";
+					std::string conversion_log{};
 					if (formID.value_or(0) && mergedFormID && formID.value_or(0) != mergedFormID) {
-						conversion_log = std::format("0x{:x}->0x{:x}", formID.value_or(0), mergedFormID);
+						conversion_log = std::format("0x{:X}->0x{:X}", formID.value_or(0), mergedFormID);
 						formID.emplace(mergedFormID);
 					}
 					const std::string mergedModString{ mergedModName };
-					if (!(modName.value_or("").empty()) && !mergedModString.empty() && modName.value_or("") != mergedModString)
-						{
+					if (!(modName.value_or("").empty()) && !mergedModString.empty() && modName.value_or("") != mergedModString) {
 						if (conversion_log.empty())
 							conversion_log = std::format("{}->{}", modName.value_or(""), mergedModString);
 						else
@@ -74,7 +73,7 @@ namespace Lookup
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
 							} else {
-								logger::error("{}		Filter ({}) SKIP - invalid formtype ({})", a_path, * modName, formType);
+								logger::error("{}		Filter ({}) SKIP - invalid formtype ({})", a_path, *modName, formType);
 							}
 						} else {
 							logger::error("{}			Filter ({}) SKIP - form doesn't exist", a_path, *modName);
@@ -99,7 +98,7 @@ namespace Lookup
 			return !a_formVec.empty();
 		}
 
-		inline bool has_level_filters(const std::pair<ActorLevel, std::vector<SkillLevel>>& a_levelFilters)
+		inline bool has_level_filters(const LevelFilters& a_levelFilters)
 		{
 			const auto& [actorLevelPair, skillLevelPairs] = a_levelFilters;
 
@@ -118,15 +117,15 @@ namespace Lookup
 	}
 
 	template <class Form>
-	void get_forms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INIDataMap& a_INIDataMap, FormMap<Form>& a_FormDataMap)
+	void get_forms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INIDataVec& a_INIDataVec, FormDataVec<Form>& a_formDataVec)
 	{
-		if (a_INIDataMap.empty()) {
+		if (a_INIDataVec.empty()) {
 			return;
 		}
 
 		logger::info("	Starting {} lookup", a_type);
 
-		for (auto& [formOrEditorID, INIDataVec] : a_INIDataMap) {
+		for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 			Form* form = nullptr;
 
 			if (std::holds_alternative<FormIDPair>(formOrEditorID)) {
@@ -135,12 +134,11 @@ namespace Lookup
 						const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetNewFormID(modName.value_or("").c_str(), formID.value_or(0));
 						std::string conversion_log = "";
 						if (formID.value_or(0) && mergedFormID && formID.value_or(0) != mergedFormID) {
-							conversion_log = std::format("0x{:x}->0x{:x}", formID.value_or(0), mergedFormID);
+							conversion_log = std::format("0x{:X}->0x{:X}", formID.value_or(0), mergedFormID);
 							formID.emplace(mergedFormID);
 						}
 						const std::string mergedModString{ mergedModName };
-						if (!(modName.value_or("").empty()) && !mergedModString.empty() && modName.value_or("") != mergedModString)
-							{
+						if (!(modName.value_or("").empty()) && !mergedModString.empty() && modName.value_or("") != mergedModString) {
 							if (conversion_log.empty())
 								conversion_log = std::format("{}->{}", modName.value_or(""), mergedModString);
 							else
@@ -206,7 +204,7 @@ namespace Lookup
 							keyword->formEditorID = keywordName;
 							keywordArray.push_back(keyword);
 
-						    logger::info("		{} [0x{:X}] INFO - creating keyword", keywordName, keyword->GetFormID());
+							logger::info("		{} [0x{:X}] INFO - creating keyword", keywordName, keyword->GetFormID());
 
 							form = keyword;
 						} else {
@@ -233,43 +231,37 @@ namespace Lookup
 				continue;
 			}
 
-			std::vector<FormData> formDataVec;
-			for (auto& [strings, filterIDs, level, gender, itemCount, chance, path] : INIDataVec) {
-				bool invalidEntry = false;
+			bool invalidEntry = false;
 
-				std::array<FormVec, 3> filterForms;
-				for (std::uint32_t i = 0; i < 3; i++) {
-					if (!detail::formID_to_form(a_dataHandler, filterIDs[i], filterForms[i], path)) {
-						invalidEntry = true;
-						break;
-					}
-				}
-
-				if (!invalidEntry) {
-					FormData formData{ strings, filterForms, level, gender, chance, itemCount };
-					formDataVec.emplace_back(formData);
+			FormFilters filterForms{};
+			for (std::uint32_t i = 0; i < 3; i++) {
+				if (!detail::formID_to_form(a_dataHandler, filterIDs[i], filterForms[i], path)) {
+					invalidEntry = true;
+					break;
 				}
 			}
 
-			a_FormDataMap.forms[form] = { 0, formDataVec };
+			if (invalidEntry) {
+				continue;
+			}
+
+			FormData<Form> formData{ { form, idxOrCount }, strings, filterForms, level, traits, chance, 0 };
+			a_formDataVec.emplace_back(formData);
 		}
 	}
 
 	template <class Form>
-	void get_forms_with_level_filters(FormMap<Form>& a_formDataMap)
+	void get_forms_with_level_filters(Distributables<Form>& a_distributables)
 	{
-		if (a_formDataMap.forms.empty()) {
+		if (a_distributables.forms.empty()) {
 			return;
 		}
 
-		for (auto& [form, data] : a_formDataMap.forms) {
-			if (form != nullptr) {
-				for (auto& formData : data.second) {
-					auto& levelEntry = std::get<DATA::TYPE::kLevel>(formData);
-					if (detail::has_level_filters(levelEntry)) {
-						a_formDataMap.formsWithLevels[form].second.push_back(formData);
-					}
-				}
+		a_distributables.formsWithLevels.reserve(a_distributables.forms.size());
+		for (auto& formData : a_distributables.forms) {
+			auto& levelEntry = std::get<DATA::TYPE::kLevel>(formData);
+			if (detail::has_level_filters(levelEntry)) {
+				a_distributables.formsWithLevels.emplace_back(formData);
 			}
 		}
 	}

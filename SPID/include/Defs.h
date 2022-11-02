@@ -62,12 +62,14 @@ namespace DATA
 {
 	enum TYPE : std::uint32_t
 	{
-		kStrings = 0,
+		kForm = 0,
+		kIdxOrCount,
+		kStrings = kIdxOrCount,
 		kFilterForms,
 		kLevel,
 		kTraits,
 		kChance,
-		kIdxOrCount
+		kNPCCount
 	};
 }
 
@@ -107,7 +109,7 @@ using SkillLevel = std::pair<
 	std::pair<std::uint8_t, std::uint8_t>>;
 using IdxOrCount = std::int32_t;
 using Traits = std::tuple<
-    std::optional<RE::SEX>,
+	std::optional<RE::SEX>,
 	std::optional<bool>,
 	std::optional<bool>,
 	std::optional<bool>>;
@@ -115,6 +117,7 @@ using Chance = float;
 using NPCCount = std::uint32_t;
 
 using INIData = std::tuple<
+	FormOrEditorID,
 	std::array<StringVec, 4>,
 	std::array<FormIDPairVec, 3>,
 	std::pair<ActorLevel, std::vector<SkillLevel>>,
@@ -122,16 +125,22 @@ using INIData = std::tuple<
 	IdxOrCount,
 	Chance,
 	std::string>;
-using INIDataMap = std::map<FormOrEditorID, std::vector<INIData>>;
+using INIDataVec = std::vector<INIData>;
 
+using StringFilters = std::array<StringVec, 4>;
+using FormFilters = std::array<FormVec, 3>;
+using LevelFilters = std::pair<ActorLevel, std::vector<SkillLevel>>;
+
+template <class Form>
+using FormCountPair = std::pair<Form*, IdxOrCount>;
+template <class Form>
 using FormData = std::tuple<
-	std::array<StringVec, 4>,
-	std::array<FormVec, 3>,
-	std::pair<ActorLevel, std::vector<SkillLevel>>,
+	FormCountPair<Form>,
+	StringFilters,
+	FormFilters,
+	LevelFilters,
 	Traits,
 	Chance,
-	IdxOrCount>;
-template <class T>
-using FormCount = std::pair<T*, IdxOrCount>;
-template <class T>
-using FormDataMap = std::map<T*, std::pair<NPCCount, std::vector<FormData>>, typename form_sorter<T>::Sorter>;
+	NPCCount>;
+template <class Form>
+using FormDataVec = std::vector<FormData<Form>>;
