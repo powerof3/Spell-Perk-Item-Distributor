@@ -45,7 +45,7 @@ namespace Distribute
 	template <class Form>
 	void list_npc_count(std::string_view a_recordType, Forms::Distributables<Form>& a_distributables, const size_t a_totalNPCCount)
 	{
-		if (!a_distributables) {
+		if (a_distributables) {
 			logger::info("	{}", a_recordType);
 
 			for (auto& formData : a_distributables.forms) {
