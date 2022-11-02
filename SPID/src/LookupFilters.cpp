@@ -194,20 +194,6 @@ namespace Filter
 	{
 		constexpr auto failed = SECONDARY_RESULT::kFail;
 
-		const auto& [sex, isUnique, isSummonable, isChild] = a_traits;
-		if (sex && a_actorbase.GetSex() != *sex) {
-			return failed;
-		}
-		if (isUnique && a_actorbase.IsUnique() != *isUnique) {
-			return failed;
-		}
-		if (isSummonable && a_actorbase.IsSummonable() != *isSummonable) {
-			return failed;
-		}
-		if (isChild && (a_actorbase.race && a_actorbase.race->IsChildRace()) != *isChild) {
-			return failed;
-		}
-
 		if (Lookup::detail::has_level_filters(a_levelFilters)) {
 			if (a_noPlayerLevelDistribution && a_actorbase.HasPCLevelMult()) {
 				return failed;
@@ -243,6 +229,20 @@ namespace Filter
 					return failed;
 				}
 			}
+		}
+
+		const auto& [sex, isUnique, isSummonable, isChild] = a_traits;
+		if (sex && a_actorbase.GetSex() != *sex) {
+			return failed;
+		}
+		if (isUnique && a_actorbase.IsUnique() != *isUnique) {
+			return failed;
+		}
+		if (isSummonable && a_actorbase.IsSummonable() != *isSummonable) {
+			return failed;
+		}
+		if (isChild && (a_actorbase.race && a_actorbase.race->IsChildRace()) != *isChild) {
+			return failed;
 		}
 
 		if (!numeric::essentially_equal(a_chance, 100.0f)) {
