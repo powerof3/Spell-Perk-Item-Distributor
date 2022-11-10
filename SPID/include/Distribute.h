@@ -46,10 +46,10 @@ namespace Distribute
 	void list_npc_count(std::string_view a_recordType, Forms::Distributables<Form>& a_distributables, const size_t a_totalNPCCount)
 	{
 		if (a_distributables) {
-			logger::info("	{}", a_recordType);
+			logger::info("\t{}", a_recordType);
 
 			for (auto& formData : a_distributables.forms) {
-                if (const auto& form = formData.form) {
+				if (const auto& form = formData.form) {
 					std::string name{};
 					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 						name = form->GetFormEditorID();
@@ -57,18 +57,20 @@ namespace Distribute
 						name = Cache::EditorID::GetEditorID(form->GetFormID());
 					}
 					if (auto file = form->GetFile(0)) {
-						logger::info("		{} [0x{:X}~{}] added to {}/{} NPCs", name, form->GetLocalFormID(), file->GetFilename(), formData.npcCount, a_totalNPCCount);
+						logger::info("\t\t{} [0x{:X}~{}] added to {}/{} NPCs", name, form->GetLocalFormID(), file->GetFilename(), formData.npcCount, a_totalNPCCount);
 					} else {
-						logger::info("		{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), formData.npcCount, a_totalNPCCount);
+						logger::info("\t\t{} [0x{:X}] added to {}/{} NPCs", name, form->GetFormID(), formData.npcCount, a_totalNPCCount);
 					}
 				}
 			}
 		}
 	}
 
-	namespace DeathItem
+	namespace Event
 	{
-		class Manager : public RE::BSTEventSink<RE::TESDeathEvent>
+		class Manager :
+			public RE::BSTEventSink<RE::TESDeathEvent>,
+			public RE::BSTEventSink<RE::TESFormDeleteEvent>
 		{
 		public:
 			static Manager* GetSingleton()
@@ -81,6 +83,7 @@ namespace Distribute
 
 		protected:
 			EventResult ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override;
+			EventResult ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
 
 		private:
 			Manager() = default;
@@ -99,7 +102,7 @@ namespace Distribute
 		void Install();
 	}
 
-	void Distribute(RE::TESNPC* a_actorbase, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
+	void Distribute(RE::TESNPC* a_actorbase, const PCLevelMult::Input& a_input);
 
 	void ApplyToNPCs();
 }

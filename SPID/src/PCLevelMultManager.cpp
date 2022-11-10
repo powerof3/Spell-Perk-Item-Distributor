@@ -1,13 +1,23 @@
 #include "PCLevelMultManager.h"
+#include "Distribute.h"
 #include "DistributePCLevelMult.h"
 
 namespace PCLevelMult
 {
-	Input::Input(const RE::TESNPC* a_npc, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
+	Input::Input(const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
 		playerID(Manager::GetSingleton()->GetCurrentPlayerID()),
-		npcFormID(a_npc->GetFormID()),
-		npcLevel(a_npc->GetLevel()),
-		npcLevelCap(a_npc->actorData.calcLevelMax),
+		npcFormID(a_base->GetFormID()),
+		npcLevel(a_base->GetLevel()),
+		npcLevelCap(a_base->actorData.calcLevelMax),
+		onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
+		noPlayerLevelDistribution(a_noPlayerLevelDistribution)
+	{}
+
+	Input::Input(const RE::Actor* a_character, const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
+		playerID(Manager::GetSingleton()->GetCurrentPlayerID()),
+		npcFormID(a_character->GetFormID()),
+		npcLevel(a_base->GetLevel()),
+		npcLevelCap(a_base->actorData.calcLevelMax),
 		onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
 		noPlayerLevelDistribution(a_noPlayerLevelDistribution)
 	{}
@@ -16,7 +26,7 @@ namespace PCLevelMult
 	{
 		if (auto UI = RE::UI::GetSingleton()) {
 			UI->AddEventSink(this);
-			logger::info("	Registered {}"sv, typeid(Manager).name());
+			logger::info("\tRegistered {}", typeid(Manager).name());
 		}
 	}
 
@@ -33,7 +43,11 @@ namespace PCLevelMult
 					currentPlayerID = newPlayerID;
 
 					if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-						Distribute::ApplyToPCLevelMultNPCs(dataHandler);
+						for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
+							if (npc && npc->HasPCLevelMult()) {
+								Distribute::Distribute(npc, Input{ npc, true, false });
+							}
+						}
 					}
 				} else if (oldPlayerID != newPlayerID) {
 					remap_player_ids(oldPlayerID, newPlayerID);
@@ -85,13 +99,13 @@ namespace PCLevelMult
 		for (auto& [playerID, npcFormIDs] : cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("	NPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
+				logger::info("\tNPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
-					logger::info("		Level : {}", level);
+					logger::info("\t\tLevel : {}", level);
 					for (auto& [distFormID, idxSet] : distFormMap.rejectedEntries) {
-						logger::info("			Dist FormID : {} [{:X}]", Cache::EditorID::GetEditorID(distFormID), distFormID);
+						logger::info("\t\t\tDist FormID : {} [{:X}]", Cache::EditorID::GetEditorID(distFormID), distFormID);
 						for (auto& idx : idxSet) {
-							logger::info("				IDX : {}", idx);
+							logger::info("\t\t\t\tIDX : {}", idx);
 						}
 					}
 				}
@@ -145,14 +159,22 @@ namespace PCLevelMult
 		for (auto& [playerID, npcFormIDs] : cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("	NPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
+				logger::info("\tNPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
-					logger::info("		Level : {}", level);
+					logger::info("\t\tLevel : {}", level);
 					for (auto& [distFormID, idxSet] : distFormMap.distributedEntries) {
-						logger::info("			Dist FormID : {} [{:X}] : {}", Cache::EditorID::GetEditorID(distFormID), distFormID, idxSet);
+						logger::info("\t\t\tDist FormID : {} [{:X}] : {}", Cache::EditorID::GetEditorID(distFormID), distFormID, idxSet);
 					}
 				}
 			}
+		}
+	}
+
+	void Manager::DeleteNPC(RE::FormID a_characterID)
+	{
+		auto& currentCache = cache[GetSingleton()->GetCurrentPlayerID()];
+		if (const auto it = currentCache.find(a_characterID); it != currentCache.end()) {
+			currentCache.erase(it);
 		}
 	}
 
@@ -196,7 +218,7 @@ namespace PCLevelMult
 			currentPlayerID = string::to_num<std::uint64_t>(save[1], true);
 		} else {
 			logger::info("Loaded non-standard save : {}", a_saveName);
-		    currentPlayerID = 0;  // non standard save name, use game playerID instead
+			currentPlayerID = 0;  // non standard save name, use game playerID instead
 		}
 	}
 

@@ -174,9 +174,9 @@ void Dependencies::ResolveKeywords()
 		Forms::keywords.forms.emplace_back(keywordData);
 	}
 
-	logger::info("	Keywords have been sorted: ");
+	logger::info("\tKeywords have been sorted: ");
 	for (const auto& keywordData : Forms::keywords.forms) {
-		logger::info("		{} [0x{:X}]", keywordData.form->GetFormEditorID(), keywordData.form->GetFormID());
+		logger::info("\t\t{} [0x{:X}]", keywordData.form->GetFormEditorID(), keywordData.form->GetFormID());
 	}
 }
 

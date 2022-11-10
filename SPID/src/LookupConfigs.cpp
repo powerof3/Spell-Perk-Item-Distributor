@@ -11,7 +11,7 @@ bool INI::Read()
 		return false;
 	}
 
-	logger::info("	{} matching inis found", files.size());
+	logger::info("\t{} matching inis found", files.size());
 
 	//initialize map
 	for (size_t i = 0; i < RECORD::kTotal; i++) {
@@ -19,14 +19,14 @@ bool INI::Read()
 	}
 
 	for (auto& path : files) {
-		logger::info("	INI : {}", path);
+		logger::info("\tINI : {}", path);
 
 		CSimpleIniA ini;
 		ini.SetUnicode();
 		ini.SetMultiKey();
 
 		if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
-			logger::error("	couldn't read INI");
+			logger::error("\t\tcouldn't read INI");
 			continue;
 		}
 
@@ -41,12 +41,12 @@ bool INI::Read()
 						oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
 					}
 				} catch (...) {
-					logger::warn("		Failed to parse entry [{} = {}]", key.pItem, entry);
+					logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
 				}
 			}
 
 			if (!oldFormatMap.empty()) {
-				logger::info("		sanitizing {} entries", oldFormatMap.size());
+				logger::info("\t\tsanitizing {} entries", oldFormatMap.size());
 
 				for (auto& [key, entry] : oldFormatMap) {
 					auto& [original, sanitized] = entry;

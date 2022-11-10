@@ -5,7 +5,8 @@ namespace PCLevelMult
 {
 	struct Input
 	{
-		Input(const RE::TESNPC* a_npc, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
+		Input(const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
+		Input(const RE::Actor* a_character, const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
 
 		std::uint64_t playerID;
 		RE::FormID npcFormID;
@@ -34,6 +35,8 @@ namespace PCLevelMult
 		bool InsertDistributedEntry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx);
 		void ForEachDistributedEntry(const Input& a_input, std::function<void(RE::TESForm&, IdxOrCount a_idx, bool)> a_fn) const;
 		void DumpDistributedEntries();
+
+		void DeleteNPC(RE::FormID a_characterID);
 
 		bool HasHitLevelCap(const Input& a_input);
 

@@ -3,23 +3,17 @@
 
 namespace Distribute
 {
-	void Distribute(RE::TESNPC* a_actorbase, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution)
+	void Distribute(RE::TESNPC* a_actorbase, const PCLevelMult::Input& a_input)
 	{
-		const PCLevelMult::Input input{
-			a_actorbase,
-			a_onlyPlayerLevelEntries,
-			a_noPlayerLevelDistribution
-		};
-
-		if (a_onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input)) {
+		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
 			return;
 		}
 
-		for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, input, [&](auto* a_keyword, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, a_input, [&](auto* a_keyword, [[maybe_unused]] IdxOrCount a_count) {
 			return a_actorbase->AddKeyword(a_keyword);
 		});
 
-		for_each_form<RE::TESFaction>(*a_actorbase, Forms::factions, input, [&](auto* a_faction, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::TESFaction>(*a_actorbase, Forms::factions, a_input, [&](auto* a_faction, [[maybe_unused]] IdxOrCount a_count) {
 			if (!a_actorbase->IsInFaction(a_faction)) {
 				const RE::FACTION_RANK faction{ a_faction, 1 };
 				a_actorbase->factions.push_back(faction);
@@ -28,30 +22,30 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, input, [&](auto* a_perk, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, a_input, [&](auto* a_perk, [[maybe_unused]] IdxOrCount a_count) {
 			return a_actorbase->AddPerk(a_perk, 1);
 		});
 
-		for_each_form<RE::SpellItem>(*a_actorbase, Forms::spells, input, [&](auto* a_spell, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::SpellItem>(*a_actorbase, Forms::spells, a_input, [&](auto* a_spell, [[maybe_unused]] IdxOrCount a_count) {
 			const auto actorEffects = a_actorbase->GetSpellList();
 			return actorEffects && actorEffects->AddSpell(a_spell);
 		});
 
-		for_each_form<RE::TESShout>(*a_actorbase, Forms::shouts, input, [&](auto* a_shout, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::TESShout>(*a_actorbase, Forms::shouts, a_input, [&](auto* a_shout, [[maybe_unused]] IdxOrCount a_count) {
 			const auto actorEffects = a_actorbase->GetSpellList();
 			return actorEffects && actorEffects->AddShout(a_shout);
 		});
 
-		for_each_form<RE::TESLevSpell>(*a_actorbase, Forms::levSpells, input, [&](auto* a_levSpell, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::TESLevSpell>(*a_actorbase, Forms::levSpells, a_input, [&](auto* a_levSpell, [[maybe_unused]] IdxOrCount a_count) {
 			const auto actorEffects = a_actorbase->GetSpellList();
 			return actorEffects && actorEffects->AddLevSpell(a_levSpell);
 		});
 
-		for_each_form<RE::TESBoundObject>(*a_actorbase, Forms::items, input, [&](auto* a_item, IdxOrCount a_count) {
+		for_each_form<RE::TESBoundObject>(*a_actorbase, Forms::items, a_input, [&](auto* a_item, IdxOrCount a_count) {
 			return a_actorbase->AddObjectToContainer(a_item, a_count, a_actorbase);
 		});
 
-		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::outfits, input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::outfits, a_input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
 			if (a_actorbase->defaultOutfit != a_outfit) {
 				a_actorbase->defaultOutfit = a_outfit;
 				return true;
@@ -59,7 +53,7 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
+		for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
 			auto packageIdx = a_idx;
 
 			if (a_packageOrList->Is(RE::FormType::Package)) {
@@ -116,7 +110,7 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepOutfits, input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepOutfits, a_input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
 			if (a_actorbase->sleepOutfit != a_outfit) {
 				a_actorbase->sleepOutfit = a_outfit;
 				return true;
@@ -124,7 +118,7 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::TESObjectARMO>(*a_actorbase, Forms::skins, input, [&](auto* a_skin, [[maybe_unused]] IdxOrCount a_count) {
+		for_each_form<RE::TESObjectARMO>(*a_actorbase, Forms::skins, a_input, [&](auto* a_skin, [[maybe_unused]] IdxOrCount a_count) {
 			if (a_actorbase->skin != a_skin) {
 				a_actorbase->skin = a_skin;
 				return true;
@@ -143,7 +137,7 @@ namespace Distribute
 			std::size_t totalNPCs = 0;
 			for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
 				if (actorbase && !actorbase->IsPlayer() && (!uses_template(actorbase) || actorbase->IsUnique())) {
-					Distribute(actorbase, false, true);
+					Distribute(actorbase, PCLevelMult::Input{ actorbase, false, true });
 					totalNPCs++;
 				}
 			}
@@ -174,7 +168,7 @@ namespace Distribute
 	}
 }
 
-namespace Distribute::DeathItem
+namespace Distribute::Event
 {
 	struct detail  //AddObjectToContainer doesn't work with leveled items :s
 	{
@@ -188,13 +182,13 @@ namespace Distribute::DeathItem
 
 	void Manager::Register()
 	{
-		if (!Forms::deathItems) {
-			return;
-		}
-
-		if (auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
-			scripts->AddEventSink(GetSingleton());
-			logger::info("	Registered {}"sv, typeid(Manager).name());
+		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
+			logger::info("\tRegistered for {}", typeid(RE::TESFormDeleteEvent).name());
+		    if (Forms::deathItems) {
+				scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
+				logger::info("\tRegistered for {}", typeid(RE::TESDeathEvent).name());
+			}
 		}
 	}
 
@@ -206,14 +200,14 @@ namespace Distribute::DeathItem
 
 		if (a_event && a_event->dead && is_NPC(a_event->actorDying)) {
 			const auto actor = a_event->actorDying->As<RE::Actor>();
-			const auto actorBase = actor ? actor->GetActorBase() : nullptr;
-			if (actor && actorBase) {
-				PCLevelMult::Input input{
-					actorBase,
+			const auto actorbase = actor ? actor->GetActorBase() : nullptr;
+			if (actor && actorbase) {
+				const PCLevelMult::Input input{
+					actorbase,
 					false,
 					false,
 				};
-				for_each_form<RE::TESBoundObject>(*actorBase, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
+				for_each_form<RE::TESBoundObject>(*actorbase, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
 					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
 				});
@@ -222,33 +216,39 @@ namespace Distribute::DeathItem
 
 		return EventResult::kContinue;
 	}
+
+    EventResult Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
+    {
+		if (a_event && a_event->formID != 0) {
+		    PCLevelMult::Manager::GetSingleton()->DeleteNPC(a_event->formID);
+		}
+	    return EventResult::kContinue;
+    }
 }
 
 namespace Distribute::LeveledActor
 {
-	struct CopyFromTemplateForms
+	struct SetObjectReference
 	{
-		static void thunk(RE::TESActorBaseData* a_this, RE::TESActorBase** a_templateForms)
+		static void thunk(RE::Character* a_this, RE::TESNPC* a_npc)
 		{
-			func(a_this, a_templateForms);
+			func(a_this, a_npc);
 
-			if (!a_this->baseTemplateForm || !a_templateForms) {
+			if (!a_npc || !a_npc->IsDynamicForm()) {
 				return;
 			}
 
-			if (const auto actorbase = stl::adjust_pointer<RE::TESNPC>(a_this, -0x30); actorbase) {
-				Distribute(actorbase, false, false);
-			}
+			Distribute(a_npc, PCLevelMult::Input{ a_this, a_npc, false, false });
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline size_t index{ 1 };
-		static inline size_t size{ 0x4 };
+		static inline size_t index{ 0 };
+		static inline size_t size{ 0x84 };
 	};
 
 	void Install()
 	{
-		stl::write_vfunc<RE::TESNPC, CopyFromTemplateForms>();
-		logger::info("	Hooked leveled actor init");
+		stl::write_vfunc<RE::Character, SetObjectReference>();
+		logger::info("\tHooked leveled actor init");
 	}
 }

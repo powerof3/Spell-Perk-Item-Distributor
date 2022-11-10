@@ -14,7 +14,7 @@ bool DoDistribute()
 {
 	if (shouldDistribute = Lookup::GetForms(); shouldDistribute) {
 		Distribute::ApplyToNPCs();
-		Distribute::DeathItem::Manager::Register();
+		Distribute::Event::Manager::Register();
 		return true;
 	}
 
