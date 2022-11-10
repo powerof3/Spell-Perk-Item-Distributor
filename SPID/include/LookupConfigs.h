@@ -6,37 +6,6 @@ namespace INI
 
 	namespace detail
 	{
-		inline bool is_valid_entry(const std::string& a_str)
-		{
-			return !a_str.empty() && !a_str.contains("NONE"sv);
-		}
-
-		inline std::vector<std::string> split_sub_string(const std::string& a_str, const std::string& a_delimiter = ",")
-		{
-			if (is_valid_entry(a_str)) {
-				return string::split(a_str, a_delimiter);
-			}
-			return {};
-		}
-
-		inline FormIDPair get_formID(const std::string& a_str)
-		{
-			if (a_str.contains("~"sv)) {
-				auto splitID = string::split(a_str, "~");
-				return std::make_pair(
-					string::lexical_cast<RE::FormID>(splitID.at(kFormID), true),
-					splitID.at(kESP));
-			}
-			if (is_mod_name(a_str) || !string::is_only_hex(a_str)) {
-				return std::make_pair(
-					std::nullopt,
-					a_str);
-			}
-			return std::make_pair(
-				string::lexical_cast<RE::FormID>(a_str, true),
-				std::nullopt);
-		}
-
 		inline std::string sanitize(const std::string& a_value)
 		{
 			auto newValue = a_value;
@@ -88,36 +57,17 @@ namespace INI
 
 		//[FORMID/ESP] / EDITORID
 		if (kFormID < size) {
-			auto& formSection = sections[kFormID];
-			if (formSection.contains('~') || string::is_only_hex(formSection)) {
-				FormIDPair pair;
-				pair.second = std::nullopt;
-
-				if (string::is_only_hex(formSection)) {
-					// formID
-					pair.first = string::lexical_cast<RE::FormID>(formSection, true);
-				} else {
-					// formID~esp
-					pair = detail::get_formID(formSection);
-				}
-
-				recordID.emplace<FormIDPair>(pair);
-			} else {
-				recordID.emplace<std::string>(formSection);
-			}
-		} else {
-			FormIDPair pair = { 0, std::nullopt };
-			recordID.emplace<FormIDPair>(pair);
+			recordID = distribution::get_record(sections[kFormID]);
 		}
 
 		//KEYWORDS
 		if (kStrings < size) {
 			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
 
-			auto split_str = detail::split_sub_string(sections[kStrings]);
+			auto split_str = distribution::split_entry(sections[kStrings]);
 			for (auto& str : split_str) {
 				if (str.contains("+"sv)) {
-					auto strings = detail::split_sub_string(str, "+");
+					auto strings = distribution::split_entry(str, "+");
 					strings_ALL.insert(strings_ALL.end(), strings.begin(), strings.end());
 
 				} else if (str.at(0) == '-') {
@@ -138,19 +88,19 @@ namespace INI
 		if (kFilterIDs < size) {
 			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
 
-			auto split_IDs = detail::split_sub_string(sections[kFilterIDs]);
+			auto split_IDs = distribution::split_entry(sections[kFilterIDs]);
 			for (auto& IDs : split_IDs) {
 				if (IDs.contains("+"sv)) {
-					auto splitIDs_ALL = detail::split_sub_string(IDs, "+");
+					auto splitIDs_ALL = distribution::split_entry(IDs, "+");
 					for (auto& IDs_ALL : splitIDs_ALL) {
-						filterIDs_ALL.push_back(detail::get_formID(IDs_ALL));
+						filterIDs_ALL.push_back(distribution::get_record(IDs_ALL));
 					}
 				} else if (IDs.at(0) == '-') {
 					IDs.erase(0, 1);
-					filterIDs_NOT.push_back(detail::get_formID(IDs));
+					filterIDs_NOT.push_back(distribution::get_record(IDs));
 
 				} else {
-					filterIDs_MATCH.push_back(detail::get_formID(IDs));
+					filterIDs_MATCH.push_back(distribution::get_record(IDs));
 				}
 			}
 		}
@@ -159,7 +109,7 @@ namespace INI
 		ActorLevel actorLevelPair = { UINT16_MAX, UINT16_MAX };
 		std::vector<SkillLevel> skillLevelPairs;
 		if (kLevel < size) {
-			auto split_levels = detail::split_sub_string(sections[kLevel]);
+			auto split_levels = distribution::split_entry(sections[kLevel]);
 			for (auto& levels : split_levels) {
 				if (levels.contains('(')) {
 					//skill(min/max)
@@ -168,14 +118,14 @@ namespace INI
 					//skill min max
 					if (!skills.empty()) {
 						if (skills.size() > 2) {
-							auto type = string::lexical_cast<std::uint32_t>(skills.at(0));
-							auto minLevel = string::lexical_cast<std::uint8_t>(skills.at(1));
-							auto maxLevel = string::lexical_cast<std::uint8_t>(skills.at(2));
+							auto type = string::to_num<std::uint32_t>(skills.at(0));
+							auto minLevel = string::to_num<std::uint8_t>(skills.at(1));
+							auto maxLevel = string::to_num<std::uint8_t>(skills.at(2));
 
 							skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
 						} else {
-							auto type = string::lexical_cast<std::uint32_t>(skills.at(0));
-							auto minLevel = string::lexical_cast<std::uint8_t>(skills.at(1));
+							auto type = string::to_num<std::uint32_t>(skills.at(0));
+							auto minLevel = string::to_num<std::uint8_t>(skills.at(1));
 
 							skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
 						}
@@ -183,12 +133,12 @@ namespace INI
 				} else {
 					auto split_level = string::split(levels, "/");
 					if (split_level.size() > 1) {
-						auto minLevel = string::lexical_cast<std::uint16_t>(split_level.at(0));
-						auto maxLevel = string::lexical_cast<std::uint16_t>(split_level.at(1));
+						auto minLevel = string::to_num<std::uint16_t>(split_level.at(0));
+						auto maxLevel = string::to_num<std::uint16_t>(split_level.at(1));
 
 						actorLevelPair = { minLevel, maxLevel };
 					} else {
-						auto level = string::lexical_cast<std::uint16_t>(levels);
+						auto level = string::to_num<std::uint16_t>(levels);
 
 						actorLevelPair = { level, UINT16_MAX };
 					}
@@ -201,7 +151,7 @@ namespace INI
 		if (kTraits < size) {
 			auto& [sex, unique, summonable, child] = traits_ini;
 
-			auto split_traits = detail::split_sub_string(sections[kTraits], "/");
+			auto split_traits = distribution::split_entry(sections[kTraits], "/");
 			for (auto& trait : split_traits) {
 				if (trait == "M") {
 					sex = RE::SEX::kMale;
@@ -227,8 +177,8 @@ namespace INI
 		idxOrCount_ini = a_key == "Package" ? 0 : 1;  //reuse item count for package stack index
 		if (kIdxOrCount < size) {
 			const auto& str = sections[kIdxOrCount];
-			if (detail::is_valid_entry(str)) {
-				idxOrCount_ini = string::lexical_cast<std::int32_t>(str);
+			if (distribution::is_valid_entry(str)) {
+				idxOrCount_ini = string::to_num<std::int32_t>(str);
 			}
 		}
 
@@ -236,8 +186,8 @@ namespace INI
 		chance_ini = 100;
 		if (kChance < size) {
 			const auto& str = sections[kChance];
-			if (detail::is_valid_entry(str)) {
-				chance_ini = string::lexical_cast<float>(str);
+			if (distribution::is_valid_entry(str)) {
+				chance_ini = string::to_num<float>(str);
 			}
 		}
 

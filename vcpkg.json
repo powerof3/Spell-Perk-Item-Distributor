@@ -3,6 +3,7 @@
   "version-string": "1",
   "dependencies": [
     "boost-stl-interfaces",
+    "clib-util",
     "frozen",
     "mergemapper",
     "rsm-binary-io",

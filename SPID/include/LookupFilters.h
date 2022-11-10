@@ -9,7 +9,9 @@ enum class SECONDARY_RESULT
 
 namespace Filter
 {
-	bool strings(RE::TESNPC& a_actorbase, const StringFilters& a_stringFilters);
+	inline RNG staticRNG;
+
+    bool strings(RE::TESNPC& a_actorbase, const StringFilters& a_stringFilters);
 
 	bool forms(RE::TESNPC& a_actorbase, const FormFilters& a_formFilters);
 

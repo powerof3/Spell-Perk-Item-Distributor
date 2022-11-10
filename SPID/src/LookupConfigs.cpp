@@ -4,16 +4,7 @@ bool INI::Read()
 {
 	logger::info("{:*^50}", "INI");
 
-	std::vector<std::string> files;
-
-	auto constexpr folder = R"(Data\)";
-	for (const auto& entry : std::filesystem::directory_iterator(folder)) {
-		if (entry.exists() && !entry.path().empty() && entry.path().extension() == ".ini"sv) {
-			if (const auto path = entry.path().string(); path.rfind("_DISTR") != std::string::npos) {
-				files.push_back(path);
-			}
-		}
-	}
+	std::vector<std::string> files = distribution::get_configs(R"(Data\)", "_DISTR"sv);
 
 	if (files.empty()) {
 		logger::warn("	No .ini files with _DISTR suffix were found within the Data folder, aborting...");
@@ -21,9 +12,6 @@ bool INI::Read()
 	}
 
 	logger::info("	{} matching inis found", files.size());
-
-	//sort files
-	std::ranges::sort(files);
 
 	//initialize map
 	for (size_t i = 0; i < RECORD::kTotal; i++) {

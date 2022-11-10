@@ -94,14 +94,11 @@ struct form_sorter<RE::BGSKeyword>
 
 using EventResult = RE::BSEventNotifyControl;
 
-using FormIDPair = std::pair<
-	std::optional<RE::FormID>,
-	std::optional<std::string>>;
-using FormIDPairVec = std::vector<FormIDPair>;
+using FormIDPair = std::pair<std::optional<RE::FormID>,std::optional<std::string>>;
+using FormOrEditorID = std::variant<FormIDPair,std::string>;
+using FormIDVec = std::vector<FormOrEditorID>;
 using StringVec = std::vector<std::string>;
-using FormVec = std::vector<
-	std::variant<RE::TESForm*, const RE::TESFile*>>;
-using FormOrEditorID = std::variant<FormIDPair, std::string>;
+using FormVec = std::vector<std::variant<RE::TESForm*, const RE::TESFile*>>;
 
 using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;
 using SkillLevel = std::pair<
@@ -119,7 +116,7 @@ using NPCCount = std::uint32_t;
 using INIData = std::tuple<
 	FormOrEditorID,
 	std::array<StringVec, 4>,
-	std::array<FormIDPairVec, 3>,
+	std::array<FormIDVec, 3>,
 	std::pair<ActorLevel, std::vector<SkillLevel>>,
 	Traits,
 	IdxOrCount,

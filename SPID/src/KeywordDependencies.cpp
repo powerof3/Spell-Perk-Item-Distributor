@@ -122,8 +122,6 @@ void Dependencies::ResolveKeywords()
 		return;
 	}
 
-    logger::info("{:*^50}", "RESOLVING KEYWORDS");
-
 	// Pre-build a map of all available keywords by names.
 	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
 

@@ -246,7 +246,7 @@ namespace Filter
 		}
 
 		if (!numeric::essentially_equal(a_chance, 100.0f)) {
-			if (const auto rng = RNG::GetSingleton()->Generate<float>(0.0f, 100.0f); rng > a_chance) {
+			if (const auto rng = staticRNG.Generate<float>(0.0f, 100.0f); rng > a_chance) {
 				return SECONDARY_RESULT::kFailRNG;
 			}
 		}

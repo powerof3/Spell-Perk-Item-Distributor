@@ -8,6 +8,7 @@
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
+#include <ClibUtil/utils.hpp>
 #include <SimpleIni.h>
 #include <frozen/set.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -17,11 +18,12 @@
 #define DLLEXPORT __declspec(dllexport)
 
 namespace logger = SKSE::log;
-namespace numeric = SKSE::stl::numeric;
-namespace string = SKSE::stl::string;
+namespace numeric = clib_util::numeric;
+namespace string = clib_util::string;
+namespace distribution = clib_util::distribution;
 
 using namespace std::literals;
-using RNG = SKSE::stl::RNG;
+using RNG = clib_util::RNG;
 
 namespace stl
 {
