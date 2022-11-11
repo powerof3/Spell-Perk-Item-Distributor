@@ -66,20 +66,20 @@ namespace PCLevelMult
 			kHit
 		};
 
-		struct Entries
-		{
-			std::map<RE::FormID, std::set<std::uint32_t>> rejectedEntries{};   // Distributed formID, FormData vector index
-			std::set<std::pair<RE::FormID, IdxOrCount>> distributedEntries{};  // Distributed formID, distributed count/idx
-		};
-
 		struct Data
 		{
-			LEVEL_CAP_STATE levelCapState{};
+			struct Entries
+			{
+				std::unordered_map<RE::FormID, std::set<std::uint32_t>> rejectedEntries{};  // Distributed formID, FormData vector index
+				std::set<std::pair<RE::FormID, IdxOrCount>> distributedEntries{};           // Distributed formID, distributed count/idx
+			};
+
+		    LEVEL_CAP_STATE levelCapState{};
 			std::map<std::uint16_t, Entries> entries{};  // Actor Level, Entries
 		};
 
-		std::map<std::uint64_t,          // PlayerID
-			std::map<RE::FormID, Data>>  // NPC formID, Data
+		std::unordered_map<std::uint64_t,          // PlayerID
+			std::unordered_map<RE::FormID, Data>>  // NPC formID, Data
 			cache{};
 
 		std::uint64_t currentPlayerID{ 0 };

@@ -15,5 +15,5 @@ namespace Filter
 
 	bool forms(RE::TESNPC& a_actorbase, const FormFilters& a_formFilters);
 
-	SECONDARY_RESULT secondary(const RE::TESNPC& a_actorbase, const LevelFilters& a_levelFilters, const Traits& a_traits, float chance, bool a_noPlayerLevelDistribution);
+	SECONDARY_RESULT secondary(const RE::TESNPC& a_actorbase, const LevelFilters& a_levelFilters, const Traits& a_traits, float a_chance, bool a_noPlayerLevelDistribution);
 }

@@ -158,9 +158,9 @@ void Dependencies::ResolveKeywords()
 		addDependencies(strings_NOT, findKeyword);
 		addDependencies(strings_MATCH, findKeyword);
 		addDependencies(strings_ANY, [&](const std::string& name) -> RE::BGSKeyword* {
-			for (const auto& iter : allKeywords) {
-				if (string::icontains(iter.first, name)) {
-					return iter.second;
+			for (const auto& [keywordName, keyword] : allKeywords) {
+				if (string::icontains(keywordName, name)) {
+					return keyword;
 				}
 			}
 			return nullptr;

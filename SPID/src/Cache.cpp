@@ -8,7 +8,7 @@ namespace Cache
 		if (function) {
 			return function(a_formID);
 		}
-		return std::string();
+		return {};
 	}
 
 	bool FormType::GetWhitelisted(const RE::FormType a_type)

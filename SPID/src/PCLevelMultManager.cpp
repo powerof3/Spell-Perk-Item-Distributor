@@ -170,7 +170,8 @@ namespace PCLevelMult
 		}
 	}
 
-	void Manager::DeleteNPC(RE::FormID a_characterID)
+	// For spawned actors with FF reference IDs
+    void Manager::DeleteNPC(RE::FormID a_characterID)
 	{
 		auto& currentCache = cache[GetSingleton()->GetCurrentPlayerID()];
 		if (const auto it = currentCache.find(a_characterID); it != currentCache.end()) {

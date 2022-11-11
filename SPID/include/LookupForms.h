@@ -45,7 +45,7 @@ namespace Lookup
 				a_formID.emplace(mergedFormID);
 			}
 			const std::string mergedModString{ mergedModName };
-			if (!(a_modName.value_or("").empty()) && !mergedModString.empty() && a_modName.value_or("") != mergedModString) {
+			if (!a_modName.value_or("").empty() && !mergedModString.empty() && a_modName.value_or("") != mergedModString) {
 				if (conversion_log.empty()) {
 					conversion_log = std::format("{}->{}", a_modName.value_or(""), mergedModString);
 				} else {

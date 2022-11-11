@@ -1,9 +1,6 @@
 #pragma once
 
-namespace Distribute
+namespace Distribute::PlayerLeveledActor
 {
-	namespace PlayerLeveledActor
-	{
-		void Install();
-	}
+    void Install();
 }
