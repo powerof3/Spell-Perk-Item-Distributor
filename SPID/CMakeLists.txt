@@ -134,6 +134,7 @@ else ()
 endif()
 
 find_package(frozen CONFIG REQUIRED)
+find_package(robin_hood CONFIG REQUIRED)
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 find_path(SRELL_INCLUDE_DIRS "srell.hpp")
@@ -202,6 +203,7 @@ target_link_libraries(
 	PRIVATE
 		${CommonLibName}::${CommonLibName}
 		frozen::frozen
+		robin_hood::robin_hood
 )
 
 target_precompile_headers(

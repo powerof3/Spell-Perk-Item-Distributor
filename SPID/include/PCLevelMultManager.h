@@ -32,7 +32,7 @@ namespace PCLevelMult
 		void DumpRejectedEntries();
 
 		[[nodiscard]] bool FindDistributedEntry(const Input& a_input);
-		bool InsertDistributedEntry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx);
+		void InsertDistributedEntry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx);
 		void ForEachDistributedEntry(const Input& a_input, std::function<void(RE::TESForm&, IdxOrCount a_idx, bool)> a_fn) const;
 		void DumpDistributedEntries();
 
@@ -48,7 +48,7 @@ namespace PCLevelMult
 		static std::uint64_t get_game_playerID();
 		void remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID);
 
-	    EventResult ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
+		EventResult ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 
 	private:
 		Manager() = default;
@@ -70,20 +70,20 @@ namespace PCLevelMult
 		{
 			struct Entries
 			{
-				std::unordered_map<RE::FormID, std::set<std::uint32_t>> rejectedEntries{};  // Distributed formID, FormData vector index
-				std::set<std::pair<RE::FormID, IdxOrCount>> distributedEntries{};           // Distributed formID, distributed count/idx
+				Map<RE::FormID, Set<std::uint32_t>> rejectedEntries{};                // Distributed formID, FormData vector index
+				std::vector<std::pair<RE::FormID, IdxOrCount>> distributedEntries{};  // Distributed formID, distributed count/idx
 			};
 
-		    LEVEL_CAP_STATE levelCapState{};
-			std::map<std::uint16_t, Entries> entries{};  // Actor Level, Entries
+			LEVEL_CAP_STATE levelCapState{};
+			Map<std::uint16_t, Entries> entries{};  // Actor Level, Entries
 		};
 
-		std::unordered_map<std::uint64_t,          // PlayerID
-			std::unordered_map<RE::FormID, Data>>  // NPC formID, Data
+		Map<std::uint64_t,          // PlayerID
+			Map<RE::FormID, Data>>  // NPC formID, Data
 			cache{};
 
 		std::uint64_t currentPlayerID{ 0 };
-	    std::uint64_t oldPlayerID{ 0 };
+		std::uint64_t oldPlayerID{ 0 };
 
 		bool newGameStarted{ false };
 	};

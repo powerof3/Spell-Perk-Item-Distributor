@@ -11,6 +11,7 @@
 #include <ClibUtil/utils.hpp>
 #include <SimpleIni.h>
 #include <frozen/set.h>
+#include <robin_hood.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
 #include <xbyak/xbyak.h>

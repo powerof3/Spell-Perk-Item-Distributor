@@ -123,13 +123,13 @@ namespace PCLevelMult
 		return false;
 	}
 
-	bool Manager::InsertDistributedEntry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx)
+	void Manager::InsertDistributedEntry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx)
 	{
 		if (a_input.noPlayerLevelDistribution) {
-			return false;
+			return;
 		}
 
-		return cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries.insert({ a_distributedFormID, a_idx }).second;
+		cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries.push_back({ a_distributedFormID, a_idx });
 	}
 
 	void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::TESForm&, IdxOrCount a_idx, bool)> a_fn) const

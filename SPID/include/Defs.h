@@ -73,23 +73,10 @@ namespace DATA
 	};
 }
 
-/// Trait that is used to infer default sorter for Forms.
-template <class TForm>
-struct form_sorter
-{
-	using Sorter = std::less<TForm*>;
-};
-
 /// Custom ordering for keywords that ensures that dependent keywords are disitrbuted after the keywords that they depend on.
 struct KeywordDependencySorter
 {
 	static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
-};
-
-template <>
-struct form_sorter<RE::BGSKeyword>
-{
-	using Sorter = KeywordDependencySorter;
 };
 
 using EventResult = RE::BSEventNotifyControl;
@@ -127,6 +114,11 @@ using INIDataVec = std::vector<INIData>;
 using StringFilters = std::array<StringVec, 4>;
 using FormFilters = std::array<FormVec, 3>;
 using LevelFilters = std::pair<ActorLevel, std::vector<SkillLevel>>;
+
+template <class K, class D>
+using Map = robin_hood::unordered_flat_map<K, D>;
+template <class K>
+using Set = robin_hood::unordered_flat_set<K>;
 
 template <class Form>
 struct FormData

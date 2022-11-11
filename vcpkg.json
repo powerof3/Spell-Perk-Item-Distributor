@@ -6,6 +6,7 @@
     "clib-util",
     "frozen",
     "mergemapper",
+    "robin-hood-hashing",
     "rsm-binary-io",
     "simpleini",
     "srell",
