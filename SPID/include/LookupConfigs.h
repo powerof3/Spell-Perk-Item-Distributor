@@ -197,5 +197,5 @@ namespace INI
 		return std::make_tuple(data, std::nullopt);
 	}
 
-	bool Read();
+	std::pair<bool,bool> Read();
 }

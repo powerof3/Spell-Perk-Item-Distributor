@@ -162,12 +162,12 @@ namespace Lookup
 						}
 					}
 					if (!form) {
-						logger::error("		[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
+						logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
 					} else {
 						if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 							if (string::is_empty(form->GetFormEditorID())) {
 								form = nullptr;
-								logger::error("		[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
+								logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
 							}
 						}
 					}
@@ -181,7 +181,7 @@ namespace Lookup
 					auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
 
 					auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
-						return keyword && string::iequals(keyword->formEditorID, keywordName);
+						return keyword && keyword->formEditorID == keywordName.c_str();
 					});
 
 					if (result != keywordArray.end()) {

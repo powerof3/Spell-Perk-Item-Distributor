@@ -1,6 +1,6 @@
 #include "LookupConfigs.h"
 
-bool INI::Read()
+std::pair<bool, bool> INI::Read()
 {
 	logger::info("{:*^50}", "INI");
 
@@ -8,7 +8,7 @@ bool INI::Read()
 
 	if (files.empty()) {
 		logger::warn("	No .ini files with _DISTR suffix were found within the Data folder, aborting...");
-		return false;
+		return { false, false };
 	}
 
 	logger::info("\t{} matching inis found", files.size());
@@ -17,6 +17,8 @@ bool INI::Read()
 	for (size_t i = 0; i < RECORD::kTotal; i++) {
 		configs[RECORD::add[i]] = INIDataVec{};
 	}
+
+	bool shouldLogErrors{ false };
 
 	for (auto& path : files) {
 		logger::info("\tINI : {}", path);
@@ -30,6 +32,8 @@ bool INI::Read()
 			continue;
 		}
 
+		string::replace_first_instance(path, "Data\\", "");
+
 		if (auto values = ini.GetSection(""); values && !values->empty()) {
 			std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
 			for (auto& [key, entry] : *values) {
@@ -42,6 +46,7 @@ bool INI::Read()
 					}
 				} catch (...) {
 					logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
+					shouldLogErrors = true;
 				}
 			}
 
@@ -59,5 +64,5 @@ bool INI::Read()
 		}
 	}
 
-	return true;
+	return { true, shouldLogErrors };
 }

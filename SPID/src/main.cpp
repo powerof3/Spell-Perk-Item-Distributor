@@ -8,6 +8,7 @@ HMODULE kid{ nullptr };
 HMODULE tweaks{ nullptr };
 
 bool shouldLookupForms{ false };
+bool shouldLogErrors{ false };
 bool shouldDistribute{ false };
 
 bool DoDistribute()
@@ -70,7 +71,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
-			if (shouldLookupForms = INI::Read(); shouldLookupForms) {
+			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::Read(); shouldLookupForms) {
 				logger::info("{:*^50}", "HOOKS");
 				Distribute::LeveledActor::Install();
 				Distribute::PlayerLeveledActor::Install();
@@ -101,6 +102,10 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				logger::info("{:*^50}", "EVENTS");
 				PCLevelMult::Manager::GetSingleton()->Register();
 				logger::info("{:*^50}", "SAVES");
+			}
+			if (shouldLogErrors) {
+				const auto error = fmt::format("[SPID] Errors found when reading configs. Check {}.log in {} for more info\n", Version::PROJECT, SKSE::log::log_directory()->string());
+				RE::ConsoleLog::GetSingleton()->Print(error.c_str());
 			}
 		}
 		break;

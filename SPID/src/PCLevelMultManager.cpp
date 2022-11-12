@@ -145,7 +145,7 @@ namespace PCLevelMult
 				for (const auto& [level, cachedData] : levelMap) {
 					const bool is_below_level = a_input.npcLevel < level;
 					for (auto& [formid, idx] : cachedData.distributedEntries) {
-						if (auto form = RE::TESForm::LookupByID(formid)) {
+						if (const auto form = RE::TESForm::LookupByID(formid)) {
 							a_fn(*form, idx, is_below_level);
 						}
 					}
@@ -171,7 +171,7 @@ namespace PCLevelMult
 	}
 
 	// For spawned actors with FF reference IDs
-    void Manager::DeleteNPC(RE::FormID a_characterID)
+	void Manager::DeleteNPC(RE::FormID a_characterID)
 	{
 		auto& currentCache = cache[GetSingleton()->GetCurrentPlayerID()];
 		if (const auto it = currentCache.find(a_characterID); it != currentCache.end()) {
