@@ -135,6 +135,15 @@ struct FormData
 			return true;
 		}
 	}
+
+	bool operator==(const FormData& a_rhs) const
+	{
+		if (!form || !a_rhs.form) {
+			return false;
+		} else {
+			return form->GetFormID() == a_rhs.form->GetFormID();
+		}
+	}
 };
 
 template <class Form>
