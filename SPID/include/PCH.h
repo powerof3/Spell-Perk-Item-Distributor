@@ -4,6 +4,7 @@
 #define NOMINMAX
 
 #include <ranges>
+#include <shared_mutex>
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"

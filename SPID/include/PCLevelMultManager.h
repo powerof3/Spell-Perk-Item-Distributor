@@ -78,9 +78,13 @@ namespace PCLevelMult
 			Map<std::uint16_t, Entries> entries{};  // Actor Level, Entries
 		};
 
-		Map<std::uint64_t,          // PlayerID
+		using Lock = std::shared_mutex;
+		using Locker = std::lock_guard<Lock>;
+
+	    Map<std::uint64_t,          // PlayerID
 			Map<RE::FormID, Data>>  // NPC formID, Data
-			cache{};
+			_cache{};
+		mutable Lock _lock;
 
 		std::uint64_t currentPlayerID{ 0 };
 		std::uint64_t oldPlayerID{ 0 };

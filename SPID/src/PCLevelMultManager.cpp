@@ -63,7 +63,8 @@ namespace PCLevelMult
 			return false;
 		}
 
-		if (const auto idIt = cache.find(a_input.playerID); idIt != cache.end()) {
+		Locker lock(_lock);
+	    if (const auto idIt = _cache.find(a_input.playerID); idIt != _cache.end()) {
 			auto& npcFormIDMap = idIt->second;
 			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
 				auto& [levelCapState, levelMap] = npcIt->second;
@@ -86,7 +87,8 @@ namespace PCLevelMult
 			return false;
 		}
 
-		return cache[a_input.playerID]
+		Locker lock(_lock);
+	    return _cache[a_input.playerID]
 		            [a_input.npcFormID]
 		                .entries[a_input.npcLevel]
 		                .rejectedEntries[a_distributedFormID]
@@ -96,7 +98,8 @@ namespace PCLevelMult
 
 	void Manager::DumpRejectedEntries()
 	{
-		for (auto& [playerID, npcFormIDs] : cache) {
+		Locker lock(_lock);
+	    for (auto& [playerID, npcFormIDs] : _cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
 				logger::info("\tNPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
@@ -115,7 +118,8 @@ namespace PCLevelMult
 
 	bool Manager::FindDistributedEntry(const Input& a_input)
 	{
-		if (const auto it = cache.find(a_input.playerID); it != cache.end()) {
+		Locker lock(_lock);
+	    if (const auto it = _cache.find(a_input.playerID); it != _cache.end()) {
 			if (const auto npcIt = it->second.find(a_input.npcFormID); npcIt != it->second.end()) {
 				return !npcIt->second.entries.empty();
 			}
@@ -129,7 +133,8 @@ namespace PCLevelMult
 			return;
 		}
 
-		cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries.push_back({ a_distributedFormID, a_idx });
+		Locker lock(_lock);
+	    _cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries.push_back({ a_distributedFormID, a_idx });
 	}
 
 	void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::TESForm&, IdxOrCount a_idx, bool)> a_fn) const
@@ -138,7 +143,8 @@ namespace PCLevelMult
 			return;
 		}
 
-		if (const auto idIt = cache.find(a_input.playerID); idIt != cache.end()) {
+		Locker lock(_lock);
+	    if (const auto idIt = _cache.find(a_input.playerID); idIt != _cache.end()) {
 			auto& npcFormIDMap = idIt->second;
 			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
 				auto& [levelCapState, levelMap] = npcIt->second;
@@ -156,7 +162,8 @@ namespace PCLevelMult
 
 	void Manager::DumpDistributedEntries()
 	{
-		for (auto& [playerID, npcFormIDs] : cache) {
+		Locker lock(_lock);
+	    for (auto& [playerID, npcFormIDs] : _cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
 				logger::info("\tNPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
@@ -173,7 +180,8 @@ namespace PCLevelMult
 	// For spawned actors with FF reference IDs
 	void Manager::DeleteNPC(RE::FormID a_characterID)
 	{
-		auto& currentCache = cache[GetSingleton()->GetCurrentPlayerID()];
+		Locker lock(_lock);
+	    auto& currentCache = _cache[GetSingleton()->GetCurrentPlayerID()];
 		if (const auto it = currentCache.find(a_characterID); it != currentCache.end()) {
 			currentCache.erase(it);
 		}
@@ -183,7 +191,9 @@ namespace PCLevelMult
 	{
 		bool hitCap = (a_input.npcLevel == a_input.npcLevelCap);
 
-		auto& map = cache[a_input.playerID];
+		Locker lock(_lock);
+
+	    auto& map = _cache[a_input.playerID];
 		if (const auto it = map.find(a_input.npcFormID); it == map.end()) {
 			map[a_input.npcFormID].levelCapState = static_cast<LEVEL_CAP_STATE>(hitCap);
 		} else {
@@ -235,9 +245,10 @@ namespace PCLevelMult
 
 	void Manager::remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID)
 	{
-		if (!cache.contains(a_newID)) {
-			if (const auto it = cache.find(a_oldID); it != cache.end()) {
-				cache[a_newID] = it->second;
+		Locker lock(_lock);
+	    if (!_cache.contains(a_newID)) {
+			if (const auto it = _cache.find(a_oldID); it != _cache.end()) {
+				_cache[a_newID] = it->second;
 			}
 		}
 	}
