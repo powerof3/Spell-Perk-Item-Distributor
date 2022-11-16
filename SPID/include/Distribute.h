@@ -48,7 +48,21 @@ namespace Distribute
 		if (a_distributables) {
 			logger::info("\t{}", a_recordType);
 
+			// Group the same entries together to avoid duplicates in the log.
+			std::map<RE::FormID, FormData<Form>> sums{};
 			for (auto& formData : a_distributables.forms) {
+				if (const auto& form = formData.form) {
+					auto it = sums.find(form->GetFormID());
+					if (it != sums.end()) {
+						it->second.npcCount += formData.npcCount;
+					} else {
+						sums.insert({ form->GetFormID(), formData });
+					}
+				}
+			}
+
+			for (auto& entry : sums) {
+				auto& formData = entry.second;
 				if (const auto& form = formData.form) {
 					std::string name{};
 					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
