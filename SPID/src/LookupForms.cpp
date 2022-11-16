@@ -38,7 +38,12 @@ bool Lookup::GetForms()
 		const auto list_lookup_result = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
 			const auto& recordName = RECORD::add[a_recordType];
 
-			logger::info("\tAdding {}/{} {}(s)", a_map.forms.size(), INI::configs[recordName].size(), recordName);
+			const auto all = INI::configs[recordName].size();
+			const auto added = a_map.forms.size();
+			
+			if (all > 0) {
+				logger::info("\tAdding {}/{} {}s", added, all, recordName);
+			}
 		};
 
 		list_lookup_result(RECORD::kKeyword, keywords);
