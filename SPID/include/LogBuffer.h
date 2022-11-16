@@ -26,6 +26,13 @@ namespace LogBuffer
 	DECLARE_BUFFERED_LOG(error);
 	DECLARE_BUFFERED_LOG(critical);
 	
+	// an example of the function
+	template <class... Args>
+	void a_func(
+		RE::FormID fid,
+		fmt::format_string<Args...> a_fmt,
+		Args&&... a_args);
+
 	void clear();
 };
 

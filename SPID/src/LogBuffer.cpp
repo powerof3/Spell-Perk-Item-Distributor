@@ -69,6 +69,18 @@ namespace LogBuffer
 	MAKE_BUFFERED_LOG(error, kError);
 	MAKE_BUFFERED_LOG(critical, kCritical);
 
+	// an example of the function
+	template <class... Args>
+	void a_func(
+		RE::FormID fid,
+		fmt::format_string<Args...> a_fmt,
+		Args&&... a_args)
+	{
+		if (buffer.insert(Entry(kInfo, fid, a_fmt))) {
+			logger::info(a_fmt, std::forward<Args>(a_args)...);
+		}
+	};
+
 	void clear()
 	{
 		buffer.clear();
