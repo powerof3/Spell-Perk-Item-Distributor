@@ -4,6 +4,7 @@ set(headers ${headers}
 	include/Distribute.h
 	include/DistributePCLevelMult.h
 	include/KeywordDependencies.h
+	include/LogBuffer.h
 	include/LookupConfigs.h
 	include/LookupFilters.h
 	include/LookupForms.h

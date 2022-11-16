@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MergeMapperPluginAPI.h"
+#include "LogBuffer.h"
 
 namespace Forms
 {
@@ -85,7 +86,7 @@ namespace Lookup
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
 							} else {
-								logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
+								LogBuffer::error(*formID, "\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
 							}
 						} else {
 							logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
