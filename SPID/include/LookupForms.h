@@ -254,7 +254,7 @@ namespace Lookup
 
 		a_distributables.formsWithLevels.reserve(a_distributables.forms.size());
 		for (auto& formData : a_distributables.forms) {
-			if (detail::has_level_filters(formData.levelFilters)) {
+			if (detail::has_level_filters(formData.filters.level)) {
 				a_distributables.formsWithLevels.emplace_back(formData);
 			}
 		}

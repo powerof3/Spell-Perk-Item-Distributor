@@ -26,7 +26,7 @@ struct StringFilters : Filters<std::string>
 };
 
 using FormOrMod = std::variant<RE::TESForm*,  // form
-	const RE::TESFile*>;                 // mod
+	const RE::TESFile*>;                      // mod
 using FormVec = std::vector<FormOrMod>;
 using FormFilters = Filters<FormOrMod>;
 
@@ -111,16 +111,21 @@ struct KeywordDependencySorter
 	static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
 };
 
+struct FilterData
+{
+	StringFilters strings{};
+	FormFilters forms{};
+	LevelFilters level{};
+	Traits traits{};
+	Chance chance{ 100 };
+};
+
 template <class Form>
 struct FormData
 {
 	Form* form{ nullptr };
 	IdxOrCount idxOrCount{ 1 };
-	StringFilters stringFilters{};
-	FormFilters formFilters{};
-	LevelFilters levelFilters{};
-	Traits traits{};
-	Chance chance{ 100 };
+	FilterData filters{};
 	NPCCount npcCount{ 0 };
 
 	bool operator<(const FormData& a_rhs) const

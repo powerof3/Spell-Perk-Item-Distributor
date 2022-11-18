@@ -19,23 +19,22 @@ namespace Distribute
 
 		for (std::uint32_t idx = 0; auto& formData : vec) {
 			++idx;
-			auto& [form, idxOrCount, stringFilters, formFilters, levelFilters, traits, chance, npcCount] = formData;
+			auto& [form, idxOrCount, filters, npcCount] = formData;
 			auto distributedFormID = form->GetFormID();
 
 			if (pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
 				continue;
 			}
-			if (!Filter::strings(a_actorbase, stringFilters) || !Filter::forms(a_actorbase, formFilters)) {
-				continue;
-			}
-			auto result = Filter::secondary(a_actorbase, levelFilters, traits, chance, a_input.noPlayerLevelDistribution);
-			if (result != SECONDARY_RESULT::kPass) {
-				if (result == SECONDARY_RESULT::kFailRNG) {
+
+		    auto result = Filter::PassedFilters(a_actorbase, filters, a_input.noPlayerLevelDistribution);
+			if (result != Filter::Result::kPass) {
+				if (result == Filter::Result::kFailRNG) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
 				}
 				continue;
 			}
-			if (a_fn(form, idxOrCount)) {
+
+		    if (a_fn(form, idxOrCount)) {
 				pcLevelMultManager->InsertDistributedEntry(a_input, distributedFormID, idxOrCount);
 				++npcCount;
 			}

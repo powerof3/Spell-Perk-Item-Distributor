@@ -152,7 +152,7 @@ void Dependencies::ResolveKeywords()
 			}
 		};
 
-		auto& stringFilters = formData.stringFilters;
+		auto& stringFilters = formData.filters.strings;
 
 		addDependencies(stringFilters.ALL, findKeyword);
 		addDependencies(stringFilters.NOT, findKeyword);
