@@ -1,5 +1,54 @@
 #pragma once
 
+using FormIDPair = std::pair<
+	std::optional<RE::FormID>,    // formID
+	std::optional<std::string>>;  // modName
+
+using FormOrEditorID = std::variant<
+	FormIDPair,    // formID~modName
+	std::string>;  // editorID
+
+template <class T>
+struct Filters
+{
+	std::vector<T> ALL{};
+	std::vector<T> NOT{};
+	std::vector<T> MATCH{};
+};
+
+using FormIDVec = std::vector<FormOrEditorID>;
+using FormFiltersRaw = Filters<FormOrEditorID>;
+
+using StringVec = std::vector<std::string>;
+struct StringFilters : Filters<std::string>
+{
+	StringVec ANY{};
+};
+
+using FormOrMod = std::variant<RE::TESForm*,  // form
+	const RE::TESFile*>;                 // mod
+using FormVec = std::vector<FormOrMod>;
+using FormFilters = Filters<FormOrMod>;
+
+using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;  // min/maxLevel
+using SkillLevel = std::pair<
+	std::uint32_t,                           // skill type
+	std::pair<std::uint8_t, std::uint8_t>>;  // skill Level
+using LevelFilters = std::pair<ActorLevel, std::vector<SkillLevel>>;
+
+using IdxOrCount = std::int32_t;
+
+struct Traits
+{
+	std::optional<RE::SEX> sex{};
+	std::optional<bool> unique{};
+	std::optional<bool> summonable{};
+	std::optional<bool> child{};
+};
+
+using Chance = float;
+using NPCCount = std::uint32_t;
+
 namespace RECORD
 {
 	enum TYPE
@@ -24,19 +73,10 @@ namespace RECORD
 	inline constexpr std::array remove{ "-Spell"sv, "-Perk"sv, "-Item"sv, "-Shout"sv, "-LevSpell"sv, "-Package"sv, "-Outfit"sv, "-Keyword"sv, "-DeathItem"sv, "-Faction"sv, "-SleepOutfit"sv, "-Skin"sv };
 }
 
-namespace TRAITS
-{
-	enum : std::uint32_t
-	{
-		kSex,
-		kUnique,
-		kSummonable,
-		kChild
-	};
-}
-
 namespace INI
 {
+	using Values = std::vector<std::pair<std::string, std::string>>;
+
 	enum TYPE : std::uint32_t
 	{
 		kFormIDPair = 0,
@@ -50,70 +90,26 @@ namespace INI
 		kChance
 	};
 
-	using Values = std::vector<std::pair<std::string, std::string>>;
-}
-
-namespace DATA
-{
-	enum TYPE : std::uint32_t
+	struct Data
 	{
-		kForm = 0,
-		kIdxOrCount,
-		kStrings = kIdxOrCount,
-		kFilterForms,
-		kLevel,
-		kTraits,
-		kChance,
-		kNPCCount
+		FormOrEditorID rawForm{};
+		StringFilters stringFilters{};
+		FormFiltersRaw rawFormFilters{};
+		LevelFilters levelFilters{};
+		Traits traits{};
+		IdxOrCount idxOrCount{ 1 };
+		Chance chance{ 100.0f };
+		std::string path{};
 	};
+	using DataVec = std::vector<Data>;
 }
+using INIDataVec = INI::DataVec;
 
 /// Custom ordering for keywords that ensures that dependent keywords are disitrbuted after the keywords that they depend on.
 struct KeywordDependencySorter
 {
 	static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
 };
-
-using EventResult = RE::BSEventNotifyControl;
-
-using FormIDPair = std::pair<std::optional<RE::FormID>,std::optional<std::string>>;
-using FormOrEditorID = std::variant<FormIDPair,std::string>;
-using FormIDVec = std::vector<FormOrEditorID>;
-using StringVec = std::vector<std::string>;
-using FormVec = std::vector<std::variant<RE::TESForm*, const RE::TESFile*>>;
-
-using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;
-using SkillLevel = std::pair<
-	std::uint32_t,
-	std::pair<std::uint8_t, std::uint8_t>>;
-using IdxOrCount = std::int32_t;
-using Traits = std::tuple<
-	std::optional<RE::SEX>,
-	std::optional<bool>,
-	std::optional<bool>,
-	std::optional<bool>>;
-using Chance = float;
-using NPCCount = std::uint32_t;
-
-using INIData = std::tuple<
-	FormOrEditorID,
-	std::array<StringVec, 4>,
-	std::array<FormIDVec, 3>,
-	std::pair<ActorLevel, std::vector<SkillLevel>>,
-	Traits,
-	IdxOrCount,
-	Chance,
-	std::string>;
-using INIDataVec = std::vector<INIData>;
-
-using StringFilters = std::array<StringVec, 4>;
-using FormFilters = std::array<FormVec, 3>;
-using LevelFilters = std::pair<ActorLevel, std::vector<SkillLevel>>;
-
-template <class K, class D>
-using Map = robin_hood::unordered_flat_map<K, D>;
-template <class K>
-using Set = robin_hood::unordered_flat_set<K>;
 
 template <class Form>
 struct FormData

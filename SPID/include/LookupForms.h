@@ -226,17 +226,17 @@ namespace Lookup
 				continue;
 			}
 
-			bool invalidEntry = false;
-
 			FormFilters filterForms{};
-			for (std::uint32_t i = 0; i < 3; i++) {
-				if (!detail::formID_to_form(a_dataHandler, filterIDs[i], filterForms[i], path)) {
-					invalidEntry = true;
-					break;
-				}
+
+			bool validEntry = detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path);
+			if (validEntry) {
+				validEntry = detail::formID_to_form(a_dataHandler, filterIDs.NOT, filterForms.NOT, path);
+			}
+			if (validEntry) {
+				validEntry = detail::formID_to_form(a_dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
 			}
 
-			if (invalidEntry) {
+			if (!validEntry) {
 				continue;
 			}
 

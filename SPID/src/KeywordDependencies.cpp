@@ -140,8 +140,6 @@ void Dependencies::ResolveKeywords()
 
 	// Fill keywordDependencies based on Keywords found in configs.
 	for (auto& formData : Forms::keywords.forms) {
-		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = formData.stringFilters;
-
 		const auto findKeyword = [&](const std::string& name) -> RE::BGSKeyword* {
 			return allKeywords[name];
 		};
@@ -154,10 +152,12 @@ void Dependencies::ResolveKeywords()
 			}
 		};
 
-		addDependencies(strings_ALL, findKeyword);
-		addDependencies(strings_NOT, findKeyword);
-		addDependencies(strings_MATCH, findKeyword);
-		addDependencies(strings_ANY, [&](const std::string& name) -> RE::BGSKeyword* {
+		auto& stringFilters = formData.stringFilters;
+
+		addDependencies(stringFilters.ALL, findKeyword);
+		addDependencies(stringFilters.NOT, findKeyword);
+		addDependencies(stringFilters.MATCH, findKeyword);
+		addDependencies(stringFilters.ANY, [&](const std::string& name) -> RE::BGSKeyword* {
 			for (const auto& [keywordName, keyword] : allKeywords) {
 				if (string::icontains(keywordName, name)) {
 					return keyword;

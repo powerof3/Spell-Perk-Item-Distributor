@@ -111,24 +111,22 @@ namespace Filter
 
 	bool strings(RE::TESNPC& a_actorbase, const StringFilters& a_stringFilters)
 	{
-		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = a_stringFilters;
-
-		if (!strings_ALL.empty() && !detail::keyword::matches(a_actorbase, strings_ALL, true)) {
+		if (!a_stringFilters.ALL.empty() && !detail::keyword::matches(a_actorbase, a_stringFilters.ALL, true)) {
 			return false;
 		}
 
 		const std::string name = a_actorbase.GetName();
 		const std::string editorID = Cache::EditorID::GetEditorID(a_actorbase.GetFormID());
 
-		if (!strings_NOT.empty()) {
+		if (!a_stringFilters.NOT.empty()) {
 			bool result = false;
-			if (!name.empty() && detail::name::matches(name, strings_NOT)) {
+			if (!name.empty() && detail::name::matches(name, a_stringFilters.NOT)) {
 				result = true;
 			}
-			if (!result && !editorID.empty() && detail::name::matches(editorID, strings_NOT)) {
+			if (!result && !editorID.empty() && detail::name::matches(editorID, a_stringFilters.NOT)) {
 				result = true;
 			}
-			if (!result && detail::keyword::matches(a_actorbase, strings_NOT)) {
+			if (!result && detail::keyword::matches(a_actorbase, a_stringFilters.NOT)) {
 				result = true;
 			}
 			if (result) {
@@ -136,15 +134,15 @@ namespace Filter
 			}
 		}
 
-		if (!strings_MATCH.empty()) {
+		if (!a_stringFilters.MATCH.empty()) {
 			bool result = false;
-			if (!name.empty() && detail::name::matches(name, strings_MATCH)) {
+			if (!name.empty() && detail::name::matches(name, a_stringFilters.MATCH)) {
 				result = true;
 			}
-			if (!result && !editorID.empty() && detail::name::matches(editorID, strings_MATCH)) {
+			if (!result && !editorID.empty() && detail::name::matches(editorID, a_stringFilters.MATCH)) {
 				result = true;
 			}
-			if (!result && detail::keyword::matches(a_actorbase, strings_MATCH)) {
+			if (!result && detail::keyword::matches(a_actorbase, a_stringFilters.MATCH)) {
 				result = true;
 			}
 			if (!result) {
@@ -152,15 +150,15 @@ namespace Filter
 			}
 		}
 
-		if (!strings_ANY.empty()) {
+		if (!a_stringFilters.ANY.empty()) {
 			bool result = false;
-			if (!name.empty() && detail::name::contains(name, strings_ANY)) {
+			if (!name.empty() && detail::name::contains(name, a_stringFilters.ANY)) {
 				result = true;
 			}
-			if (!result && !editorID.empty() && detail::name::contains(editorID, strings_ANY)) {
+			if (!result && !editorID.empty() && detail::name::contains(editorID, a_stringFilters.ANY)) {
 				result = true;
 			}
-			if (!result && detail::keyword::contains(a_actorbase, strings_ANY)) {
+			if (!result && detail::keyword::contains(a_actorbase, a_stringFilters.ANY)) {
 				result = true;
 			}
 			if (!result) {
@@ -173,17 +171,15 @@ namespace Filter
 
 	bool forms(RE::TESNPC& a_actorbase, const FormFilters& a_formFilters)
 	{
-		auto& [filterForms_ALL, filterForms_NOT, filterForms_MATCH] = a_formFilters;
-
-		if (!filterForms_ALL.empty() && !detail::form::matches(a_actorbase, filterForms_ALL, true)) {
+		if (!a_formFilters.ALL.empty() && !detail::form::matches(a_actorbase, a_formFilters.ALL, true)) {
 			return false;
 		}
 
-		if (!filterForms_NOT.empty() && detail::form::matches(a_actorbase, filterForms_NOT)) {
+		if (!a_formFilters.NOT.empty() && detail::form::matches(a_actorbase, a_formFilters.NOT)) {
 			return false;
 		}
 
-		if (!filterForms_MATCH.empty() && !detail::form::matches(a_actorbase, filterForms_MATCH)) {
+		if (!a_formFilters.MATCH.empty() && !detail::form::matches(a_actorbase, a_formFilters.MATCH)) {
 			return false;
 		}
 

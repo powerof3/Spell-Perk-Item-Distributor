@@ -45,11 +45,9 @@ namespace INI
 		}
 	}
 
-	inline std::tuple<INIData, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+	inline std::tuple<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 	{
-		INIData data;
-		auto& [recordID, strings_ini, filterIDs_ini, level_ini, traits_ini, idxOrCount_ini, chance_ini, path] = data;
-		path = a_path;
+		Data data{};
 
 		auto sanitized_value = detail::sanitize(a_value);
 		const auto sections = string::split(sanitized_value, "|");
@@ -57,56 +55,54 @@ namespace INI
 
 		//[FORMID/ESP] / EDITORID
 		if (kFormID < size) {
-			recordID = distribution::get_record(sections[kFormID]);
+			data.rawForm = distribution::get_record(sections[kFormID]);
 		}
 
 		//KEYWORDS
 		if (kStrings < size) {
-			auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = strings_ini;
+			StringFilters filters;
 
 			auto split_str = distribution::split_entry(sections[kStrings]);
 			for (auto& str : split_str) {
 				if (str.contains("+"sv)) {
 					auto strings = distribution::split_entry(str, "+");
-					strings_ALL.insert(strings_ALL.end(), strings.begin(), strings.end());
+					data.stringFilters.ALL.insert(data.stringFilters.ALL.end(), strings.begin(), strings.end());
 
 				} else if (str.at(0) == '-') {
 					str.erase(0, 1);
-					strings_NOT.emplace_back(str);
+					data.stringFilters.NOT.emplace_back(str);
 
 				} else if (str.at(0) == '*') {
 					str.erase(0, 1);
-					strings_ANY.emplace_back(str);
+					data.stringFilters.NOT.emplace_back(str);
 
 				} else {
-					strings_MATCH.emplace_back(str);
+					data.stringFilters.MATCH.emplace_back(str);
 				}
 			}
 		}
 
 		//FILTER FORMS
 		if (kFilterIDs < size) {
-			auto& [filterIDs_ALL, filterIDs_NOT, filterIDs_MATCH] = filterIDs_ini;
-
 			auto split_IDs = distribution::split_entry(sections[kFilterIDs]);
 			for (auto& IDs : split_IDs) {
 				if (IDs.contains("+"sv)) {
 					auto splitIDs_ALL = distribution::split_entry(IDs, "+");
 					for (auto& IDs_ALL : splitIDs_ALL) {
-						filterIDs_ALL.push_back(distribution::get_record(IDs_ALL));
+						data.rawFormFilters.ALL.push_back(distribution::get_record(IDs_ALL));
 					}
 				} else if (IDs.at(0) == '-') {
 					IDs.erase(0, 1);
-					filterIDs_NOT.push_back(distribution::get_record(IDs));
+					data.rawFormFilters.NOT.push_back(distribution::get_record(IDs));
 
 				} else {
-					filterIDs_MATCH.push_back(distribution::get_record(IDs));
+					data.rawFormFilters.MATCH.push_back(distribution::get_record(IDs));
 				}
 			}
 		}
 
 		//LEVEL
-		ActorLevel actorLevelPair = { UINT16_MAX, UINT16_MAX };
+		ActorLevel actorLevelPair{ UINT16_MAX, UINT16_MAX };
 		std::vector<SkillLevel> skillLevelPairs;
 		if (kLevel < size) {
 			auto split_levels = distribution::split_entry(sections[kLevel]);
@@ -145,51 +141,50 @@ namespace INI
 				}
 			}
 		}
-		level_ini = { actorLevelPair, skillLevelPairs };
+		data.levelFilters = LevelFilters{ actorLevelPair, skillLevelPairs };
 
 		//TRAITS
 		if (kTraits < size) {
-			auto& [sex, unique, summonable, child] = traits_ini;
-
 			auto split_traits = distribution::split_entry(sections[kTraits], "/");
 			for (auto& trait : split_traits) {
 				if (trait == "M") {
-					sex = RE::SEX::kMale;
+					data.traits.sex = RE::SEX::kMale;
 				} else if (trait == "F") {
-					sex = RE::SEX::kFemale;
+					data.traits.sex = RE::SEX::kFemale;
 				} else if (trait == "U") {
-					unique = true;
+					data.traits.unique = true;
 				} else if (trait == "-U") {
-					unique = false;
+					data.traits.unique = false;
 				} else if (trait == "S") {
-					summonable = true;
+					data.traits.summonable = true;
 				} else if (trait == "-S") {
-					summonable = false;
+					data.traits.summonable = false;
 				} else if (trait == "C") {
-					child = true;
+					data.traits.child = true;
 				} else if (trait == "-C") {
-					child = false;
+					data.traits.child = false;
 				}
 			}
 		}
 
 		//ITEMCOUNT/INDEX
-		idxOrCount_ini = a_key == "Package" ? 0 : 1;  //reuse item count for package stack index
-		if (kIdxOrCount < size) {
-			const auto& str = sections[kIdxOrCount];
-			if (distribution::is_valid_entry(str)) {
-				idxOrCount_ini = string::to_num<std::int32_t>(str);
+		if (a_key == "Package") {  // reuse item count for package stack index
+			data.idxOrCount = 0;
+		}
+	    if (kIdxOrCount < size) {
+			if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+				data.idxOrCount = string::to_num<std::int32_t>(str);
 			}
 		}
 
 		//CHANCE
-		chance_ini = 100;
 		if (kChance < size) {
-			const auto& str = sections[kChance];
-			if (distribution::is_valid_entry(str)) {
-				chance_ini = string::to_num<float>(str);
+			if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
+				data.chance = string::to_num<float>(str);
 			}
 		}
+
+		data.path = a_path;
 
 		if (sanitized_value != a_value) {
 			return std::make_tuple(data, sanitized_value);
@@ -197,5 +192,5 @@ namespace INI
 		return std::make_tuple(data, std::nullopt);
 	}
 
-	std::pair<bool,bool> Read();
+	std::pair<bool, bool> Read();
 }
