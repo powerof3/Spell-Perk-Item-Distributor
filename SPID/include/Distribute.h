@@ -48,7 +48,7 @@ namespace Distribute
 		if (a_distributables) {
 			logger::info("\t{}", a_recordType);
 
-			// Group the same entries together to avoid duplicates in the log.
+			// Group the same entries together to show total number of distributed records in the log.
 			std::map<RE::FormID, FormData<Form>> sums{};
 			for (auto& formData : a_distributables.forms) {
 				if (const auto& form = formData.form) {

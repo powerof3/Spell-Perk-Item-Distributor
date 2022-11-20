@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_set>
+
 #define MAKE_BUFFERED_LOG(a_func, a_type)															\
 																									\
 template <class... Args>																			\
@@ -29,7 +30,6 @@ template <class... Args>																			\
 	a_func(fmt::format_string<Args...>, Args&&...) -> a_func<Args...>;
 																												                                                                           
 
-/// LogBuffer proxies typical logging calls extended with related FormID or EditorID to differentiate
 namespace LogBuffer
 {
 	struct Entry
@@ -57,13 +57,16 @@ namespace std
 	};
 }
 
+/// LogBuffer proxies typical logging calls and buffers received entries to avoid duplication.
+///
 /// Main log proxy functions.
-/// Each log function checks whether given message was already logged for specified Form and skips the log.
+/// Each log function checks whether given message was already logged and skips the log.
 namespace LogBuffer
 {
 
 	inline std::unordered_set<Entry> buffer{};
 
+	/// Clears already buffered messages to allow them to be logged once again.
 	inline void clear()
 	{
 		buffer.clear();

@@ -16,6 +16,8 @@ bool DoDistribute()
 	if (shouldDistribute = Lookup::GetForms(); shouldDistribute) {
 		Distribute::ApplyToNPCs();
 		Distribute::Event::Manager::Register();
+		// Clear logger's buffer to free some memory :)
+		logger::clear();
 		return true;
 	}
 

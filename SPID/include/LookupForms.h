@@ -1,7 +1,6 @@
 #pragma once
 
 #include "MergeMapperPluginAPI.h"
-#include "LogBuffer.h"
 
 namespace Forms
 {
