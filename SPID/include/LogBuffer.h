@@ -1,18 +1,32 @@
 #pragma once
-
-#define MAKE_BUFFERED_LOG(a_func)																		\
-																												\
-	template <class... Args>																					\
-	void a_func(																								\
-		fmt::format_string<Args...> a_fmt,																		\
-		Args&&... a_args,																						\
-		std::source_location a_loc = std::source_location::current())											\
-	{																											\
-		if (buffer.insert(Entry(a_loc, fmt::format(a_fmt, std::forward<Args>(a_args)...))).second)							\
-		{																										\
-			logger::a_func(a_fmt, std::forward<Args>(a_args)..., a_loc);												\
-		}																										\
-	}																											\
+#include <unordered_set>
+#define MAKE_BUFFERED_LOG(a_func, a_type)															\
+																									\
+template <class... Args>																			\
+	struct [[maybe_unused]] a_func																	\
+	{																								\
+		a_func() = delete;																			\
+																									\
+		explicit a_func(																			\
+			fmt::format_string<Args...> a_fmt,														\
+			Args&&... a_args,																		\
+			std::source_location a_loc = std::source_location::current())							\
+		{																							\
+			if (buffer.insert({a_loc, fmt::format(a_fmt, std::forward<Args>(a_args)...)}).second)	\
+			{																						\
+				spdlog::log(																		\
+					spdlog::source_loc{																\
+						a_loc.file_name(),															\
+						static_cast<int>(a_loc.line()),												\
+						a_loc.function_name() },													\
+					spdlog::level::a_type,															\
+					a_fmt,																			\
+					std::forward<Args>(a_args)...);													\
+			}																						\
+		}																							\
+	};																								\
+	template <class... Args>																		\
+	a_func(fmt::format_string<Args...>, Args&&...) -> a_func<Args...>;
 																												                                                                           
 
 /// LogBuffer proxies typical logging calls extended with related FormID or EditorID to differentiate
@@ -55,21 +69,12 @@ namespace LogBuffer
 		buffer.clear();
 	};
 
-	template <class... Args>
-	void a_func(
-		fmt::format_string<Args...> a_fmt,
-		Args&&... a_args,
-		std::source_location a_loc = std::source_location::current())
-	{
-		if (buffer.insert(Entry(a_loc, fmt::format(a_fmt, std::forward<Args>(a_args)...))).second) {
-			logger::info(a_fmt, std::forward<Args>(a_args)..., a_loc);
-		}
-	}	
-
-	MAKE_BUFFERED_LOG(trace);
-	MAKE_BUFFERED_LOG(debug);
-	MAKE_BUFFERED_LOG(info);
-	MAKE_BUFFERED_LOG(warn);
-	MAKE_BUFFERED_LOG(error);
-	MAKE_BUFFERED_LOG(critical);
+	MAKE_BUFFERED_LOG(trace, trace);
+	MAKE_BUFFERED_LOG(debug, debug);
+	MAKE_BUFFERED_LOG(info, info);
+	MAKE_BUFFERED_LOG(warn, warn);
+	MAKE_BUFFERED_LOG(error, err);
+	MAKE_BUFFERED_LOG(critical, critical);
 };
+
+#undef MAKE_BUFFERED_LOG
