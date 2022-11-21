@@ -37,7 +37,13 @@ bool Lookup::GetForms()
 		const auto list_lookup_result = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
 			const auto& recordName = RECORD::add[a_recordType];
 
-			logger::info("\tAdding {}/{} {}(s)", a_map.forms.size(), INI::configs[recordName].size(), recordName);
+			const auto all = INI::configs[recordName].size();
+			const auto added = a_map.forms.size();
+			
+			// Only log entries that are actually present in INIs.
+			if (all > 0) {
+				logger::info("\tAdding {}/{} {}s", added, all, recordName);
+			}
 		};
 
 		list_lookup_result(RECORD::kKeyword, keywords);
@@ -53,5 +59,9 @@ bool Lookup::GetForms()
 		list_lookup_result(RECORD::kSleepOutfit, sleepOutfits);
 		list_lookup_result(RECORD::kSkin, skins);
 	}
+
+	// Clear logger's buffer to free some memory :)
+	logger::clear();
+
 	return result;
 }

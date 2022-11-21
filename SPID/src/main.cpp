@@ -13,6 +13,8 @@ bool DoDistribute()
 	if (shouldDistribute = Lookup::GetForms(); shouldDistribute) {
 		Distribute::ApplyToNPCs();
 		Distribute::Event::Manager::Register();
+		// Clear logger's buffer to free some memory :)
+		logger::clear();
 		return true;
 	}
 
@@ -168,7 +170,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 
 void InitializeLog()
 {
-	auto path = logger::log_directory();
+	auto path = SKSE::log::log_directory();
 	if (!path) {
 		stl::report_and_fail("Failed to find standard logging directory"sv);
 	}
