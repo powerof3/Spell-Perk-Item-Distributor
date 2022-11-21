@@ -37,25 +37,22 @@ namespace LogBuffer
 		std::source_location loc;
 		std::string message;
 
-		bool operator==(const LogBuffer::Entry& other) const
+		bool operator==(const Entry& other) const
 		{
-			return (strcmp(loc.file_name(), other.loc.file_name()) == 0) && loc.line() == other.loc.line() && message == other.message;
-		}
-	};
-};
-
-/// Add hashing for custom log entries.
-namespace std
-{
-	template <>
-	struct hash<LogBuffer::Entry>
-	{
-		std::size_t operator()(const LogBuffer::Entry& entry) const
-		{
-			return hash<std::string>()(entry.message);
+			return strcmp(loc.file_name(), other.loc.file_name()) == 0 && loc.line() == other.loc.line() && message == other.message;
 		}
 	};
 }
+
+/// Add hashing for custom log entries.
+template <>
+struct std::hash<LogBuffer::Entry>
+{
+    std::size_t operator()(const LogBuffer::Entry& entry) const noexcept
+    {
+        return hash<std::string>()(entry.message);
+    }
+};
 
 /// LogBuffer proxies typical logging calls and buffers received entries to avoid duplication.
 ///
@@ -70,14 +67,14 @@ namespace LogBuffer
 	inline void clear()
 	{
 		buffer.clear();
-	};
+	}
 
-	MAKE_BUFFERED_LOG(trace, trace);
+    MAKE_BUFFERED_LOG(trace, trace);
 	MAKE_BUFFERED_LOG(debug, debug);
 	MAKE_BUFFERED_LOG(info, info);
 	MAKE_BUFFERED_LOG(warn, warn);
 	MAKE_BUFFERED_LOG(error, err);
 	MAKE_BUFFERED_LOG(critical, critical);
-};
+}
 
 #undef MAKE_BUFFERED_LOG

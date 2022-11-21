@@ -46,9 +46,10 @@ namespace INI
 		{
 			Data data{};
 
-			auto sanitized_value = detail::sanitize(a_value);
+			auto sanitized_value = sanitize(a_value);
 			const auto sections = string::split(sanitized_value, "|");
-			const auto size = sections.size();
+
+		    const auto size = sections.size();
 
 			//[FORMID/ESP] / EDITORID
 			if (kFormID < size) {

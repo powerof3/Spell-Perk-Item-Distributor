@@ -1,6 +1,5 @@
 #include "PCLevelMultManager.h"
 #include "Distribute.h"
-#include "DistributePCLevelMult.h"
 
 namespace PCLevelMult
 {
@@ -134,7 +133,7 @@ namespace PCLevelMult
 		}
 
 		Locker lock(_lock);
-		_cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries.push_back({ a_distributedFormID, a_idx });
+		_cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries.emplace_back(a_distributedFormID, a_idx);
 	}
 
 	void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::TESForm&, IdxOrCount a_idx, bool)> a_fn) const

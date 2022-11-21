@@ -251,7 +251,7 @@ namespace Lookup
 				continue;
 			}
 
-			FormData<Form> formData{ form, idxOrCount, strings, filterForms, level, traits, chance };
+			FormData<Form> formData{ form, idxOrCount, { strings, filterForms, level, traits, chance } };
 			a_formDataVec.emplace_back(formData);
 		}
 	}
