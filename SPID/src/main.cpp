@@ -1,8 +1,5 @@
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
-#include "MergeMapperPluginAPI.h"
-#include "LookupConfigs.h"
-#include "LookupForms.h"
 
 HMODULE kid{ nullptr };
 HMODULE tweaks{ nullptr };
@@ -71,7 +68,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
-			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::Read(); shouldLookupForms) {
+			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::GetConfigs(); shouldLookupForms) {
 				logger::info("{:*^50}", "HOOKS");
 				Distribute::LeveledActor::Install();
 				Distribute::PlayerLeveledActor::Install();

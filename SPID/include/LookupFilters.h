@@ -26,5 +26,22 @@ namespace Filter
 		};
 	}
 
-	Result PassedFilters(RE::TESNPC& a_actorbase, const FilterData& a_filters, bool a_noPlayerLevelDistribution);
+	struct Data
+	{
+		StringFilters strings{};
+		FormFilters forms{};
+		LevelFilters level{};
+		Traits traits{};
+		Chance chance{ 100.0f };
+
+		bool HasLevelFilters() const;
+		Result PassedFilters(RE::TESNPC& a_actorbase, bool a_noPlayerLevelDistribution) const;
+
+	private:
+		Result passed_string_filters(RE::TESNPC& a_actorbase) const;
+		Result passed_form_filters(RE::TESNPC& a_actorbase) const;
+		Result passed_secondary_filters(RE::TESNPC& a_actorbase) const;
+	};
 }
+
+using FilterData = Filter::Data;

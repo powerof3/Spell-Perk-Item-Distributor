@@ -1,5 +1,4 @@
 #include "LookupFilters.h"
-#include "LookupForms.h"
 
 namespace Filter
 {
@@ -86,9 +85,9 @@ namespace Filter
 		}
 	}
 
-	Result passed_string_filters(RE::TESNPC& a_actorbase, const StringFilters& a_stringFilters)
+	Result Data::passed_string_filters(RE::TESNPC& a_actorbase) const
 	{
-		if (!a_stringFilters.ALL.empty() && !detail::keyword::matches(a_actorbase, a_stringFilters.ALL, true)) {
+		if (!strings.ALL.empty() && !detail::keyword::matches(a_actorbase, strings.ALL, true)) {
 			return Result::kFail;
 		}
 
@@ -107,15 +106,15 @@ namespace Filter
 			});
 		};
 
-		if (!a_stringFilters.NOT.empty()) {
+		if (!strings.NOT.empty()) {
 			bool result = false;
-			if (!name.empty() && matches(name, a_stringFilters.NOT)) {
+			if (!name.empty() && matches(name, strings.NOT)) {
 				result = true;
 			}
-			if (!result && !editorID.empty() && matches(editorID, a_stringFilters.NOT)) {
+			if (!result && !editorID.empty() && matches(editorID, strings.NOT)) {
 				result = true;
 			}
-			if (!result && detail::keyword::matches(a_actorbase, a_stringFilters.NOT)) {
+			if (!result && detail::keyword::matches(a_actorbase, strings.NOT)) {
 				result = true;
 			}
 			if (result) {
@@ -123,15 +122,15 @@ namespace Filter
 			}
 		}
 
-		if (!a_stringFilters.MATCH.empty()) {
+		if (!strings.MATCH.empty()) {
 			bool result = false;
-			if (!name.empty() && matches(name, a_stringFilters.MATCH)) {
+			if (!name.empty() && matches(name, strings.MATCH)) {
 				result = true;
 			}
-			if (!result && !editorID.empty() && matches(editorID, a_stringFilters.MATCH)) {
+			if (!result && !editorID.empty() && matches(editorID, strings.MATCH)) {
 				result = true;
 			}
-			if (!result && detail::keyword::matches(a_actorbase, a_stringFilters.MATCH)) {
+			if (!result && detail::keyword::matches(a_actorbase, strings.MATCH)) {
 				result = true;
 			}
 			if (!result) {
@@ -139,15 +138,15 @@ namespace Filter
 			}
 		}
 
-		if (!a_stringFilters.ANY.empty()) {
+		if (!strings.ANY.empty()) {
 			bool result = false;
-			if (!name.empty() && contains(name, a_stringFilters.ANY)) {
+			if (!name.empty() && contains(name, strings.ANY)) {
 				result = true;
 			}
-			if (!result && !editorID.empty() && contains(editorID, a_stringFilters.ANY)) {
+			if (!result && !editorID.empty() && contains(editorID, strings.ANY)) {
 				result = true;
 			}
-			if (!result && detail::keyword::contains(a_actorbase, a_stringFilters.ANY)) {
+			if (!result && detail::keyword::contains(a_actorbase, strings.ANY)) {
 				result = true;
 			}
 			if (!result) {
@@ -158,32 +157,26 @@ namespace Filter
 		return Result::kPass;
 	}
 
-	Result passed_form_filters(RE::TESNPC& a_actorbase, const FormFilters& a_formFilters)
+	Result Data::passed_form_filters(RE::TESNPC& a_actorbase) const
 	{
-		if (!a_formFilters.ALL.empty() && !detail::form::matches(a_actorbase, a_formFilters.ALL, true)) {
+		if (!forms.ALL.empty() && !detail::form::matches(a_actorbase, forms.ALL, true)) {
 			return Result::kFail;
 		}
 
-		if (!a_formFilters.NOT.empty() && detail::form::matches(a_actorbase, a_formFilters.NOT)) {
+		if (!forms.NOT.empty() && detail::form::matches(a_actorbase, forms.NOT)) {
 			return Result::kFail;
 		}
 
-		if (!a_formFilters.MATCH.empty() && !detail::form::matches(a_actorbase, a_formFilters.MATCH)) {
+		if (!forms.MATCH.empty() && !detail::form::matches(a_actorbase, forms.MATCH)) {
 			return Result::kFail;
 		}
 
 		return Result::kPass;
 	}
 
-	Result passed_secondary_filters(RE::TESNPC& a_actorbase, const LevelFilters& a_levelFilters, const Traits& a_traits, float a_chance, bool a_noPlayerLevelDistribution)
+	Result Data::passed_secondary_filters(RE::TESNPC& a_actorbase) const
 	{
-		if (Lookup::detail::has_level_filters(a_levelFilters)) {
-			if (a_noPlayerLevelDistribution && a_actorbase.HasPCLevelMult()) {
-				return Result::kFail;
-			}
-		}
-
-		auto& [actorMin, actorMax] = a_levelFilters.first;
+		auto& [actorMin, actorMax] = level.first;
 		const auto actorLevel = a_actorbase.GetLevel();
 
 		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
@@ -196,7 +189,7 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		for (auto& [skillType, skill] : a_levelFilters.second) {
+		for (auto& [skillType, skill] : level.second) {
 			auto& [skillMin, skillMax] = skill;
 
 			if (skillType < 18) {
@@ -214,21 +207,21 @@ namespace Filter
 			}
 		}
 
-		if (a_traits.sex && a_actorbase.GetSex() != *a_traits.sex) {
+		if (traits.sex && a_actorbase.GetSex() != *traits.sex) {
 			return Result::kFail;
 		}
-		if (a_traits.unique && a_actorbase.IsUnique() != *a_traits.unique) {
+		if (traits.unique && a_actorbase.IsUnique() != *traits.unique) {
 			return Result::kFail;
 		}
-		if (a_traits.summonable && a_actorbase.IsSummonable() != *a_traits.summonable) {
+		if (traits.summonable && a_actorbase.IsSummonable() != *traits.summonable) {
 			return Result::kFail;
 		}
-		if (a_traits.child && (a_actorbase.race && a_actorbase.race->IsChildRace()) != *a_traits.child) {
+		if (traits.child && (a_actorbase.race && a_actorbase.race->IsChildRace()) != *traits.child) {
 			return Result::kFail;
 		}
 
-		if (!numeric::essentially_equal(a_chance, 100.0f)) {
-			if (const auto rng = staticRNG.Generate<float>(0.0f, 100.0f); rng > a_chance) {
+		if (!numeric::essentially_equal(chance, 100.0f)) {
+			if (const auto rng = staticRNG.Generate<float>(0.0f, 100.0f); rng > chance) {
 				return Result::kFailRNG;
 			}
 		}
@@ -236,14 +229,39 @@ namespace Filter
 		return Result::kPass;
 	}
 
-	Result PassedFilters(RE::TESNPC& a_actorbase, const FilterData& a_filters, bool a_noPlayerLevelDistribution)
+	bool Data::HasLevelFilters() const
 	{
-		if (passed_string_filters(a_actorbase, a_filters.strings) == Result::kFail) {
+		const auto& [actorLevelPair, skillLevelPairs] = level;
+
+		auto& [actorMin, actorMax] = actorLevelPair;
+		if (actorMin < UINT16_MAX || actorMax < UINT16_MAX) {
+			return true;
+		}
+
+		return std::ranges::any_of(skillLevelPairs, [](const auto& skillPair) {
+			auto& [skillType, skill] = skillPair;
+			auto& [skillMin, skillMax] = skill;
+
+			return skillType < 18 && (skillMin < UINT8_MAX || skillMax < UINT8_MAX);
+		});
+	}
+
+	Result Data::PassedFilters(RE::TESNPC& a_actorbase, bool a_noPlayerLevelDistribution) const
+	{
+		if (passed_string_filters(a_actorbase) == Result::kFail) {
 			return Result::kFail;
 		}
-		if (passed_form_filters(a_actorbase, a_filters.forms) == Result::kFail) {
+
+		if (passed_form_filters(a_actorbase) == Result::kFail) {
 			return Result::kFail;
 		}
-		return passed_secondary_filters(a_actorbase, a_filters.level, a_filters.traits, a_filters.chance, a_noPlayerLevelDistribution);
+
+		if (HasLevelFilters()) {
+			if (a_noPlayerLevelDistribution && a_actorbase.HasPCLevelMult()) {
+				return Result::kFail;
+			}
+		}
+
+		return passed_secondary_filters(a_actorbase);
 	}
 }

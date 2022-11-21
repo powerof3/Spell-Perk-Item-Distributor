@@ -1,6 +1,5 @@
 #include "LookupForms.h"
 #include "KeywordDependencies.h"
-#include "LookupConfigs.h"
 
 bool Lookup::GetForms()
 {

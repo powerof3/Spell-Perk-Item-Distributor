@@ -187,7 +187,7 @@ void Dependencies::ResolveKeywords()
 /// 2) If B is a dependency of A, then A must always be placed after B
 /// 3) If A has less dependencies than B, then A must be placed before B and vise versa. ("leaf" keywords should be on top)
 /// 4) If A and B has the same number of dependencies they should be ordered alphabetically.
-bool KeywordDependencySorter::sort(RE::BGSKeyword* a, RE::BGSKeyword* b)
+bool Forms::KeywordDependencySorter::sort(RE::BGSKeyword* a, RE::BGSKeyword* b)
 {
 	if (IsDepending(b, a)) {
 		return true;

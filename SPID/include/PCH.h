@@ -10,6 +10,7 @@
 #include "SKSE/SKSE.h"
 
 #include <ClibUtil/utils.hpp>
+#include <MergeMapperPluginAPI.h>
 #include <SimpleIni.h>
 #include <frozen/set.h>
 #include <robin_hood.h>

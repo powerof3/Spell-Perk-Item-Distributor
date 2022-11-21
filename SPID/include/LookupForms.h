@@ -1,10 +1,38 @@
 #pragma once
 
-#include "MergeMapperPluginAPI.h"
+#include "LookupConfigs.h"
+#include "LookupFilters.h"
 
 namespace Forms
 {
+	/// Custom ordering for keywords that ensures that dependent keywords are disitrbuted after the keywords that they depend on.
+	struct KeywordDependencySorter
+	{
+		static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
+	};
+
+    template <class Form>
+	struct FormData
+	{
+		Form* form{ nullptr };
+		IdxOrCount idxOrCount{ 1 };
+		FilterData filters{};
+		std::uint32_t npcCount{ 0 };
+
+		bool operator<(const FormData& a_rhs) const
+		{
+			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
+				return KeywordDependencySorter::sort(form, a_rhs.form);
+			} else {
+				return true;
+			}
+		}
+	};
+
 	template <class Form>
+	using FormDataVec = std::vector<FormData<Form>>;
+
+    template <class Form>
 	struct Distributables
 	{
 		FormDataVec<Form> forms{};
@@ -58,14 +86,14 @@ namespace Lookup
 			}
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, FormIDVec& a_formIDVec, FormVec& a_formVec, const std::string& a_path)
+		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path)
 		{
-			if (a_formIDVec.empty()) {
+			if (a_rawFormVec.empty()) {
 				return true;
 			}
-			for (auto& formOrEditorID : a_formIDVec) {
-				if (const auto formIDPair(std::get_if<FormIDPair>(&formOrEditorID)); formIDPair) {
-					auto& [formID, modName] = *formIDPair;
+			for (auto& formOrEditorID : a_rawFormVec) {
+				if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
+					auto& [formID, modName] = *formModPair;
 					if (g_mergeMapperInterface) {
 						get_merged_IDs(formID, modName);
 					}
@@ -108,23 +136,6 @@ namespace Lookup
 			}
 			return !a_formVec.empty();
 		}
-
-		inline bool has_level_filters(const LevelFilters& a_levelFilters)
-		{
-			const auto& [actorLevelPair, skillLevelPairs] = a_levelFilters;
-
-			auto& [actorMin, actorMax] = actorLevelPair;
-			if (actorMin < UINT16_MAX || actorMax < UINT16_MAX) {
-				return true;
-			}
-
-			return std::ranges::any_of(skillLevelPairs, [](const auto& skillPair) {
-				auto& [skillType, skill] = skillPair;
-				auto& [skillMin, skillMax] = skill;
-
-				return skillType < 18 && (skillMin < UINT8_MAX || skillMax < UINT8_MAX);
-			});
-		}
 	}
 
 	template <class Form>
@@ -139,8 +150,8 @@ namespace Lookup
 		for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 			Form* form = nullptr;
 
-			if (std::holds_alternative<FormIDPair>(formOrEditorID)) {
-				if (auto [formID, modName] = std::get<FormIDPair>(formOrEditorID); formID) {
+			if (std::holds_alternative<FormModPair>(formOrEditorID)) {
+				if (auto [formID, modName] = std::get<FormModPair>(formOrEditorID); formID) {
 					if (g_mergeMapperInterface) {
 						detail::get_merged_IDs(formID, modName);
 					}
@@ -254,7 +265,7 @@ namespace Lookup
 
 		a_distributables.formsWithLevels.reserve(a_distributables.forms.size());
 		for (auto& formData : a_distributables.forms) {
-			if (detail::has_level_filters(formData.filters.level)) {
+			if (formData.filters.HasLevelFilters()) {
 				a_distributables.formsWithLevels.emplace_back(formData);
 			}
 		}

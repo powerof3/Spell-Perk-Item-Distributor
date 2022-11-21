@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LookupFilters.h"
 #include "LookupForms.h"
 #include "PCLevelMultManager.h"
 
@@ -26,7 +25,7 @@ namespace Distribute
 				continue;
 			}
 
-		    auto result = Filter::PassedFilters(a_actorbase, filters, a_input.noPlayerLevelDistribution);
+		    auto result = filters.PassedFilters(a_actorbase, a_input.noPlayerLevelDistribution);
 			if (result != Filter::Result::kPass) {
 				if (result == Filter::Result::kFailRNG) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
