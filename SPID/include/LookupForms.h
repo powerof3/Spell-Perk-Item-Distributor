@@ -12,14 +12,14 @@ namespace Forms
 	};
 
     template <class Form>
-	struct FormData
+	struct Data
 	{
 		Form* form{ nullptr };
 		IdxOrCount idxOrCount{ 1 };
 		FilterData filters{};
 		std::uint32_t npcCount{ 0 };
 
-		bool operator<(const FormData& a_rhs) const
+		bool operator<(const Data& a_rhs) const
 		{
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
 				return KeywordDependencySorter::sort(form, a_rhs.form);
@@ -27,16 +27,25 @@ namespace Forms
 				return true;
 			}
 		}
+
+		bool operator==(const Data& a_rhs) const
+		{
+			if (!form || !a_rhs.form) {
+				return false;
+			} else {
+				return form->GetFormID() == a_rhs.form->GetFormID();
+			}
+		}
 	};
 
 	template <class Form>
-	using FormDataVec = std::vector<FormData<Form>>;
+	using DataVec = std::vector<Data<Form>>;
 
     template <class Form>
 	struct Distributables
 	{
-		FormDataVec<Form> forms{};
-		FormDataVec<Form> formsWithLevels{};
+		DataVec<Form> forms{};
+		DataVec<Form> formsWithLevels{};
 
 		explicit operator bool()
 		{
@@ -139,7 +148,7 @@ namespace Lookup
 	}
 
 	template <class Form>
-	void get_forms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INIDataVec& a_INIDataVec, FormDataVec<Form>& a_formDataVec)
+	void get_forms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec, Forms::DataVec<Form>& a_formDataVec)
 	{
 		if (a_INIDataVec.empty()) {
 			return;
@@ -251,7 +260,7 @@ namespace Lookup
 				continue;
 			}
 
-			FormData<Form> formData{ form, idxOrCount, { strings, filterForms, level, traits, chance } };
+			Forms::Data<Form> formData{ form, idxOrCount, { strings, filterForms, level, traits, chance } };
 			a_formDataVec.emplace_back(formData);
 		}
 	}

@@ -56,5 +56,3 @@ namespace INI
 
 	std::pair<bool, bool> GetConfigs();
 }
-
-using INIDataVec = INI::DataVec;

@@ -124,7 +124,7 @@ void Dependencies::ResolveKeywords()
 
 	// Pre-build a map of all available keywords by names.
 	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
-	std::set<FormData<RE::BGSKeyword>> distrKeywords(Forms::keywords.forms.begin(), Forms::keywords.forms.end());
+	std::set<Forms::Data<RE::BGSKeyword>> distrKeywords(Forms::keywords.forms.begin(), Forms::keywords.forms.end());
 
 	const auto& dataHandler = RE::TESDataHandler::GetSingleton();
 	for (const auto& kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
@@ -171,8 +171,8 @@ void Dependencies::ResolveKeywords()
 	std::sort(Forms::keywords.forms.begin(), Forms::keywords.forms.end());
 	
 	// Print only unique entries in the log.
-	FormDataVec<RE::BGSKeyword> resolvedKeywords(Forms::keywords.forms);
-	resolvedKeywords.erase(unique(resolvedKeywords.begin(), resolvedKeywords.end()), resolvedKeywords.end());
+	Forms::DataVec<RE::BGSKeyword> resolvedKeywords(Forms::keywords.forms);
+	resolvedKeywords.erase(std::unique(resolvedKeywords.begin(), resolvedKeywords.end()), resolvedKeywords.end());
 
 	logger::info("\tKeywords have been sorted: ");
 	for (const auto& keywordData : resolvedKeywords) {
