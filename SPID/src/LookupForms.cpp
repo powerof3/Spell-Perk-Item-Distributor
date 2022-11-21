@@ -10,7 +10,6 @@ bool Lookup::GetForms()
 			get_forms(dataHandler, recordName, INI::configs[recordName], a_map.forms);
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
 				Dependencies::ResolveKeywords();
-				std::sort(a_map.forms.begin(), a_map.forms.end());
 			}
 			get_forms_with_level_filters(a_map);
 		};
