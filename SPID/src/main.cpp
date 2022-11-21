@@ -1,8 +1,5 @@
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
-#include "MergeMapperPluginAPI.h"
-#include "LookupConfigs.h"
-#include "LookupForms.h"
 
 HMODULE kid{ nullptr };
 HMODULE tweaks{ nullptr };
@@ -16,6 +13,8 @@ bool DoDistribute()
 	if (shouldDistribute = Lookup::GetForms(); shouldDistribute) {
 		Distribute::ApplyToNPCs();
 		Distribute::Event::Manager::Register();
+		// Clear logger's buffer to free some memory :)
+		logger::clear();
 		return true;
 	}
 
@@ -71,7 +70,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
-			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::Read(); shouldLookupForms) {
+			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::GetConfigs(); shouldLookupForms) {
 				logger::info("{:*^50}", "HOOKS");
 				Distribute::LeveledActor::Install();
 				Distribute::PlayerLeveledActor::Install();
@@ -171,7 +170,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 
 void InitializeLog()
 {
-	auto path = logger::log_directory();
+	auto path = SKSE::log::log_directory();
 	if (!path) {
 		stl::report_and_fail("Failed to find standard logging directory"sv);
 	}

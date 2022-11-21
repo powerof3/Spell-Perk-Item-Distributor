@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LookupFilters.h"
 #include "LookupForms.h"
 #include "PCLevelMultManager.h"
 
@@ -19,23 +18,22 @@ namespace Distribute
 
 		for (std::uint32_t idx = 0; auto& formData : vec) {
 			++idx;
-			auto& [form, idxOrCount, stringFilters, formFilters, levelFilters, traits, chance, npcCount] = formData;
+			auto& [form, idxOrCount, filters, npcCount] = formData;
 			auto distributedFormID = form->GetFormID();
 
 			if (pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
 				continue;
 			}
-			if (!Filter::strings(a_actorbase, stringFilters) || !Filter::forms(a_actorbase, formFilters)) {
-				continue;
-			}
-			auto result = Filter::secondary(a_actorbase, levelFilters, traits, chance, a_input.noPlayerLevelDistribution);
-			if (result != SECONDARY_RESULT::kPass) {
-				if (result == SECONDARY_RESULT::kFailRNG) {
+
+		    auto result = filters.PassedFilters(a_actorbase, a_input.noPlayerLevelDistribution);
+			if (result != Filter::Result::kPass) {
+				if (result == Filter::Result::kFailRNG) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
 				}
 				continue;
 			}
-			if (a_fn(form, idxOrCount)) {
+
+		    if (a_fn(form, idxOrCount)) {
 				pcLevelMultManager->InsertDistributedEntry(a_input, distributedFormID, idxOrCount);
 				++npcCount;
 			}
@@ -48,7 +46,21 @@ namespace Distribute
 		if (a_distributables) {
 			logger::info("\t{}", a_recordType);
 
+			// Group the same entries together to show total number of distributed records in the log.
+			std::map<RE::FormID, Forms::FormData<Form>> sums{};
 			for (auto& formData : a_distributables.forms) {
+				if (const auto& form = formData.form) {
+					auto it = sums.find(form->GetFormID());
+					if (it != sums.end()) {
+						it->second.npcCount += formData.npcCount;
+					} else {
+						sums.insert({ form->GetFormID(), formData });
+					}
+				}
+			}
+
+			for (auto& entry : sums) {
+				auto& formData = entry.second;
 				if (const auto& form = formData.form) {
 					std::string name{};
 					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
@@ -82,8 +94,8 @@ namespace Distribute
 			static void Register();
 
 		protected:
-			EventResult ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override;
-			EventResult ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
+			RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override;
+			RE::BSEventNotifyControl ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
 
 		private:
 			Manager() = default;

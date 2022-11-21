@@ -192,7 +192,7 @@ namespace Distribute::Event
 		}
 	}
 
-	EventResult Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
+	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
 	{
 		constexpr auto is_NPC = [](auto&& a_ref) {
 			return a_ref && !a_ref->IsPlayerRef();
@@ -214,15 +214,15 @@ namespace Distribute::Event
 			}
 		}
 
-		return EventResult::kContinue;
+		return RE::BSEventNotifyControl::kContinue;
 	}
 
-    EventResult Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
+    RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
     {
 		if (a_event && a_event->formID != 0) {
 		    PCLevelMult::Manager::GetSingleton()->DeleteNPC(a_event->formID);
 		}
-	    return EventResult::kContinue;
+		return RE::BSEventNotifyControl::kContinue;
     }
 }
 

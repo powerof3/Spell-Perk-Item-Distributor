@@ -141,8 +141,6 @@ void Dependencies::ResolveKeywords()
 
 	// Fill keywordDependencies based on Keywords found in configs.
 	for (auto& formData : distrKeywords) {
-		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = formData.stringFilters;
-
 		const auto findKeyword = [&](const std::string& name) -> RE::BGSKeyword* {
 			return allKeywords[name];
 		};
@@ -155,10 +153,12 @@ void Dependencies::ResolveKeywords()
 			}
 		};
 
-		addDependencies(strings_ALL, findKeyword);
-		addDependencies(strings_NOT, findKeyword);
-		addDependencies(strings_MATCH, findKeyword);
-		addDependencies(strings_ANY, [&](const std::string& name) -> RE::BGSKeyword* {
+		auto& stringFilters = formData.filters.strings;
+
+		addDependencies(stringFilters.ALL, findKeyword);
+		addDependencies(stringFilters.NOT, findKeyword);
+		addDependencies(stringFilters.MATCH, findKeyword);
+		addDependencies(stringFilters.ANY, [&](const std::string& name) -> RE::BGSKeyword* {
 			for (const auto& [keywordName, keyword] : allKeywords) {
 				if (string::icontains(keywordName, name)) {
 					return keyword;
@@ -187,7 +187,7 @@ void Dependencies::ResolveKeywords()
 /// 2) If B is a dependency of A, then A must always be placed after B
 /// 3) If A has less dependencies than B, then A must be placed before B and vise versa. ("leaf" keywords should be on top)
 /// 4) If A and B has the same number of dependencies they should be ordered alphabetically.
-bool KeywordDependencySorter::sort(RE::BGSKeyword* a, RE::BGSKeyword* b)
+bool Forms::KeywordDependencySorter::sort(RE::BGSKeyword* a, RE::BGSKeyword* b)
 {
 	if (IsDepending(b, a)) {
 		return true;

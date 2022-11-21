@@ -3,6 +3,11 @@
 // Manage PC Level Mult NPC distribution
 namespace PCLevelMult
 {
+	template <class K, class D>
+	using Map = robin_hood::unordered_flat_map<K, D>;
+	template <class K>
+	using Set = robin_hood::unordered_flat_set<K>;
+
 	struct Input
 	{
 		Input(const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
@@ -48,7 +53,7 @@ namespace PCLevelMult
 		static std::uint64_t get_game_playerID();
 		void remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID);
 
-		EventResult ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
+		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 
 	private:
 		Manager() = default;
@@ -81,7 +86,7 @@ namespace PCLevelMult
 		using Lock = std::shared_mutex;
 		using Locker = std::lock_guard<Lock>;
 
-	    Map<std::uint64_t,          // PlayerID
+		Map<std::uint64_t,          // PlayerID
 			Map<RE::FormID, Data>>  // NPC formID, Data
 			_cache{};
 		mutable Lock _lock;

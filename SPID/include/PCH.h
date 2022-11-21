@@ -8,8 +8,10 @@
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
+#include "LogBuffer.h"
 
 #include <ClibUtil/utils.hpp>
+#include <MergeMapperPluginAPI.h>
 #include <SimpleIni.h>
 #include <frozen/set.h>
 #include <robin_hood.h>
@@ -19,7 +21,7 @@
 
 #define DLLEXPORT __declspec(dllexport)
 
-namespace logger = SKSE::log;
+namespace logger = LogBuffer;
 namespace numeric = clib_util::numeric;
 namespace string = clib_util::string;
 namespace distribution = clib_util::distribution;
