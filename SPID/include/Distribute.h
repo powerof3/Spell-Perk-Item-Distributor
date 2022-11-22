@@ -79,6 +79,11 @@ namespace Distribute
 		}
 	}
 
+	namespace detail
+	{
+		bool uses_template(const RE::TESNPC* a_npc);
+	}
+
 	namespace Event
 	{
 		class Manager :

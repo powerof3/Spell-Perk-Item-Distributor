@@ -24,7 +24,7 @@ namespace NPC
 		return npc;
 	}
 
-    std::string Data::GetName() const
+	std::string Data::GetName() const
 	{
 		return npc->GetName();
 	}

@@ -3,6 +3,11 @@
 
 namespace Distribute
 {
+	bool detail::uses_template(const RE::TESNPC* a_npc)
+	{
+		return a_npc->UsesTemplate() || a_npc->baseTemplateForm || a_npc->templateForms;
+	}
+
 	void Distribute(const NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
@@ -129,14 +134,10 @@ namespace Distribute
 
 	void ApplyToNPCs()
 	{
-		constexpr auto uses_template = [](const RE::TESNPC* a_npc) -> bool {
-			return a_npc->UsesTemplate() || a_npc->baseTemplateForm || a_npc->templateForms;
-		};
-
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			std::size_t totalNPCs = 0;
 			for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
-				if (npc && !npc->IsPlayer() && (!uses_template(npc) || npc->IsUnique())) {
+				if (npc && !npc->IsPlayer() && (!detail::uses_template(npc) || npc->IsUnique())) {
 					Distribute(NPCData{ npc }, PCLevelMult::Input{ npc, false, true });
 					totalNPCs++;
 				}
@@ -185,7 +186,7 @@ namespace Distribute::Event
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
 			logger::info("\tRegistered for {}", typeid(RE::TESFormDeleteEvent).name());
-		    if (Forms::deathItems) {
+			if (Forms::deathItems) {
 				scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
 				logger::info("\tRegistered for {}", typeid(RE::TESDeathEvent).name());
 			}
@@ -221,13 +222,13 @@ namespace Distribute::Event
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
-    RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
-    {
+	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
+	{
 		if (a_event && a_event->formID != 0) {
-		    PCLevelMult::Manager::GetSingleton()->DeleteNPC(a_event->formID);
+			PCLevelMult::Manager::GetSingleton()->DeleteNPC(a_event->formID);
 		}
 		return RE::BSEventNotifyControl::kContinue;
-    }
+	}
 }
 
 namespace Distribute::LeveledActor
@@ -238,11 +239,9 @@ namespace Distribute::LeveledActor
 		{
 			func(a_this, a_npc);
 
-			if (!a_npc || !a_npc->IsDynamicForm()) {
-				return;
+			if (a_npc && (a_npc->IsDynamicForm() || detail::uses_template(a_npc))) {
+				Distribute(NPCData{ a_this, a_npc }, PCLevelMult::Input{ a_this, a_npc, false, false });
 			}
-
-			Distribute(NPCData{ a_this, a_npc }, PCLevelMult::Input{ a_this, a_npc, false, false });
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
