@@ -72,7 +72,7 @@ namespace INI
 
 					} else if (str.at(0) == '*') {
 						str.erase(0, 1);
-						data.stringFilters.NOT.emplace_back(str);
+						data.stringFilters.ANY.emplace_back(str);
 
 					} else {
 						data.stringFilters.MATCH.emplace_back(str);
