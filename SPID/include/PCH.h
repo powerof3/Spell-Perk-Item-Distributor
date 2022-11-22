@@ -9,8 +9,6 @@
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
-#include "LogBuffer.h"
-
 #include <ClibUtil/distribution.hpp>
 #include <ClibUtil/rng.hpp>
 #include <ClibUtil/string.hpp>
@@ -20,6 +18,8 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
 #include <xbyak/xbyak.h>
+
+#include "LogBuffer.h"
 
 #define DLLEXPORT __declspec(dllexport)
 

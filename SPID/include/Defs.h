@@ -7,7 +7,7 @@ using FormModPair = std::pair<
 	std::optional<std::string>>;  // modName
 
 using FormOrEditorID = std::variant<
-	FormModPair,    // formID~modName
+	FormModPair,   // formID~modName
 	std::string>;  // editorID
 
 template <class T>

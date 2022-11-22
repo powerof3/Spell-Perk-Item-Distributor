@@ -84,7 +84,7 @@ namespace PCLevelMult
 		};
 
 		using Lock = std::shared_mutex;
-		using Locker = std::lock_guard<Lock>;
+		using Locker = std::scoped_lock<Lock>;
 
 		Map<std::uint64_t,          // PlayerID
 			Map<RE::FormID, Data>>  // NPC formID, Data

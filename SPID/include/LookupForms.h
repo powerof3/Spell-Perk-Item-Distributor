@@ -32,10 +32,9 @@ namespace Forms
 		{
 			if (!form || !a_rhs.form) {
 				return false;
-			} else {
-				return form->GetFormID() == a_rhs.form->GetFormID();
 			}
-		}
+            return form->GetFormID() == a_rhs.form->GetFormID();
+        }
 	};
 
 	template <class Form>
@@ -260,7 +259,7 @@ namespace Lookup
 				continue;
 			}
 
-			Forms::Data<Form> formData{ form, idxOrCount, { strings, filterForms, level, traits, chance } };
+			Forms::Data<Form> formData{ form, idxOrCount, FilterData{ strings, filterForms, level, traits, chance } };
 			a_formDataVec.emplace_back(formData);
 		}
 	}

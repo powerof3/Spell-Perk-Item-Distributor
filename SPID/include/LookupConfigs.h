@@ -52,7 +52,7 @@ namespace INI
 	};
 	using DataVec = std::vector<Data>;
 
-	inline std::unordered_map<std::string_view, DataVec> configs;
+	inline robin_hood::unordered_flat_map<std::string_view, DataVec> configs;
 
 	std::pair<bool, bool> GetConfigs();
 }

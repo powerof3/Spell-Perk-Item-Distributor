@@ -268,10 +268,8 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		if (HasLevelFilters()) {
-			if (a_noPlayerLevelDistribution && a_npcData.GetNPC()->HasPCLevelMult()) {
-				return Result::kFail;
-			}
+		if (a_noPlayerLevelDistribution && HasLevelFilters() && a_npcData.GetNPC()->HasPCLevelMult()) {
+			return Result::kFail;
 		}
 
 		return passed_secondary_filters(a_npcData);
