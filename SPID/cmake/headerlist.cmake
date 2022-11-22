@@ -8,6 +8,7 @@ set(headers ${headers}
 	include/LookupConfigs.h
 	include/LookupFilters.h
 	include/LookupForms.h
+	include/LookupNPC.h
 	include/PCH.h
 	include/PCLevelMultManager.h
 )

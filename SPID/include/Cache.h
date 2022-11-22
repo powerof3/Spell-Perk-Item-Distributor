@@ -9,6 +9,7 @@ namespace Cache
 	namespace EditorID
 	{
 		std::string GetEditorID(RE::FormID a_formID);
+		std::string GetEditorID(RE::TESForm* a_form);
 	}
 
 	namespace FormType

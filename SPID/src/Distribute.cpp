@@ -3,57 +3,57 @@
 
 namespace Distribute
 {
-	void Distribute(RE::TESNPC* a_actorbase, const PCLevelMult::Input& a_input)
+	void Distribute(const NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
 			return;
 		}
 
-		for_each_form<RE::BGSKeyword>(*a_actorbase, Forms::keywords, a_input, [&](auto* a_keyword, [[maybe_unused]] IdxOrCount a_count) {
-			return a_actorbase->AddKeyword(a_keyword);
+		for_each_form<RE::BGSKeyword>(a_npcData, Forms::keywords, a_input, [&](auto* a_keyword, [[maybe_unused]] IdxOrCount a_count) {
+			return a_npcData.GetNPC()->AddKeyword(a_keyword);
 		});
 
-		for_each_form<RE::TESFaction>(*a_actorbase, Forms::factions, a_input, [&](auto* a_faction, [[maybe_unused]] IdxOrCount a_count) {
-			if (!a_actorbase->IsInFaction(a_faction)) {
+		for_each_form<RE::TESFaction>(a_npcData, Forms::factions, a_input, [&](auto* a_faction, [[maybe_unused]] IdxOrCount a_count) {
+			if (!a_npcData.GetNPC()->IsInFaction(a_faction)) {
 				const RE::FACTION_RANK faction{ a_faction, 1 };
-				a_actorbase->factions.push_back(faction);
+				a_npcData.GetNPC()->factions.push_back(faction);
 				return true;
 			}
 			return false;
 		});
 
-		for_each_form<RE::BGSPerk>(*a_actorbase, Forms::perks, a_input, [&](auto* a_perk, [[maybe_unused]] IdxOrCount a_count) {
-			return a_actorbase->AddPerk(a_perk, 1);
+		for_each_form<RE::BGSPerk>(a_npcData, Forms::perks, a_input, [&](auto* a_perk, [[maybe_unused]] IdxOrCount a_count) {
+			return a_npcData.GetNPC()->AddPerk(a_perk, 1);
 		});
 
-		for_each_form<RE::SpellItem>(*a_actorbase, Forms::spells, a_input, [&](auto* a_spell, [[maybe_unused]] IdxOrCount a_count) {
-			const auto actorEffects = a_actorbase->GetSpellList();
+		for_each_form<RE::SpellItem>(a_npcData, Forms::spells, a_input, [&](auto* a_spell, [[maybe_unused]] IdxOrCount a_count) {
+			const auto actorEffects = a_npcData.GetNPC()->GetSpellList();
 			return actorEffects && actorEffects->AddSpell(a_spell);
 		});
 
-		for_each_form<RE::TESShout>(*a_actorbase, Forms::shouts, a_input, [&](auto* a_shout, [[maybe_unused]] IdxOrCount a_count) {
-			const auto actorEffects = a_actorbase->GetSpellList();
+		for_each_form<RE::TESShout>(a_npcData, Forms::shouts, a_input, [&](auto* a_shout, [[maybe_unused]] IdxOrCount a_count) {
+			const auto actorEffects = a_npcData.GetNPC()->GetSpellList();
 			return actorEffects && actorEffects->AddShout(a_shout);
 		});
 
-		for_each_form<RE::TESLevSpell>(*a_actorbase, Forms::levSpells, a_input, [&](auto* a_levSpell, [[maybe_unused]] IdxOrCount a_count) {
-			const auto actorEffects = a_actorbase->GetSpellList();
+		for_each_form<RE::TESLevSpell>(a_npcData, Forms::levSpells, a_input, [&](auto* a_levSpell, [[maybe_unused]] IdxOrCount a_count) {
+			const auto actorEffects = a_npcData.GetNPC()->GetSpellList();
 			return actorEffects && actorEffects->AddLevSpell(a_levSpell);
 		});
 
-		for_each_form<RE::TESBoundObject>(*a_actorbase, Forms::items, a_input, [&](auto* a_item, IdxOrCount a_count) {
-			return a_actorbase->AddObjectToContainer(a_item, a_count, a_actorbase);
+		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](auto* a_item, IdxOrCount a_count) {
+			return a_npcData.GetNPC()->AddObjectToContainer(a_item, a_count, a_npcData.GetNPC());
 		});
 
-		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::outfits, a_input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
-			if (a_actorbase->defaultOutfit != a_outfit) {
-				a_actorbase->defaultOutfit = a_outfit;
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
+			if (a_npcData.GetNPC()->defaultOutfit != a_outfit) {
+				a_npcData.GetNPC()->defaultOutfit = a_outfit;
 				return true;
 			}
 			return false;
 		});
 
-		for_each_form<RE::TESForm>(*a_actorbase, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
+		for_each_form<RE::TESForm>(a_npcData, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
 			auto packageIdx = a_idx;
 
 			if (a_packageOrList->Is(RE::FormType::Package)) {
@@ -63,7 +63,7 @@ namespace Distribute
 					--packageIdx;  //get actual position we want to insert at
 				}
 
-				auto& packageList = a_actorbase->aiPackages.packages;
+				auto& packageList = a_npcData.GetNPC()->aiPackages.packages;
 				if (std::ranges::find(packageList, package) == packageList.end()) {
 					if (packageList.empty() || packageIdx == 0) {
 						packageList.push_front(package);
@@ -86,19 +86,19 @@ namespace Distribute
 
 				switch (packageIdx) {
 				case 0:
-					a_actorbase->defaultPackList = packageList;
+					a_npcData.GetNPC()->defaultPackList = packageList;
 					break;
 				case 1:
-					a_actorbase->spectatorOverRidePackList = packageList;
+					a_npcData.GetNPC()->spectatorOverRidePackList = packageList;
 					break;
 				case 2:
-					a_actorbase->observeCorpseOverRidePackList = packageList;
+					a_npcData.GetNPC()->observeCorpseOverRidePackList = packageList;
 					break;
 				case 3:
-					a_actorbase->guardWarnOverRidePackList = packageList;
+					a_npcData.GetNPC()->guardWarnOverRidePackList = packageList;
 					break;
 				case 4:
-					a_actorbase->enterCombatOverRidePackList = packageList;
+					a_npcData.GetNPC()->enterCombatOverRidePackList = packageList;
 					break;
 				default:
 					break;
@@ -110,17 +110,17 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::BGSOutfit>(*a_actorbase, Forms::sleepOutfits, a_input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
-			if (a_actorbase->sleepOutfit != a_outfit) {
-				a_actorbase->sleepOutfit = a_outfit;
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
+			if (a_npcData.GetNPC()->sleepOutfit != a_outfit) {
+				a_npcData.GetNPC()->sleepOutfit = a_outfit;
 				return true;
 			}
 			return false;
 		});
 
-		for_each_form<RE::TESObjectARMO>(*a_actorbase, Forms::skins, a_input, [&](auto* a_skin, [[maybe_unused]] IdxOrCount a_count) {
-			if (a_actorbase->skin != a_skin) {
-				a_actorbase->skin = a_skin;
+		for_each_form<RE::TESObjectARMO>(a_npcData, Forms::skins, a_input, [&](auto* a_skin, [[maybe_unused]] IdxOrCount a_count) {
+			if (a_npcData.GetNPC()->skin != a_skin) {
+				a_npcData.GetNPC()->skin = a_skin;
 				return true;
 			}
 			return false;
@@ -129,15 +129,15 @@ namespace Distribute
 
 	void ApplyToNPCs()
 	{
-		constexpr auto uses_template = [](const RE::TESNPC* a_actorbase) -> bool {
-			return a_actorbase->UsesTemplate() || a_actorbase->baseTemplateForm || a_actorbase->templateForms;
+		constexpr auto uses_template = [](const RE::TESNPC* a_npc) -> bool {
+			return a_npc->UsesTemplate() || a_npc->baseTemplateForm || a_npc->templateForms;
 		};
 
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			std::size_t totalNPCs = 0;
-			for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-				if (actorbase && !actorbase->IsPlayer() && (!uses_template(actorbase) || actorbase->IsUnique())) {
-					Distribute(actorbase, PCLevelMult::Input{ actorbase, false, true });
+			for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
+				if (npc && !npc->IsPlayer() && (!uses_template(npc) || npc->IsUnique())) {
+					Distribute(NPCData{ npc }, PCLevelMult::Input{ npc, false, true });
 					totalNPCs++;
 				}
 			}
@@ -200,14 +200,18 @@ namespace Distribute::Event
 
 		if (a_event && a_event->dead && is_NPC(a_event->actorDying)) {
 			const auto actor = a_event->actorDying->As<RE::Actor>();
-			const auto actorbase = actor ? actor->GetActorBase() : nullptr;
-			if (actor && actorbase) {
+			const auto npc = actor ? actor->GetActorBase() : nullptr;
+			if (actor && npc) {
 				const PCLevelMult::Input input{
-					actorbase,
+					npc,
 					false,
 					false,
 				};
-				for_each_form<RE::TESBoundObject>(*actorbase, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
+				const NPCData npcData{
+					actor,
+					npc
+				};
+				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
 					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
 				});
@@ -238,7 +242,7 @@ namespace Distribute::LeveledActor
 				return;
 			}
 
-			Distribute(a_npc, PCLevelMult::Input{ a_this, a_npc, false, false });
+			Distribute(NPCData{ a_this, a_npc }, PCLevelMult::Input{ a_this, a_npc, false, false });
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 

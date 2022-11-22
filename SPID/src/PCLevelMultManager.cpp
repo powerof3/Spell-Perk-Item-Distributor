@@ -44,7 +44,7 @@ namespace PCLevelMult
 					if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
 						for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
 							if (npc && npc->HasPCLevelMult()) {
-								Distribute::Distribute(npc, Input{ npc, true, false });
+								Distribute::Distribute(NPCData{ npc }, Input{ npc, true, false });
 							}
 						}
 					}

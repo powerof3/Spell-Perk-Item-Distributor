@@ -1,13 +1,14 @@
 #pragma once
 
 #include "LookupForms.h"
+#include "LookupNPC.h"
 #include "PCLevelMultManager.h"
 
 namespace Distribute
 {
 	template <class Form>
 	void for_each_form(
-		RE::TESNPC& a_actorbase,
+		const NPCData& a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input& a_input,
 		std::function<bool(Form*, IdxOrCount&)> a_fn)
@@ -25,7 +26,7 @@ namespace Distribute
 				continue;
 			}
 
-		    auto result = filters.PassedFilters(a_actorbase, a_input.noPlayerLevelDistribution);
+			auto result = filters.PassedFilters(a_npcData, a_input.noPlayerLevelDistribution);
 			if (result != Filter::Result::kPass) {
 				if (result == Filter::Result::kFailRNG) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
@@ -33,7 +34,7 @@ namespace Distribute
 				continue;
 			}
 
-		    if (a_fn(form, idxOrCount)) {
+			if (a_fn(form, idxOrCount)) {
 				pcLevelMultManager->InsertDistributedEntry(a_input, distributedFormID, idxOrCount);
 				++npcCount;
 			}
@@ -66,7 +67,7 @@ namespace Distribute
 					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 						name = form->GetFormEditorID();
 					} else {
-						name = Cache::EditorID::GetEditorID(form->GetFormID());
+						name = Cache::EditorID::GetEditorID(form);
 					}
 					if (auto file = form->GetFile(0)) {
 						logger::info("\t\t{} [0x{:X}~{}] added to {}/{} NPCs", name, form->GetLocalFormID(), file->GetFilename(), formData.npcCount, a_totalNPCCount);
@@ -114,7 +115,7 @@ namespace Distribute
 		void Install();
 	}
 
-	void Distribute(RE::TESNPC* a_actorbase, const PCLevelMult::Input& a_input);
+	void Distribute(const NPCData& a_npcData, const PCLevelMult::Input& a_input);
 
 	void ApplyToNPCs();
 }

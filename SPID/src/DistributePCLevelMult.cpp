@@ -11,7 +11,7 @@ namespace Distribute::PlayerLeveledActor
 			if (const auto npc = a_actor->GetActorBase()) {
 				const auto input = npc->IsDynamicForm() ? PCLevelMult::Input{ a_actor, npc, true, false } :  // use character formID for permanent storage
 				                                          PCLevelMult::Input{ npc, true, false };
-				Distribute(npc, input);
+				Distribute(NPCData{ a_actor, npc }, input);
 			}
 
 			func(a_actor);
@@ -23,13 +23,13 @@ namespace Distribute::PlayerLeveledActor
 	{
 		static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
 		{
-			if (const auto actorbase = a_this->GetActorBase(); actorbase && actorbase->HasPCLevelMult()) {
-				const auto input = actorbase->IsDynamicForm() ? PCLevelMult::Input{ a_this, actorbase, true, false } :  // use character formID for permanent storage
-				                                                PCLevelMult::Input{ actorbase, true, false };
+			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult()) {
+				const auto input = npc->IsDynamicForm() ? PCLevelMult::Input{ a_this, npc, true, false } :  // use character formID for permanent storage
+				                                          PCLevelMult::Input{ npc, true, false };
 
 				if (const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton(); !pcLevelMultManager->FindDistributedEntry(input)) {
 					//start distribution for first time
-					Distribute(actorbase, input);
+					Distribute(NPCData{ a_this, npc }, input);
 				} else {
 					//handle redistribution and removal
 					pcLevelMultManager->ForEachDistributedEntry(input, [&](RE::TESForm& a_form, [[maybe_unused]] IdxOrCount a_count, bool a_isBelowLevel) {
@@ -38,19 +38,19 @@ namespace Distribute::PlayerLeveledActor
 							{
                                 const auto keyword = a_form.As<RE::BGSKeyword>();
 								if (a_isBelowLevel) {
-									actorbase->RemoveKeyword(keyword);
+									npc->RemoveKeyword(keyword);
 								} else {
-									actorbase->AddKeyword(keyword);
+									npc->AddKeyword(keyword);
 								}
 							}
 							break;
 						case RE::FormType::Faction:
 							{
 								auto faction = a_form.As<RE::TESFaction>();
-                                const auto it = std::ranges::find_if(actorbase->factions, [&](const auto& factionRank) {
+                                const auto it = std::ranges::find_if(npc->factions, [&](const auto& factionRank) {
 									return factionRank.faction == faction;
 								});
-								if (it != actorbase->factions.end()) {
+								if (it != npc->factions.end()) {
 									if (a_isBelowLevel) {
 										(*it).rank = -1;
 									} else {
@@ -63,16 +63,16 @@ namespace Distribute::PlayerLeveledActor
 							{
                                 const auto perk = a_form.As<RE::BGSPerk>();
 								if (a_isBelowLevel) {
-									actorbase->RemovePerk(perk);
+									npc->RemovePerk(perk);
 								} else {
-									actorbase->AddPerk(perk, 1);
+									npc->AddPerk(perk, 1);
 								}
 							}
 							break;
 						case RE::FormType::Spell:
 							{
                                 const auto spell = a_form.As<RE::SpellItem>();
-								if (const auto actorEffects = actorbase->GetSpellList()) {
+								if (const auto actorEffects = npc->GetSpellList()) {
 									if (a_isBelowLevel) {
 										actorEffects->RemoveSpell(spell);
 									} else if (!actorEffects->GetIndex(spell)) {
@@ -84,7 +84,7 @@ namespace Distribute::PlayerLeveledActor
 						case RE::FormType::LeveledSpell:
 							{
                                 const auto spell = a_form.As<RE::TESLevSpell>();
-								if (const auto actorEffects = actorbase->GetSpellList()) {
+								if (const auto actorEffects = npc->GetSpellList()) {
 									if (a_isBelowLevel) {
 										actorEffects->RemoveLevSpell(spell);
 									} else {
@@ -96,7 +96,7 @@ namespace Distribute::PlayerLeveledActor
 						case RE::FormType::Shout:
 							{
                                 const auto shout = a_form.As<RE::TESShout>();
-								if (const auto actorEffects = actorbase->GetSpellList()) {
+								if (const auto actorEffects = npc->GetSpellList()) {
 									if (a_isBelowLevel) {
 										actorEffects->RemoveShout(shout);
 									} else {
@@ -110,9 +110,9 @@ namespace Distribute::PlayerLeveledActor
 								if (a_form.IsInventoryObject()) {
                                     const auto boundObject = static_cast<RE::TESBoundObject*>(&a_form);
 									if (a_isBelowLevel) {
-										actorbase->RemoveObjectFromContainer(boundObject, a_count);
-									} else if (actorbase->CountObjectsInContainer(boundObject) < a_count) {
-										actorbase->AddObjectToContainer(boundObject, a_count, a_this);
+										npc->RemoveObjectFromContainer(boundObject, a_count);
+									} else if (npc->CountObjectsInContainer(boundObject) < a_count) {
+										npc->AddObjectToContainer(boundObject, a_count, a_this);
 									}
 								}
 							}
