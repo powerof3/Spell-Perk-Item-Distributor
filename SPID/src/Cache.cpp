@@ -22,6 +22,6 @@ namespace Cache
 
     bool FormType::GetWhitelisted(const RE::FormType a_type)
 	{
-		return whitelist.find(a_type) != whitelist.end();
+		return std::ranges::find(whitelist, a_type) != whitelist.end();
 	}
 }

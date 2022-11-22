@@ -41,7 +41,7 @@ namespace Filter
 		FormFilters forms{};
 		LevelFilters level{};
 		Traits traits{};
-		Chance chance{ 100.0f };
+		Chance chance{ 100 };
 
 		[[nodiscard]] bool HasLevelFilters() const;
 		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData, bool a_noPlayerLevelDistribution) const;

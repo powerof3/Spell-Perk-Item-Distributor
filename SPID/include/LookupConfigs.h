@@ -47,7 +47,7 @@ namespace INI
 		LevelFilters levelFilters{};
 		Traits traits{};
 		IdxOrCount idxOrCount{ 1 };
-		Chance chance{ 100.0f };
+		Chance chance{ 100 };
 		std::string path{};
 	};
 	using DataVec = std::vector<Data>;

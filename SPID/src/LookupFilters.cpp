@@ -232,8 +232,8 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		if (!numeric::essentially_equal(chance, 100.0f)) {
-			if (const auto rng = staticRNG.Generate<Chance>(0.0f, 100.0f); rng > chance) {
+		if (chance != 100) {
+			if (const auto rng = staticRNG.Generate<Chance>(0, 100); rng > chance) {
 				return Result::kFailRNG;
 			}
 		}

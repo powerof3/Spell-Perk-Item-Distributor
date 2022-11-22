@@ -47,4 +47,4 @@ struct Traits
 };
 
 using IdxOrCount = std::int32_t;
-using Chance = float;
+using Chance = std::uint32_t;

@@ -14,17 +14,17 @@ namespace Cache
 
 	namespace FormType
 	{
-		inline constexpr frozen::set<RE::FormType, 8> whitelist = {
-			{ RE::FormType::Faction },
-			{ RE::FormType::Class },
-			{ RE::FormType::CombatStyle },
-			{ RE::FormType::Race },
-			{ RE::FormType::Outfit },
-			{ RE::FormType::NPC },
-			{ RE::FormType::VoiceType },
-			{ RE::FormType::FormList }
+		inline constexpr std::array whitelist{
+			RE::FormType::Faction,
+			RE::FormType::Class,
+			RE::FormType::CombatStyle,
+			RE::FormType::Race,
+			RE::FormType::Outfit,
+			RE::FormType::NPC,
+			RE::FormType::VoiceType,
+			RE::FormType::FormList
 		};
-		
+
 		bool GetWhitelisted(RE::FormType a_type);
 	}
 }

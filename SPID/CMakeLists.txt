@@ -133,7 +133,6 @@ else ()
 	)
 endif()
 
-find_package(frozen CONFIG REQUIRED)
 find_package(robin_hood CONFIG REQUIRED)
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
@@ -202,7 +201,6 @@ target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
 		${CommonLibName}::${CommonLibName}
-		frozen::frozen
 		robin_hood::robin_hood
 )
 

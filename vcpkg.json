@@ -4,7 +4,6 @@
   "dependencies": [
     "boost-stl-interfaces",
     "clib-util",
-    "frozen",
     "mergemapper",
     "robin-hood-hashing",
     "rsm-binary-io",

@@ -12,12 +12,10 @@
 #include "LogBuffer.h"
 
 #include <ClibUtil/distribution.hpp>
-#include <ClibUtil/numeric.hpp>
 #include <ClibUtil/rng.hpp>
 #include <ClibUtil/string.hpp>
 #include <MergeMapperPluginAPI.h>
 #include <SimpleIni.h>
-#include <frozen/set.h>
 #include <robin_hood.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
@@ -26,7 +24,6 @@
 #define DLLEXPORT __declspec(dllexport)
 
 namespace logger = LogBuffer;
-namespace numeric = clib_util::numeric;
 namespace string = clib_util::string;
 namespace distribution = clib_util::distribution;
 
