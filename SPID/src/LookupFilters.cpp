@@ -233,7 +233,7 @@ namespace Filter
 		}
 
 		if (!numeric::essentially_equal(chance, 100.0f)) {
-			if (const auto rng = staticRNG.Generate<float>(0.0f, 100.0f); rng > chance) {
+			if (const auto rng = staticRNG.Generate<Chance>(0.0f, 100.0f); rng > chance) {
 				return Result::kFailRNG;
 			}
 		}

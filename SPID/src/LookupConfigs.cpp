@@ -42,14 +42,14 @@ namespace INI
 			return newValue;
 		}
 
-		std::tuple<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+		std::pair<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 		{
 			Data data{};
 
 			auto sanitized_value = sanitize(a_value);
 			const auto sections = string::split(sanitized_value, "|");
 
-		    const auto size = sections.size();
+			const auto size = sections.size();
 
 			//[FORMID/ESP] / EDITORID
 			if (kFormID < size) {
@@ -145,22 +145,33 @@ namespace INI
 			if (kTraits < size) {
 				auto split_traits = distribution::split_entry(sections[kTraits], "/");
 				for (auto& trait : split_traits) {
-					if (trait == "M") {
+					switch (string::const_hash(trait)) {
+					case "M"_h:
+					case "-F"_h:
 						data.traits.sex = RE::SEX::kMale;
-					} else if (trait == "F") {
+						break;
+					case "F"_h:
+					case "-M"_h:
 						data.traits.sex = RE::SEX::kFemale;
-					} else if (trait == "U") {
+						break;
+					case "U"_h:
 						data.traits.unique = true;
-					} else if (trait == "-U") {
+						break;
+					case "-U"_h:
 						data.traits.unique = false;
-					} else if (trait == "S") {
+						break;
+					case "S"_h:
 						data.traits.summonable = true;
-					} else if (trait == "-S") {
+						break;
+					case "-S"_h:
 						data.traits.summonable = false;
-					} else if (trait == "C") {
+						break;
+					case "C"_h:
 						data.traits.child = true;
-					} else if (trait == "-C") {
+						break;
+					case "-C"_h:
 						data.traits.child = false;
+						break;
 					}
 				}
 			}
@@ -185,9 +196,9 @@ namespace INI
 			data.path = a_path;
 
 			if (sanitized_value != a_value) {
-				return std::make_tuple(data, sanitized_value);
+				return { data, sanitized_value };
 			}
-			return std::make_tuple(data, std::nullopt);
+			return { data, std::nullopt };
 		}
 	}
 

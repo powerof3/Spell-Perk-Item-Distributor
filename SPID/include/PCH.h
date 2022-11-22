@@ -8,9 +8,13 @@
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
+
 #include "LogBuffer.h"
 
-#include <ClibUtil/utils.hpp>
+#include <ClibUtil/distribution.hpp>
+#include <ClibUtil/numeric.hpp>
+#include <ClibUtil/rng.hpp>
+#include <ClibUtil/string.hpp>
 #include <MergeMapperPluginAPI.h>
 #include <SimpleIni.h>
 #include <frozen/set.h>
@@ -27,6 +31,8 @@ namespace string = clib_util::string;
 namespace distribution = clib_util::distribution;
 
 using namespace std::literals;
+using namespace string::literals;
+
 using RNG = clib_util::RNG;
 
 namespace stl
