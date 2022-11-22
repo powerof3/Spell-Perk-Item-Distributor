@@ -59,6 +59,11 @@ namespace Filter
 				return a_npc == a_filter;
 			case RE::FormType::VoiceType:
 				return a_npc->voiceType == a_filter;
+			case RE::FormType::Spell:
+				{
+					const auto spell = a_filter->As<RE::SpellItem>();
+					return a_npc->GetSpellList()->GetIndex(spell).has_value();
+				}
 			case RE::FormType::FormList:
 				{
 					bool result = false;
