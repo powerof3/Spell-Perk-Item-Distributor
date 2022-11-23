@@ -124,7 +124,4 @@ namespace Distribute
 
 	// Distribute to all unique and static NPCs, after data load
     void OnInit();
-
-	// Distribute to all actors in each processList, when in game
-	void InGame(std::function<void(const RE::NiPointer<RE::Actor>&)> a_callback);
 }

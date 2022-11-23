@@ -14,12 +14,13 @@ namespace PCLevelMult
 
 	Input::Input(const RE::Actor* a_character, const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
 		playerID(Manager::GetSingleton()->GetCurrentPlayerID()),
-		npcFormID(a_character->GetFormID()),
 		npcLevel(a_base->GetLevel()),
 		npcLevelCap(a_base->actorData.calcLevelMax),
 		onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
 		noPlayerLevelDistribution(a_noPlayerLevelDistribution)
-	{}
+	{
+		npcFormID = a_base->IsDynamicForm() ? a_character->GetFormID() : a_base->GetFormID();
+	}
 
 	void Manager::Register()
 	{
@@ -41,11 +42,14 @@ namespace PCLevelMult
 
 					currentPlayerID = newPlayerID;
 
-					Distribute::InGame([&](const RE::NiPointer<RE::Actor>& a_actorPtr) {
-						if (const auto npc = a_actorPtr->GetActorBase(); npc && npc->HasPCLevelMult()) {
-							Distribute::Distribute(NPCData{ npc }, Input{ npc, true, false });
-						}
-					});
+					if (const auto processLists = RE::ProcessLists::GetSingleton()) {
+						processLists->ForAllActors([&](RE::Actor& a_actor) {
+							if (const auto npc = a_actor.GetActorBase(); npc && npc->HasPCLevelMult()) {
+								Distribute::Distribute(NPCData{ &a_actor, npc }, Input{ &a_actor, npc, true, false });
+							}
+							return RE::BSContainer::ForEachResult::kContinue;
+						});
+					}
 				} else if (oldPlayerID != newPlayerID) {
 					remap_player_ids(oldPlayerID, newPlayerID);
 				}

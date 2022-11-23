@@ -167,21 +167,6 @@ namespace Distribute
 			list_result(RECORD::kSkin, Forms::skins);
 		}
 	}
-
-	void InGame(std::function<void(const RE::NiPointer<RE::Actor>&)> a_callback)
-	{
-		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
-			for (auto& list : processLists->allProcesses) {
-				if (list) {
-					for (auto& handle : *list) {
-						if (auto actorPtr = handle.get()) {
-							a_callback(actorPtr);
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
 namespace Distribute::Event
