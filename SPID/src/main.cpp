@@ -11,11 +11,13 @@ bool shouldDistribute{ false };
 bool DoDistribute()
 {
 	if (shouldDistribute = Lookup::GetForms(); shouldDistribute) {
-		Distribute::ApplyToNPCs();
+		Distribute::OnInit();
 		Distribute::Event::Manager::Register();
-		// Clear logger's buffer to free some memory :)
+
+	    // Clear logger's buffer to free some memory :)
 		logger::clear();
-		return true;
+
+	    return true;
 	}
 
 	return false;

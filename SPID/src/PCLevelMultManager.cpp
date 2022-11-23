@@ -41,13 +41,11 @@ namespace PCLevelMult
 
 					currentPlayerID = newPlayerID;
 
-					if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-						for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
-							if (npc && npc->HasPCLevelMult()) {
-								Distribute::Distribute(NPCData{ npc }, Input{ npc, true, false });
-							}
+					Distribute::InGame([&](const RE::NiPointer<RE::Actor>& a_actorPtr) {
+						if (const auto npc = a_actorPtr->GetActorBase(); npc && npc->HasPCLevelMult()) {
+							Distribute::Distribute(NPCData{ npc }, Input{ npc, true, false });
 						}
-					}
+					});
 				} else if (oldPlayerID != newPlayerID) {
 					remap_player_ids(oldPlayerID, newPlayerID);
 				}

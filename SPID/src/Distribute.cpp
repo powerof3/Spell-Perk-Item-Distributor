@@ -132,7 +132,7 @@ namespace Distribute
 		});
 	}
 
-	void ApplyToNPCs()
+	void OnInit()
 	{
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			std::size_t totalNPCs = 0;
@@ -165,6 +165,21 @@ namespace Distribute
 			list_result(RECORD::kFaction, Forms::factions);
 			list_result(RECORD::kSleepOutfit, Forms::sleepOutfits);
 			list_result(RECORD::kSkin, Forms::skins);
+		}
+	}
+
+	void InGame(std::function<void(const RE::NiPointer<RE::Actor>&)> a_callback)
+	{
+		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
+			for (auto& list : processLists->allProcesses) {
+				if (list) {
+					for (auto& handle : *list) {
+						if (auto actorPtr = handle.get()) {
+							a_callback(actorPtr);
+						}
+					}
+				}
+			}
 		}
 	}
 }

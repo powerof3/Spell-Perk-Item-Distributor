@@ -11,7 +11,7 @@ namespace Distribute
 		const NPCData& a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input& a_input,
-		std::function<bool(Form*, IdxOrCount&)> a_fn)
+		std::function<bool(Form*, IdxOrCount&)> a_callback)
 	{
 		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
 
@@ -34,7 +34,7 @@ namespace Distribute
 				continue;
 			}
 
-			if (a_fn(form, idxOrCount)) {
+			if (a_callback(form, idxOrCount)) {
 				pcLevelMultManager->InsertDistributedEntry(a_input, distributedFormID, idxOrCount);
 				++npcCount;
 			}
@@ -122,5 +122,9 @@ namespace Distribute
 
 	void Distribute(const NPCData& a_npcData, const PCLevelMult::Input& a_input);
 
-	void ApplyToNPCs();
+	// Distribute to all unique and static NPCs, after data load
+    void OnInit();
+
+	// Distribute to all actors in each processList, when in game
+	void InGame(std::function<void(const RE::NiPointer<RE::Actor>&)> a_callback);
 }
