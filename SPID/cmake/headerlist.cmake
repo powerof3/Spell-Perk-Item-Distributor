@@ -2,6 +2,7 @@ set(headers ${headers}
 	include/Cache.h
 	include/Defs.h
 	include/Distribute.h
+	include/DistributeManager.h
 	include/DistributePCLevelMult.h
 	include/KeywordDependencies.h
 	include/LogBuffer.h
