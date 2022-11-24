@@ -3,19 +3,31 @@
 namespace NPC
 {
 	Data::Data(RE::TESNPC* a_npc) :
-		npc(a_npc)
+		npc(a_npc),
+		formID(a_npc->GetFormID()),
+		name(a_npc->GetName()),
+		originalEDID(Cache::EditorID::GetEditorID(npc)),
+		level(a_npc->GetLevel()),
+		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
 	{}
 
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
-		npc(a_npc)
+		npc(a_npc),
+		name(a_npc->GetName()),
+		level(a_npc->GetLevel()),
+		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
 	{
-		if (const auto extraLvlCreature = a_actor ? a_actor->extraList.GetByType<RE::ExtraLeveledCreature>() : nullptr) {
-			if (extraLvlCreature->originalBase) {
-				originalBase = extraLvlCreature->originalBase;
+		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
+			if (const auto originalBase = extraLvlCreature->originalBase) {
+				originalEDID = Cache::EditorID::GetEditorID(originalBase);
 			}
-			if (extraLvlCreature->templateBase) {
-				templateBase = extraLvlCreature->templateBase;
+			if (const auto templateBase = extraLvlCreature->templateBase) {
+				formID = templateBase->GetFormID();
+				templateEDID = Cache::EditorID::GetEditorID(templateBase);
 			}
+		} else {
+			formID = a_npc->GetFormID();
+			originalEDID = Cache::EditorID::GetEditorID(npc);
 		}
 	}
 
@@ -24,22 +36,28 @@ namespace NPC
 		return npc;
 	}
 
-	std::string Data::GetName() const
-	{
-		return npc->GetName();
-	}
-
 	RE::FormID Data::GetFormID() const
 	{
-		return originalBase ? originalBase->GetFormID() : npc->GetFormID();
+		return formID;
+	}
+
+	std::string Data::GetName() const
+	{
+		return name;
 	}
 
 	std::pair<std::string, std::string> Data::GetEditorID() const
 	{
-		if (!originalBase || !templateBase) {
-			return { Cache::EditorID::GetEditorID(npc), std::string() };
-		}
+		return { originalEDID, templateEDID };
+	}
 
-		return { Cache::EditorID::GetEditorID(originalBase), Cache::EditorID::GetEditorID(templateBase) };
+	std::uint16_t Data::GetLevel() const
+	{
+		return level;
+	}
+
+	bool Data::IsChild() const
+	{
+		return child;
 	}
 }

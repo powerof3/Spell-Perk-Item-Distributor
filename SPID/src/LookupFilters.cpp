@@ -196,10 +196,10 @@ namespace Filter
 		return Result::kPass;
 	}
 
-	Result Data::passed_secondary_filters(const RE::TESNPC* a_npc) const
+	Result Data::passed_secondary_filters(const NPCData& a_npcData) const
 	{
 	    auto& [actorMin, actorMax] = level.first;
-		const auto actorLevel = a_npc->GetLevel();
+		const auto actorLevel = a_npcData.GetLevel();
 
 		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
 			if (actorLevel < actorMin || actorLevel > actorMax) {
@@ -211,10 +211,12 @@ namespace Filter
 			return Result::kFail;
 		}
 
+		const auto npc = a_npcData.GetNPC();
+
 		for (auto& [skillType, skill] : level.second) {
 			auto& [skillMin, skillMax] = skill;
 
-			const auto skillLevel = a_npc->playerSkills.values[skillType];
+			const auto skillLevel = npc->playerSkills.values[skillType];
 
 			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
 				if (skillLevel < skillMin || skillLevel > skillMax) {
@@ -227,16 +229,16 @@ namespace Filter
 			}
 		}
 
-		if (traits.sex && a_npc->GetSex() != *traits.sex) {
+		if (traits.sex && npc->GetSex() != *traits.sex) {
 			return Result::kFail;
 		}
-		if (traits.unique && a_npc->IsUnique() != *traits.unique) {
+		if (traits.unique && npc->IsUnique() != *traits.unique) {
 			return Result::kFail;
 		}
-		if (traits.summonable && a_npc->IsSummonable() != *traits.summonable) {
+		if (traits.summonable && npc->IsSummonable() != *traits.summonable) {
 			return Result::kFail;
 		}
-		if (traits.child && (a_npc->race && a_npc->race->IsChildRace()) != *traits.child) {
+		if (traits.child && a_npcData.IsChild() != *traits.child) {
 			return Result::kFail;
 		}
 
@@ -268,20 +270,20 @@ namespace Filter
 
 	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
 	{
-		if (passed_string_filters(a_npcData) == Result::kFail) {
-			return Result::kFail;
+	    if (passed_string_filters(a_npcData) == Result::kFail) {
+			return Result::kPass;
 		}
 
 		if (passed_form_filters(a_npcData) == Result::kFail) {
 			return Result::kFail;
-		}
+		} 
 
 		const auto npc = a_npcData.GetNPC();
 
 		if (a_noPlayerLevelDistribution && HasLevelFilters() && npc->HasPCLevelMult()) {
 			return Result::kFail;
-		}
+		} 
 
-		return passed_secondary_filters(npc);
+		return passed_secondary_filters(a_npcData);
 	}
 }

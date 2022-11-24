@@ -9,17 +9,21 @@ namespace NPC
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
-		[[nodiscard]] std::string GetName() const;
+
 		[[nodiscard]] RE::FormID GetFormID() const;
+		[[nodiscard]] std::string GetName() const;
 		[[nodiscard]] std::pair<std::string, std::string> GetEditorID() const;
+		[[nodiscard]] std::uint16_t GetLevel() const;
+		[[nodiscard]] bool IsChild() const;
 
 	private:
-		// final generated NPC
 		RE::TESNPC* npc;
-		// base placed in world
-		RE::TESActorBase* originalBase{ nullptr };
-		// base resolved at runtime
-		RE::TESActorBase* templateBase{ nullptr };
+		RE::FormID formID;
+		std::string name;
+		std::string originalEDID;
+		std::string templateEDID;
+		std::uint16_t level;
+		bool child;
 	};
 }
 

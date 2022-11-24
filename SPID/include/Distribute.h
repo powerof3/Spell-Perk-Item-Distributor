@@ -9,7 +9,11 @@ namespace Distribute
 	namespace detail
 	{
 		template <class Form>
-		bool passed_filters(const NPCData& a_npcData, const PCLevelMult::Input& a_input, Forms::Data<Form>& a_formData, std::uint32_t idx)
+		bool passed_filters(
+			[[maybe_unused]] const NPCData& a_npcData, 
+			[[maybe_unused]] const PCLevelMult::Input& a_input, 
+			[[maybe_unused]] Forms::Data<Form>& a_formData, 
+			[[maybe_unused]] std::uint32_t idx)
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 
@@ -25,7 +29,6 @@ namespace Distribute
 				}
 				return false;
 			}
-
 			return true;
 		}
 
@@ -92,7 +95,7 @@ namespace Distribute
 		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
 
 		std::uint32_t vecIdx = 0;
-		for (auto& formData : vec | std::views::reverse) { //iterate from last inserted config (Zzz -> Aaaa)
+		for (auto& formData : vec | std::views::reverse) {  //iterate from last inserted config (Zzz -> Aaaa)
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
 				auto form = formData.form;

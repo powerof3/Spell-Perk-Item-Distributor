@@ -49,7 +49,7 @@ namespace Filter
 	private:
 		[[nodiscard]] Result passed_string_filters(const NPC::Data& a_npcData) const;
 		[[nodiscard]] Result passed_form_filters(const NPC::Data& a_npcData) const;
-		[[nodiscard]] Result passed_secondary_filters(const RE::TESNPC* a_npc) const;
+		[[nodiscard]] Result passed_secondary_filters(const NPC::Data& a_npcData) const;
 	};
 }
 
