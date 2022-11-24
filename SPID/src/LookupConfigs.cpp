@@ -102,11 +102,13 @@ namespace INI
 			//LEVEL
 			ActorLevel actorLevelPair{ UINT16_MAX, UINT16_MAX };
 			std::vector<SkillLevel> skillLevelPairs;
+			std::vector<SkillLevel> skillWeightPairs;
 			if (kLevel < size) {
 				auto split_levels = distribution::split_entry(sections[kLevel]);
 				for (auto& levels : split_levels) {
 					if (levels.contains('(')) {
 						//skill(min/max)
+						const auto isWeightFilter = levels.starts_with('w');
 						auto sanitizedLevel = string::remove_non_alphanumeric(levels);
 						auto skills = string::split(sanitizedLevel, " ");
 						//skill min max
@@ -115,10 +117,18 @@ namespace INI
 								auto minLevel = string::to_num<std::uint8_t>(skills[1]);
 								if (skills.size() > 2) {
 									auto maxLevel = string::to_num<std::uint8_t>(skills[2]);
-
-									skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
+									if (isWeightFilter) {
+										skillWeightPairs.push_back({ type, { minLevel, maxLevel } });
+									} else {
+										skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
+									}
 								} else {
-									skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
+									if (isWeightFilter) {
+										// Single value is treated as exact match.
+										skillWeightPairs.push_back({ type, { minLevel, minLevel } });
+									} else {
+										skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
+									}
 								}
 							}
 						}
@@ -136,7 +146,7 @@ namespace INI
 					}
 				}
 			}
-			data.levelFilters = LevelFilters{ actorLevelPair, skillLevelPairs };
+			data.levelFilters = LevelFilters{ actorLevelPair, skillLevelPairs, skillWeightPairs };
 
 			//TRAITS
 			if (kTraits < size) {

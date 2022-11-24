@@ -198,7 +198,9 @@ namespace Filter
 
 	Result Data::passed_secondary_filters(const RE::TESNPC* a_npc) const
 	{
-	    auto& [actorMin, actorMax] = level.first;
+
+		// Atcor Level
+		auto& [actorMin, actorMax] = std::get<0>(level);
 		const auto actorLevel = a_npc->GetLevel();
 
 		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
@@ -211,7 +213,8 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		for (auto& [skillType, skill] : level.second) {
+		// Skill Level
+		for (auto& [skillType, skill] : std::get<1>(level)) {
 			auto& [skillMin, skillMax] = skill;
 
 			const auto skillLevel = a_npc->playerSkills.values[skillType];
@@ -224,6 +227,84 @@ namespace Filter
 				return Result::kFail;
 			} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
 				return Result::kFail;
+			}
+		}
+
+		// Skill Weight
+		for (auto& [skillType, skill] : std::get<2>(level)) {
+			auto& [skillMin, skillMax] = skill;
+
+			if (skillType < 18) {
+				std::uint8_t skillWeight = a_npc->npcClass->data.skillWeights.oneHanded;
+				using Skill = RE::TESNPC::Skills;
+				switch (skillType) {
+				case Skill::kOneHanded:
+					skillWeight = a_npc->npcClass->data.skillWeights.oneHanded;
+					break;
+				case Skill::kTwoHanded:
+					skillWeight = a_npc->npcClass->data.skillWeights.twoHanded;
+					break;
+				case Skill::kMarksman:
+					skillWeight = a_npc->npcClass->data.skillWeights.archery;
+					break;
+				case Skill::kBlock:
+					skillWeight = a_npc->npcClass->data.skillWeights.block;
+					break;
+				case Skill::kSmithing:
+					skillWeight = a_npc->npcClass->data.skillWeights.smithing;
+					break;
+				case Skill::kHeavyArmor:
+					skillWeight = a_npc->npcClass->data.skillWeights.heavyArmor;
+					break;
+				case Skill::kLightArmor:
+					skillWeight = a_npc->npcClass->data.skillWeights.lightArmor;
+					break;
+				case Skill::kPickpocket:
+					skillWeight = a_npc->npcClass->data.skillWeights.pickpocket;
+					break;
+				case Skill::kLockpicking:
+					skillWeight = a_npc->npcClass->data.skillWeights.lockpicking;
+					break;
+				case Skill::kSneak:
+					skillWeight = a_npc->npcClass->data.skillWeights.sneak;
+					break;
+				case Skill::kAlchemy:
+					skillWeight = a_npc->npcClass->data.skillWeights.alchemy;
+					break;
+				case Skill::kSpecchcraft:
+					skillWeight = a_npc->npcClass->data.skillWeights.speech;
+					break;
+				case Skill::kAlteration:
+					skillWeight = a_npc->npcClass->data.skillWeights.alteration;
+					break;
+				case Skill::kConjuration:
+					skillWeight = a_npc->npcClass->data.skillWeights.conjuration;
+					break;
+				case Skill::kDestruction:
+					skillWeight = a_npc->npcClass->data.skillWeights.destruction;
+					break;
+				case Skill::kIllusion:
+					skillWeight = a_npc->npcClass->data.skillWeights.illusion;
+					break;
+				case Skill::kRestoration:
+					skillWeight = a_npc->npcClass->data.skillWeights.restoration;
+					break;
+				case Skill::kEnchanting:
+					skillWeight = a_npc->npcClass->data.skillWeights.enchanting;
+					break;
+				default:
+					continue;
+				}
+
+				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+					if (skillWeight < skillMin || skillWeight > skillMax) {
+						return Result::kFail;
+					}
+				} else if (skillMin < UINT8_MAX && skillWeight < skillMin) {
+					return Result::kFail;
+				} else if (skillMax < UINT8_MAX && skillWeight > skillMax) {
+					return Result::kFail;
+				}
 			}
 		}
 
@@ -251,7 +332,7 @@ namespace Filter
 
 	bool Data::HasLevelFilters() const
 	{
-		const auto& [actorLevelPair, skillLevelPairs] = level;
+		const auto& [actorLevelPair, skillLevelPairs, _] = level;
 
 		auto& [actorMin, actorMax] = actorLevelPair;
 		if (actorMin < UINT16_MAX || actorMax < UINT16_MAX) {
