@@ -42,13 +42,12 @@ namespace PCLevelMult
 
 					currentPlayerID = newPlayerID;
 
-					if (const auto processLists = RE::ProcessLists::GetSingleton()) {
-						processLists->ForAllActors([&](RE::Actor& a_actor) {
-							if (const auto npc = a_actor.GetActorBase(); npc && npc->HasPCLevelMult()) {
-								Distribute::Distribute(NPCData{ &a_actor, npc }, Input{ &a_actor, npc, true, false });
+					if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+						for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
+							if (npc && !npc->IsPlayer() && npc->HasPCLevelMult()) {
+								Distribute::Distribute(NPCData{ npc }, Input{ npc, true, false });
 							}
-							return RE::BSContainer::ForEachResult::kContinue;
-						});
+						}
 					}
 				} else if (oldPlayerID != newPlayerID) {
 					remap_player_ids(oldPlayerID, newPlayerID);

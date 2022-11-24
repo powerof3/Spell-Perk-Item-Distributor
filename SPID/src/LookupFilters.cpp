@@ -135,16 +135,16 @@ namespace Filter
 
 		if (!strings.MATCH.empty()) {
 			bool result = false;
-			if (!name.empty() && detail::name::matches(name, strings.MATCH)) {
+			if (detail::keyword::matches(a_npcData.GetNPC(), strings.MATCH)) {
+				result = true;
+			}
+			if (!result && !name.empty() && detail::name::matches(name, strings.MATCH)) {
 				result = true;
 			}
 			if (!result && !originalEDID.empty() && detail::name::matches(originalEDID, strings.MATCH)) {
 				result = true;
 			}
 			if (!result && !templateEDID.empty() && detail::name::matches(templateEDID, strings.MATCH)) {
-				result = true;
-			}
-			if (!result && detail::keyword::matches(a_npcData.GetNPC(), strings.MATCH)) {
 				result = true;
 			}
 			if (!result) {
