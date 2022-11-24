@@ -270,19 +270,19 @@ namespace Filter
 
 	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
 	{
-	    if (passed_string_filters(a_npcData) == Result::kFail) {
-			return Result::kPass;
+		if (passed_string_filters(a_npcData) == Result::kFail) {
+			return Result::kFail;
 		}
 
 		if (passed_form_filters(a_npcData) == Result::kFail) {
 			return Result::kFail;
-		} 
+		}
 
 		const auto npc = a_npcData.GetNPC();
 
 		if (a_noPlayerLevelDistribution && HasLevelFilters() && npc->HasPCLevelMult()) {
 			return Result::kFail;
-		} 
+		}
 
 		return passed_secondary_filters(a_npcData);
 	}
