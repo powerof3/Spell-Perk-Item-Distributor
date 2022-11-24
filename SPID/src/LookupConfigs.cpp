@@ -110,6 +110,9 @@ namespace INI
 						//skill(min/max)
 						const auto isWeightFilter = levels.starts_with('w');
 						auto sanitizedLevel = string::remove_non_alphanumeric(levels);
+						if (isWeightFilter) {
+							sanitizedLevel.erase(0, 1);
+						}
 						auto skills = string::split(sanitizedLevel, " ");
 						//skill min max
 						if (!skills.empty()) {
