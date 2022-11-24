@@ -1,5 +1,10 @@
 #pragma once
 
+template <class K, class D>
+using Map = robin_hood::unordered_flat_map<K, D>;
+template <class K>
+using Set = robin_hood::unordered_flat_set<K>;
+
 // Record = FormOrEditorID|StringFilters|RawFormFilters|LevelFilters|Traits|IdxOrCount|Chance
 
 using FormModPair = std::pair<

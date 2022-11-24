@@ -23,16 +23,6 @@ namespace Filter
 			static bool get_type(RE::TESNPC* a_npc, RE::TESForm* a_filter);
 			static bool matches(RE::TESNPC* a_npc, RE::FormID a_formID, const FormVec& a_forms, bool a_matchesAll = false);
 		};
-		struct name
-		{
-			static bool contains(const std::string& a_name, const StringVec& a_strings);
-			static bool matches(const std::string& a_name, const StringVec& a_strings);
-		};
-		struct keyword
-		{
-			static bool contains(RE::TESNPC* a_npc, const StringVec& a_strings);
-			static bool matches(RE::TESNPC* a_npc, const StringVec& a_strings, bool a_matchesAll = false);
-		};
 	}
 
 	struct Data
