@@ -98,6 +98,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			if (shouldLookupForms) {
 				if (kid == nullptr) {
 					logger::info("{:*^50}", "LOOKUP");
+					logger::info("Starting distribution...");
 					DoDistribute();
 				}
 				logger::info("{:*^50}", "EVENTS");
