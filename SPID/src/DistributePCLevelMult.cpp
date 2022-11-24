@@ -9,9 +9,7 @@ namespace Distribute::PlayerLeveledActor
 		static void thunk(RE::Actor* a_actor)
 		{
 			if (const auto npc = a_actor->GetActorBase()) {
-				const auto input = npc->IsDynamicForm() ? PCLevelMult::Input{ a_actor, npc, true, false } :  // use character formID for permanent storage
-				                                          PCLevelMult::Input{ npc, true, false };
-				Distribute(NPCData{ a_actor, npc }, input);
+				Distribute(NPCData{ a_actor, npc }, PCLevelMult::Input{ a_actor, npc, true, false });
 			}
 
 			func(a_actor);

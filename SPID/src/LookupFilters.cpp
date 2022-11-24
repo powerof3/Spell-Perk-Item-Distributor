@@ -209,18 +209,16 @@ namespace Filter
 		for (auto& [skillType, skill] : level.second) {
 			auto& [skillMin, skillMax] = skill;
 
-			if (skillType < 18) {
-				const auto skillLevel = a_npcData.GetNPC()->playerSkills.values[skillType];
+			const auto skillLevel = a_npcData.GetNPC()->playerSkills.values[skillType];
 
-				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-					if (skillLevel < skillMin || skillLevel > skillMax) {
-						return Result::kFail;
-					}
-				} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
-					return Result::kFail;
-				} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+				if (skillLevel < skillMin || skillLevel > skillMax) {
 					return Result::kFail;
 				}
+			} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
+				return Result::kFail;
+			} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+				return Result::kFail;
 			}
 		}
 
@@ -259,7 +257,7 @@ namespace Filter
 			auto& [skillType, skill] = skillPair;
 			auto& [skillMin, skillMax] = skill;
 
-			return skillType < 18 && (skillMin < UINT8_MAX || skillMax < UINT8_MAX);
+			return skillMin < UINT8_MAX || skillMax < UINT8_MAX;
 		});
 	}
 

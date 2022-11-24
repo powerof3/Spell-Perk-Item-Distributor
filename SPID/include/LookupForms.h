@@ -155,6 +155,8 @@ namespace Lookup
 
 		logger::info("\tStarting {} lookup", a_type);
 
+		a_formDataVec.reserve(a_INIDataVec.size());
+
 		for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 			Form* form = nullptr;
 

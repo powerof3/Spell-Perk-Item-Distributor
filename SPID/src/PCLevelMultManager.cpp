@@ -19,7 +19,7 @@ namespace PCLevelMult
 		onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
 		noPlayerLevelDistribution(a_noPlayerLevelDistribution)
 	{
-		npcFormID = a_base->IsDynamicForm() ? a_character->GetFormID() : a_base->GetFormID();
+		npcFormID = a_base->IsDynamicForm() ? a_character->GetFormID() : a_base->GetFormID(); // use character formID for permanent storage
 	}
 
 	void Manager::Register()

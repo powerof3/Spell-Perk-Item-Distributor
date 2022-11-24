@@ -111,24 +111,21 @@ namespace INI
 						auto skills = string::split(sanitizedLevel, " ");
 						//skill min max
 						if (!skills.empty()) {
-							if (skills.size() > 2) {
-								auto type = string::to_num<std::uint32_t>(skills[0]);
+							if (auto type = string::to_num<std::uint32_t>(skills[0]); type < 18) {
 								auto minLevel = string::to_num<std::uint8_t>(skills[1]);
-								auto maxLevel = string::to_num<std::uint8_t>(skills[2]);
+								if (skills.size() > 2) {
+									auto maxLevel = string::to_num<std::uint8_t>(skills[2]);
 
-								skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
-							} else {
-								auto type = string::to_num<std::uint32_t>(skills[0]);
-								auto minLevel = string::to_num<std::uint8_t>(skills[1]);
-
-								skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
+									skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
+								} else {
+									skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
+								}
 							}
 						}
 					} else {
-						auto split_level = string::split(levels, "/");
-						if (split_level.size() > 1) {
-							auto minLevel = string::to_num<std::uint16_t>(split_level[0]);
-							auto maxLevel = string::to_num<std::uint16_t>(split_level[1]);
+                        if (auto actor_level = string::split(levels, "/"); actor_level.size() > 1) {
+							auto minLevel = string::to_num<std::uint16_t>(actor_level[0]);
+							auto maxLevel = string::to_num<std::uint16_t>(actor_level[1]);
 
 							actorLevelPair = { minLevel, maxLevel };
 						} else {

@@ -15,6 +15,10 @@ namespace Distribute
 	{
 		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
 
+	    if (vec.empty()) {
+			return;
+		}
+
 		const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 
 		for (std::uint32_t idx = 0; auto& formData : vec) {
