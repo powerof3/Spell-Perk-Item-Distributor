@@ -21,7 +21,7 @@ namespace Filter
 		struct form
 		{
 			static bool get_type(RE::TESNPC* a_npc, RE::TESForm* a_filter);
-			static bool matches(const NPC::Data& a_npcData, const FormVec& a_forms, bool a_matchesAll = false);
+			static bool matches(RE::TESNPC* a_npc, RE::FormID a_formID, const FormVec& a_forms, bool a_matchesAll = false);
 		};
 		struct name
 		{
@@ -49,7 +49,7 @@ namespace Filter
 	private:
 		[[nodiscard]] Result passed_string_filters(const NPC::Data& a_npcData) const;
 		[[nodiscard]] Result passed_form_filters(const NPC::Data& a_npcData) const;
-		[[nodiscard]] Result passed_secondary_filters(const NPC::Data& a_npcData) const;
+		[[nodiscard]] Result passed_secondary_filters(const RE::TESNPC* a_npc) const;
 	};
 }
 

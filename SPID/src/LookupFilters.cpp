@@ -83,35 +83,37 @@ namespace Filter
 			}
 		}
 
-		bool form::matches(const NPCData& a_npcData, const FormVec& a_forms, bool a_matchesAll)
+		bool form::matches(RE::TESNPC* a_npc, RE::FormID a_formID, const FormVec& a_forms, bool a_matchesAll)
 		{
-			const auto has_form_or_file = [&](const std::variant<RE::TESForm*, const RE::TESFile*>& a_formFile) {
+			constexpr auto has_form_or_file = [](const std::variant<RE::TESForm*, const RE::TESFile*>& a_formFile, RE::TESNPC* a_npc, RE::FormID a_formID) {
 				if (std::holds_alternative<RE::TESForm*>(a_formFile)) {
-					auto form = std::get<RE::TESForm*>(a_formFile);
-					return form && get_type(a_npcData.GetNPC(), form);
+                    const auto form = std::get<RE::TESForm*>(a_formFile);
+					return form && get_type(a_npc, form);
 				}
 				if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
-					auto file = std::get<const RE::TESFile*>(a_formFile);
-					return file && file->IsFormInMod(a_npcData.GetFormID());
+                    const auto file = std::get<const RE::TESFile*>(a_formFile);
+					return file && file->IsFormInMod(a_formID);
 				}
 				return false;
 			};
 
 			if (a_matchesAll) {
-				return std::ranges::all_of(a_forms, has_form_or_file);
+				return std::ranges::all_of(a_forms, [&](const auto& formOrFile) { return has_form_or_file(formOrFile, a_npc, a_formID); });
 			} else {
-				return std::ranges::any_of(a_forms, has_form_or_file);
+				return std::ranges::any_of(a_forms, [&](const auto& formOrFile) { return has_form_or_file(formOrFile, a_npc, a_formID); });
 			}
 		}
 	}
 
 	Result Data::passed_string_filters(const NPCData& a_npcData) const
 	{
-		if (!strings.ALL.empty() && !detail::keyword::matches(a_npcData.GetNPC(), strings.ALL, true)) {
+		const auto npc = a_npcData.GetNPC();
+
+	    if (!strings.ALL.empty() && !detail::keyword::matches(npc, strings.ALL, true)) {
 			return Result::kFail;
 		}
 
-		const std::string name = a_npcData.GetName();
+	    const auto name = a_npcData.GetName();
 		const auto& [originalEDID, templateEDID] = a_npcData.GetEditorID();
 
 		if (!strings.NOT.empty()) {
@@ -125,7 +127,7 @@ namespace Filter
 			if (!result && !templateEDID.empty() && detail::name::matches(templateEDID, strings.NOT)) {
 				result = true;
 			}
-			if (!result && detail::keyword::matches(a_npcData.GetNPC(), strings.NOT)) {
+			if (!result && detail::keyword::matches(npc, strings.NOT)) {
 				result = true;
 			}
 			if (result) {
@@ -135,7 +137,7 @@ namespace Filter
 
 		if (!strings.MATCH.empty()) {
 			bool result = false;
-			if (detail::keyword::matches(a_npcData.GetNPC(), strings.MATCH)) {
+			if (detail::keyword::matches(npc, strings.MATCH)) {
 				result = true;
 			}
 			if (!result && !name.empty() && detail::name::matches(name, strings.MATCH)) {
@@ -163,7 +165,7 @@ namespace Filter
 			if (!result && !templateEDID.empty() && detail::name::contains(templateEDID, strings.ANY)) {
 				result = true;
 			}
-			if (!result && detail::keyword::contains(a_npcData.GetNPC(), strings.ANY)) {
+			if (!result && detail::keyword::contains(npc, strings.ANY)) {
 				result = true;
 			}
 			if (!result) {
@@ -176,25 +178,28 @@ namespace Filter
 
 	Result Data::passed_form_filters(const NPCData& a_npcData) const
 	{
-		if (!forms.ALL.empty() && !detail::form::matches(a_npcData, forms.ALL, true)) {
+		const auto npc = a_npcData.GetNPC();
+		const auto formID = a_npcData.GetFormID();
+
+	    if (!forms.ALL.empty() && !detail::form::matches(npc, formID, forms.ALL, true)) {
 			return Result::kFail;
 		}
 
-		if (!forms.NOT.empty() && detail::form::matches(a_npcData, forms.NOT)) {
+		if (!forms.NOT.empty() && detail::form::matches(npc, formID, forms.NOT)) {
 			return Result::kFail;
 		}
 
-		if (!forms.MATCH.empty() && !detail::form::matches(a_npcData, forms.MATCH)) {
+		if (!forms.MATCH.empty() && !detail::form::matches(npc, formID, forms.MATCH)) {
 			return Result::kFail;
 		}
 
 		return Result::kPass;
 	}
 
-	Result Data::passed_secondary_filters(const NPCData& a_npcData) const
+	Result Data::passed_secondary_filters(const RE::TESNPC* a_npc) const
 	{
-		auto& [actorMin, actorMax] = level.first;
-		const auto actorLevel = a_npcData.GetNPC()->GetLevel();
+	    auto& [actorMin, actorMax] = level.first;
+		const auto actorLevel = a_npc->GetLevel();
 
 		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
 			if (actorLevel < actorMin || actorLevel > actorMax) {
@@ -209,7 +214,7 @@ namespace Filter
 		for (auto& [skillType, skill] : level.second) {
 			auto& [skillMin, skillMax] = skill;
 
-			const auto skillLevel = a_npcData.GetNPC()->playerSkills.values[skillType];
+			const auto skillLevel = a_npc->playerSkills.values[skillType];
 
 			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
 				if (skillLevel < skillMin || skillLevel > skillMax) {
@@ -222,16 +227,16 @@ namespace Filter
 			}
 		}
 
-		if (traits.sex && a_npcData.GetNPC()->GetSex() != *traits.sex) {
+		if (traits.sex && a_npc->GetSex() != *traits.sex) {
 			return Result::kFail;
 		}
-		if (traits.unique && a_npcData.GetNPC()->IsUnique() != *traits.unique) {
+		if (traits.unique && a_npc->IsUnique() != *traits.unique) {
 			return Result::kFail;
 		}
-		if (traits.summonable && a_npcData.GetNPC()->IsSummonable() != *traits.summonable) {
+		if (traits.summonable && a_npc->IsSummonable() != *traits.summonable) {
 			return Result::kFail;
 		}
-		if (traits.child && (a_npcData.GetNPC()->race && a_npcData.GetNPC()->race->IsChildRace()) != *traits.child) {
+		if (traits.child && (a_npc->race && a_npc->race->IsChildRace()) != *traits.child) {
 			return Result::kFail;
 		}
 
@@ -271,10 +276,12 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		if (a_noPlayerLevelDistribution && HasLevelFilters() && a_npcData.GetNPC()->HasPCLevelMult()) {
+		const auto npc = a_npcData.GetNPC();
+
+		if (a_noPlayerLevelDistribution && HasLevelFilters() && npc->HasPCLevelMult()) {
 			return Result::kFail;
 		}
 
-		return passed_secondary_filters(a_npcData);
+		return passed_secondary_filters(npc);
 	}
 }

@@ -14,45 +14,47 @@ namespace Distribute
 			return;
 		}
 
+		const auto npc = a_npcData.GetNPC();
+
 		for_each_form<RE::BGSKeyword>(a_npcData, Forms::keywords, a_input, [&](auto* a_keyword, [[maybe_unused]] IdxOrCount a_count) {
-			return a_npcData.GetNPC()->AddKeyword(a_keyword);
+			return npc->AddKeyword(a_keyword);
 		});
 
 		for_each_form<RE::TESFaction>(a_npcData, Forms::factions, a_input, [&](auto* a_faction, [[maybe_unused]] IdxOrCount a_count) {
-			if (!a_npcData.GetNPC()->IsInFaction(a_faction)) {
+			if (!npc->IsInFaction(a_faction)) {
 				const RE::FACTION_RANK faction{ a_faction, 1 };
-				a_npcData.GetNPC()->factions.push_back(faction);
+				npc->factions.push_back(faction);
 				return true;
 			}
 			return false;
 		});
 
 		for_each_form<RE::BGSPerk>(a_npcData, Forms::perks, a_input, [&](auto* a_perk, [[maybe_unused]] IdxOrCount a_count) {
-			return a_npcData.GetNPC()->AddPerk(a_perk, 1);
+			return npc->AddPerk(a_perk, 1);
 		});
 
 		for_each_form<RE::SpellItem>(a_npcData, Forms::spells, a_input, [&](auto* a_spell, [[maybe_unused]] IdxOrCount a_count) {
-			const auto actorEffects = a_npcData.GetNPC()->GetSpellList();
+			const auto actorEffects = npc->GetSpellList();
 			return actorEffects && actorEffects->AddSpell(a_spell);
 		});
 
 		for_each_form<RE::TESShout>(a_npcData, Forms::shouts, a_input, [&](auto* a_shout, [[maybe_unused]] IdxOrCount a_count) {
-			const auto actorEffects = a_npcData.GetNPC()->GetSpellList();
+			const auto actorEffects = npc->GetSpellList();
 			return actorEffects && actorEffects->AddShout(a_shout);
 		});
 
 		for_each_form<RE::TESLevSpell>(a_npcData, Forms::levSpells, a_input, [&](auto* a_levSpell, [[maybe_unused]] IdxOrCount a_count) {
-			const auto actorEffects = a_npcData.GetNPC()->GetSpellList();
+			const auto actorEffects = npc->GetSpellList();
 			return actorEffects && actorEffects->AddLevSpell(a_levSpell);
 		});
 
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](auto* a_item, IdxOrCount a_count) {
-			return a_npcData.GetNPC()->AddObjectToContainer(a_item, a_count, a_npcData.GetNPC());
+			return npc->AddObjectToContainer(a_item, a_count, a_npcData.GetNPC());
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
-			if (a_npcData.GetNPC()->defaultOutfit != a_outfit) {
-				a_npcData.GetNPC()->defaultOutfit = a_outfit;
+			if (npc->defaultOutfit != a_outfit) {
+				npc->defaultOutfit = a_outfit;
 				return true;
 			}
 			return false;
@@ -68,7 +70,7 @@ namespace Distribute
 					--packageIdx;  //get actual position we want to insert at
 				}
 
-				auto& packageList = a_npcData.GetNPC()->aiPackages.packages;
+				auto& packageList = npc->aiPackages.packages;
 				if (std::ranges::find(packageList, package) == packageList.end()) {
 					if (packageList.empty() || packageIdx == 0) {
 						packageList.push_front(package);
@@ -91,19 +93,19 @@ namespace Distribute
 
 				switch (packageIdx) {
 				case 0:
-					a_npcData.GetNPC()->defaultPackList = packageList;
+					npc->defaultPackList = packageList;
 					break;
 				case 1:
-					a_npcData.GetNPC()->spectatorOverRidePackList = packageList;
+					npc->spectatorOverRidePackList = packageList;
 					break;
 				case 2:
-					a_npcData.GetNPC()->observeCorpseOverRidePackList = packageList;
+					npc->observeCorpseOverRidePackList = packageList;
 					break;
 				case 3:
-					a_npcData.GetNPC()->guardWarnOverRidePackList = packageList;
+					npc->guardWarnOverRidePackList = packageList;
 					break;
 				case 4:
-					a_npcData.GetNPC()->enterCombatOverRidePackList = packageList;
+					npc->enterCombatOverRidePackList = packageList;
 					break;
 				default:
 					break;
@@ -116,16 +118,16 @@ namespace Distribute
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit, [[maybe_unused]] IdxOrCount a_count) {
-			if (a_npcData.GetNPC()->sleepOutfit != a_outfit) {
-				a_npcData.GetNPC()->sleepOutfit = a_outfit;
+			if (npc->sleepOutfit != a_outfit) {
+				npc->sleepOutfit = a_outfit;
 				return true;
 			}
 			return false;
 		});
 
 		for_each_form<RE::TESObjectARMO>(a_npcData, Forms::skins, a_input, [&](auto* a_skin, [[maybe_unused]] IdxOrCount a_count) {
-			if (a_npcData.GetNPC()->skin != a_skin) {
-				a_npcData.GetNPC()->skin = a_skin;
+			if (npc->skin != a_skin) {
+				npc->skin = a_skin;
 				return true;
 			}
 			return false;
