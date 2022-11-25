@@ -2,21 +2,60 @@
 
 namespace NPC
 {
+	void Data::cache_keywords(RE::TESNPC* a_npc)
+	{
+		a_npc->ForEachKeyword([&](RE::BGSKeyword& a_keyword) {
+			if (const auto keywordEDID = a_keyword.GetFormEditorID(); !string::is_empty(keywordEDID)) {
+				keywords.insert(keywordEDID);
+			}
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+		if (const auto race = a_npc->GetRace()) {
+			race->ForEachKeyword([&](RE::BGSKeyword& a_keyword) {
+				if (const auto keywordEDID = a_keyword.GetFormEditorID(); !string::is_empty(keywordEDID)) {
+					keywords.insert(keywordEDID);
+				}
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
+		}
+	}
+
 	Data::Data(RE::TESNPC* a_npc) :
-		npc(a_npc)
-	{}
+		npc(a_npc),
+		formID(a_npc->GetFormID()),
+		name(a_npc->GetName()),
+		originalEDID(Cache::EditorID::GetEditorID(npc)),
+		level(a_npc->GetLevel()),
+		sex(a_npc->GetSex()),
+		unique(a_npc->IsUnique()),
+		summonable(a_npc->IsSummonable()),
+		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
+	{
+		cache_keywords(a_npc);
+	}
 
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
-		npc(a_npc)
+		npc(a_npc),
+		name(a_npc->GetName()),
+		level(a_npc->GetLevel()),
+		sex(a_npc->GetSex()),
+		unique(a_npc->IsUnique()),
+		summonable(a_npc->IsSummonable()),
+		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
 	{
-		if (const auto extraLvlCreature = a_actor ? a_actor->extraList.GetByType<RE::ExtraLeveledCreature>() : nullptr) {
-			if (extraLvlCreature->originalBase) {
-				originalBase = extraLvlCreature->originalBase;
+		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
+			if (const auto originalBase = extraLvlCreature->originalBase) {
+				originalEDID = Cache::EditorID::GetEditorID(originalBase);
 			}
-			if (extraLvlCreature->templateBase) {
-				templateBase = extraLvlCreature->templateBase;
+			if (const auto templateBase = extraLvlCreature->templateBase) {
+				formID = templateBase->GetFormID();
+				templateEDID = Cache::EditorID::GetEditorID(templateBase);
 			}
+		} else {
+			formID = a_npc->GetFormID();
+			originalEDID = Cache::EditorID::GetEditorID(npc);
 		}
+		cache_keywords(a_npc);
 	}
 
 	RE::TESNPC* Data::GetNPC() const
@@ -24,22 +63,68 @@ namespace NPC
 		return npc;
 	}
 
-	std::string Data::GetName() const
-	{
-		return npc->GetName();
-	}
-
 	RE::FormID Data::GetFormID() const
 	{
-		return originalBase ? originalBase->GetFormID() : npc->GetFormID();
+		return formID;
 	}
 
-	std::pair<std::string, std::string> Data::GetEditorID() const
+	std::uint16_t Data::GetLevel() const
 	{
-		if (!originalBase || !templateBase) {
-			return { Cache::EditorID::GetEditorID(npc), std::string() };
-		}
+		return level;
+	}
 
-		return { Cache::EditorID::GetEditorID(originalBase), Cache::EditorID::GetEditorID(templateBase) };
+    RE::SEX Data::GetSex() const
+    {
+        return sex;
+    }
+
+    bool Data::IsUnique() const
+    {
+        return unique;
+    }
+
+    bool Data::IsSummonable() const
+    {
+        return summonable;
+    }
+
+    bool Data::IsChild() const
+	{
+		return child;
+	}
+
+	bool Data::has_keyword(const std::string& a_string) const
+	{
+		return std::ranges::any_of(keywords, [&](const auto& keyword) {
+			return string::iequals(keyword, a_string);
+		});
+	}
+
+	bool Data::contains_keyword(const std::string& a_string) const
+	{
+		return std::ranges::any_of(keywords, [&](const auto& keyword) {
+			return string::icontains(keyword, a_string);
+		});
+	}
+
+	bool Data::HasStringFilter(const StringVec& a_strings) const
+	{
+		return std::ranges::any_of(a_strings, [&](const auto& str) {
+			return has_keyword(str) || string::iequals(name, str) || string::iequals(originalEDID, str) || string::iequals(templateEDID, str);
+		});
+	}
+
+	bool Data::ContainsStringFilter(const StringVec& a_strings) const
+	{
+		return std::ranges::any_of(a_strings, [&](const auto& str) {
+			return contains_keyword(str) || string::icontains(name, str) || string::icontains(originalEDID, str) || string::icontains(templateEDID, str);
+		});
+	}
+
+	bool Data::HasAllKeywords(const StringVec& a_strings) const
+	{
+		return std::ranges::all_of(a_strings, [&](const auto& str) {
+			return has_keyword(str);
+		});
 	}
 }

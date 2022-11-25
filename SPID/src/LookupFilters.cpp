@@ -5,40 +5,6 @@ namespace Filter
 {
 	namespace detail
 	{
-		bool name::contains(const std::string& a_name, const StringVec& a_strings)
-		{
-			return std::ranges::any_of(a_strings, [&](const auto& str) {
-				return string::icontains(a_name, str);
-			});
-		}
-
-		bool name::matches(const std::string& a_name, const StringVec& a_strings)
-		{
-			return std::ranges::any_of(a_strings, [&](const auto& str) {
-				return string::iequals(a_name, str);
-			});
-		}
-
-		bool keyword::contains(RE::TESNPC* a_npc, const StringVec& a_strings)
-		{
-			return std::ranges::any_of(a_strings, [&a_npc](const auto& str) {
-				return a_npc->ContainsKeyword(str);
-			});
-		}
-
-		bool keyword::matches(RE::TESNPC* a_npc, const StringVec& a_strings, bool a_matchesAll)
-		{
-			const auto has_keyword = [&](const auto& str) {
-				return a_npc->HasApplicableKeywordString(str);
-			};
-
-			if (a_matchesAll) {
-				return std::ranges::all_of(a_strings, has_keyword);
-			} else {
-				return std::ranges::any_of(a_strings, has_keyword);
-			}
-		}
-
 		bool form::get_type(RE::TESNPC* a_npc, RE::TESForm* a_filter)
 		{
 			switch (a_filter->GetFormType()) {
@@ -87,11 +53,11 @@ namespace Filter
 		{
 			constexpr auto has_form_or_file = [](const std::variant<RE::TESForm*, const RE::TESFile*>& a_formFile, RE::TESNPC* a_npc, RE::FormID a_formID) {
 				if (std::holds_alternative<RE::TESForm*>(a_formFile)) {
-                    const auto form = std::get<RE::TESForm*>(a_formFile);
+					const auto form = std::get<RE::TESForm*>(a_formFile);
 					return form && get_type(a_npc, form);
 				}
 				if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
-                    const auto file = std::get<const RE::TESFile*>(a_formFile);
+					const auto file = std::get<const RE::TESFile*>(a_formFile);
 					return file && file->IsFormInMod(a_formID);
 				}
 				return false;
@@ -107,70 +73,20 @@ namespace Filter
 
 	Result Data::passed_string_filters(const NPCData& a_npcData) const
 	{
-		const auto npc = a_npcData.GetNPC();
-
-	    if (!strings.ALL.empty() && !detail::keyword::matches(npc, strings.ALL, true)) {
+		if (!strings.ALL.empty() && !a_npcData.HasAllKeywords(strings.ALL)) {
 			return Result::kFail;
 		}
 
-	    const auto name = a_npcData.GetName();
-		const auto& [originalEDID, templateEDID] = a_npcData.GetEditorID();
-
-		if (!strings.NOT.empty()) {
-			bool result = false;
-			if (!name.empty() && detail::name::matches(name, strings.NOT)) {
-				result = true;
-			}
-			if (!result && !originalEDID.empty() && detail::name::matches(originalEDID, strings.NOT)) {
-				result = true;
-			}
-			if (!result && !templateEDID.empty() && detail::name::matches(templateEDID, strings.NOT)) {
-				result = true;
-			}
-			if (!result && detail::keyword::matches(npc, strings.NOT)) {
-				result = true;
-			}
-			if (result) {
-				return Result::kFail;
-			}
+		if (!strings.NOT.empty() && a_npcData.HasStringFilter(strings.NOT)) {
+			return Result::kFail;
 		}
 
-		if (!strings.MATCH.empty()) {
-			bool result = false;
-			if (detail::keyword::matches(npc, strings.MATCH)) {
-				result = true;
-			}
-			if (!result && !name.empty() && detail::name::matches(name, strings.MATCH)) {
-				result = true;
-			}
-			if (!result && !originalEDID.empty() && detail::name::matches(originalEDID, strings.MATCH)) {
-				result = true;
-			}
-			if (!result && !templateEDID.empty() && detail::name::matches(templateEDID, strings.MATCH)) {
-				result = true;
-			}
-			if (!result) {
-				return Result::kFail;
-			}
+		if (!strings.MATCH.empty() && !a_npcData.HasStringFilter(strings.MATCH)) {
+			return Result::kFail;
 		}
 
-		if (!strings.ANY.empty()) {
-			bool result = false;
-			if (!name.empty() && detail::name::contains(name, strings.ANY)) {
-				result = true;
-			}
-			if (!result && !originalEDID.empty() && detail::name::contains(originalEDID, strings.ANY)) {
-				result = true;
-			}
-			if (!result && !templateEDID.empty() && detail::name::contains(templateEDID, strings.ANY)) {
-				result = true;
-			}
-			if (!result && detail::keyword::contains(npc, strings.ANY)) {
-				result = true;
-			}
-			if (!result) {
-				return Result::kFail;
-			}
+		if (!strings.ANY.empty() && !a_npcData.ContainsStringFilter(strings.ANY)) {
+			return Result::kFail;
 		}
 
 		return Result::kPass;
@@ -181,7 +97,7 @@ namespace Filter
 		const auto npc = a_npcData.GetNPC();
 		const auto formID = a_npcData.GetFormID();
 
-	    if (!forms.ALL.empty() && !detail::form::matches(npc, formID, forms.ALL, true)) {
+		if (!forms.ALL.empty() && !detail::form::matches(npc, formID, forms.ALL, true)) {
 			return Result::kFail;
 		}
 
@@ -196,12 +112,11 @@ namespace Filter
 		return Result::kPass;
 	}
 
-	Result Data::passed_secondary_filters(const RE::TESNPC* a_npc) const
+	Result Data::passed_secondary_filters(const NPCData& a_npcData) const
 	{
-
-		// Atcor Level
+		// Actor Level
 		auto& [actorMin, actorMax] = std::get<0>(level);
-		const auto actorLevel = a_npc->GetLevel();
+		const auto actorLevel = a_npcData.GetLevel();
 
 		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
 			if (actorLevel < actorMin || actorLevel > actorMax) {
@@ -213,11 +128,13 @@ namespace Filter
 			return Result::kFail;
 		}
 
+		const auto npc = a_npcData.GetNPC();
+    
 		// Skill Level
 		for (auto& [skillType, skill] : std::get<1>(level)) {
 			auto& [skillMin, skillMax] = skill;
 
-			const auto skillLevel = a_npc->playerSkills.values[skillType];
+			const auto skillLevel = npc->playerSkills.values[skillType];
 
 			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
 				if (skillLevel < skillMin || skillLevel > skillMax) {
@@ -308,16 +225,16 @@ namespace Filter
 			}
 		}
 
-		if (traits.sex && a_npc->GetSex() != *traits.sex) {
+		if (traits.sex && a_npcData.GetSex() != *traits.sex) {
 			return Result::kFail;
 		}
-		if (traits.unique && a_npc->IsUnique() != *traits.unique) {
+		if (traits.unique && a_npcData.IsUnique() != *traits.unique) {
 			return Result::kFail;
 		}
-		if (traits.summonable && a_npc->IsSummonable() != *traits.summonable) {
+		if (traits.summonable && a_npcData.IsSummonable() != *traits.summonable) {
 			return Result::kFail;
 		}
-		if (traits.child && (a_npc->race && a_npc->race->IsChildRace()) != *traits.child) {
+		if (traits.child && a_npcData.IsChild() != *traits.child) {
 			return Result::kFail;
 		}
 
@@ -363,6 +280,6 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		return passed_secondary_filters(npc);
+		return passed_secondary_filters(a_npcData);
 	}
 }

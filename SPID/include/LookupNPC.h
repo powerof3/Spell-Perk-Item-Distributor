@@ -9,17 +9,34 @@ namespace NPC
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
-		[[nodiscard]] std::string GetName() const;
+
 		[[nodiscard]] RE::FormID GetFormID() const;
-		[[nodiscard]] std::pair<std::string, std::string> GetEditorID() const;
+		[[nodiscard]] std::uint16_t GetLevel() const;
+		[[nodiscard]] RE::SEX GetSex() const;
+		[[nodiscard]] bool IsUnique() const;
+		[[nodiscard]] bool IsSummonable() const;
+		[[nodiscard]] bool IsChild() const;
+
+		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings) const;
+		[[nodiscard]] bool ContainsStringFilter(const StringVec& a_strings) const;
+		[[nodiscard]] bool HasAllKeywords(const StringVec& a_strings) const;
 
 	private:
-		// final generated NPC
+		[[nodiscard]] void cache_keywords(RE::TESNPC* a_npc);
+		[[nodiscard]] bool has_keyword(const std::string& a_string) const;
+		[[nodiscard]] bool contains_keyword(const std::string& a_string) const;
+
 		RE::TESNPC* npc;
-		// base placed in world
-		RE::TESActorBase* originalBase{ nullptr };
-		// base resolved at runtime
-		RE::TESActorBase* templateBase{ nullptr };
+		RE::FormID formID;
+		std::string name;
+		std::string originalEDID;
+		std::string templateEDID;
+		Set<std::string> keywords;
+		std::uint16_t level;
+		RE::SEX sex;
+		bool unique;
+		bool summonable;
+		bool child;
 	};
 }
 

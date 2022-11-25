@@ -3,11 +3,6 @@
 // Manage PC Level Mult NPC distribution
 namespace PCLevelMult
 {
-	template <class K, class D>
-	using Map = robin_hood::unordered_flat_map<K, D>;
-	template <class K>
-	using Set = robin_hood::unordered_flat_set<K>;
-
 	struct Input
 	{
 		Input(const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
