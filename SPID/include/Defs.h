@@ -41,7 +41,9 @@ using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;  // min/maxLevel
 using SkillLevel = std::pair<
 	std::uint32_t,                           // skill type
 	std::pair<std::uint8_t, std::uint8_t>>;  // skill Level
-using LevelFilters = std::pair<ActorLevel, std::vector<SkillLevel>>;
+using LevelFilters = std::tuple<ActorLevel,
+	std::vector<SkillLevel>, // skill levels
+	std::vector<SkillLevel>>; // skill weights (from Class)
 
 struct Traits
 {
