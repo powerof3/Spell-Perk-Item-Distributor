@@ -2,6 +2,20 @@
 
 namespace NPC
 {
+	void Data::cache_keywords()
+	{
+		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.insert(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+		if (const auto race = npc->GetRace()) {
+			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+				keywords.insert(a_keyword.GetFormEditorID());
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
+		}
+	}
+
 	Data::Data(RE::TESNPC* a_npc) :
 		npc(a_npc),
 		formID(a_npc->GetFormID()),
@@ -12,7 +26,9 @@ namespace NPC
 		unique(a_npc->IsUnique()),
 		summonable(a_npc->IsSummonable()),
 		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
-	{}
+	{
+	    cache_keywords();
+	}
 
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
@@ -35,30 +51,12 @@ namespace NPC
 			formID = a_npc->GetFormID();
 			originalEDID = Cache::EditorID::GetEditorID(npc);
 		}
+		cache_keywords();
 	}
 
 	RE::TESNPC* Data::GetNPC() const
 	{
 		return npc;
-	}
-
-	void Data::CacheKeywords()
-	{
-		keywords.clear();
-		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			if (const auto keywordEDID = a_keyword.GetFormEditorID(); !string::is_empty(keywordEDID)) {
-				keywords.insert(keywordEDID);
-			}
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-		if (const auto race = npc->GetRace()) {
-			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-				if (const auto keywordEDID = a_keyword.GetFormEditorID(); !string::is_empty(keywordEDID)) {
-					keywords.insert(keywordEDID);
-				}
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
-		}
 	}
 
 	bool Data::has_keyword(const std::string& a_string) const

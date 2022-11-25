@@ -10,17 +10,9 @@ namespace Distribute
 
 		const auto npc = a_npcData.GetNPC();
 
-		//cache base keywords
-		a_npcData.CacheKeywords();
-
 		for_each_form<RE::BGSKeyword>(a_npcData, Forms::keywords, a_input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
 			npc->AddKeywords(a_keywords);
 		});
-
-		if (Forms::keywords) {
-			//recache added keywords
-			a_npcData.CacheKeywords();
-		}
 
 		for_each_form<RE::TESFaction>(a_npcData, Forms::factions, a_input, [&](const std::vector<RE::TESFaction*>& a_factions) {
 			npc->factions.reserve(static_cast<std::uint32_t>(a_factions.size()));

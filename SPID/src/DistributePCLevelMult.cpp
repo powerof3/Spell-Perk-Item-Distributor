@@ -10,7 +10,7 @@ namespace Distribute::PlayerLeveledActor
 		{
 			if (const auto npc = a_actor->GetActorBase()) {
 				auto npcData = std::make_unique<NPCData>(a_actor, npc);
-			    Distribute(*npcData, PCLevelMult::Input{ a_actor, npc, true, false });
+				Distribute(*npcData, PCLevelMult::Input{ a_actor, npc, true, false });
 			}
 
 			func(a_actor);
@@ -27,94 +27,92 @@ namespace Distribute::PlayerLeveledActor
 
 				if (const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton(); !pcLevelMultManager->FindDistributedEntry(input)) {
 					//start distribution for first time
-                    const auto npcData = std::make_unique<NPCData>(a_this, npc);
+					const auto npcData = std::make_unique<NPCData>(a_this, npc);
 					Distribute(*npcData, input);
 				} else {
 					//handle redistribution and removal
-					pcLevelMultManager->ForEachDistributedEntry(input, [&](RE::TESForm& a_form, [[maybe_unused]] IdxOrCount a_count, bool a_isBelowLevel) {
-						switch (a_form.GetFormType()) {
+					pcLevelMultManager->ForEachDistributedEntry(input, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet, bool a_isBelowLevel) {
+						switch (a_formType) {
 						case RE::FormType::Keyword:
 							{
-                                const auto keyword = a_form.As<RE::BGSKeyword>();
+                                const auto keywords = detail::set_to_vec<RE::BGSKeyword>(a_formIDSet);
+
 								if (a_isBelowLevel) {
-									npc->RemoveKeyword(keyword);
+									npc->RemoveKeywords(keywords);
 								} else {
-									npc->AddKeyword(keyword);
+									npc->AddKeywords(keywords);
 								}
 							}
 							break;
 						case RE::FormType::Faction:
 							{
-								auto faction = a_form.As<RE::TESFaction>();
-                                const auto it = std::ranges::find_if(npc->factions, [&](const auto& factionRank) {
-									return factionRank.faction == faction;
-								});
-								if (it != npc->factions.end()) {
-									if (a_isBelowLevel) {
-										(*it).rank = -1;
-									} else {
-										(*it).rank = 1;
+								const auto factions = detail::set_to_vec<RE::TESFaction>(a_formIDSet);
+
+								for (auto& faction : factions) {
+									const auto it = std::ranges::find_if(npc->factions, [&](const auto& factionRank) {
+										return factionRank.faction == faction;
+									});
+									if (it != npc->factions.end()) {
+										if (a_isBelowLevel) {
+											(*it).rank = -1;
+										} else {
+											(*it).rank = 1;
+										}
 									}
 								}
 							}
 							break;
 						case RE::FormType::Perk:
 							{
-                                const auto perk = a_form.As<RE::BGSPerk>();
+								const auto perks = detail::set_to_vec<RE::BGSPerk>(a_formIDSet);
+		
 								if (a_isBelowLevel) {
-									npc->RemovePerk(perk);
+									npc->RemovePerks(perks);
 								} else {
-									npc->AddPerk(perk, 1);
+									npc->AddPerks(perks, 1);
 								}
 							}
 							break;
 						case RE::FormType::Spell:
 							{
-                                const auto spell = a_form.As<RE::SpellItem>();
+								const auto spells = detail::set_to_vec<RE::SpellItem>(a_formIDSet);
+
 								if (const auto actorEffects = npc->GetSpellList()) {
 									if (a_isBelowLevel) {
-										actorEffects->RemoveSpell(spell);
-									} else if (!actorEffects->GetIndex(spell)) {
-										actorEffects->AddSpell(spell);
+										actorEffects->RemoveSpells(spells);
+									} else {
+										actorEffects->AddSpells(spells);
 									}
 								}
 							}
 							break;
 						case RE::FormType::LeveledSpell:
 							{
-                                const auto spell = a_form.As<RE::TESLevSpell>();
+								const auto spells = detail::set_to_vec<RE::TESLevSpell>(a_formIDSet);
+
 								if (const auto actorEffects = npc->GetSpellList()) {
 									if (a_isBelowLevel) {
-										actorEffects->RemoveLevSpell(spell);
+										actorEffects->RemoveLevSpells(spells);
 									} else {
-										actorEffects->AddLevSpell(spell);
+										actorEffects->AddLevSpells(spells);
 									}
 								}
 							}
 							break;
 						case RE::FormType::Shout:
 							{
-                                const auto shout = a_form.As<RE::TESShout>();
+								const auto shouts = detail::set_to_vec<RE::TESShout>(a_formIDSet);
+
 								if (const auto actorEffects = npc->GetSpellList()) {
 									if (a_isBelowLevel) {
-										actorEffects->RemoveShout(shout);
+										actorEffects->RemoveShouts(shouts);
 									} else {
-										actorEffects->AddShout(shout);
+										actorEffects->AddShouts(shouts);
 									}
 								}
 							}
 							break;
 						default:
-							{
-								if (a_form.IsInventoryObject()) {
-                                    const auto boundObject = static_cast<RE::TESBoundObject*>(&a_form);
-									if (a_isBelowLevel) {
-										npc->RemoveObjectFromContainer(boundObject, a_count);
-									} else if (npc->CountObjectsInContainer(boundObject) < a_count) {
-										npc->AddObjectToContainer(boundObject, a_count, a_this);
-									}
-								}
-							}
 							break;
 						}
 					});

@@ -10,8 +10,6 @@ namespace NPC
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
 
-		void CacheKeywords();
-
 		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings, bool all = false) const;
 		[[nodiscard]] bool ContainsStringFilter(const StringVec& a_strings) const;
 
@@ -24,7 +22,8 @@ namespace NPC
 		[[nodiscard]] bool IsChild() const;
 
 	private:
-		[[nodiscard]] bool has_keyword(const std::string& a_string) const;
+		void cache_keywords();
+	    [[nodiscard]] bool has_keyword(const std::string& a_string) const;
 		[[nodiscard]] bool contains_keyword(const std::string& a_string) const;
 
 		[[nodiscard]] bool has_form(RE::TESForm* a_form) const;

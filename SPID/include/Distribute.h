@@ -10,9 +10,9 @@ namespace Distribute
 	{
 		template <class Form>
 		bool passed_filters(
-			const NPCData& a_npcData, 
-			const PCLevelMult::Input& a_input, 
-			Forms::Data<Form>& a_formData, 
+			const NPCData& a_npcData,
+			const PCLevelMult::Input& a_input,
+			Forms::Data<Form>& a_formData,
 			std::uint32_t idx)
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
@@ -76,7 +76,6 @@ namespace Distribute
 				auto form = formData.form;
 				auto idxOrCount = formData.idxOrCount;
 				if (a_callback(form, idxOrCount)) {
-					PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, form->GetFormID(), idxOrCount);
 					++formData.npcCount;
 				}
 			}
@@ -100,7 +99,6 @@ namespace Distribute
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
 				auto form = formData.form;
 				if (a_callback(form)) {
-					PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, form->GetFormID(), formData.idxOrCount);
 					++formData.npcCount;
 					break;
 				}
@@ -112,7 +110,7 @@ namespace Distribute
 	// forms that can be added to
 	template <class Form>
 	void for_each_form(
-		const NPCData& a_npcData,
+		NPCData& a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input& a_input,
 		std::function<void(const std::vector<Form*>&)> a_callback)
@@ -123,25 +121,31 @@ namespace Distribute
 			return;
 		}
 
-		std::set<Form*> collectedFormSet{};
+		const auto npc = a_npcData.GetNPC();
+
+		Set<RE::FormID> collectedFormIDs{};
+		collectedFormIDs.reserve(vec.size());
+
 		std::vector<Form*> collectedForms{};
 		collectedForms.reserve(vec.size());
 
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
 			++vecIdx;
-			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
-				auto form = formData.form;
-				if (collectedFormSet.insert(form).second && !detail::has_form(a_npcData.GetNPC(), form)) {
-					PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, form->GetFormID(), formData.idxOrCount);
-					++formData.npcCount;
-					collectedForms.emplace_back(form);
-				}
+			auto form = formData.form;
+			auto formID = form->GetFormID();
+			if (collectedFormIDs.contains(formID)) {
+				continue;
+			}
+			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.insert(formID).second) {
+				collectedForms.emplace_back(form);
+				++formData.npcCount;
 			}
 		}
 
 		if (!collectedForms.empty()) {
 			a_callback(collectedForms);
+			PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedFormIDs);
 		}
 	}
 

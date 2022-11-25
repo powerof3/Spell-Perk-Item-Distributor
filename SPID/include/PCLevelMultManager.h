@@ -32,8 +32,8 @@ namespace PCLevelMult
 		void DumpRejectedEntries();
 
 		[[nodiscard]] bool FindDistributedEntry(const Input& a_input);
-		void InsertDistributedEntry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx);
-		void ForEachDistributedEntry(const Input& a_input, std::function<void(RE::TESForm&, IdxOrCount a_idx, bool)> a_fn) const;
+		void InsertDistributedEntry(const Input& a_input, RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet);
+		void ForEachDistributedEntry(const Input& a_input, std::function<void(RE::FormType, const Set<RE::FormID>&, bool)> a_fn) const;
 		void DumpDistributedEntries();
 
 		void DeleteNPC(RE::FormID a_characterID);
@@ -70,8 +70,8 @@ namespace PCLevelMult
 		{
 			struct Entries
 			{
-				Map<RE::FormID, Set<std::uint32_t>> rejectedEntries{};                // Distributed formID, FormData vector index
-				std::vector<std::pair<RE::FormID, IdxOrCount>> distributedEntries{};  // Distributed formID, distributed count/idx
+				Map<RE::FormID, Set<std::uint32_t>> rejectedEntries{};    // Distributed formID, FormData vector index
+				Map<RE::FormType, Set<RE::FormID>> distributedEntries{};  // formtype, distributed formID
 			};
 
 			LEVEL_CAP_STATE levelCapState{};

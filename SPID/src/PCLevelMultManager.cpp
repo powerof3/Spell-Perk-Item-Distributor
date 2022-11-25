@@ -128,33 +128,31 @@ namespace PCLevelMult
 		return false;
 	}
 
-	void Manager::InsertDistributedEntry(const Input& a_input, RE::FormID a_distributedFormID, IdxOrCount a_idx)
+    void Manager::InsertDistributedEntry(const Input& a_input, RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet)
 	{
 		if (a_input.noPlayerLevelDistribution) {
 			return;
 		}
 
 		Locker lock(_lock);
-		_cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries.emplace_back(a_distributedFormID, a_idx);
+		_cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries[a_formType].insert(a_formIDSet.begin(), a_formIDSet.end());
 	}
 
-	void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::TESForm&, IdxOrCount a_idx, bool)> a_fn) const
+    void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::FormType, const Set<RE::FormID>&, bool)> a_fn) const
 	{
 		if (a_input.noPlayerLevelDistribution) {
 			return;
 		}
 
 		Locker lock(_lock);
-		if (const auto idIt = _cache.find(a_input.playerID); idIt != _cache.end()) {
-			auto& npcFormIDMap = idIt->second;
+		if (const auto playerID = _cache.find(a_input.playerID); playerID != _cache.end()) {
+			auto& npcFormIDMap = playerID->second;
 			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
 				auto& [levelCapState, levelMap] = npcIt->second;
 				for (const auto& [level, cachedData] : levelMap) {
 					const bool is_below_level = a_input.npcLevel < level;
-					for (auto& [formid, idx] : cachedData.distributedEntries) {
-						if (const auto form = RE::TESForm::LookupByID(formid)) {
-							a_fn(*form, idx, is_below_level);
-						}
+					for (auto& [formType, formIDSet] : cachedData.distributedEntries) {
+						a_fn(formType, formIDSet, is_below_level);
 					}
 				}
 			}
@@ -170,8 +168,11 @@ namespace PCLevelMult
 				logger::info("\tNPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
 					logger::info("\t\tLevel : {}", level);
-					for (auto& [distFormID, idxSet] : distFormMap.distributedEntries) {
-						logger::info("\t\t\tDist FormID : {} [{:X}] : {}", Cache::EditorID::GetEditorID(distFormID), distFormID, idxSet);
+					for (auto& [formType, formIDSet] : distFormMap.distributedEntries) {
+						logger::info("\t\t\tDist FormType : {}", formType);
+						for (auto& formID : formIDSet) {
+							logger::info("\t\t\t\tDist FormID : {} [{:X}]", Cache::EditorID::GetEditorID(formID), formID);
+						}
 					}
 				}
 			}
