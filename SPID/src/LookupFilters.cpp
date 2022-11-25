@@ -145,13 +145,13 @@ namespace Filter
 			}
 		}
 
-		if (traits.sex && npc->GetSex() != *traits.sex) {
+		if (traits.sex && a_npcData.GetSex() != *traits.sex) {
 			return Result::kFail;
 		}
-		if (traits.unique && npc->IsUnique() != *traits.unique) {
+		if (traits.unique && a_npcData.IsUnique() != *traits.unique) {
 			return Result::kFail;
 		}
-		if (traits.summonable && npc->IsSummonable() != *traits.summonable) {
+		if (traits.summonable && a_npcData.IsSummonable() != *traits.summonable) {
 			return Result::kFail;
 		}
 		if (traits.child && a_npcData.IsChild() != *traits.child) {

@@ -26,6 +26,9 @@ namespace NPC
 		name(a_npc->GetName()),
 		originalEDID(Cache::EditorID::GetEditorID(npc)),
 		level(a_npc->GetLevel()),
+		sex(a_npc->GetSex()),
+		unique(a_npc->IsUnique()),
+		summonable(a_npc->IsSummonable()),
 		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
 	{
 		cache_keywords(a_npc);
@@ -35,6 +38,9 @@ namespace NPC
 		npc(a_npc),
 		name(a_npc->GetName()),
 		level(a_npc->GetLevel()),
+		sex(a_npc->GetSex()),
+		unique(a_npc->IsUnique()),
+		summonable(a_npc->IsSummonable()),
 		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
 	{
 		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
@@ -62,22 +68,27 @@ namespace NPC
 		return formID;
 	}
 
-	std::string Data::GetName() const
-	{
-		return name;
-	}
-
-	std::pair<std::string, std::string> Data::GetEditorID() const
-	{
-		return { originalEDID, templateEDID };
-	}
-
 	std::uint16_t Data::GetLevel() const
 	{
 		return level;
 	}
 
-	bool Data::IsChild() const
+    RE::SEX Data::GetSex() const
+    {
+        return sex;
+    }
+
+    bool Data::IsUnique() const
+    {
+        return unique;
+    }
+
+    bool Data::IsSummonable() const
+    {
+        return summonable;
+    }
+
+    bool Data::IsChild() const
 	{
 		return child;
 	}
