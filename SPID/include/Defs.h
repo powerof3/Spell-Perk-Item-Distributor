@@ -1,9 +1,11 @@
 #pragma once
 
 template <class K, class D>
-using Map = robin_hood::unordered_flat_map<K, D>;
+using Map = ankerl::unordered_dense::map<K, D>;
 template <class K>
-using Set = robin_hood::unordered_flat_set<K>;
+using Set = ankerl::unordered_dense::set<K>;
+template <class K, class H>
+using CustomSet = ankerl::unordered_dense::set<K, ankerl::unordered_dense::hash<K>, H>;
 
 // Record = FormOrEditorID|StringFilters|RawFormFilters|LevelFilters|Traits|IdxOrCount|Chance
 

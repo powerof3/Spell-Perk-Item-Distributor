@@ -19,12 +19,12 @@ namespace PCLevelMult
 		onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
 		noPlayerLevelDistribution(a_noPlayerLevelDistribution)
 	{
-		npcFormID = a_base->IsDynamicForm() ? a_character->GetFormID() : a_base->GetFormID(); // use character formID for permanent storage
+		npcFormID = a_base->IsDynamicForm() ? a_character->GetFormID() : a_base->GetFormID();  // use character formID for permanent storage
 	}
 
 	void Manager::Register()
 	{
-		if (auto UI = RE::UI::GetSingleton()) {
+		if (const auto UI = RE::UI::GetSingleton()) {
 			UI->AddEventSink(this);
 			logger::info("\tRegistered {}", typeid(Manager).name());
 		}
@@ -39,16 +39,15 @@ namespace PCLevelMult
 				const auto newPlayerID = get_game_playerID();
 				if (newGameStarted) {
 					newGameStarted = false;
-
 					currentPlayerID = newPlayerID;
-
-					if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-						for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
-							if (npc && !npc->IsPlayer() && npc->HasPCLevelMult()) {
-								auto npcData = std::make_unique<NPCData>(npc);
-								Distribute::Distribute(*npcData, Input{ npc, true, false });
+					if (const auto processLists = RE::ProcessLists::GetSingleton(); processLists) {
+						processLists->ForAllActors([&](RE::Actor& actor) {
+							if (auto npc = actor.GetActorBase(); npc && npc->HasPCLevelMult()) {
+								const auto npcData = std::make_unique<NPCData>(&actor, npc);
+								Distribute::Distribute(*npcData, Input{ &actor, npc, true, false });
 							}
-						}
+							return RE::BSContainer::ForEachResult::kContinue;
+						});
 					}
 				} else if (oldPlayerID != newPlayerID) {
 					remap_player_ids(oldPlayerID, newPlayerID);
@@ -128,7 +127,7 @@ namespace PCLevelMult
 		return false;
 	}
 
-    void Manager::InsertDistributedEntry(const Input& a_input, RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet)
+	void Manager::InsertDistributedEntry(const Input& a_input, RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet)
 	{
 		if (a_input.noPlayerLevelDistribution) {
 			return;
@@ -138,7 +137,7 @@ namespace PCLevelMult
 		_cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries[a_formType].insert(a_formIDSet.begin(), a_formIDSet.end());
 	}
 
-    void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::FormType, const Set<RE::FormID>&, bool)> a_fn) const
+	void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::FormType, const Set<RE::FormID>&, bool)> a_fn) const
 	{
 		if (a_input.noPlayerLevelDistribution) {
 			return;

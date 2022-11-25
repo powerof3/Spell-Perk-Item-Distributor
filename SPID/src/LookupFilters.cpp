@@ -195,7 +195,7 @@ namespace Filter
 
 	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
 	{
-		if (passed_string_filters(a_npcData) == Result::kFail) {
+	    if (passed_string_filters(a_npcData) == Result::kFail) {
 			return Result::kFail;
 		}
 

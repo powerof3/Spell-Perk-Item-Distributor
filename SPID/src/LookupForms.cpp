@@ -60,7 +60,7 @@ bool Lookup::GetForms()
 	}
 
 	// Clear logger's buffer to free some memory :)
-	logger::clear();
+	buffered_logger::clear();
 
 	return result;
 }

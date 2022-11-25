@@ -90,7 +90,7 @@ namespace Lookup
 				a_modName.emplace(mergedModName);
 			}
 			if (!conversion_log.empty()) {
-				logger::info("\t\tFound merged: {}", conversion_log);
+				buffered_logger::info("\t\tFound merged: {}", conversion_log);
 			}
 		}
 
@@ -107,10 +107,10 @@ namespace Lookup
 					}
 					if (modName && !formID) {
 						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
-							logger::info("\t\t\t[{}] Filter ({}) INFO - mod found", a_path, filterMod->fileName);
+							buffered_logger::info("\t\t\t[{}] Filter ({}) INFO - mod found", a_path, filterMod->fileName);
 							a_formVec.push_back(filterMod);
 						} else {
-							logger::error("\t\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
+							buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
 						}
 					} else if (formID) {
 						auto filterForm = modName ?
@@ -121,10 +121,10 @@ namespace Lookup
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
 							} else {
-								logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
+								buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
 							}
 						} else {
-							logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
+							buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
 						}
 					}
 				} else if (std::holds_alternative<std::string>(formOrEditorID)) {
@@ -134,10 +134,10 @@ namespace Lookup
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
 							} else {
-								logger::error("			[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, editorID, formType);
+								buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, editorID, formType);
 							}
 						} else {
-							logger::error("			[{}] Filter ({}) SKIP - form doesn't exist", a_path, editorID);
+							buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - form doesn't exist", a_path, editorID);
 						}
 					}
 				}
@@ -183,12 +183,12 @@ namespace Lookup
 						}
 					}
 					if (!form) {
-						logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
+						buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
 					} else {
 						if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 							if (string::is_empty(form->GetFormEditorID())) {
 								form = nullptr;
-								logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
+								buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
 							}
 						}
 					}
@@ -208,11 +208,11 @@ namespace Lookup
 					if (result != keywordArray.end()) {
 						if (const auto keyword = *result; keyword) {
 							if (!keyword->IsDynamicForm()) {
-								logger::info("\t\t[{}] {} [0x{:X}] INFO - using existing keyword", path, keywordName, keyword->GetFormID());
+								buffered_logger::info("\t\t[{}] {} [0x{:X}] INFO - using existing keyword", path, keywordName, keyword->GetFormID());
 							}
 							form = keyword;
 						} else {
-							logger::critical("\t\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
+							buffered_logger::critical("\t\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
 							continue;
 						}
 					} else {
@@ -220,11 +220,11 @@ namespace Lookup
 						if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
 							keyword->formEditorID = keywordName;
 							keywordArray.push_back(keyword);
-							logger::info("\t\t[{}] {} [0x{:X}] INFO - creating keyword", path, keywordName, keyword->GetFormID());
+							buffered_logger::info("\t\t[{}] {} [0x{:X}] INFO - creating keyword", path, keywordName, keyword->GetFormID());
 
 							form = keyword;
 						} else {
-							logger::critical("\t\t[{}] {} FAIL - couldn't create keyword", path, keywordName);
+							buffered_logger::critical("\t\t[{}] {} FAIL - couldn't create keyword", path, keywordName);
 						}
 					}
 				}
@@ -238,7 +238,7 @@ namespace Lookup
 						}
 					}
 					if (!form) {
-						logger::error("		[{}] {} FAIL - editorID doesn't exist", path, editorID);
+						buffered_logger::error("		[{}] {} FAIL - editorID doesn't exist", path, editorID);
 					}
 				}
 			}

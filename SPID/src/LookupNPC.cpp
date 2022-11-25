@@ -4,13 +4,13 @@ namespace NPC
 {
 	void Data::cache_keywords()
 	{
-		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.insert(a_keyword.GetFormEditorID());
+	    npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.formEditorID);
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
 		if (const auto race = npc->GetRace()) {
-			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-				keywords.insert(a_keyword.GetFormEditorID());
+		    race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+				keywords.emplace(a_keyword.formEditorID);
 				return RE::BSContainer::ForEachResult::kContinue;
 			});
 		}
@@ -27,7 +27,7 @@ namespace NPC
 		summonable(a_npc->IsSummonable()),
 		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
 	{
-	    cache_keywords();
+		cache_keywords();
 	}
 
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
@@ -59,14 +59,7 @@ namespace NPC
 		return npc;
 	}
 
-	bool Data::has_keyword(const std::string& a_string) const
-	{
-		return std::ranges::any_of(keywords, [&](const auto& keyword) {
-			return string::iequals(keyword, a_string);
-		});
-	}
-
-	bool Data::contains_keyword(const std::string& a_string) const
+	bool Data::contains_keyword_string(const std::string& a_string) const
 	{
 		return std::ranges::any_of(keywords, [&](const auto& keyword) {
 			return string::icontains(keyword, a_string);
@@ -77,11 +70,11 @@ namespace NPC
 	{
 		if (a_all) {
 			return std::ranges::all_of(a_strings, [&](const auto& str) {
-				return has_keyword(str);
+				return keywords.contains(str);
 			});
 		} else {
 			return std::ranges::any_of(a_strings, [&](const auto& str) {
-				return has_keyword(str) || string::iequals(name, str) || string::iequals(originalEDID, str) || string::iequals(templateEDID, str);
+				return keywords.contains(str) || string::iequals(name, str) || string::iequals(originalEDID, str) || string::iequals(templateEDID, str);
 			});
 		}
 	}
@@ -89,8 +82,13 @@ namespace NPC
 	bool Data::ContainsStringFilter(const StringVec& a_strings) const
 	{
 		return std::ranges::any_of(a_strings, [&](const auto& str) {
-			return contains_keyword(str) || string::icontains(name, str) || string::icontains(originalEDID, str) || string::icontains(templateEDID, str);
+			return contains_keyword_string(str) || string::icontains(name, str) || string::icontains(originalEDID, str) || string::icontains(templateEDID, str);
 		});
+	}
+
+	bool Data::InsertKeyword(std::string_view a_keyword)
+	{
+		return keywords.emplace(a_keyword).second;
 	}
 
 	bool Data::has_form(RE::TESForm* a_form) const

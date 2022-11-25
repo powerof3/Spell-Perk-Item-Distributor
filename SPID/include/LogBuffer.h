@@ -43,11 +43,13 @@ namespace LogBuffer
 
 /// Add hashing for custom log entries.
 template <>
-struct std::hash<LogBuffer::Entry>
+struct ankerl::unordered_dense::hash<LogBuffer::Entry>
 {
-	std::size_t operator()(const LogBuffer::Entry& entry) const noexcept
+	using is_avalanching = void;
+
+	[[nodiscard]] std::uint64_t operator()(const LogBuffer::Entry& entry) const noexcept
 	{
-		return hash<std::string>()(entry.message);
+		return detail::wyhash::hash(entry.message.c_str(), entry.message.size());
 	}
 };
 
@@ -57,7 +59,7 @@ struct std::hash<LogBuffer::Entry>
 /// Each log function checks whether given message was already logged and skips the log.
 namespace LogBuffer
 {
-	inline robin_hood::unordered_flat_set<Entry> buffer{};
+	inline ankerl::unordered_dense::set<Entry> buffer{};
 
 	/// Clears already buffered messages to allow them to be logged once again.
 	inline void clear()

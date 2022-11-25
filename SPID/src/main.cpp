@@ -16,7 +16,7 @@ bool DoDistribute()
 		Distribute::Event::Manager::Register();
 
 		// Clear logger's buffer to free some memory :)
-		logger::clear();
+		buffered_logger::clear();
 
 		return true;
 	}

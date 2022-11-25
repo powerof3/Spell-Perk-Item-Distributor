@@ -35,9 +35,7 @@ namespace Distribute
 		template <class Form>
 		bool has_form(RE::TESNPC* a_npc, Form* a_form)
 		{
-			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				return a_npc->GetKeywordIndex(a_form).has_value();
-			} else if constexpr (std::is_same_v<RE::TESFaction, Form>) {
+			if constexpr (std::is_same_v<RE::TESFaction, Form>) {
 				return a_npc->IsInFaction(a_form);
 			} else if constexpr (std::is_same_v<RE::BGSPerk, Form>) {
 				return a_npc->GetPerkIndex(a_form).has_value();
@@ -121,13 +119,12 @@ namespace Distribute
 			return;
 		}
 
-		const auto npc = a_npcData.GetNPC();
-
-		Set<RE::FormID> collectedFormIDs{};
-		collectedFormIDs.reserve(vec.size());
+    	const auto npc = a_npcData.GetNPC();
 
 		std::vector<Form*> collectedForms{};
 		collectedForms.reserve(vec.size());
+
+		Set<RE::FormID> collectedFormIDs{};
 
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
@@ -137,15 +134,24 @@ namespace Distribute
 			if (collectedFormIDs.contains(formID)) {
 				continue;
 			}
-			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.insert(formID).second) {
-				collectedForms.emplace_back(form);
-				++formData.npcCount;
+			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
+				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
+					collectedForms.emplace_back(form);
+					collectedFormIDs.emplace(formID);
+					++formData.npcCount;
+				}
+			} else {
+				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+					collectedForms.emplace_back(form);
+					++formData.npcCount;
+				}
 			}
 		}
 
 		if (!collectedForms.empty()) {
 			a_callback(collectedForms);
-			PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedFormIDs);
+
+		    PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedFormIDs);
 		}
 	}
 

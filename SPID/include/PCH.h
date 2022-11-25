@@ -14,7 +14,7 @@
 #include <ClibUtil/string.hpp>
 #include <MergeMapperPluginAPI.h>
 #include <SimpleIni.h>
-#include <robin_hood.h>
+#include <ankerl/unordered_dense.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
 #include <xbyak/xbyak.h>
@@ -23,7 +23,9 @@
 
 #define DLLEXPORT __declspec(dllexport)
 
-namespace logger = LogBuffer;
+namespace logger = SKSE::log;
+namespace buffered_logger = LogBuffer;
+
 namespace string = clib_util::string;
 namespace distribution = clib_util::distribution;
 

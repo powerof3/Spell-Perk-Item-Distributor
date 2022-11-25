@@ -13,7 +13,7 @@ namespace Distribute
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			std::size_t totalNPCs = 0;
 
-			const auto startTime = std::chrono::system_clock::now();
+			const auto startTime = std::chrono::high_resolution_clock::now();
 			for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
 				if (npc && !npc->IsPlayer() && (!detail::uses_template(npc) || npc->IsUnique())) {
 					const auto npcData = std::make_unique<NPCData>(npc);
@@ -21,12 +21,12 @@ namespace Distribute
 					totalNPCs++;
 				}
 			}
-			const auto endTime = std::chrono::system_clock::now();
+			const auto endTime = std::chrono::high_resolution_clock::now();
 
 			logger::info("{:*^50}", "RESULTS");
 			logger::info("{:*^50}", "[unique or non-templated NPCs]");
 
-			logger::info("Distribution took {}ms", static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count()));
+			logger::info("Distribution took {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count());
 
 			const auto list_result = [&totalNPCs]<class Form>(const RECORD::TYPE a_recordType, Forms::Distributables<Form>& a_distributables) {
 				if (a_distributables) {
