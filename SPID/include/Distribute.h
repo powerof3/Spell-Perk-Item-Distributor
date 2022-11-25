@@ -10,10 +10,10 @@ namespace Distribute
 	{
 		template <class Form>
 		bool passed_filters(
-			[[maybe_unused]] const NPCData& a_npcData, 
-			[[maybe_unused]] const PCLevelMult::Input& a_input, 
-			[[maybe_unused]] Forms::Data<Form>& a_formData, 
-			[[maybe_unused]] std::uint32_t idx)
+			const NPCData& a_npcData, 
+			const PCLevelMult::Input& a_input, 
+			Forms::Data<Form>& a_formData, 
+			std::uint32_t idx)
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 
@@ -112,7 +112,7 @@ namespace Distribute
 	// forms that can be added to
 	template <class Form>
 	void for_each_form(
-		[[maybe_unused]] const NPCData& a_npcData,
+		const NPCData& a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input& a_input,
 		std::function<void(const std::vector<Form*>&)> a_callback)
@@ -145,5 +145,5 @@ namespace Distribute
 		}
 	}
 
-	void Distribute(const NPCData& a_npcData, const PCLevelMult::Input& a_input);
+	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input);
 }

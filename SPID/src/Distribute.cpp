@@ -2,7 +2,7 @@
 
 namespace Distribute
 {
-	void Distribute(const NPCData& a_npcData, const PCLevelMult::Input& a_input)
+	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
 			return;
@@ -10,13 +10,21 @@ namespace Distribute
 
 		const auto npc = a_npcData.GetNPC();
 
+		//cache base keywords
+		a_npcData.CacheKeywords();
+
 		for_each_form<RE::BGSKeyword>(a_npcData, Forms::keywords, a_input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
 			npc->AddKeywords(a_keywords);
 		});
 
+		if (Forms::keywords) {
+			//recache added keywords
+			a_npcData.CacheKeywords();
+		}
+
 		for_each_form<RE::TESFaction>(a_npcData, Forms::factions, a_input, [&](const std::vector<RE::TESFaction*>& a_factions) {
 			npc->factions.reserve(static_cast<std::uint32_t>(a_factions.size()));
-		    for (auto& faction : a_factions){
+			for (auto& faction : a_factions) {
 				npc->factions.emplace_back(RE::FACTION_RANK{ faction, 1 });
 			}
 		});
@@ -26,21 +34,15 @@ namespace Distribute
 		});
 
 		for_each_form<RE::SpellItem>(a_npcData, Forms::spells, a_input, [&](const std::vector<RE::SpellItem*>& a_spells) {
-			if (const auto actorEffects = npc->GetSpellList()) {
-				actorEffects->AddSpells(a_spells);
-			}
+			npc->GetSpellList()->AddSpells(a_spells);
 		});
 
 		for_each_form<RE::TESShout>(a_npcData, Forms::shouts, a_input, [&](const std::vector<RE::TESShout*>& a_shouts) {
-			if (const auto actorEffects = npc->GetSpellList()) {
-				actorEffects->AddShouts(a_shouts);
-			}
+			npc->GetSpellList()->AddShouts(a_shouts);
 		});
 
 		for_each_form<RE::TESLevSpell>(a_npcData, Forms::levSpells, a_input, [&](const std::vector<RE::TESLevSpell*>& a_levSpells) {
-			if (const auto actorEffects = npc->GetSpellList()) {
-				actorEffects->AddLevSpells(a_levSpells);
-			}
+			npc->GetSpellList()->AddLevSpells(a_levSpells);
 		});
 
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](auto* a_item, IdxOrCount a_count) {

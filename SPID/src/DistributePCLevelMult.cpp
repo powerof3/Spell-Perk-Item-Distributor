@@ -9,7 +9,8 @@ namespace Distribute::PlayerLeveledActor
 		static void thunk(RE::Actor* a_actor)
 		{
 			if (const auto npc = a_actor->GetActorBase()) {
-				Distribute(NPCData{ a_actor, npc }, PCLevelMult::Input{ a_actor, npc, true, false });
+				auto npcData = std::make_unique<NPCData>(a_actor, npc);
+			    Distribute(*npcData, PCLevelMult::Input{ a_actor, npc, true, false });
 			}
 
 			func(a_actor);
@@ -22,12 +23,12 @@ namespace Distribute::PlayerLeveledActor
 		static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
 		{
 			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult()) {
-				const auto input = npc->IsDynamicForm() ? PCLevelMult::Input{ a_this, npc, true, false } :  // use character formID for permanent storage
-				                                          PCLevelMult::Input{ npc, true, false };
+				const auto input = PCLevelMult::Input{ a_this, npc, true, false };
 
 				if (const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton(); !pcLevelMultManager->FindDistributedEntry(input)) {
 					//start distribution for first time
-					Distribute(NPCData{ a_this, npc }, input);
+                    const auto npcData = std::make_unique<NPCData>(a_this, npc);
+					Distribute(*npcData, input);
 				} else {
 					//handle redistribution and removal
 					pcLevelMultManager->ForEachDistributedEntry(input, [&](RE::TESForm& a_form, [[maybe_unused]] IdxOrCount a_count, bool a_isBelowLevel) {

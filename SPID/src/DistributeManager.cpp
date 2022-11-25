@@ -16,7 +16,8 @@ namespace Distribute
 			const auto startTime = std::chrono::system_clock::now();
 			for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
 				if (npc && !npc->IsPlayer() && (!detail::uses_template(npc) || npc->IsUnique())) {
-					Distribute(NPCData{ npc }, PCLevelMult::Input{ npc, false, true });
+					const auto npcData = std::make_unique<NPCData>(npc);
+					Distribute(*npcData, PCLevelMult::Input{ npc, false, true });
 					totalNPCs++;
 				}
 			}
@@ -89,11 +90,8 @@ namespace Distribute::Event
 					false,
 					false,
 				};
-				const NPCData npcData{
-					actor,
-					npc
-				};
-				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
+				auto npcData = std::make_unique<NPCData>(actor, npc);
+				for_each_form<RE::TESBoundObject>(*npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
 					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
 				});
@@ -121,7 +119,8 @@ namespace Distribute::LeveledActor
 			func(a_this, a_npc);
 
 			if (a_npc && (a_npc->IsDynamicForm() || detail::uses_template(a_npc))) {
-				Distribute(NPCData{ a_this, a_npc }, PCLevelMult::Input{ a_this, a_npc, false, false });
+				auto npcData = std::make_unique<NPCData>(a_this, a_npc);
+			    Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
 			}
 		}
 		static inline REL::Relocation<decltype(thunk)> func;

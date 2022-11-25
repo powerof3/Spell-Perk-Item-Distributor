@@ -3,77 +3,9 @@
 
 namespace Filter
 {
-	namespace detail
-	{
-		bool form::get_type(RE::TESNPC* a_npc, RE::TESForm* a_filter)
-		{
-			switch (a_filter->GetFormType()) {
-			case RE::FormType::CombatStyle:
-				return a_npc->GetCombatStyle() == a_filter;
-			case RE::FormType::Class:
-				return a_npc->npcClass == a_filter;
-			case RE::FormType::Faction:
-				{
-					const auto faction = a_filter->As<RE::TESFaction>();
-					return a_npc->IsInFaction(faction);
-				}
-			case RE::FormType::Race:
-				return a_npc->GetRace() == a_filter;
-			case RE::FormType::Outfit:
-				return a_npc->defaultOutfit == a_filter;
-			case RE::FormType::NPC:
-				return a_npc == a_filter;
-			case RE::FormType::VoiceType:
-				return a_npc->voiceType == a_filter;
-			case RE::FormType::Spell:
-				{
-					const auto spell = a_filter->As<RE::SpellItem>();
-					return a_npc->GetSpellList()->GetIndex(spell).has_value();
-				}
-			case RE::FormType::FormList:
-				{
-					bool result = false;
-
-					auto list = a_filter->As<RE::BGSListForm>();
-					list->ForEachForm([&](RE::TESForm& a_form) {
-						if (result = get_type(a_npc, &a_form); result) {
-							return RE::BSContainer::ForEachResult::kStop;
-						}
-						return RE::BSContainer::ForEachResult::kContinue;
-					});
-
-					return result;
-				}
-			default:
-				return false;
-			}
-		}
-
-		bool form::matches(RE::TESNPC* a_npc, RE::FormID a_formID, const FormVec& a_forms, bool a_matchesAll)
-		{
-			constexpr auto has_form_or_file = [](const std::variant<RE::TESForm*, const RE::TESFile*>& a_formFile, RE::TESNPC* a_npc, RE::FormID a_formID) {
-				if (std::holds_alternative<RE::TESForm*>(a_formFile)) {
-					const auto form = std::get<RE::TESForm*>(a_formFile);
-					return form && get_type(a_npc, form);
-				}
-				if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
-					const auto file = std::get<const RE::TESFile*>(a_formFile);
-					return file && file->IsFormInMod(a_formID);
-				}
-				return false;
-			};
-
-			if (a_matchesAll) {
-				return std::ranges::all_of(a_forms, [&](const auto& formOrFile) { return has_form_or_file(formOrFile, a_npc, a_formID); });
-			} else {
-				return std::ranges::any_of(a_forms, [&](const auto& formOrFile) { return has_form_or_file(formOrFile, a_npc, a_formID); });
-			}
-		}
-	}
-
 	Result Data::passed_string_filters(const NPCData& a_npcData) const
 	{
-		if (!strings.ALL.empty() && !a_npcData.HasAllKeywords(strings.ALL)) {
+		if (!strings.ALL.empty() && !a_npcData.HasStringFilter(strings.ALL, true)) {
 			return Result::kFail;
 		}
 
@@ -94,18 +26,15 @@ namespace Filter
 
 	Result Data::passed_form_filters(const NPCData& a_npcData) const
 	{
-		const auto npc = a_npcData.GetNPC();
-		const auto formID = a_npcData.GetFormID();
-
-		if (!forms.ALL.empty() && !detail::form::matches(npc, formID, forms.ALL, true)) {
+		if (!forms.ALL.empty() && !a_npcData.HasFormFilter(forms.ALL, true)) {
 			return Result::kFail;
 		}
 
-		if (!forms.NOT.empty() && detail::form::matches(npc, formID, forms.NOT)) {
+		if (!forms.NOT.empty() && a_npcData.HasFormFilter(forms.NOT)) {
 			return Result::kFail;
 		}
 
-		if (!forms.MATCH.empty() && !detail::form::matches(npc, formID, forms.MATCH)) {
+		if (!forms.MATCH.empty() && !a_npcData.HasFormFilter(forms.MATCH)) {
 			return Result::kFail;
 		}
 
@@ -129,7 +58,7 @@ namespace Filter
 		}
 
 		const auto npc = a_npcData.GetNPC();
-    
+
 		// Skill Level
 		for (auto& [skillType, skill] : std::get<1>(level)) {
 			auto& [skillMin, skillMax] = skill;
@@ -147,81 +76,81 @@ namespace Filter
 			}
 		}
 
+		const auto& skillWeights = npc->npcClass->data.skillWeights;
+
 		// Skill Weight
 		for (auto& [skillType, skill] : std::get<2>(level)) {
 			auto& [skillMin, skillMax] = skill;
 
-			if (skillType < 18) {
-				std::uint8_t skillWeight = a_npc->npcClass->data.skillWeights.oneHanded;
-				using Skill = RE::TESNPC::Skills;
-				switch (skillType) {
-				case Skill::kOneHanded:
-					skillWeight = a_npc->npcClass->data.skillWeights.oneHanded;
-					break;
-				case Skill::kTwoHanded:
-					skillWeight = a_npc->npcClass->data.skillWeights.twoHanded;
-					break;
-				case Skill::kMarksman:
-					skillWeight = a_npc->npcClass->data.skillWeights.archery;
-					break;
-				case Skill::kBlock:
-					skillWeight = a_npc->npcClass->data.skillWeights.block;
-					break;
-				case Skill::kSmithing:
-					skillWeight = a_npc->npcClass->data.skillWeights.smithing;
-					break;
-				case Skill::kHeavyArmor:
-					skillWeight = a_npc->npcClass->data.skillWeights.heavyArmor;
-					break;
-				case Skill::kLightArmor:
-					skillWeight = a_npc->npcClass->data.skillWeights.lightArmor;
-					break;
-				case Skill::kPickpocket:
-					skillWeight = a_npc->npcClass->data.skillWeights.pickpocket;
-					break;
-				case Skill::kLockpicking:
-					skillWeight = a_npc->npcClass->data.skillWeights.lockpicking;
-					break;
-				case Skill::kSneak:
-					skillWeight = a_npc->npcClass->data.skillWeights.sneak;
-					break;
-				case Skill::kAlchemy:
-					skillWeight = a_npc->npcClass->data.skillWeights.alchemy;
-					break;
-				case Skill::kSpecchcraft:
-					skillWeight = a_npc->npcClass->data.skillWeights.speech;
-					break;
-				case Skill::kAlteration:
-					skillWeight = a_npc->npcClass->data.skillWeights.alteration;
-					break;
-				case Skill::kConjuration:
-					skillWeight = a_npc->npcClass->data.skillWeights.conjuration;
-					break;
-				case Skill::kDestruction:
-					skillWeight = a_npc->npcClass->data.skillWeights.destruction;
-					break;
-				case Skill::kIllusion:
-					skillWeight = a_npc->npcClass->data.skillWeights.illusion;
-					break;
-				case Skill::kRestoration:
-					skillWeight = a_npc->npcClass->data.skillWeights.restoration;
-					break;
-				case Skill::kEnchanting:
-					skillWeight = a_npc->npcClass->data.skillWeights.enchanting;
-					break;
-				default:
-					continue;
-				}
+			std::uint8_t skillWeight = skillWeights.oneHanded;
+			using Skill = RE::TESNPC::Skills;
+			switch (skillType) {
+			case Skill::kOneHanded:
+				skillWeight = skillWeights.oneHanded;
+				break;
+			case Skill::kTwoHanded:
+				skillWeight = skillWeights.twoHanded;
+				break;
+			case Skill::kMarksman:
+				skillWeight = skillWeights.archery;
+				break;
+			case Skill::kBlock:
+				skillWeight = skillWeights.block;
+				break;
+			case Skill::kSmithing:
+				skillWeight = skillWeights.smithing;
+				break;
+			case Skill::kHeavyArmor:
+				skillWeight = skillWeights.heavyArmor;
+				break;
+			case Skill::kLightArmor:
+				skillWeight = skillWeights.lightArmor;
+				break;
+			case Skill::kPickpocket:
+				skillWeight = skillWeights.pickpocket;
+				break;
+			case Skill::kLockpicking:
+				skillWeight = skillWeights.lockpicking;
+				break;
+			case Skill::kSneak:
+				skillWeight = skillWeights.sneak;
+				break;
+			case Skill::kAlchemy:
+				skillWeight = skillWeights.alchemy;
+				break;
+			case Skill::kSpecchcraft:
+				skillWeight = skillWeights.speech;
+				break;
+			case Skill::kAlteration:
+				skillWeight = skillWeights.alteration;
+				break;
+			case Skill::kConjuration:
+				skillWeight = skillWeights.conjuration;
+				break;
+			case Skill::kDestruction:
+				skillWeight = skillWeights.destruction;
+				break;
+			case Skill::kIllusion:
+				skillWeight = skillWeights.illusion;
+				break;
+			case Skill::kRestoration:
+				skillWeight = skillWeights.restoration;
+				break;
+			case Skill::kEnchanting:
+				skillWeight = skillWeights.enchanting;
+				break;
+			default:
+				continue;
+			}
 
-				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-					if (skillWeight < skillMin || skillWeight > skillMax) {
-						return Result::kFail;
-					}
-				} else if (skillMin < UINT8_MAX && skillWeight < skillMin) {
-					return Result::kFail;
-				} else if (skillMax < UINT8_MAX && skillWeight > skillMax) {
+			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+				if (skillWeight < skillMin || skillWeight > skillMax) {
 					return Result::kFail;
 				}
+			} else if (skillMin < UINT8_MAX && skillWeight < skillMin) {
+				return Result::kFail;
+			} else if (skillMax < UINT8_MAX && skillWeight > skillMax) {
+				return Result::kFail;
 			}
 		}
 

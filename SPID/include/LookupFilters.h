@@ -16,15 +16,6 @@ namespace Filter
 		kPass
 	};
 
-	namespace detail
-	{
-		struct form
-		{
-			static bool get_type(RE::TESNPC* a_npc, RE::TESForm* a_filter);
-			static bool matches(RE::TESNPC* a_npc, RE::FormID a_formID, const FormVec& a_forms, bool a_matchesAll = false);
-		};
-	}
-
 	struct Data
 	{
 		StringFilters strings{};

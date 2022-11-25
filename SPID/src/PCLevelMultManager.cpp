@@ -45,7 +45,8 @@ namespace PCLevelMult
 					if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 						for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
 							if (npc && !npc->IsPlayer() && npc->HasPCLevelMult()) {
-								Distribute::Distribute(NPCData{ npc }, Input{ npc, true, false });
+								auto npcData = std::make_unique<NPCData>(npc);
+								Distribute::Distribute(*npcData, Input{ npc, true, false });
 							}
 						}
 					}

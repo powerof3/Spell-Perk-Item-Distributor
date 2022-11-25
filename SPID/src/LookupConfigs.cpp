@@ -113,9 +113,8 @@ namespace INI
 						if (isWeightFilter) {
 							sanitizedLevel.erase(0, 1);
 						}
-						auto skills = string::split(sanitizedLevel, " ");
-						//skill min max
-						if (!skills.empty()) {
+                        //skill min max
+						if (auto skills = string::split(sanitizedLevel, " "); !skills.empty()) {
 							if (auto type = string::to_num<std::uint32_t>(skills[0]); type < 18) {
 								auto minLevel = string::to_num<std::uint8_t>(skills[1]);
 								if (skills.size() > 2) {
