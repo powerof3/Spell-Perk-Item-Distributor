@@ -56,8 +56,8 @@ namespace Distribute
 		}
 	}
 
-	// items, death items
-	// wip (packages need to have both add and overwrite behaviors)
+	// old method (distributing one by one)
+	// for now, only packages/death items use this
 	template <class Form>
 	void for_each_form(
 		const NPCData& a_npcData,
@@ -104,6 +104,36 @@ namespace Distribute
 		}
 	}
 
+	// items
+	template <class Form>
+	void for_each_form(
+		const NPCData& a_npcData,
+		Forms::Distributables<Form>& a_distributables,
+		const PCLevelMult::Input& a_input,
+		std::function<bool(std::map<Form*, IdxOrCount>&)> a_callback)
+	{
+		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
+
+		if (vec.empty()) {
+			return;
+		}
+
+	    std::map<Form*, IdxOrCount> collectedForms{};
+
+		std::uint32_t vecIdx = 0;
+		for (auto& formData : vec) {
+			++vecIdx;
+			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
+				collectedForms.emplace(formData.form, formData.idxOrCount);
+				++formData.npcCount;
+			}
+		}
+
+		if (!collectedForms.empty()) {
+			a_callback(collectedForms);
+		}
+	}
+
 	// spells, perks, shouts, keywords
 	// forms that can be added to
 	template <class Form>
@@ -141,7 +171,7 @@ namespace Distribute
 					++formData.npcCount;
 				}
 			} else {
-				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+			    if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
 					++formData.npcCount;
 				}

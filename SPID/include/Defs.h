@@ -4,8 +4,8 @@ template <class K, class D>
 using Map = ankerl::unordered_dense::map<K, D>;
 template <class K>
 using Set = ankerl::unordered_dense::set<K>;
-template <class K, class H>
-using CustomSet = ankerl::unordered_dense::set<K, ankerl::unordered_dense::hash<K>, H>;
+template <class K, class H, class EQ>
+using CustomSet = ankerl::unordered_dense::set<K, H, EQ>;
 
 // Record = FormOrEditorID|StringFilters|RawFormFilters|LevelFilters|Traits|IdxOrCount|Chance
 

@@ -13,7 +13,7 @@ namespace NPC
 		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings, bool all = false) const;
 		[[nodiscard]] bool ContainsStringFilter(const StringVec& a_strings) const;
 
-		bool InsertKeyword(std::string_view a_keyword);
+		bool InsertKeyword(const char* a_keyword);
 
 		[[nodiscard]] bool HasFormFilter(const FormVec& a_forms, bool all = false) const;
 
@@ -24,25 +24,20 @@ namespace NPC
 		[[nodiscard]] bool IsChild() const;
 
 	private:
-		struct kywd_cmp
-		{
-			bool operator()(const std::string& a_lhs, const std::string& a_rhs) const
-			{
-				return _stricmp(a_lhs.c_str(), a_rhs.c_str()) < 0;
-			}
-		};
-
 		void cache_keywords();
+
+		[[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool contains_keyword_string(const std::string& a_string) const;
 
 		[[nodiscard]] bool has_form(RE::TESForm* a_form) const;
 
 		RE::TESNPC* npc;
-		RE::FormID formID;
+		RE::FormID originalFormID;
+		RE::FormID templateFormID{ 0 };
 		std::string name;
 		std::string originalEDID;
-		std::string templateEDID;
-		CustomSet<std::string, kywd_cmp> keywords{};
+		std::string templateEDID{};
+		Set<std::string> keywords{};
 		std::uint16_t level;
 		RE::SEX sex;
 		bool unique;

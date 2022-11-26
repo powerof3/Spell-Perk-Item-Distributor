@@ -4,13 +4,13 @@ namespace NPC
 {
 	void Data::cache_keywords()
 	{
-	    npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.formEditorID);
+		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
 		if (const auto race = npc->GetRace()) {
-		    race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-				keywords.emplace(a_keyword.formEditorID);
+			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+				keywords.emplace(a_keyword.GetFormEditorID());
 				return RE::BSContainer::ForEachResult::kContinue;
 			});
 		}
@@ -18,7 +18,7 @@ namespace NPC
 
 	Data::Data(RE::TESNPC* a_npc) :
 		npc(a_npc),
-		formID(a_npc->GetFormID()),
+		originalFormID(a_npc->GetFormID()),
 		name(a_npc->GetName()),
 		originalEDID(Cache::EditorID::GetEditorID(npc)),
 		level(a_npc->GetLevel()),
@@ -41,14 +41,15 @@ namespace NPC
 	{
 		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
-				originalEDID = Cache::EditorID::GetEditorID(originalBase);
+				originalFormID = originalBase->GetFormID();
+			    originalEDID = Cache::EditorID::GetEditorID(originalBase);
 			}
 			if (const auto templateBase = extraLvlCreature->templateBase) {
-				formID = templateBase->GetFormID();
+				templateFormID = templateBase->GetFormID();
 				templateEDID = Cache::EditorID::GetEditorID(templateBase);
 			}
 		} else {
-			formID = a_npc->GetFormID();
+			originalFormID = a_npc->GetFormID();
 			originalEDID = Cache::EditorID::GetEditorID(npc);
 		}
 		cache_keywords();
@@ -57,6 +58,13 @@ namespace NPC
 	RE::TESNPC* Data::GetNPC() const
 	{
 		return npc;
+	}
+
+	bool Data::has_keyword_string(const std::string& a_string) const
+	{
+		return std::ranges::any_of(keywords, [&](const auto& keyword) {
+			return string::iequals(keyword, a_string);
+		});
 	}
 
 	bool Data::contains_keyword_string(const std::string& a_string) const
@@ -70,11 +78,11 @@ namespace NPC
 	{
 		if (a_all) {
 			return std::ranges::all_of(a_strings, [&](const auto& str) {
-				return keywords.contains(str);
+				return has_keyword_string(str);
 			});
 		} else {
 			return std::ranges::any_of(a_strings, [&](const auto& str) {
-				return keywords.contains(str) || string::iequals(name, str) || string::iequals(originalEDID, str) || string::iequals(templateEDID, str);
+				return has_keyword_string(str) || string::iequals(name, str) || string::iequals(originalEDID, str) || string::iequals(templateEDID, str);
 			});
 		}
 	}
@@ -86,7 +94,7 @@ namespace NPC
 		});
 	}
 
-	bool Data::InsertKeyword(std::string_view a_keyword)
+	bool Data::InsertKeyword(const char* a_keyword)
 	{
 		return keywords.emplace(a_keyword).second;
 	}
@@ -144,7 +152,7 @@ namespace NPC
 			}
 			if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
 				const auto file = std::get<const RE::TESFile*>(a_formFile);
-				return file && file->IsFormInMod(formID);
+				return file && (file->IsFormInMod(originalFormID) || file->IsFormInMod(templateFormID));
 			}
 			return false;
 		};

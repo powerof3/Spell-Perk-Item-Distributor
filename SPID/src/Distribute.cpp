@@ -37,8 +37,8 @@ namespace Distribute
 			npc->GetSpellList()->AddLevSpells(a_levSpells);
 		});
 
-		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](auto* a_item, IdxOrCount a_count) {
-			return npc->AddObjectToContainer(a_item, a_count, a_npcData.GetNPC());
+		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects) {
+			return npc->AddObjectsToContainer(a_objects, a_npcData.GetNPC());
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
