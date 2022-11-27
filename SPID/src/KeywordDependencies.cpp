@@ -132,7 +132,16 @@ void Dependencies::ResolveKeywords()
 				allKeywords[edid] = kwd;
 			} else {
 				if (const auto file = kwd->GetFile(0)) {
-					logger::error(" WARNING : [0x{:X}~{}] keyword has an empty editorID!", kwd->GetLocalFormID(), file->GetFilename());
+					const auto modname = file->GetFilename();
+					const auto formID = kwd->GetLocalFormID();
+					std::string mergeDetails = "";
+					if (g_mergeMapperInterface && g_mergeMapperInterface->isMerge(modname.data())) {
+						const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetOriginalFormID(
+							modname.data(),
+							formID);
+						mergeDetails = std::format("->0x{:X}~{}", mergedFormID, mergedModName);
+					}
+					logger::error(" WARNING : [0x{:X}~{}{}] keyword has an empty editorID!", formID, modname, mergeDetails);
 				}
 			}
 		}
