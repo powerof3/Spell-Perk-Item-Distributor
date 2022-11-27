@@ -6,6 +6,7 @@ set(sources ${sources}
 	src/LookupConfigs.cpp
 	src/LookupFilters.cpp
 	src/LookupForms.cpp
+	src/LookupNPC.cpp
 	src/main.cpp
 	src/PCH.cpp
 	src/PCLevelMultManager.cpp

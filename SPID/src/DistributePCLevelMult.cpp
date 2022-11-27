@@ -11,7 +11,8 @@ namespace Distribute::PlayerLeveledActor
 			if (const auto npc = a_actor->GetActorBase()) {
 				const auto input = npc->IsDynamicForm() ? PCLevelMult::Input{ a_actor, npc, true, false } :  // use character formID for permanent storage
 				                                          PCLevelMult::Input{ npc, true, false };
-				Distribute(npc, input);
+				const auto npcData = NPCData(a_actor, npc);
+				Distribute(npcData, input);
 			}
 
 			func(a_actor);
@@ -29,7 +30,8 @@ namespace Distribute::PlayerLeveledActor
 
 				if (const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton(); !pcLevelMultManager->FindDistributedEntry(input)) {
 					//start distribution for first time
-					Distribute(actorbase, input);
+					const auto npcData = NPCData(a_this, actorbase);
+					Distribute(npcData, input);
 				} else {
 					//handle redistribution and removal
 					pcLevelMultManager->ForEachDistributedEntry(input, [&](RE::TESForm& a_form, [[maybe_unused]] IdxOrCount a_count, bool a_isBelowLevel) {

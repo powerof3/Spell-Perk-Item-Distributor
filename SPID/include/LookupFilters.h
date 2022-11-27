@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LookupNPC.h"
+
 enum class SECONDARY_RESULT
 {
 	kFail = 0,
@@ -11,9 +13,9 @@ namespace Filter
 {
 	inline RNG staticRNG;
 
-    bool strings(RE::TESNPC& a_actorbase, const StringFilters& a_stringFilters);
+    bool strings(const NPCData& a_npcData, const StringFilters& a_stringFilters);
 
-	bool forms(RE::TESNPC& a_actorbase, const FormFilters& a_formFilters);
+	bool forms(const NPCData& a_npcData, const FormFilters& a_formFilters);
 
-	SECONDARY_RESULT secondary(const RE::TESNPC& a_actorbase, const LevelFilters& a_levelFilters, const Traits& a_traits, float a_chance, bool a_noPlayerLevelDistribution);
+	SECONDARY_RESULT secondary(const NPCData& a_npcData, const LevelFilters& a_levelFilters, const Traits& a_traits, float a_chance, bool a_noPlayerLevelDistribution);
 }

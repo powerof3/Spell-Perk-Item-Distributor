@@ -16,7 +16,7 @@ namespace Distribute
 
 	template <class Form>
 	void for_each_form(
-		RE::TESNPC& a_actorbase,
+		const NPCData& a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input& a_input,
 		std::function<bool(Form*, IdxOrCount&)> a_fn)
@@ -33,10 +33,10 @@ namespace Distribute
 			if (pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
 				continue;
 			}
-			if (!Filter::strings(a_actorbase, stringFilters) || !Filter::forms(a_actorbase, formFilters)) {
+			if (!Filter::strings(a_npcData, stringFilters) || !Filter::forms(a_npcData, formFilters)) {
 				continue;
 			}
-			auto result = Filter::secondary(a_actorbase, levelFilters, traits, chance, a_input.noPlayerLevelDistribution);
+			auto result = Filter::secondary(a_npcData, levelFilters, traits, chance, a_input.noPlayerLevelDistribution);
 			if (result != SECONDARY_RESULT::kPass) {
 				if (result == SECONDARY_RESULT::kFailRNG) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
@@ -110,7 +110,7 @@ namespace Distribute
 		void Install();
 	}
 
-	void Distribute(RE::TESNPC* a_actorbase, const PCLevelMult::Input& a_input);
+	void Distribute(const NPCData& a_npcData, const PCLevelMult::Input& a_input);
 
 	void ApplyToNPCs();
 }
