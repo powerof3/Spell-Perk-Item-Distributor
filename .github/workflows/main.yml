@@ -17,7 +17,7 @@ jobs:
       CMAKE_PROJECT_DIR: "SPID"
       CMAKE_VR_CONFIG_PRESET: ''
       CMAKE_VR_BUILD_PRESET: ''
-      AE_353_BRANCH: master-1.6.353
+      AE_353_BRANCH: fixes/6.1.0-ae353
       FOMOD_INCLUDE_PDB: true
       FOMOD_MOD_NAME: "Spell Perk Item Distributor"
       FOMOD_MOD_AUTHOR: "powerofthree"
