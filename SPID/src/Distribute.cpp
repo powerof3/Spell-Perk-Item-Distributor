@@ -238,12 +238,10 @@ namespace Distribute::LeveledActor
 		{
 			func(a_this, a_npc);
 
-			if (!a_npc || !a_npc->IsDynamicForm() || !detail::uses_template(a_npc)) {
-				return;
+			if (a_npc && (a_npc->IsDynamicForm() || detail::uses_template(a_npc))) {
+				const auto npcData = NPCData(a_this, a_npc);
+				Distribute(npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
 			}
-
-			const auto npcData = NPCData(a_this, a_npc);
-			Distribute(npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
