@@ -111,7 +111,7 @@ namespace Lookup
 
 		inline bool has_level_filters(const LevelFilters& a_levelFilters)
 		{
-			const auto& [actorLevelPair, skillLevelPairs] = a_levelFilters;
+			const auto& [actorLevelPair, skillLevelPairs, _] = a_levelFilters;
 
 			auto& [actorMin, actorMax] = actorLevelPair;
 			if (actorMin < UINT16_MAX || actorMax < UINT16_MAX) {

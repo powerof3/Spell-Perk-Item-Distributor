@@ -53,6 +53,12 @@ namespace Filter
 					return a_actorbase == a_filter;
 				case RE::FormType::VoiceType:
 					return a_actorbase->voiceType == a_filter;
+				case RE::FormType::Spell:
+					{
+						const auto spell = a_filter->As<RE::SpellItem>();
+						const auto spellList = a_actorbase->GetSpellList();
+						return spellList && spellList->GetIndex(spell).has_value();
+					}
 				case RE::FormType::FormList:
 					{
 						bool result = false;
@@ -157,7 +163,8 @@ namespace Filter
 			}
 		}
 
-		auto& [actorMin, actorMax] = a_levelFilters.first;
+		// Actor Level
+		auto& [actorMin, actorMax] = std::get<0>(a_levelFilters);
 		const auto actorLevel = npc->GetLevel();
 
 		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
@@ -170,7 +177,8 @@ namespace Filter
 			return failed;
 		}
 
-		for (auto& [skillType, skill] : a_levelFilters.second) {
+		// Skill Level
+		for (auto& [skillType, skill] : std::get<1>(a_levelFilters)) {
 			auto& [skillMin, skillMax] = skill;
 
 			const auto skillLevel = npc->playerSkills.values[skillType];
@@ -182,6 +190,84 @@ namespace Filter
 			} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
 				return failed;
 			} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+				return failed;
+			}
+		}
+
+		const auto& skillWeights = npc->npcClass->data.skillWeights;
+
+		// Skill Weight
+		for (auto& [skillType, skill] : std::get<2>(a_levelFilters)) {
+			auto& [skillMin, skillMax] = skill;
+
+			std::uint8_t skillWeight = skillWeights.oneHanded;
+			using Skill = RE::TESNPC::Skills;
+			switch (skillType) {
+			case Skill::kOneHanded:
+				skillWeight = skillWeights.oneHanded;
+				break;
+			case Skill::kTwoHanded:
+				skillWeight = skillWeights.twoHanded;
+				break;
+			case Skill::kMarksman:
+				skillWeight = skillWeights.archery;
+				break;
+			case Skill::kBlock:
+				skillWeight = skillWeights.block;
+				break;
+			case Skill::kSmithing:
+				skillWeight = skillWeights.smithing;
+				break;
+			case Skill::kHeavyArmor:
+				skillWeight = skillWeights.heavyArmor;
+				break;
+			case Skill::kLightArmor:
+				skillWeight = skillWeights.lightArmor;
+				break;
+			case Skill::kPickpocket:
+				skillWeight = skillWeights.pickpocket;
+				break;
+			case Skill::kLockpicking:
+				skillWeight = skillWeights.lockpicking;
+				break;
+			case Skill::kSneak:
+				skillWeight = skillWeights.sneak;
+				break;
+			case Skill::kAlchemy:
+				skillWeight = skillWeights.alchemy;
+				break;
+			case Skill::kSpecchcraft:
+				skillWeight = skillWeights.speech;
+				break;
+			case Skill::kAlteration:
+				skillWeight = skillWeights.alteration;
+				break;
+			case Skill::kConjuration:
+				skillWeight = skillWeights.conjuration;
+				break;
+			case Skill::kDestruction:
+				skillWeight = skillWeights.destruction;
+				break;
+			case Skill::kIllusion:
+				skillWeight = skillWeights.illusion;
+				break;
+			case Skill::kRestoration:
+				skillWeight = skillWeights.restoration;
+				break;
+			case Skill::kEnchanting:
+				skillWeight = skillWeights.enchanting;
+				break;
+			default:
+				continue;
+			}
+
+			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+				if (skillWeight < skillMin || skillWeight > skillMax) {
+					return failed;
+				}
+			} else if (skillMin < UINT8_MAX && skillWeight < skillMin) {
+				return failed;
+			} else if (skillMax < UINT8_MAX && skillWeight > skillMax) {
 				return failed;
 			}
 		}

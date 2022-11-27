@@ -13,7 +13,7 @@ namespace Cache
 
 	namespace FormType
 	{
-		inline constexpr frozen::set<RE::FormType, 8> whitelist = {
+		inline constexpr frozen::set<RE::FormType, 9> whitelist = {
 			{ RE::FormType::Faction },
 			{ RE::FormType::Class },
 			{ RE::FormType::CombatStyle },
@@ -21,7 +21,8 @@ namespace Cache
 			{ RE::FormType::Outfit },
 			{ RE::FormType::NPC },
 			{ RE::FormType::VoiceType },
-			{ RE::FormType::FormList }
+			{ RE::FormType::FormList },
+			{ RE::FormType::Spell }
 		};
 		
 		bool GetWhitelisted(RE::FormType a_type);

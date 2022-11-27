@@ -99,7 +99,7 @@ using INIData = std::tuple<
 	FormOrEditorID,
 	std::array<StringVec, 4>,
 	std::array<FormIDVec, 3>,
-	std::pair<ActorLevel, std::vector<SkillLevel>>,
+	std::tuple<ActorLevel, std::vector<SkillLevel>, std::vector<SkillLevel>>,
 	Traits,
 	IdxOrCount,
 	Chance,
@@ -108,7 +108,7 @@ using INIDataVec = std::vector<INIData>;
 
 using StringFilters = std::array<StringVec, 4>;
 using FormFilters = std::array<FormVec, 3>;
-using LevelFilters = std::pair<ActorLevel, std::vector<SkillLevel>>;
+using LevelFilters = std::tuple<ActorLevel, std::vector<SkillLevel>,std::vector<SkillLevel>>;
 
 template <class K, class D>
 using Map = robin_hood::unordered_flat_map<K, D>;
