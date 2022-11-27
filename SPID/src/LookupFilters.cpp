@@ -7,7 +7,7 @@ namespace Filter
 	{
 		namespace stringF
 		{
-			bool contains(RE::TESNPC& a_actorbase, const std::string& a_name, const std::string& a_edid, const StringVec& a_strings, bool a_matchesAll = false)
+			bool contains(RE::TESNPC& a_actorbase, const std::string& a_name, const std::string& a_edid, const StringVec& a_strings)
 			{
 				return std::ranges::any_of(a_strings, [&](const auto& str) {
 					return a_actorbase.ContainsKeyword(str) || string::icontains(a_name, str) || string::icontains(a_edid, str);
@@ -21,7 +21,7 @@ namespace Filter
 				});
 			}
 
-			bool matches(RE::TESNPC& a_actorbase, const StringVec& a_strings, bool a_matchesAll)
+			bool matches(RE::TESNPC& a_actorbase, const StringVec& a_strings)
 			{
 				const auto matches = [&](const auto& str) {
 					return a_actorbase.HasApplicableKeywordString(str);
@@ -99,7 +99,7 @@ namespace Filter
 	{
 		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = a_stringFilters;
 
-		if (!strings_ALL.empty() && !detail::stringF::matches(a_actorbase, strings_ALL, true)) {
+		if (!strings_ALL.empty() && !detail::stringF::matches(a_actorbase, strings_ALL)) {
 			return false;
 		}
 

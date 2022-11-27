@@ -8,7 +8,7 @@ namespace Distribute
 {
 	namespace detail
 	{
-		bool uses_template(RE::TESNPC* a_actorbase)
+		inline bool uses_template(RE::TESNPC* a_actorbase)
 		{
 			return a_actorbase->UsesTemplate() || a_actorbase->baseTemplateForm || a_actorbase->templateForms;
 		};
