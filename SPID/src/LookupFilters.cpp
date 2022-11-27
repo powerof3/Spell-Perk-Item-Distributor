@@ -5,24 +5,33 @@ namespace Filter
 {
 	namespace detail
 	{
-		namespace name
+		namespace stringF
 		{
-			bool contains(const std::string& a_name, const StringVec& a_strings)
+			bool contains(RE::TESNPC& a_actorbase, const std::string& a_name, const std::string& a_edid, const StringVec& a_strings, bool a_matchesAll = false)
 			{
 				return std::ranges::any_of(a_strings, [&](const auto& str) {
-					return string::icontains(a_name, str);
+					return a_actorbase.ContainsKeyword(str) || string::icontains(a_name, str) || string::icontains(a_edid, str);
 				});
 			}
 
-			bool matches(const std::string& a_name, const StringVec& a_strings)
+			bool matches(RE::TESNPC& a_actorbase, const std::string& a_name, const std::string& a_edid, const StringVec& a_strings)
 			{
 				return std::ranges::any_of(a_strings, [&](const auto& str) {
-					return string::iequals(a_name, str);
+					return a_actorbase.HasApplicableKeywordString(str) || string::iequals(a_name, str) || string::iequals(a_edid, str);
 				});
+			}
+
+			bool matches(RE::TESNPC& a_actorbase, const StringVec& a_strings, bool a_matchesAll)
+			{
+				const auto matches = [&](const auto& str) {
+					return a_actorbase.HasApplicableKeywordString(str);
+				};
+
+				return std::ranges::all_of(a_strings, matches);
 			}
 		}
 
-		namespace form
+		namespace formF
 		{
 			bool get_type(RE::TESNPC& a_actorbase, RE::TESForm* a_filter)
 			{
@@ -84,88 +93,29 @@ namespace Filter
 				}
 			}
 		}
-
-		namespace keyword
-		{
-			bool contains(RE::TESNPC& a_actorbase, const StringVec& a_strings)
-			{
-				return std::ranges::any_of(a_strings, [&a_actorbase](const auto& str) {
-					return a_actorbase.ContainsKeyword(str);
-				});
-			}
-
-			bool matches(RE::TESNPC& a_actorbase, const StringVec& a_strings, bool a_matchesAll = false)
-			{
-				const auto has_keyword = [&](const auto& str) {
-					return a_actorbase.HasApplicableKeywordString(str);
-				};
-
-				if (a_matchesAll) {
-					return std::ranges::all_of(a_strings, has_keyword);
-				} else {
-					return std::ranges::any_of(a_strings, has_keyword);
-				}
-			}
-		}
 	}
 
 	bool strings(RE::TESNPC& a_actorbase, const StringFilters& a_stringFilters)
 	{
 		auto& [strings_ALL, strings_NOT, strings_MATCH, strings_ANY] = a_stringFilters;
 
-		if (!strings_ALL.empty() && !detail::keyword::matches(a_actorbase, strings_ALL, true)) {
+		if (!strings_ALL.empty() && !detail::stringF::matches(a_actorbase, strings_ALL, true)) {
 			return false;
 		}
 
 		const std::string name = a_actorbase.GetName();
 		const std::string editorID = Cache::EditorID::GetEditorID(a_actorbase.GetFormID());
 
-		if (!strings_NOT.empty()) {
-			bool result = false;
-			if (!name.empty() && detail::name::matches(name, strings_NOT)) {
-				result = true;
-			}
-			if (!result && !editorID.empty() && detail::name::matches(editorID, strings_NOT)) {
-				result = true;
-			}
-			if (!result && detail::keyword::matches(a_actorbase, strings_NOT)) {
-				result = true;
-			}
-			if (result) {
-				return false;
-			}
+		if (!strings_NOT.empty() && detail::stringF::matches(a_actorbase, name, editorID, strings_NOT)) {
+			return false;
 		}
 
-		if (!strings_MATCH.empty()) {
-			bool result = false;
-			if (!name.empty() && detail::name::matches(name, strings_MATCH)) {
-				result = true;
-			}
-			if (!result && !editorID.empty() && detail::name::matches(editorID, strings_MATCH)) {
-				result = true;
-			}
-			if (!result && detail::keyword::matches(a_actorbase, strings_MATCH)) {
-				result = true;
-			}
-			if (!result) {
-				return false;
-			}
+		if (!strings_MATCH.empty() && !detail::stringF::matches(a_actorbase, name, editorID, strings_MATCH)) {
+			return false;
 		}
 
-		if (!strings_ANY.empty()) {
-			bool result = false;
-			if (!name.empty() && detail::name::contains(name, strings_ANY)) {
-				result = true;
-			}
-			if (!result && !editorID.empty() && detail::name::contains(editorID, strings_ANY)) {
-				result = true;
-			}
-			if (!result && detail::keyword::contains(a_actorbase, strings_ANY)) {
-				result = true;
-			}
-			if (!result) {
-				return false;
-			}
+		if (!strings_ANY.empty() && !detail::stringF::contains(a_actorbase, name, editorID, strings_ANY)) {
+			return false;
 		}
 
 		return true;
@@ -175,15 +125,15 @@ namespace Filter
 	{
 		auto& [filterForms_ALL, filterForms_NOT, filterForms_MATCH] = a_formFilters;
 
-		if (!filterForms_ALL.empty() && !detail::form::matches(a_actorbase, filterForms_ALL, true)) {
+		if (!filterForms_ALL.empty() && !detail::formF::matches(a_actorbase, filterForms_ALL, true)) {
 			return false;
 		}
 
-		if (!filterForms_NOT.empty() && detail::form::matches(a_actorbase, filterForms_NOT)) {
+		if (!filterForms_NOT.empty() && detail::formF::matches(a_actorbase, filterForms_NOT)) {
 			return false;
 		}
 
-		if (!filterForms_MATCH.empty() && !detail::form::matches(a_actorbase, filterForms_MATCH)) {
+		if (!filterForms_MATCH.empty() && !detail::formF::matches(a_actorbase, filterForms_MATCH)) {
 			return false;
 		}
 
@@ -216,18 +166,16 @@ namespace Filter
 		for (auto& [skillType, skill] : a_levelFilters.second) {
 			auto& [skillMin, skillMax] = skill;
 
-			if (skillType < 18) {
-				const auto skillLevel = a_actorbase.playerSkills.values[skillType];
+			const auto skillLevel = a_actorbase.playerSkills.values[skillType];
 
-				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-					if (skillLevel < skillMin || skillLevel > skillMax) {
-						return failed;
-					}
-				} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
-					return failed;
-				} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+				if (skillLevel < skillMin || skillLevel > skillMax) {
 					return failed;
 				}
+			} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
+				return failed;
+			} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+				return failed;
 			}
 		}
 

@@ -129,22 +129,22 @@ namespace Distribute
 
 	void ApplyToNPCs()
 	{
-		constexpr auto uses_template = [](const RE::TESNPC* a_actorbase) -> bool {
-			return a_actorbase->UsesTemplate() || a_actorbase->baseTemplateForm || a_actorbase->templateForms;
-		};
-
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			std::size_t totalNPCs = 0;
+			const auto startTime = std::chrono::steady_clock::now();
 			for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-				if (actorbase && !actorbase->IsPlayer() && (!uses_template(actorbase) || actorbase->IsUnique())) {
+				if (actorbase && !actorbase->IsPlayer() && (!detail::uses_template(actorbase) || actorbase->IsUnique())) {
 					Distribute(actorbase, PCLevelMult::Input{ actorbase, false, true });
 					totalNPCs++;
 				}
 			}
+			const auto endTime = std::chrono::steady_clock::now();
 
 			logger::info("{:*^50}", "RESULTS");
 			logger::info("{:*^50}", "[unique or non-templated NPCs]");
 
+			logger::info("Distribution took {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count());
+			
 			const auto list_result = [&totalNPCs]<class Form>(const RECORD::TYPE a_recordType, Forms::Distributables<Form>& a_distributables) {
 				if (a_distributables) {
 					const auto& recordName = RECORD::add[a_recordType];
@@ -234,7 +234,7 @@ namespace Distribute::LeveledActor
 		{
 			func(a_this, a_npc);
 
-			if (!a_npc || !a_npc->IsDynamicForm()) {
+			if (!a_npc || !a_npc->IsDynamicForm() || !detail::uses_template(a_npc)) {
 				return;
 			}
 

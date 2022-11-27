@@ -6,6 +6,14 @@
 
 namespace Distribute
 {
+	namespace detail
+	{
+		bool uses_template(RE::TESNPC* a_actorbase)
+		{
+			return a_actorbase->UsesTemplate() || a_actorbase->baseTemplateForm || a_actorbase->templateForms;
+		};
+	}
+
 	template <class Form>
 	void for_each_form(
 		RE::TESNPC& a_actorbase,

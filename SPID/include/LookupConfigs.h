@@ -117,17 +117,17 @@ namespace INI
 					auto skills = string::split(sanitizedLevel, " ");
 					//skill min max
 					if (!skills.empty()) {
-						if (skills.size() > 2) {
-							auto type = string::to_num<std::uint32_t>(skills[0]);
-							auto minLevel = string::to_num<std::uint8_t>(skills[1]);
-							auto maxLevel = string::to_num<std::uint8_t>(skills[2]);
+						if (auto type = string::to_num<std::uint32_t>(skills[0]); type < 18) {
+							if (skills.size() > 2) {
+								auto minLevel = string::to_num<std::uint8_t>(skills[1]);
+								auto maxLevel = string::to_num<std::uint8_t>(skills[2]);
 
-							skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
-						} else {
-							auto type = string::to_num<std::uint32_t>(skills[0]);
-							auto minLevel = string::to_num<std::uint8_t>(skills[1]);
+								skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
+							} else {
+								auto minLevel = string::to_num<std::uint8_t>(skills[1]);
 
-							skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
+								skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
+							}
 						}
 					}
 				} else {
@@ -153,9 +153,9 @@ namespace INI
 
 			auto split_traits = distribution::split_entry(sections[kTraits], "/");
 			for (auto& trait : split_traits) {
-				if (trait == "M") {
+				if (trait == "M" || trait == "-F") {
 					sex = RE::SEX::kMale;
-				} else if (trait == "F") {
+				} else if (trait == "F" || trait == "-M") {
 					sex = RE::SEX::kFemale;
 				} else if (trait == "U") {
 					unique = true;
@@ -197,5 +197,5 @@ namespace INI
 		return std::make_tuple(data, std::nullopt);
 	}
 
-	std::pair<bool,bool> Read();
+	std::pair<bool, bool> Read();
 }
