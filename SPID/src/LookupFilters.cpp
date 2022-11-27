@@ -168,7 +168,8 @@ namespace Filter
 		}
 
 		if (chance != 100) {
-			if (const auto rng = staticRNG.Generate<Chance>(0, 100); rng > chance) {
+			const auto randNum = staticRNG.Generate<Chance>(0, 100);
+			if (randNum > chance) {
 				return Result::kFailRNG;
 			}
 		}
@@ -195,7 +196,7 @@ namespace Filter
 
 	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
 	{
-	    if (passed_string_filters(a_npcData) == Result::kFail) {
+		if (passed_string_filters(a_npcData) == Result::kFail) {
 			return Result::kFail;
 		}
 
