@@ -11,13 +11,12 @@ namespace Forms
 		static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
 	};
 
-    template <class Form>
+	template <class Form>
 	struct Data
 	{
 		Form* form{ nullptr };
 		IdxOrCount idxOrCount{ 1 };
 		FilterData filters{};
-		std::uint32_t npcCount{ 0 };
 
 		bool operator<(const Data& a_rhs) const
 		{
@@ -33,14 +32,14 @@ namespace Forms
 			if (!form || !a_rhs.form) {
 				return false;
 			}
-            return form->GetFormID() == a_rhs.form->GetFormID();
-        }
+			return form->GetFormID() == a_rhs.form->GetFormID();
+		}
 	};
 
 	template <class Form>
 	using DataVec = std::vector<Data<Form>>;
 
-    template <class Form>
+	template <class Form>
 	struct Distributables
 	{
 		DataVec<Form> forms{};

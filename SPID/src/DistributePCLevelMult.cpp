@@ -9,7 +9,7 @@ namespace Distribute::PlayerLeveledActor
 		static void thunk(RE::Actor* a_actor)
 		{
 			if (const auto npc = a_actor->GetActorBase()) {
-				auto npcData = std::make_unique<NPCData>(a_actor, npc);
+				const auto npcData = std::make_unique<NPCData>(a_actor, npc);
 				Distribute(*npcData, PCLevelMult::Input{ a_actor, npc, true, false });
 			}
 
@@ -26,7 +26,7 @@ namespace Distribute::PlayerLeveledActor
 				const auto input = PCLevelMult::Input{ a_this, npc, true, false };
 
 				if (const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton(); !pcLevelMultManager->FindDistributedEntry(input)) {
-					//start distribution for first time
+					//start distribution of leveled entries for first time
 					const auto npcData = std::make_unique<NPCData>(a_this, npc);
 					Distribute(*npcData, input);
 				} else {
@@ -35,7 +35,7 @@ namespace Distribute::PlayerLeveledActor
 						switch (a_formType) {
 						case RE::FormType::Keyword:
 							{
-                                const auto keywords = detail::set_to_vec<RE::BGSKeyword>(a_formIDSet);
+								const auto keywords = detail::set_to_vec<RE::BGSKeyword>(a_formIDSet);
 
 								if (a_isBelowLevel) {
 									npc->RemoveKeywords(keywords);
@@ -65,7 +65,7 @@ namespace Distribute::PlayerLeveledActor
 						case RE::FormType::Perk:
 							{
 								const auto perks = detail::set_to_vec<RE::BGSPerk>(a_formIDSet);
-		
+
 								if (a_isBelowLevel) {
 									npc->RemovePerks(perks);
 								} else {

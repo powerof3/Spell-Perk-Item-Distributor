@@ -8,55 +8,11 @@ namespace Distribute
 		return a_npc->UsesTemplate() || a_npc->baseTemplateForm != nullptr;
 	}
 
-	// Deprecated
-    void OnInit()
-	{
-		logger::info("Starting distribution...");
-		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-			std::size_t totalNPCs = 0;
-
-			const auto startTime = std::chrono::steady_clock::now();
-			for (const auto& npc : dataHandler->GetFormArray<RE::TESNPC>()) {
-				if (npc && !npc->IsPlayer() && (!detail::uses_template(npc) || npc->IsUnique())) {
-					const auto npcData = std::make_unique<NPCData>(npc);
-					Distribute(*npcData, PCLevelMult::Input{ npc, false, true });
-					totalNPCs++;
-				}
-			}
-			const auto endTime = std::chrono::steady_clock::now();
-
-			logger::info("Distribution took {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count());
-
-			logger::info("{:*^50}", "STATS");
-			logger::info("{:*^50}", "[entries added to static NPCs on game load]");
-
-			const auto list_result = [&totalNPCs]<class Form>(const RECORD::TYPE a_recordType, Forms::Distributables<Form>& a_distributables) {
-				if (a_distributables) {
-					const auto& recordName = RECORD::add[a_recordType];
-					list_npc_count(recordName, a_distributables, totalNPCs);
-				}
-			};
-
-			list_result(RECORD::kKeyword, Forms::keywords);
-			list_result(RECORD::kSpell, Forms::spells);
-			list_result(RECORD::kPerk, Forms::perks);
-			list_result(RECORD::kItem, Forms::items);
-			list_result(RECORD::kShout, Forms::shouts);
-			list_result(RECORD::kLevSpell, Forms::levSpells);
-			list_result(RECORD::kPackage, Forms::packages);
-			list_result(RECORD::kOutfit, Forms::outfits);
-			list_result(RECORD::kDeathItem, Forms::deathItems);
-			list_result(RECORD::kFaction, Forms::factions);
-			list_result(RECORD::kSleepOutfit, Forms::sleepOutfits);
-			list_result(RECORD::kSkin, Forms::skins);
-		}
-	}
-
 	// Static actors
-    namespace Actor
+	namespace Actor
 	{
 		// Refires when quitting to main menu and loading the game again
-	    struct InitItemImpl
+		struct InitItemImpl
 		{
 			static void thunk(RE::TESNPC* a_this)
 			{
@@ -66,11 +22,11 @@ namespace Distribute
 					logger::info("{:*^50}", "LOOKUP");
 					logger::info("Starting distribution : InitItemImpl hook");
 
-				    const auto startTime = std::chrono::steady_clock::now();
+					const auto startTime = std::chrono::steady_clock::now();
 					Lookup::GetForms();
 					const auto endTime = std::chrono::steady_clock::now();
 
-				    logger::info("{:*^50}", "RESULT");
+					logger::info("{:*^50}", "RESULT");
 					logger::info("Lookup took {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count());
 				});
 
@@ -92,7 +48,7 @@ namespace Distribute
 		}
 	}
 
-	// Levelled actors
+	// Leveled actors
 	namespace LeveledActor
 	{
 		struct SetObjectReference
@@ -102,7 +58,7 @@ namespace Distribute
 				func(a_this, a_npc);
 
 				if (a_npc && detail::uses_template(a_npc) && !a_npc->IsUnique()) {
-                    const auto npcData = std::make_unique<NPCData>(a_this, a_npc);
+					const auto npcData = std::make_unique<NPCData>(a_this, a_npc);
 					Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
 				}
 			}

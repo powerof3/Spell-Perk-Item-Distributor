@@ -71,11 +71,7 @@ namespace Distribute
 		for (auto& formData : vec) {
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
-				auto form = formData.form;
-				auto idxOrCount = formData.idxOrCount;
-				if (a_callback(form, idxOrCount)) {
-					++formData.npcCount;
-				}
+				a_callback(formData.form, formData.idxOrCount);
 			}
 		}
 	}
@@ -95,9 +91,7 @@ namespace Distribute
 		for (auto& formData : vec | std::views::reverse) {  //iterate from last inserted config (Zzz -> Aaaa)
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
-				auto form = formData.form;
-				if (a_callback(form)) {
-					++formData.npcCount;
+				if (auto form = formData.form; a_callback(form)) {
 					break;
 				}
 			}
@@ -118,14 +112,13 @@ namespace Distribute
 			return;
 		}
 
-	    std::map<Form*, IdxOrCount> collectedForms{};
+		std::map<Form*, IdxOrCount> collectedForms{};
 
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
 				collectedForms.emplace(formData.form, formData.idxOrCount);
-				++formData.npcCount;
 			}
 		}
 
@@ -149,7 +142,7 @@ namespace Distribute
 			return;
 		}
 
-    	const auto npc = a_npcData.GetNPC();
+		const auto npc = a_npcData.GetNPC();
 
 		std::vector<Form*> collectedForms{};
 		collectedForms.reserve(vec.size());
@@ -168,12 +161,10 @@ namespace Distribute
 				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
-					++formData.npcCount;
 				}
 			} else {
-			    if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
-					++formData.npcCount;
 				}
 			}
 		}
@@ -181,7 +172,7 @@ namespace Distribute
 		if (!collectedForms.empty()) {
 			a_callback(collectedForms);
 
-		    PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedFormIDs);
+			PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedFormIDs);
 		}
 	}
 
