@@ -1,5 +1,4 @@
 #include "KeywordDependencies.h"
-#include "Defs.h"
 #include "LookupForms.h"
 
 /// An object that describes a keyword dependencies.
@@ -7,15 +6,14 @@ struct DependencyNode
 {
 private:
 	RE::BGSKeyword* value;
-
-	std::unordered_map<RE::BGSKeyword*, DependencyNode*> children = {};
+	std::unordered_map<RE::BGSKeyword*, DependencyNode*> children{};
 
 public:
-	DependencyNode(RE::BGSKeyword* val)
-	{
-		value = val;
-		children = {};
-	}
+	DependencyNode(RE::BGSKeyword* val) :
+		value(val)
+	{}
+
+	~DependencyNode() = default;
 
 	/// Adds given node as a child of the current node.
 	/// If the same keyword has already been added, subsequent attempts will be ignored.
@@ -28,13 +26,13 @@ public:
 	}
 
 	/// Checks whether current node has any dependencies.
-	bool HasDependencies() const
+    [[nodiscard]] bool HasDependencies() const
 	{
 		return !children.empty();
 	}
 
 	/// Returns number of dependencies that this node has.
-	size_t DependenciesCount() const
+	[[nodiscard]] std::size_t DependenciesCount() const
 	{
 		return children.size();
 	}
@@ -60,33 +58,32 @@ public:
 	}
 };
 
-/// A map that associates keywords with their dependency nodes, holding all keyword's dependnecies.
-inline std::unordered_map<RE::BGSKeyword*, DependencyNode*> keywordDependencies;
+/// A map that associates keywords with their dependency nodes, holding all keyword's dependencies.
+inline std::unordered_map<RE::BGSKeyword*, std::unique_ptr<DependencyNode>> keywordDependencies;
 
 /// Finds an existing dependency node for given keyword.
 /// If none found, a new node will be created and placed into the map.
 DependencyNode* NodeForKeyword(RE::BGSKeyword* keyword)
 {
 	if (keywordDependencies.contains(keyword)) {
-		return keywordDependencies.at(keyword);
+		return keywordDependencies[keyword].get();
 	}
 
-	auto node = new DependencyNode(keyword);
-	keywordDependencies.try_emplace(keyword, node);
-	return node;
+    const auto [it, result] = keywordDependencies.try_emplace(keyword, std::make_unique<DependencyNode>(keyword));
+	return it->second.get();
 }
 
 /// Returns number of dependencies that given `keyword` has.
-size_t DependenciesCount(RE::BGSKeyword* keyword)
+std::size_t DependenciesCount(RE::BGSKeyword* keyword)
 {
-	auto iter = keywordDependencies.find(keyword);
+	const auto iter = keywordDependencies.find(keyword);
 	return iter != keywordDependencies.end() ? iter->second->DependenciesCount() : 0;
 }
 
 /// Checks whether `parent` keyword is dependent on `dependency` keyword.
 bool IsDepending(RE::BGSKeyword* parent, RE::BGSKeyword* dependency)
 {
-	auto iter = keywordDependencies.find(parent);
+	const auto iter = keywordDependencies.find(parent);
 	return iter != keywordDependencies.end() && iter->second->IsNestedChild(dependency);
 }
 
@@ -124,9 +121,9 @@ void Dependencies::ResolveKeywords()
 
 	// Pre-build a map of all available keywords by names.
 	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
-	std::set<Forms::Data<RE::BGSKeyword>> distrKeywords(Forms::keywords.forms.begin(), Forms::keywords.forms.end());
+    const std::set distrKeywords(Forms::keywords.forms.begin(), Forms::keywords.forms.end());
 
-	const auto& dataHandler = RE::TESDataHandler::GetSingleton();
+	const auto dataHandler = RE::TESDataHandler::GetSingleton();
 	for (const auto& kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
 		if (kwd) {
 			if (const auto edid = kwd->GetFormEditorID(); !string::is_empty(edid)) {
@@ -135,7 +132,7 @@ void Dependencies::ResolveKeywords()
 				if (const auto file = kwd->GetFile(0)) {
 					const auto modname = file->GetFilename();
 					const auto formID = kwd->GetLocalFormID();
-					std::string mergeDetails = "";
+					std::string mergeDetails;
 					if (g_mergeMapperInterface && g_mergeMapperInterface->isMerge(modname.data())) {
 						const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetOriginalFormID(
 							modname.data(),
@@ -178,15 +175,18 @@ void Dependencies::ResolveKeywords()
 	}
 
 	std::sort(Forms::keywords.forms.begin(), Forms::keywords.forms.end());
-	
+
 	// Print only unique entries in the log.
 	Forms::DataVec<RE::BGSKeyword> resolvedKeywords(Forms::keywords.forms);
-	resolvedKeywords.erase(std::unique(resolvedKeywords.begin(), resolvedKeywords.end()), resolvedKeywords.end());
+	resolvedKeywords.erase(std::ranges::unique(resolvedKeywords).begin(), resolvedKeywords.end());
 
 	logger::info("\tKeywords have been sorted: ");
 	for (const auto& keywordData : resolvedKeywords) {
 		logger::info("\t\t{} [0x{:X}]", keywordData.form->GetFormEditorID(), keywordData.form->GetFormID());
 	}
+
+	// Clear keyword dependencies
+    keywordDependencies.clear();
 }
 
 /// Comparator that utilizes dependencies map created with Dependencies::ResolveKeywords() to sort keywords.

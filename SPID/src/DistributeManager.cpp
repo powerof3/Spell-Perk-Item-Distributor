@@ -20,14 +20,13 @@ namespace Distribute
 
 				std::call_once(lookupForms, [] {
 					logger::info("{:*^50}", "LOOKUP");
-					logger::info("Starting distribution : InitItemImpl hook");
 
 					const auto startTime = std::chrono::steady_clock::now();
 					Lookup::GetForms();
 					const auto endTime = std::chrono::steady_clock::now();
 
 					logger::info("{:*^50}", "RESULT");
-					logger::info("Lookup took {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count());
+					logger::info("Lookup took {}us", std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
 				});
 
 				if (!a_this->IsPlayer() && (!detail::uses_template(a_this) || a_this->IsUnique())) {
@@ -110,12 +109,8 @@ namespace Distribute::Event
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				const PCLevelMult::Input input{
-					npc,
-					false,
-					false,
-				};
-				auto npcData = std::make_unique<NPCData>(actor, npc);
+				const auto input = PCLevelMult::Input{ actor, npc, false, false };
+				const auto npcData = std::make_unique<NPCData>(actor, npc);
 				for_each_form<RE::TESBoundObject>(*npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
 					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;

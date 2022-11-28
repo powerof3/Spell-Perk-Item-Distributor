@@ -150,6 +150,7 @@ namespace Distribute
 		collectedForms.reserve(vec.size());
 
 		Set<RE::FormID> collectedFormIDs{};
+		collectedFormIDs.reserve(vec.size());
 
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
