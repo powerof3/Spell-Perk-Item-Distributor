@@ -12,7 +12,7 @@ namespace Distribute
 		bool passed_filters(
 			const NPCData& a_npcData,
 			const PCLevelMult::Input& a_input,
-			Forms::Data<Form>& a_formData,
+			const Forms::Data<Form>& a_formData,
 			std::uint32_t idx)
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
@@ -65,13 +65,15 @@ namespace Distribute
 		const PCLevelMult::Input& a_input,
 		std::function<bool(Form*, IdxOrCount&)> a_callback)
 	{
-		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
 
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
-				a_callback(formData.form, formData.idxOrCount);
+				auto form = formData.form;
+				auto idxOrCount = formData.idxOrCount;
+				a_callback(form, idxOrCount);
 			}
 		}
 	}
@@ -85,7 +87,7 @@ namespace Distribute
 		const PCLevelMult::Input& a_input,
 		std::function<bool(Form*)> a_callback)
 	{
-		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
 
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec | std::views::reverse) {  //iterate from last inserted config (Zzz -> Aaaa)
@@ -106,7 +108,7 @@ namespace Distribute
 		const PCLevelMult::Input& a_input,
 		std::function<bool(std::map<Form*, IdxOrCount>&)> a_callback)
 	{
-		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
 
 		if (vec.empty()) {
 			return;
@@ -136,7 +138,7 @@ namespace Distribute
 		const PCLevelMult::Input& a_input,
 		std::function<void(const std::vector<Form*>&)> a_callback)
 	{
-		auto& vec = a_input.onlyPlayerLevelEntries ? a_distributables.formsWithLevels : a_distributables.forms;
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
 
 		if (vec.empty()) {
 			return;

@@ -3,72 +3,8 @@
 #include "LookupConfigs.h"
 #include "LookupFilters.h"
 
-namespace Forms
-{
-	/// Custom ordering for keywords that ensures that dependent keywords are disitrbuted after the keywords that they depend on.
-	struct KeywordDependencySorter
-	{
-		static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
-	};
-
-	template <class Form>
-	struct Data
-	{
-		Form* form{ nullptr };
-		IdxOrCount idxOrCount{ 1 };
-		FilterData filters{};
-
-		bool operator<(const Data& a_rhs) const
-		{
-			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				return KeywordDependencySorter::sort(form, a_rhs.form);
-			} else {
-				return true;
-			}
-		}
-
-		bool operator==(const Data& a_rhs) const
-		{
-			if (!form || !a_rhs.form) {
-				return false;
-			}
-			return form->GetFormID() == a_rhs.form->GetFormID();
-		}
-	};
-
-	template <class Form>
-	using DataVec = std::vector<Data<Form>>;
-
-	template <class Form>
-	struct Distributables
-	{
-		DataVec<Form> forms{};
-		DataVec<Form> formsWithLevels{};
-
-		explicit operator bool()
-		{
-			return !forms.empty();
-		}
-	};
-
-	inline Distributables<RE::SpellItem> spells;
-	inline Distributables<RE::BGSPerk> perks;
-	inline Distributables<RE::TESBoundObject> items;
-	inline Distributables<RE::TESShout> shouts;
-	inline Distributables<RE::TESLevSpell> levSpells;
-	inline Distributables<RE::TESForm> packages;
-	inline Distributables<RE::BGSOutfit> outfits;
-	inline Distributables<RE::BGSKeyword> keywords;
-	inline Distributables<RE::TESBoundObject> deathItems;
-	inline Distributables<RE::TESFaction> factions;
-	inline Distributables<RE::BGSOutfit> sleepOutfits;
-	inline Distributables<RE::TESObjectARMO> skins;
-}
-
 namespace Lookup
 {
-	using namespace Forms;
-
 	namespace detail
 	{
 		inline void get_merged_IDs(std::optional<RE::FormID>& a_formID, std::optional<std::string>& a_modName)
@@ -145,140 +81,223 @@ namespace Lookup
 		}
 	}
 
-	template <class Form>
-	void get_forms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec, Forms::DataVec<Form>& a_formDataVec)
+	bool GetForms();
+}
+
+namespace Forms
+{
+	/// Custom ordering for keywords that ensures that dependent keywords are distributed after the keywords that they depend on.
+	struct KeywordDependencySorter
 	{
-		if (a_INIDataVec.empty()) {
-			return;
+		static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
+	};
+
+	template <class Form>
+	struct Data
+	{
+		Form* form{ nullptr };
+		IdxOrCount idxOrCount{ 1 };
+		FilterData filters{};
+
+		bool operator<(const Data& a_rhs) const
+		{
+			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
+				return KeywordDependencySorter::sort(form, a_rhs.form);
+			} else {
+				return true;
+			}
 		}
 
-		logger::info("\tStarting {} lookup", a_type);
+		bool operator==(const Data& a_rhs) const
+		{
+			if (!form || !a_rhs.form) {
+				return false;
+			}
+			return form->GetFormID() == a_rhs.form->GetFormID();
+		}
+	};
 
-		a_formDataVec.reserve(a_INIDataVec.size());
+	template <class Form>
+	using DataVec = std::vector<Data<Form>>;
 
-		for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
-			Form* form = nullptr;
+	template <class Form>
+	struct Distributables
+	{
+		DataVec<Form> forms{};
+		DataVec<Form> formsWithLevels{};
+		DataVec<Form> formsNoLevels{};
 
-			if (std::holds_alternative<FormModPair>(formOrEditorID)) {
-				if (auto [formID, modName] = std::get<FormModPair>(formOrEditorID); formID) {
-					if (g_mergeMapperInterface) {
-						detail::get_merged_IDs(formID, modName);
-					}
-					if (modName) {
-						form = a_dataHandler->LookupForm<Form>(*formID, *modName);
-						if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
-							if (!form) {
-								const auto base = a_dataHandler->LookupForm(*formID, *modName);
-								form = base ? static_cast<Form*>(base) : nullptr;
-							}
-						}
-					} else {
-						form = RE::TESForm::LookupByID<Form>(*formID);
-						if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
-							if (!form) {
-								const auto base = RE::TESForm::LookupByID(*formID);
-								form = base ? static_cast<Form*>(base) : nullptr;
-							}
-						}
-					}
-					if (!form) {
-						buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
-					} else {
-						if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-							if (string::is_empty(form->GetFormEditorID())) {
-								form = nullptr;
-								buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
-							}
-						}
-					}
+		explicit operator bool()
+		{
+			return !forms.empty();
+		}
+
+		// Get form data vector
+		const DataVec<Form>& GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution)
+		{
+			if (a_onlyLevelEntries) {
+				return formsWithLevels;
+			}
+			if (a_noLevelDistribution) {
+				return formsNoLevels;
+			}
+			return forms;
+		}
+
+		// Lookup forms from config
+		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
+
+		// Init formsWithLevels and formsNoLevels
+		void FinishLookupForms()
+		{
+			if (forms.empty()) {
+				return;
+			}
+
+			formsWithLevels.reserve(forms.size());
+
+			std::copy_if(forms.begin(), forms.end(),
+				std::back_inserter(formsWithLevels),
+				[](const auto& formData) { return formData.filters.HasLevelFilters(); });
+
+			formsNoLevels.reserve(forms.size());
+
+			std::remove_copy_if(forms.begin(), forms.end(),
+				std::back_inserter(formsNoLevels),
+				[](const auto& formData) { return formData.filters.HasLevelFilters(); });
+		}
+	};
+
+	inline Distributables<RE::SpellItem> spells;
+	inline Distributables<RE::BGSPerk> perks;
+	inline Distributables<RE::TESBoundObject> items;
+	inline Distributables<RE::TESShout> shouts;
+	inline Distributables<RE::TESLevSpell> levSpells;
+	inline Distributables<RE::TESForm> packages;
+	inline Distributables<RE::BGSOutfit> outfits;
+	inline Distributables<RE::BGSKeyword> keywords;
+	inline Distributables<RE::TESBoundObject> deathItems;
+	inline Distributables<RE::TESFaction> factions;
+	inline Distributables<RE::BGSOutfit> sleepOutfits;
+	inline Distributables<RE::TESObjectARMO> skins;
+}
+
+template <class Form>
+void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec)
+{
+	if (a_INIDataVec.empty()) {
+		return;
+	}
+
+	logger::info("\tStarting {} lookup", a_type);
+
+	forms.reserve(a_INIDataVec.size());
+
+	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
+		Form* form = nullptr;
+
+		if (std::holds_alternative<FormModPair>(formOrEditorID)) {
+			if (auto [formID, modName] = std::get<FormModPair>(formOrEditorID); formID) {
+				if (g_mergeMapperInterface) {
+					Lookup::detail::get_merged_IDs(formID, modName);
 				}
-			} else if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-				if (!std::holds_alternative<std::string>(formOrEditorID)) {
-					continue;
-				}
-
-				if (auto keywordName = std::get<std::string>(formOrEditorID); !keywordName.empty()) {
-					auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
-
-					auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
-						return keyword && keyword->formEditorID == keywordName.c_str();
-					});
-
-					if (result != keywordArray.end()) {
-						if (const auto keyword = *result; keyword) {
-							if (!keyword->IsDynamicForm()) {
-								buffered_logger::info("\t\t[{}] {} [0x{:X}] INFO - using existing keyword", path, keywordName, keyword->GetFormID());
-							}
-							form = keyword;
-						} else {
-							buffered_logger::critical("\t\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
-							continue;
-						}
-					} else {
-						const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-						if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
-							keyword->formEditorID = keywordName;
-							keywordArray.push_back(keyword);
-							buffered_logger::info("\t\t[{}] {} [0x{:X}] INFO - creating keyword", path, keywordName, keyword->GetFormID());
-
-							form = keyword;
-						} else {
-							buffered_logger::critical("\t\t[{}] {} FAIL - couldn't create keyword", path, keywordName);
-						}
-					}
-				}
-			} else if (std::holds_alternative<std::string>(formOrEditorID)) {
-				if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
-					form = RE::TESForm::LookupByEditorID<Form>(editorID);
+				if (modName) {
+					form = a_dataHandler->LookupForm<Form>(*formID, *modName);
 					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
 						if (!form) {
-							const auto base = RE::TESForm::LookupByEditorID(editorID);
+							const auto base = a_dataHandler->LookupForm(*formID, *modName);
 							form = base ? static_cast<Form*>(base) : nullptr;
 						}
 					}
-					if (!form) {
-						buffered_logger::error("		[{}] {} FAIL - editorID doesn't exist", path, editorID);
+				} else {
+					form = RE::TESForm::LookupByID<Form>(*formID);
+					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
+						if (!form) {
+							const auto base = RE::TESForm::LookupByID(*formID);
+							form = base ? static_cast<Form*>(base) : nullptr;
+						}
+					}
+				}
+				if (!form) {
+					buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
+				} else {
+					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
+						if (string::is_empty(form->GetFormEditorID())) {
+							form = nullptr;
+							buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
+						}
 					}
 				}
 			}
-
-			if (!form) {
+		} else if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
+			if (!std::holds_alternative<std::string>(formOrEditorID)) {
 				continue;
 			}
 
-			FormFilters filterForms{};
+			if (auto keywordName = std::get<std::string>(formOrEditorID); !keywordName.empty()) {
+				auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
 
-			bool validEntry = detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path);
-			if (validEntry) {
-				validEntry = detail::formID_to_form(a_dataHandler, filterIDs.NOT, filterForms.NOT, path);
-			}
-			if (validEntry) {
-				validEntry = detail::formID_to_form(a_dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
-			}
+				auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
+					return keyword && keyword->formEditorID == keywordName.c_str();
+				});
 
-			if (!validEntry) {
-				continue;
-			}
+				if (result != keywordArray.end()) {
+					if (const auto keyword = *result; keyword) {
+						if (!keyword->IsDynamicForm()) {
+							buffered_logger::info("\t\t[{}] {} [0x{:X}] INFO - using existing keyword", path, keywordName, keyword->GetFormID());
+						}
+						form = keyword;
+					} else {
+						buffered_logger::critical("\t\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
+						continue;
+					}
+				} else {
+					const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
+					if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
+						keyword->formEditorID = keywordName;
+						keywordArray.push_back(keyword);
+						buffered_logger::info("\t\t[{}] {} [0x{:X}] INFO - creating keyword", path, keywordName, keyword->GetFormID());
 
-			Forms::Data<Form> formData{ form, idxOrCount, FilterData{ strings, filterForms, level, traits, chance } };
-			a_formDataVec.emplace_back(formData);
+						form = keyword;
+					} else {
+						buffered_logger::critical("\t\t[{}] {} FAIL - couldn't create keyword", path, keywordName);
+					}
+				}
+			}
+		} else if (std::holds_alternative<std::string>(formOrEditorID)) {
+			if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
+				form = RE::TESForm::LookupByEditorID<Form>(editorID);
+				if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
+					if (!form) {
+						const auto base = RE::TESForm::LookupByEditorID(editorID);
+						form = base ? static_cast<Form*>(base) : nullptr;
+					}
+				}
+				if (!form) {
+					buffered_logger::error("		[{}] {} FAIL - editorID doesn't exist", path, editorID);
+				}
+			}
 		}
+
+		if (!form) {
+			continue;
+		}
+
+		FormFilters filterForms{};
+
+		bool validEntry = Lookup::detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path);
+		if (validEntry) {
+			validEntry = Lookup::detail::formID_to_form(a_dataHandler, filterIDs.NOT, filterForms.NOT, path);
+		}
+		if (validEntry) {
+			validEntry = Lookup::detail::formID_to_form(a_dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
+		}
+
+		if (!validEntry) {
+			continue;
+		}
+
+		Data<Form> formData{ form, idxOrCount, FilterData{ strings, filterForms, level, traits, chance } };
+		forms.emplace_back(formData);
 	}
-
-	template <class Form>
-	void get_forms_with_level_filters(Distributables<Form>& a_distributables)
-	{
-		if (a_distributables.forms.empty()) {
-			return;
-		}
-
-		a_distributables.formsWithLevels.reserve(a_distributables.forms.size());
-		for (auto& formData : a_distributables.forms) {
-			if (formData.filters.HasLevelFilters()) {
-				a_distributables.formsWithLevels.emplace_back(formData);
-			}
-		}
-	}
-
-	bool GetForms();
 }

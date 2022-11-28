@@ -3,15 +3,17 @@
 
 bool Lookup::GetForms()
 {
+	using namespace Forms;
+
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 		const auto lookup_forms = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
 			const auto& recordName = RECORD::add[a_recordType];
 
-			get_forms(dataHandler, recordName, INI::configs[recordName], a_map.forms);
+			a_map.LookupForms(dataHandler, recordName, INI::configs[recordName]);
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
 				Dependencies::ResolveKeywords();
 			}
-			get_forms_with_level_filters(a_map);
+			a_map.FinishLookupForms();
 		};
 
 		lookup_forms(RECORD::kKeyword, keywords);
@@ -38,7 +40,7 @@ bool Lookup::GetForms()
 
 			const auto all = INI::configs[recordName].size();
 			const auto added = a_map.forms.size();
-			
+
 			// Only log entries that are actually present in INIs.
 			if (all > 0) {
 				logger::info("\tAdding {}/{} {}s", added, all, recordName);
