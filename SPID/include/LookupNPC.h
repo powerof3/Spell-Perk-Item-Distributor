@@ -19,6 +19,14 @@ namespace NPC
 		bool               InsertKeyword(const char* a_keyword);
 		[[nodiscard]] bool HasFormFilter(const FormVec& a_forms, bool all = false) const;
 
+		[[nodiscard]] Set<std::string> GetKeywords() const;
+		[[nodiscard]] std::string GetName() const;
+		[[nodiscard]] std::string GetOriginalEDID() const;
+		[[nodiscard]] std::string GetTemplateEDID() const;
+
+		[[nodiscard]] RE::FormID GetOriginalFormID() const;
+		[[nodiscard]] RE::FormID GetTemplateFormID() const;
+
 		[[nodiscard]] std::uint16_t GetLevel() const;
 		[[nodiscard]] RE::SEX       GetSex() const;
 		[[nodiscard]] bool          IsUnique() const;

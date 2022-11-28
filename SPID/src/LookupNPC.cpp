@@ -203,6 +203,32 @@ namespace NPC
 		}
 	}
 
+	Set<std::string> Data::GetKeywords() const
+	{
+		return keywords;
+	}
+
+	std::string Data::GetName() const {
+		return name;
+	}
+	std::string Data::GetOriginalEDID() const
+	{
+		return originalEDID;
+	}
+	std::string Data::GetTemplateEDID() const
+	{
+		return templateEDID;
+	}
+
+	RE::FormID Data::GetOriginalFormID() const
+	{
+		return originalFormID;
+	}
+	RE::FormID Data::GetTemplateFormID() const {
+		return templateFormID; 
+	}
+
+
 	std::uint16_t Data::GetLevel() const
 	{
 		return level;
