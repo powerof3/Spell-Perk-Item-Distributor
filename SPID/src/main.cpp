@@ -1,16 +1,17 @@
 #include "DistributeManager.h"
 #include "DistributePCLevelMult.h"
+#include "LookupConfigs.h"
+#include "LookupForms.h"
 #include "PCLevelMultManager.h"
 
 HMODULE tweaks{ nullptr };
 
 bool shouldLookupForms{ false };
 bool shouldLogErrors{ false };
-bool shouldDistribute{ false };
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
-	switch (a_message->type) {
+    switch (a_message->type) {
 	case SKSE::MessagingInterface::kPostLoad:
 		{
 			logger::info("{:*^50}", "DEPENDENCIES");
@@ -40,15 +41,13 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
-			if (shouldLookupForms) {
+			if (Distribute::shouldDistribute) {
 				logger::info("{:*^50}", "EVENTS");
 				Distribute::Event::Manager::Register();
 				PCLevelMult::Manager::GetSingleton()->Register();
 
 				// Clear logger's buffer to free some memory :)
 				buffered_logger::clear();
-
-				logger::info("{:*^50}", "SAVES");
 			}
 			if (shouldLogErrors) {
 				const auto error = fmt::format("[SPID] Errors found when reading configs. Check {}.log in {} for more info\n", Version::PROJECT, SKSE::log::log_directory()->string());
@@ -56,18 +55,25 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			}
 		}
 		break;
-	case SKSE::MessagingInterface::kNewGame:
+	case SKSE::MessagingInterface::kPreLoadGame:
 		{
-			if (shouldDistribute) {
-				PCLevelMult::Manager::GetSingleton()->SetNewGameStarted();
+			if (Distribute::shouldDistribute) {
+				const std::string savePath{ static_cast<char*>(a_message->data), a_message->dataLen };
+				PCLevelMult::Manager::GetSingleton()->GetPlayerIDFromSave(savePath);
 			}
 		}
 		break;
-	case SKSE::MessagingInterface::kPreLoadGame:
+	case SKSE::MessagingInterface::kPostLoadGame:
 		{
-			if (shouldDistribute) {
-				const std::string savePath{ static_cast<char*>(a_message->data), a_message->dataLen };
-				PCLevelMult::Manager::GetSingleton()->GetPlayerIDFromSave(savePath);
+			if (Distribute::shouldDistribute) {
+				Distribute::LogStats();
+			}
+		}
+	case SKSE::MessagingInterface::kNewGame:
+		{
+			if (Distribute::shouldDistribute) {
+				PCLevelMult::Manager::GetSingleton()->SetNewGameStarted();
+				Distribute::LogStats();
 			}
 		}
 		break;

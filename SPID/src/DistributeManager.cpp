@@ -22,16 +22,26 @@ namespace Distribute
 					logger::info("{:*^50}", "LOOKUP");
 
 					const auto startTime = std::chrono::steady_clock::now();
-					Lookup::GetForms();
+					shouldDistribute = Lookup::GetForms();
 					const auto endTime = std::chrono::steady_clock::now();
 
 					logger::info("{:*^50}", "RESULT");
-					logger::info("Lookup took {}us", std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
+					const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+					logger::info("Lookup took {}μs / {}ms", duration, duration / 1000);
 				});
 
 				if (!a_this->IsPlayer() && (!detail::uses_template(a_this) || a_this->IsUnique())) {
+					const auto startTime = std::chrono::steady_clock::now();
+
 					const auto npcData = std::make_unique<NPCData>(a_this);
 					Distribute(*npcData, PCLevelMult::Input{ a_this, false, true });
+
+					const auto endTime = std::chrono::steady_clock::now();
+
+					if (!loggedStats) {
+						timeTaken += std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+						++totalNPCs;
+					}
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -71,6 +81,21 @@ namespace Distribute
 		{
 			stl::write_vfunc<RE::Character, SetObjectReference>();
 			logger::info("\tHooked leveled actor init");
+		}
+	}
+
+    void LogStats()
+	{
+		if (!loggedStats) {
+			loggedStats = true;
+
+		    logger::info("{:*^50}", "STATS");
+			auto avgTimeTaken = Actor::timeTaken / Actor::totalNPCs;
+			logger::info("{} entries", Forms::GetTotalEntries());
+			logger::info("{} leveled entries", Forms::GetTotalLeveledEntries());
+			logger::info("{} static NPCs processed", Actor::totalNPCs);
+			logger::info("Total distribution time : {}μs / {}ms", Actor::timeTaken, Actor::timeTaken / 1000.0f);
+			logger::info("Average distribution time per NPC : {}μs / {}ms", avgTimeTaken, avgTimeTaken / 1000.0f);
 		}
 	}
 }

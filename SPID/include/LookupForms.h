@@ -132,6 +132,16 @@ namespace Forms
 			return !forms.empty();
 		}
 
+		std::size_t GetSize()
+		{
+			return forms.size();
+		}
+
+		std::size_t GetLeveledSize()
+		{
+			return formsWithLevels.size();
+		}
+
 		// Get form data vector
 		const DataVec<Form>& GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution)
 		{
@@ -180,6 +190,9 @@ namespace Forms
 	inline Distributables<RE::TESFaction> factions;
 	inline Distributables<RE::BGSOutfit> sleepOutfits;
 	inline Distributables<RE::TESObjectARMO> skins;
+
+	std::size_t GetTotalEntries();
+	std::size_t GetTotalLeveledEntries();
 }
 
 template <class Form>

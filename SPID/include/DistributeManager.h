@@ -1,17 +1,21 @@
 #pragma once
 
-#include "LookupForms.h"
-
 namespace Distribute
 {
-	namespace detail
+	inline bool shouldDistribute{ false };
+	inline bool loggedStats{ false };
+
+    namespace detail
 	{
 		bool uses_template(const RE::TESNPC* a_npc);
 	}
 
 	namespace Actor
 	{
-		inline std::once_flag lookupForms;
+	    inline std::once_flag lookupForms;
+
+		inline std::uint64_t timeTaken{ 0 };
+		inline std::uint32_t totalNPCs{ 0 };
 
 		void Install();
 	}
@@ -54,4 +58,6 @@ namespace Distribute
 
 	// Distribute to all unique and static NPCs, after data load
 	void OnInit();
+
+	void LogStats();
 }
