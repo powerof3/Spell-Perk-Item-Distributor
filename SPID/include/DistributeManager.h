@@ -47,6 +47,18 @@ namespace Distribute
 		}
 	}
 
+	namespace Actor
+	{
+		inline std::once_flag lookupForms;
+
+	    void Install();
+	}
+
+	namespace LeveledActor
+	{
+		void Install();
+	}
+
 	namespace Event
 	{
 		class Manager :
@@ -76,11 +88,6 @@ namespace Distribute
 			Manager& operator=(const Manager&) = delete;
 			Manager& operator=(Manager&&) = delete;
 		};
-	}
-
-	namespace LeveledActor
-	{
-		void Install();
 	}
 
 	// Distribute to all unique and static NPCs, after data load

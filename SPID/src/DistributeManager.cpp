@@ -8,8 +8,10 @@ namespace Distribute
 		return a_npc->UsesTemplate() || a_npc->baseTemplateForm != nullptr;
 	}
 
-	void OnInit()
+	// Deprecated
+    void OnInit()
 	{
+		logger::info("Starting distribution...");
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			std::size_t totalNPCs = 0;
 
@@ -23,10 +25,10 @@ namespace Distribute
 			}
 			const auto endTime = std::chrono::steady_clock::now();
 
-			logger::info("{:*^50}", "RESULTS");
-			logger::info("{:*^50}", "[unique or non-templated NPCs]");
-
 			logger::info("Distribution took {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count());
+
+			logger::info("{:*^50}", "STATS");
+			logger::info("{:*^50}", "[entries added to static NPCs on game load]");
 
 			const auto list_result = [&totalNPCs]<class Form>(const RECORD::TYPE a_recordType, Forms::Distributables<Form>& a_distributables) {
 				if (a_distributables) {
@@ -47,6 +49,73 @@ namespace Distribute
 			list_result(RECORD::kFaction, Forms::factions);
 			list_result(RECORD::kSleepOutfit, Forms::sleepOutfits);
 			list_result(RECORD::kSkin, Forms::skins);
+		}
+	}
+
+	// Static actors
+    namespace Actor
+	{
+		// Refires when quitting to main menu and loading the game again
+	    struct InitItemImpl
+		{
+			static void thunk(RE::TESNPC* a_this)
+			{
+				func(a_this);
+
+				std::call_once(lookupForms, [] {
+					logger::info("{:*^50}", "LOOKUP");
+					logger::info("Starting distribution : InitItemImpl hook");
+
+				    const auto startTime = std::chrono::steady_clock::now();
+					Lookup::GetForms();
+					const auto endTime = std::chrono::steady_clock::now();
+
+				    logger::info("{:*^50}", "RESULT");
+					logger::info("Lookup took {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count());
+				});
+
+				if (!a_this->IsPlayer() && (!detail::uses_template(a_this) || a_this->IsUnique())) {
+					const auto npcData = std::make_unique<NPCData>(a_this);
+					Distribute(*npcData, PCLevelMult::Input{ a_this, false, true });
+				}
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+
+			static inline size_t index{ 0 };
+			static inline constexpr std::size_t size{ 0x13 };
+		};
+
+		void Install()
+		{
+			stl::write_vfunc<RE::TESNPC, InitItemImpl>();
+			logger::info("\tHooked actor init");
+		}
+	}
+
+	// Levelled actors
+	namespace LeveledActor
+	{
+		struct SetObjectReference
+		{
+			static void thunk(RE::Character* a_this, RE::TESNPC* a_npc)
+			{
+				func(a_this, a_npc);
+
+				if (a_npc && detail::uses_template(a_npc) && !a_npc->IsUnique()) {
+                    const auto npcData = std::make_unique<NPCData>(a_this, a_npc);
+					Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
+				}
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+
+			static inline size_t index{ 0 };
+			static inline size_t size{ 0x84 };
+		};
+
+		void Install()
+		{
+			stl::write_vfunc<RE::Character, SetObjectReference>();
+			logger::info("\tHooked leveled actor init");
 		}
 	}
 }
@@ -107,31 +176,5 @@ namespace Distribute::Event
 			PCLevelMult::Manager::GetSingleton()->DeleteNPC(a_event->formID);
 		}
 		return RE::BSEventNotifyControl::kContinue;
-	}
-}
-
-namespace Distribute::LeveledActor
-{
-	struct SetObjectReference
-	{
-		static void thunk(RE::Character* a_this, RE::TESNPC* a_npc)
-		{
-			func(a_this, a_npc);
-
-			if (a_npc && detail::uses_template(a_npc) && !a_npc->IsUnique()) {
-				auto npcData = std::make_unique<NPCData>(a_this, a_npc);
-				Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
-			}
-		}
-		static inline REL::Relocation<decltype(thunk)> func;
-
-		static inline size_t index{ 0 };
-		static inline size_t size{ 0x84 };
-	};
-
-	void Install()
-	{
-		stl::write_vfunc<RE::Character, SetObjectReference>();
-		logger::info("\tHooked leveled actor init");
 	}
 }

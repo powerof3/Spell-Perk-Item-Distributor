@@ -2,63 +2,11 @@
 #include "DistributePCLevelMult.h"
 #include "PCLevelMultManager.h"
 
-HMODULE kid{ nullptr };
 HMODULE tweaks{ nullptr };
 
 bool shouldLookupForms{ false };
 bool shouldLogErrors{ false };
 bool shouldDistribute{ false };
-
-bool DoDistribute()
-{
-	if (shouldDistribute = Lookup::GetForms(); shouldDistribute) {
-		Distribute::OnInit();
-		Distribute::Event::Manager::Register();
-
-		// Clear logger's buffer to free some memory :)
-		buffered_logger::clear();
-
-		return true;
-	}
-
-	return false;
-}
-
-class DistributionManager : public RE::BSTEventSink<SKSE::ModCallbackEvent>
-{
-public:
-	static DistributionManager* GetSingleton()
-	{
-		static DistributionManager singleton;
-		return &singleton;
-	}
-
-protected:
-	using EventResult = RE::BSEventNotifyControl;
-
-	EventResult ProcessEvent(const SKSE::ModCallbackEvent* a_event, RE::BSTEventSource<SKSE::ModCallbackEvent>*) override
-	{
-		if (a_event && a_event->eventName == "KID_KeywordDistributionDone") {
-			logger::info("{:*^50}", "LOOKUP");
-			logger::info("Starting distribution since KID is done...");
-
-			DoDistribute();
-			SKSE::GetModCallbackEventSource()->RemoveEventSink(GetSingleton());
-		}
-
-		return EventResult::kContinue;
-	}
-
-private:
-	DistributionManager() = default;
-	DistributionManager(const DistributionManager&) = delete;
-	DistributionManager(DistributionManager&&) = delete;
-
-	~DistributionManager() override = default;
-
-	DistributionManager& operator=(const DistributionManager&) = delete;
-	DistributionManager& operator=(DistributionManager&&) = delete;
-};
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
@@ -67,19 +15,14 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		{
 			logger::info("{:*^50}", "DEPENDENCIES");
 
-			kid = GetModuleHandle(L"po3_KeywordItemDistributor");
-			logger::info("Keyword Item Distributor (KID) detected : {}", kid != nullptr);
-
 			tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
 			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::GetConfigs(); shouldLookupForms) {
 				logger::info("{:*^50}", "HOOKS");
+				Distribute::Actor::Install();
 				Distribute::LeveledActor::Install();
 				Distribute::PlayerLeveledActor::Install();
-				if (kid != nullptr) {
-					SKSE::GetModCallbackEventSource()->AddEventSink(DistributionManager::GetSingleton());
-				}
 			}
 		}
 		break;
@@ -98,13 +41,13 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
 			if (shouldLookupForms) {
-				if (kid == nullptr) {
-					logger::info("{:*^50}", "LOOKUP");
-					logger::info("Starting distribution...");
-					DoDistribute();
-				}
 				logger::info("{:*^50}", "EVENTS");
+				Distribute::Event::Manager::Register();
 				PCLevelMult::Manager::GetSingleton()->Register();
+
+				// Clear logger's buffer to free some memory :)
+				buffered_logger::clear();
+
 				logger::info("{:*^50}", "SAVES");
 			}
 			if (shouldLogErrors) {
