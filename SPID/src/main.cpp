@@ -23,7 +23,6 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				logger::info("{:*^50}", "HOOKS");
 				Distribute::Actor::Install();
 				Distribute::LeveledActor::Install();
-				Distribute::PlayerLeveledActor::Install();
 			}
 		}
 		break;

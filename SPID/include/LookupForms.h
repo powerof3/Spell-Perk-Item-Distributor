@@ -82,6 +82,7 @@ namespace Lookup
 	}
 
 	bool GetForms();
+	void LogFormLookup();
 }
 
 namespace Forms

@@ -135,6 +135,6 @@ namespace Distribute::PlayerLeveledActor
 		stl::write_thunk_call<HandleUpdatePlayerLevel>(target.address());
 
 		stl::write_vfunc<RE::Character, LoadGame>();
-		logger::info("	Hooked npc load save");
+		logger::info("\tInstalled leveled distribution hooks");
 	}
 }

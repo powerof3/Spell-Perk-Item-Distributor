@@ -1,5 +1,6 @@
 #include "DistributeManager.h"
 #include "Distribute.h"
+#include "DistributePCLevelMult.h"
 
 namespace Distribute
 {
@@ -25,9 +26,17 @@ namespace Distribute
 					shouldDistribute = Lookup::GetForms();
 					const auto endTime = std::chrono::steady_clock::now();
 
-					logger::info("{:*^50}", "RESULT");
-					const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-					logger::info("Lookup took {}μs / {}ms", duration, duration / 1000);
+					if (shouldDistribute) {
+						Lookup::LogFormLookup();
+
+					    const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+						logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
+
+						if (Forms::GetTotalLeveledEntries() > 0) {
+							logger::info("{:*^50}", "HOOKS");
+							PlayerLeveledActor::Install();
+						}
+					}
 				});
 
 				if (!a_this->IsPlayer() && (!detail::uses_template(a_this) || a_this->IsUnique())) {
@@ -84,12 +93,12 @@ namespace Distribute
 		}
 	}
 
-    void LogStats()
+	void LogStats()
 	{
 		if (!loggedStats) {
 			loggedStats = true;
 
-		    logger::info("{:*^50}", "STATS");
+			logger::info("{:*^50}", "STATS");
 			auto avgTimeTaken = Actor::timeTaken / Actor::totalNPCs;
 			logger::info("{} entries", Forms::GetTotalEntries());
 			logger::info("{} leveled entries", Forms::GetTotalLeveledEntries());
