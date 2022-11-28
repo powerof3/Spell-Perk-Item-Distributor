@@ -90,8 +90,9 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			if (g_mergeMapperInterface) {                        // Use Interface
 				const auto version = g_mergeMapperInterface->GetBuildNumber();
 				logger::info("Got MergeMapper interface buildnumber {}", version);
-			} else
+			} else {
 				logger::info("MergeMapper not detected");
+			}
 		}
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:

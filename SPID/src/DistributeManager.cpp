@@ -5,7 +5,7 @@ namespace Distribute
 {
 	bool detail::uses_template(const RE::TESNPC* a_npc)
 	{
-		return a_npc->UsesTemplate() || a_npc->baseTemplateForm || a_npc->templateForms;
+		return a_npc->UsesTemplate() || a_npc->baseTemplateForm != nullptr;
 	}
 
 	void OnInit()
@@ -118,9 +118,9 @@ namespace Distribute::LeveledActor
 		{
 			func(a_this, a_npc);
 
-			if (a_npc && (a_npc->IsDynamicForm() || detail::uses_template(a_npc))) {
+			if (a_npc && detail::uses_template(a_npc) && !a_npc->IsUnique()) {
 				auto npcData = std::make_unique<NPCData>(a_this, a_npc);
-			    Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
+				Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
 			}
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
