@@ -1,8 +1,7 @@
 #include "Filters.h"
 
-namespace NewFilters
+namespace Filter
 {
-
 	// ---------------- Strings ----------------
 
 	template <>
@@ -34,7 +33,7 @@ namespace NewFilters
 
 	// ---------------- Forms ----------------
 
-	template<>
+	template <>
 	struct filter_eval<FormOrMod>
 	{
 		static bool evaluate(const FormOrMod filter, const NPCData& a_npcData)
@@ -51,7 +50,6 @@ namespace NewFilters
 		}
 
 	private:
-		
 		/// Determines whether given form is associated with an NPC.
 		static bool has_form(RE::TESForm* a_form, const NPCData& a_npcData)
 		{
@@ -101,7 +99,7 @@ namespace NewFilters
 
 	// ---------------- Levels ----------------
 
-	template<>
+	template <>
 	struct filter_eval<LevelRange>
 	{
 		static bool evaluate(const LevelRange filter, const NPCData& a_npcData)
@@ -126,59 +124,59 @@ namespace NewFilters
 	struct filter_eval<SkillWeightRange>
 	{
 		static bool evaluate(const SkillLevelRange filter, const NPCData& a_npcData)
-		{		
+		{
 			if (auto skillWeight = weight(filter, a_npcData)) {
 				return skillWeight >= filter.min && skillWeight <= filter.max;
 			}
 			return false;
 		}
 
-		private:
+	private:
 		static std::optional<std::uint8_t> weight(const SkillLevelRange filter, const NPCData& a_npcData)
 		{
 			const auto& skillWeights = a_npcData.GetNPC()->npcClass->data.skillWeights;
 
 			using Skills = SkillLevelRange::Skills;
-				switch (filter.skill) {
-				case Skills::kOneHanded:
-					return skillWeights.oneHanded;
-				case Skills::kTwoHanded:
-					return skillWeights.twoHanded;
-				case Skills::kMarksman:
-					return skillWeights.archery;
-				case Skills::kBlock:
-					return skillWeights.block;
-				case Skills::kSmithing:
-					return skillWeights.smithing;
-				case Skills::kHeavyArmor:
-					return skillWeights.heavyArmor;
-				case Skills::kLightArmor:
-					return skillWeights.lightArmor;
-				case Skills::kPickpocket:
-					return skillWeights.pickpocket;
-				case Skills::kLockpicking:
-					return skillWeights.lockpicking;
-				case Skills::kSneak:
-					return skillWeights.sneak;
-				case Skills::kAlchemy:
-					return skillWeights.alchemy;
-				case Skills::kSpecchcraft:
-					return skillWeights.speech;
-				case Skills::kAlteration:
-					return skillWeights.alteration;
-				case Skills::kConjuration:
-					return skillWeights.conjuration;
-				case Skills::kDestruction:
-					return skillWeights.destruction;
-				case Skills::kIllusion:
-					return skillWeights.illusion;
-				case Skills::kRestoration:
-					return skillWeights.restoration;
-				case Skills::kEnchanting:
-					return skillWeights.enchanting;
-				default:
-					return std::nullopt;
-				}
+			switch (filter.skill) {
+			case Skills::kOneHanded:
+				return skillWeights.oneHanded;
+			case Skills::kTwoHanded:
+				return skillWeights.twoHanded;
+			case Skills::kMarksman:
+				return skillWeights.archery;
+			case Skills::kBlock:
+				return skillWeights.block;
+			case Skills::kSmithing:
+				return skillWeights.smithing;
+			case Skills::kHeavyArmor:
+				return skillWeights.heavyArmor;
+			case Skills::kLightArmor:
+				return skillWeights.lightArmor;
+			case Skills::kPickpocket:
+				return skillWeights.pickpocket;
+			case Skills::kLockpicking:
+				return skillWeights.lockpicking;
+			case Skills::kSneak:
+				return skillWeights.sneak;
+			case Skills::kAlchemy:
+				return skillWeights.alchemy;
+			case Skills::kSpecchcraft:
+				return skillWeights.speech;
+			case Skills::kAlteration:
+				return skillWeights.alteration;
+			case Skills::kConjuration:
+				return skillWeights.conjuration;
+			case Skills::kDestruction:
+				return skillWeights.destruction;
+			case Skills::kIllusion:
+				return skillWeights.illusion;
+			case Skills::kRestoration:
+				return skillWeights.restoration;
+			case Skills::kEnchanting:
+				return skillWeights.enchanting;
+			default:
+				return std::nullopt;
+			}
 		}
 	};
 
@@ -187,40 +185,39 @@ namespace NewFilters
 	template <>
 	struct filter_eval<SexTrait>
 	{
-		static bool evaluate(const SexTrait filter, const NPCData& a_npcData)
+		static bool evaluate([[maybe_unused]] const SexTrait filter, const NPCData& a_npcData)
 		{
-			return a_npcData.GetSex() == filter.value;
+			return a_npcData.GetSex() == filter.sex;
 		}
 	};
 
-		template <>
+	template <>
 	struct filter_eval<UniqueTrait>
 	{
-		static bool evaluate(const UniqueTrait filter, const NPCData& a_npcData)
+		static bool evaluate([[maybe_unused]] const UniqueTrait filter, const NPCData& a_npcData)
 		{
-			return a_npcData.IsUnique() == filter.value;
+			return a_npcData.IsUnique();
 		}
 	};
-
 
 	template <>
 	struct filter_eval<SummonableTrait>
 	{
-		static bool evaluate(const SummonableTrait filter, const NPCData& a_npcData)
+		static bool evaluate([[maybe_unused]] const SummonableTrait filter, const NPCData& a_npcData)
 		{
-			return a_npcData.IsSummonable() == filter.value;
+			return a_npcData.IsSummonable();
 		}
 	};
 
 	template <>
 	struct filter_eval<ChildTrait>
 	{
-		static bool evaluate(const ChildTrait filter, const NPCData& a_npcData)
+		static bool evaluate([[maybe_unused]] const ChildTrait filter, const NPCData& a_npcData)
 		{
-				return a_npcData.IsChild() == filter.value;
+			return a_npcData.IsChild();
 		}
 	};
-	
+
 	template <>
 	struct filter_eval<Chance>
 	{

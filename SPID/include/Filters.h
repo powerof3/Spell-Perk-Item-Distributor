@@ -2,7 +2,7 @@
 
 #include "LookupNPC.h"
 
-namespace NewFilters
+namespace Filter
 {
 	/// String value for a filter that represents a wildcard.
 	struct Wildcard
@@ -15,14 +15,17 @@ namespace NewFilters
 	struct LevelRange
 	{
 		using Level = std::uint8_t;
+		inline const static Level MinLevel = 0;
+		inline const static Level MaxLevel = UINT8_MAX;
+
 		Level min;
 		Level max;
 
 		LevelRange(Level min, Level max) 
 		{
-			auto _min = std::min(min, max);
-			this->min = _min == UINT8_MAX ? 0 : _min;
-			this->max = std::max(min, max);
+			auto _min = min == MaxLevel ? MinLevel : min;
+			this->min = std::min(_min, max);
+			this->max = std::max(_min, max);
 		}
 	};
 
@@ -42,42 +45,27 @@ namespace NewFilters
 	};
 
 	/// Similar to SkillLevelRange, but operates with Skill Weights of NPC's Class instead.
-	struct SkillWeightRange : SkillLevelRange {};
+	struct SkillWeightRange : SkillLevelRange {
+		SkillWeightRange(Skill skill, Level min, Level max) :
+			SkillLevelRange(skill, min, max) {}
+	};
 
 	/// Generic trait of the NPC.
+	struct Trait{};
 
-	template <class Value>
-	struct Trait
+	struct SexTrait : Trait
 	{
-		Value value;
+		RE::SEX sex;
 
-		Trait(Value value) :
-			value(value) {}
-	};
-
-	struct SexTrait : Trait<RE::SEX>
-	{
 		SexTrait(RE::SEX sex) :
-			Trait(sex) {}
+			sex(sex) {};
 	};
 
-	struct UniqueTrait : Trait<bool>
-	{
-		UniqueTrait(bool isUnique) :
-			Trait(isUnique) {}
-	};
+	struct UniqueTrait : Trait {};
 
-	struct SummonableTrait : Trait<bool>
-	{
-		SummonableTrait(bool isSummonable) :
-			Trait(isSummonable) {}
-	};
+	struct SummonableTrait : Trait {};
 
-	struct ChildTrait : Trait<bool>
-	{
-		ChildTrait(bool isChild) :
-			Trait(isChild) {}
-	};
+	struct ChildTrait : Trait {};
 
 	struct Chance
 	{
@@ -91,10 +79,10 @@ namespace NewFilters
 
 	/// Evaluator that determines whether given NPC matches specified filter. 
 	/// These evaluators are then specialized for each type of supported filters.
-	template <class FilterType>
+	template <typename FilterType>
 	struct filter_eval
 	{
-		static bool evaluate(const FilterType filter, [[maybe_unused]] const NPCData& a_npcData)
+		static bool evaluate([[maybe_unused]] const FilterType filter, [[maybe_unused]] const NPCData& a_npcData)
 		{
 			return false;
 		}
@@ -104,17 +92,20 @@ namespace NewFilters
 	struct Evaluatable
 	{
 		/// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
-		virtual bool evaluate(const NPCData& a_npcData) = 0;
+		virtual bool evaluate([[maybe_unused]] const NPCData& a_npcData) = 0;
 	};
 
-	/// NegatedFilterEntry is an entry that is always inverts the result of evaluation.
+	/// NegatedFilter is an entry that is always inverts the result of evaluation.
 	template <class FilterType>
 	struct FilterEntry : Evaluatable
 	{
-		const FilterType value;
+		FilterType value;
 
 		FilterEntry(FilterType value) :
 			value(value) {}
+
+		FilterEntry<FilterType>& operator=(const FilterEntry<FilterType>&) = default;
+		FilterEntry<FilterType>& operator=(FilterEntry<FilterType>&&) = default;
 
 		virtual bool evaluate(const NPCData& a_npcData) override
 		{
@@ -122,35 +113,26 @@ namespace NewFilters
 		}
 	};
 
-	/// NegatedFilterEntry is an entry that is always inverts the result of evaluation.
+	/// NegatedFilter is a filter that always inverts the result of evaluation.
 	/// It corresponds to `-` prefix in a config file (e.g. "-ActorTypeNPC")
 	template <class FilterType>
-	struct NegatedFilterEntry : FilterEntry<FilterType>
+	struct NegatedFilter : FilterEntry<FilterType>
 	{
-
-		NegatedFilterEntry(NegatedFilterEntry value) :
+		NegatedFilter(FilterType value) :
 			FilterEntry(value) {}
 
 		virtual bool evaluate(const NPCData& a_npcData) override
 		{
-			return !filter_eval<FilterType>::evaluate(this->value, a_npcData);
+			return !FilterEntry<FilterType>::evaluate(a_npcData);
 		}
 	};
 
 	/// Filter is a list of entries that should
 	/// Entries in a single Filter are combined using AND logic.
-	struct Filter : Evaluatable
-	{
-		/// Entries are combined using AND logic.
-		std::vector<Evaluatable> entries;
+	
 
-		virtual bool evaluate(const NPCData& a_npcData) override
-		{
-			return entries.empty() || std::ranges::all_of(entries, [&](Evaluatable& entry) { return entry.evaluate(a_npcData); });
-		}
-	};
-
-	/// An expression is a whole filters section in a config file.
+	/// An expression is a combination of filters and/or nested expressions.
+	/// 
 	/// It corresponds to the string surrounded by `|` 
 	/// (e.g. in "|ActorTypeNPC,ActorTypeDragon|" expression is "ActorTypeNPC,ActorTypeDragon")
 	/// 
@@ -158,12 +140,64 @@ namespace NewFilters
 	/// Filters are combined using OR logic.
 	struct Expression : Evaluatable
 	{
-		/// Filters are combined using OR logic.
-		std::vector<Evaluatable> filters;
+		std::vector<Evaluatable> entries;
 
+		template <class FilterType>
+		void for_each_filter(std::function<void(FilterType&)> a_callback)
+		{
+			for (auto& eval : entries) {
+				if (auto& filter = static_cast<Expression&>(eval)) {
+					filter.entries.for_each_filter<FilterType>(a_callback);
+				} else if (auto& entry = static_cast<FilterEntry<FilterType>&>(eval)) {
+					a_callback(entry);
+				}
+			}
+		}
+
+		template <class FilterType, class MappedFilterType>
+		Expression map(std::function<MappedFilterType(FilterType&)> mapper)
+		{
+			Expression result = *this->copy();
+			for (auto eval : entries) {
+				if (auto& filter = static_cast<Expression&>(eval)) {
+					result.entries.push_back(filter.map<FilterType, MappedFilterType>(mapper));
+				} else if (auto& entry = static_cast<FilterEntry<FilterType>&>(eval)) {
+					result.entries.push_back(mapper(entry));
+				}
+			}
+
+			return result;
+		}
+
+		protected:
+
+			virtual Expression* copy() { return this; }
+	};
+
+	/// Entries are combined using AND logic.
+	struct AndExpression : Expression
+	{
 		virtual bool evaluate(const NPCData& a_npcData) override
 		{
-			return filters.empty() || std::ranges::any_of(filters, [&](Evaluatable& entry) { return entry.evaluate(a_npcData); });
+			return entries.empty() || std::ranges::all_of(entries, [&](Evaluatable& entry) { return entry.evaluate(a_npcData); });
+		}
+
+		virtual Expression* copy() override {
+			return new AndExpression();
+		}
+	};
+
+	/// Entries are combined using OR logic.
+	struct OrExpression : Expression
+	{
+		virtual bool evaluate(const NPCData& a_npcData) override
+		{
+			return entries.empty() || std::ranges::any_of(entries, [&](Evaluatable& entry) { return entry.evaluate(a_npcData); });
+		}
+
+		virtual Expression* copy() override
+		{
+			return new OrExpression();
 		}
 	};
 }

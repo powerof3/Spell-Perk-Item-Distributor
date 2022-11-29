@@ -1,9 +1,13 @@
 #include "LookupConfigs.h"
+#include "Filters.h"
+#include <any>
 
 namespace INI
 {
 	namespace detail
 	{
+		using namespace Filter;
+
 		std::string sanitize(const std::string& a_value)
 		{
 			auto newValue = a_value;
@@ -42,6 +46,40 @@ namespace INI
 			return newValue;
 		}
 
+		template <typename T>
+		Expression parse_entries(const std::string& filter_str, std::function<std::optional<T>(std::string&)> parser)
+		{
+			AndExpression entries;
+			auto entries_str = distribution::split_entry(filter_str, "+");
+
+			for (auto& entry_str : entries_str) {
+				bool isNegated = false;
+
+				if (entry_str.at(0) == '-') {
+					entry_str.erase(0, 1);
+					isNegated = true;
+				}
+
+				if (auto val = parser(entry_str)) {
+					entries.entries.push_back(isNegated ? NegatedFilter(val) : FilterEntry(val));
+				} else {
+					buffered_logger::warn("\tUnrecognized filter: {}", entry_str);
+				}
+			}
+			return entries;
+		}
+
+		template <typename T>
+		Expression parse_filters(const std::string& expression_str, std::function<std::optional<T>(std::string&)> parser)
+		{
+			OrExpression filters;
+			auto filters_str = distribution::split_entry(expression_str);
+			for (auto& filter_str : filters_str) {
+				filters.filters.push_back(parse_entries(filter_str, parser));
+			}
+			return filters;
+		}
+
 		std::pair<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 		{
 			Data data{};
@@ -58,133 +96,86 @@ namespace INI
 
 			//KEYWORDS
 			if (kStrings < size) {
-				StringFilters filters;
-
-				auto split_str = distribution::split_entry(sections[kStrings]);
-				for (auto& str : split_str) {
-					if (str.contains("+"sv)) {
-						auto strings = distribution::split_entry(str, "+");
-						data.stringFilters.ALL.insert(data.stringFilters.ALL.end(), strings.begin(), strings.end());
-
-					} else if (str.at(0) == '-') {
-						str.erase(0, 1);
-						data.stringFilters.NOT.emplace_back(str);
-
-					} else if (str.at(0) == '*') {
-						str.erase(0, 1);
-						data.stringFilters.ANY.emplace_back(str);
-
+				data.stringFilters = parse_filters<std::any>(sections[kStrings], [](std::string& entry_str) -> std::any {
+					if (entry_str.at(0) == '*') {
+						entry_str.erase(0, 1);
+						return Wildcard{ entry_str };
 					} else {
-						data.stringFilters.MATCH.emplace_back(str);
+						return entry_str;
 					}
-				}
+				});
 			}
 
 			//FILTER FORMS
 			if (kFilterIDs < size) {
-				auto split_IDs = distribution::split_entry(sections[kFilterIDs]);
-				for (auto& IDs : split_IDs) {
-					if (IDs.contains("+"sv)) {
-						auto splitIDs_ALL = distribution::split_entry(IDs, "+");
-						for (auto& IDs_ALL : splitIDs_ALL) {
-							data.rawFormFilters.ALL.push_back(distribution::get_record(IDs_ALL));
-						}
-					} else if (IDs.at(0) == '-') {
-						IDs.erase(0, 1);
-						data.rawFormFilters.NOT.push_back(distribution::get_record(IDs));
-
-					} else {
-						data.rawFormFilters.MATCH.push_back(distribution::get_record(IDs));
-					}
-				}
+				data.idFilters = parse_filters<FormOrEditorID>(sections[kFilterIDs], [](std::string& entry_str) {
+					return distribution::get_record(entry_str);
+				});
 			}
 
 			//LEVEL
-			ActorLevel              actorLevelPair{ UINT16_MAX, UINT16_MAX };
-			std::vector<SkillLevel> skillLevelPairs;
-			std::vector<SkillLevel> skillWeightPairs;
 			if (kLevel < size) {
-				auto split_levels = distribution::split_entry(sections[kLevel]);
-				for (auto& levels : split_levels) {
-					if (levels.contains('(')) {
-						//skill(min/max)
-						const auto isWeightFilter = levels.starts_with('w');
-						auto       sanitizedLevel = string::remove_non_alphanumeric(levels);
-						if (isWeightFilter) {
-							sanitizedLevel.erase(0, 1);
-						}
-						//skill min max
-						if (auto skills = string::split(sanitizedLevel, " "); !skills.empty()) {
-							if (auto type = string::to_num<std::uint32_t>(skills[0]); type < 18) {
-								auto minLevel = string::to_num<std::uint8_t>(skills[1]);
-								if (skills.size() > 2) {
-									auto maxLevel = string::to_num<std::uint8_t>(skills[2]);
-									if (isWeightFilter) {
-										skillWeightPairs.push_back({ type, { minLevel, maxLevel } });
-									} else {
-										skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
-									}
+				// Matches all types of level and skill filters
+				std::regex regex("^(?:(w)?(\\d+)\\((\\d+)?(?:\\/(\\d+)?)?\\)|(\\d+)?(?:\\/(\\d+)?)?)$", std::regex_constants::optimize);
+				enum
+				{
+					kMatch = 0,
+					kModifier,
+					kSkill,
+					kSkillMin,
+					kSkillMax,
+					kLevelMin,
+					kLevelMax,
+
+					kTotal
+
+				};
+				data.levelFilters = parse_filters<LevelRange>(sections[kLevel], [&](std::string& entry_str) -> std::optional<LevelRange> {
+					std::smatch matches;
+					if (!entry_str.empty() && std::regex_search(entry_str, matches, regex) && matches.size() >= kTotal) {
+						if (matches[kSkill].length() > 0) {  // skills
+							if (auto skill = string::to_num<SkillLevelRange::Skill>(matches[kSkill].str()); skill < SkillLevelRange::Skills::kTotal) {
+								auto min = matches[kSkillMin].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMin].str()) : LevelRange::MinLevel;
+								auto max = matches[kSkillMax].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMax].str()) : LevelRange::MaxLevel;
+								if (matches[kModifier] == 'w') {
+									return SkillWeightRange(skill, min, max);
+								} else if (matches[kModifier].length() == 0) {
+									return SkillLevelRange(skill, min, max);
 								} else {
-									if (isWeightFilter) {
-										// Single value is treated as exact match.
-										skillWeightPairs.push_back({ type, { minLevel, minLevel } });
-									} else {
-										skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
-									}
+									return std::nullopt;
 								}
 							}
-						}
-					} else {
-						if (auto actor_level = string::split(levels, "/"); actor_level.size() > 1) {
-							auto minLevel = string::to_num<std::uint16_t>(actor_level[0]);
-							auto maxLevel = string::to_num<std::uint16_t>(actor_level[1]);
+							return std::nullopt;
+						} else {  // levels
+							auto min = matches[kLevelMin].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMin].str()) : LevelRange::MinLevel;
+							auto max = matches[kLevelMax].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMax].str()) : LevelRange::MaxLevel;
 
-							actorLevelPair = { minLevel, maxLevel };
-						} else {
-							auto level = string::to_num<std::uint16_t>(levels);
-
-							actorLevelPair = { level, UINT16_MAX };
+							return LevelRange(min, max);
 						}
 					}
-				}
+				});
 			}
-			data.levelFilters = LevelFilters{ actorLevelPair, skillLevelPairs, skillWeightPairs };
 
 			//TRAITS
 			if (kTraits < size) {
-				auto split_traits = distribution::split_entry(sections[kTraits], "/");
-				for (auto& trait : split_traits) {
-					switch (string::const_hash(trait)) {
-					case "M"_h:
-					case "-F"_h:
-						data.traits.sex = RE::SEX::kMale;
-						break;
-					case "F"_h:
-					case "-M"_h:
-						data.traits.sex = RE::SEX::kFemale;
-						break;
-					case "U"_h:
-						data.traits.unique = true;
-						break;
-					case "-U"_h:
-						data.traits.unique = false;
-						break;
-					case "S"_h:
-						data.traits.summonable = true;
-						break;
-					case "-S"_h:
-						data.traits.summonable = false;
-						break;
-					case "C"_h:
-						data.traits.child = true;
-						break;
-					case "-C"_h:
-						data.traits.child = false;
-						break;
-					default:
-						break;
+				data.traitFilters = parse_filters<Trait>(sections[kTraits], [&](std::string& entry_str) -> std::optional<Trait> {
+					if (!entry_str.empty()) {
+						switch (tolower(entry_str.at(0))) {
+						case 'm':
+							return SexTrait(RE::SEX::kMale);
+						case 'f':
+							return SexTrait(RE::SEX::kFemale);
+						case 'u':
+							return UniqueTrait();
+						case 's':
+							return SummonableTrait();
+						case 'c':
+							return ChildTrait();
+						default:
+							return std::nullopt;
+						}
 					}
-				}
+				});
 			}
 
 			//ITEMCOUNT/INDEX
@@ -200,7 +191,8 @@ namespace INI
 			//CHANCE
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
-					data.chance = string::to_num<Chance>(str);
+					auto chance = string::to_num<Chance::chance>(str);
+					data.chanceFilters = FilterEntry<Chance>(FilterEntry<Chance>(Chance(chance)));
 				}
 			}
 
@@ -211,68 +203,71 @@ namespace INI
 			}
 			return { data, std::nullopt };
 		}
-	}
 
-	std::pair<bool, bool> GetConfigs()
-	{
-		logger::info("{:*^50}", "INI");
+		std::pair<bool, bool> GetConfigs()
+		{
+			logger::info("{:*^50}", "INI");
 
-		std::vector<std::string> files = distribution::get_configs(R"(Data\)", "_DISTR"sv);
+			std::vector<std::string> files = distribution::get_configs(R"(Data\)", "_DISTR"sv);
 
-		if (files.empty()) {
-			logger::warn("	No .ini files with _DISTR suffix were found within the Data folder, aborting...");
-			return { false, false };
-		}
-
-		logger::info("\t{} matching inis found", files.size());
-
-		bool shouldLogErrors{ false };
-
-		for (const auto& path : files) {
-			logger::info("\tINI : {}", path);
-
-			CSimpleIniA ini;
-			ini.SetUnicode();
-			ini.SetMultiKey();
-
-			if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
-				logger::error("\t\tcouldn't read INI");
-				continue;
+			if (files.empty()) {
+				logger::warn("	No .ini files with _DISTR suffix were found within the Data folder, aborting...");
+				return { false, false };
 			}
 
-			if (auto values = ini.GetSection(""); values && !values->empty()) {
-				std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
+			logger::info("\t{} matching inis found", files.size());
 
-				auto truncatedPath = path.substr(5);  //strip "Data\\"
+			//initialize map
+			for (size_t i = 0; i < RECORD::kTotal; i++) {
+				configs[RECORD::add[i]] = DataVec{};
+			}
 
-				for (auto& [key, entry] : *values) {
-					try {
-						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
-						configs[key.pItem].emplace_back(data);
+			bool shouldLogErrors{ false };
 
-						if (sanitized_str) {
-							oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
+			for (const auto& path : files) {
+				logger::info("\tINI : {}", path);
+
+				CSimpleIniA ini;
+				ini.SetUnicode();
+				ini.SetMultiKey();
+
+				if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
+					logger::error("\t\tcouldn't read INI");
+					continue;
+				}
+
+				if (auto values = ini.GetSection(""); values && !values->empty()) {
+					std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
+					auto truncatedPath = path.substr(5);  //strip "Data\\"
+					for (auto& [key, entry] : *values) {
+						try {
+							auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
+							configs[key.pItem].emplace_back(data);
+
+							if (sanitized_str) {
+								oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
+							}
+						} catch (...) {
+							logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
+							shouldLogErrors = true;
 						}
-					} catch (...) {
-						logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
-						shouldLogErrors = true;
-					}
-				}
-
-				if (!oldFormatMap.empty()) {
-					logger::info("\t\tsanitizing {} entries", oldFormatMap.size());
-
-					for (auto& [key, entry] : oldFormatMap) {
-						auto& [original, sanitized] = entry;
-						ini.DeleteValue("", key.pItem, original.c_str());
-						ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
 					}
 
-					(void)ini.SaveFile(path.c_str());
+					if (!oldFormatMap.empty()) {
+						logger::info("\t\tsanitizing {} entries", oldFormatMap.size());
+
+						for (auto& [key, entry] : oldFormatMap) {
+							auto& [original, sanitized] = entry;
+							ini.DeleteValue("", key.pItem, original.c_str());
+							ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
+						}
+
+						(void)ini.SaveFile(path.c_str());
+					}
 				}
 			}
-		}
 
-		return { true, shouldLogErrors };
+			return { true, shouldLogErrors };
+		}
 	}
 }

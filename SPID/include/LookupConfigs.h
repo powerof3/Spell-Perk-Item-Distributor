@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Filters.h"
+
 namespace RECORD
 {
 	enum TYPE
@@ -41,14 +43,14 @@ namespace INI
 
 	struct Data
 	{
-		FormOrEditorID          rawForm{};
-		StringFilters           stringFilters{};
-		Filters<FormOrEditorID> rawFormFilters{};
-		LevelFilters            levelFilters{};
-		Traits                  traits{};
-		IdxOrCount              idxOrCount{ 1 };
-		Chance                  chance{ 100 };
-		std::string             path{};
+		FormOrEditorID                      rawForm{};
+		Filter::OrExpression                stringFilters{};
+		Filter::OrExpression                idFilters{};
+		Filter::OrExpression                levelFilters{};
+		Filter::OrExpression                traitFilters{};
+		Filter::FilterEntry<Filter::Chance> chanceFilters{ Filter::Chance(100) };
+		IdxOrCount                          idxOrCount{ 1 };
+		std::string                         path{};
 	};
 	using DataVec = std::vector<Data>;
 
