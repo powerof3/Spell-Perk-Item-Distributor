@@ -9,7 +9,7 @@ private:
 	std::unordered_map<RE::BGSKeyword*, DependencyNode*> children{};
 
 public:
-	DependencyNode(RE::BGSKeyword* val) :
+    explicit DependencyNode(RE::BGSKeyword* val) :
 		value(val)
 	{}
 

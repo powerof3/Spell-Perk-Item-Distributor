@@ -10,7 +10,7 @@ namespace NPC
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
 
-		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings, bool all = false) const;
+		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings, bool a_all = false) const;
 		[[nodiscard]] bool ContainsStringFilter(const StringVec& a_strings) const;
 
 		bool InsertKeyword(const char* a_keyword);

@@ -1,7 +1,5 @@
 #include "DistributeManager.h"
-#include "DistributePCLevelMult.h"
 #include "LookupConfigs.h"
-#include "LookupForms.h"
 #include "PCLevelMultManager.h"
 
 HMODULE tweaks{ nullptr };
