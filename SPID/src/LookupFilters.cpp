@@ -154,6 +154,7 @@ namespace Filter
 			}
 		}
 
+		// Traits
 		if (traits.sex && a_npcData.GetSex() != *traits.sex) {
 			return Result::kFail;
 		}
@@ -165,13 +166,6 @@ namespace Filter
 		}
 		if (traits.child && a_npcData.IsChild() != *traits.child) {
 			return Result::kFail;
-		}
-
-		if (chance != 100) {
-			const auto randNum = staticRNG.Generate<Chance>(0, 100);
-			if (randNum > chance) {
-				return Result::kFailRNG;
-			}
 		}
 
 		return Result::kPass;
@@ -196,6 +190,14 @@ namespace Filter
 
 	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
 	{
+		// Fail chance first to avoid running unnecessary checks
+		if (chance != 100) {
+			const auto randNum = staticRNG.Generate<Chance>(0, 100);
+			if (randNum > chance) {
+				return Result::kFailRNG;
+			}
+		}
+
 		if (passed_string_filters(a_npcData) == Result::kFail) {
 			return Result::kFail;
 		}
@@ -204,9 +206,7 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		const auto npc = a_npcData.GetNPC();
-
-		if (a_noPlayerLevelDistribution && HasLevelFilters() && npc->HasPCLevelMult()) {
+		if (a_noPlayerLevelDistribution && HasLevelFilters() && a_npcData.GetNPC()->HasPCLevelMult()) {
 			return Result::kFail;
 		}
 
