@@ -5,6 +5,8 @@
 
 namespace Forms
 {
+	using namespace Filter;
+
 	namespace detail
 	{
 		inline void get_merged_IDs(std::optional<RE::FormID>& a_formID, std::optional<std::string>& a_modName)
@@ -292,21 +294,54 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		FormFilters filterForms{};
+	    OrExpression filterForms = filterIDs.map<FormOrEditorID, FormOrMod>([&a_dataHandler](auto& formOrEditorID) {
+			if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
+				auto& [formID, modName] = *formModPair;
+				if (g_mergeMapperInterface) {
+					get_merged_IDs(formID, modName);
+				}
+				if (modName && !formID) {
+					if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
+						buffered_logger::info("\t\t\t[{}] Filter ({}) INFO - mod found", path, filterMod->fileName);
+						return FilterEntry<FormOrMod>(filterMod);
+					} else {
+						buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - mod cannot be found", path, *modName);
+					}
+				} else if (formID) {
+					auto filterForm = modName ?
+					                      a_dataHandler->LookupForm(*formID, *modName) :
+					                      RE::TESForm::LookupByID(*formID);
+					if (filterForm) {
+						const auto formType = filterForm->GetFormType();
+						if (Cache::FormType::GetWhitelisted(formType)) {
+							return FilterEntry<FormOrMod>(filterForm);
+						} else {
+							buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", path, *formID, modName.value_or(""), formType);
+						}
+					} else {
+						buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", path, *formID, modName.value_or(""));
+					}
+				}
+			} else if (std::holds_alternative<std::string>(formOrEditorID)) {
+				if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
+					if (auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
+						const auto formType = filterForm->GetFormType();
+						if (Cache::FormType::GetWhitelisted(formType)) {
+							return FilterEntry<FormOrMod>(filterForm);
+						} else {
+							buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", path, editorID, formType);
+						}
+					} else {
+						buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - form doesn't exist", path, editorID);
+					}
+				}
+			}
+		});
 
-		bool validEntry = detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path);
-		if (validEntry) {
-			validEntry = detail::formID_to_form(a_dataHandler, filterIDs.NOT, filterForms.NOT, path);
-		}
-		if (validEntry) {
-			validEntry = detail::formID_to_form(a_dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
-		}
+	    AndExpression result{ strings, filterForms, level, traits };
 
-		if (!validEntry) {
-			continue;
-		}
-
-		forms.emplace_back(Data<Form>{ form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path });
+	    Forms::Data<Form> formData{ form, idxOrCount, FilterData{ result, chance } };
+		forms.emplace_back(formData);
 	}
 }
 

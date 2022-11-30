@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Filters.h"
+
 namespace NPC
 {
 	struct Data;
@@ -18,15 +20,8 @@ namespace Filter
 
 	struct Data
 	{
-		Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, Chance a_chance);
-
-		StringFilters strings{};
-		FormFilters   forms{};
-		LevelFilters  level{};
-		Traits        traits{};
-		Chance        chance{ 100 };
-
-		bool hasLeveledFilters;
+		AndExpression filters;
+		FilterEntry<Chance> chanceFilters{ Chance(100) };
 
 		[[nodiscard]] bool   HasLevelFilters() const;
 		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData, bool a_noPlayerLevelDistribution) const;
