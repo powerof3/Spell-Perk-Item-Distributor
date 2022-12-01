@@ -338,9 +338,9 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			}
 		});
 
-	    AndExpression result{ strings, filterForms, level, traits };
+	    AndExpression result{ chance, traits, level, filterForms, strings };
 
-	    Forms::Data<Form> formData{ form, idxOrCount, FilterData{ result, chance } };
+	    Forms::Data<Form> formData{ form, idxOrCount, FilterData{ result } };
 		forms.emplace_back(formData);
 	}
 }

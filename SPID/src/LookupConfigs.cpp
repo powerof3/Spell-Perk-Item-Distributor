@@ -1,6 +1,5 @@
 #include "LookupConfigs.h"
-#include "Filters.h"
-#include <any>
+#include "LookupFilters.h"
 
 namespace INI
 {
@@ -46,11 +45,11 @@ namespace INI
 			return newValue;
 		}
 
-		template <typename T>
+		template <class T>
 		Expression parse_entries(const std::string& filter_str, std::function<std::optional<T>(std::string&)> parser)
 		{
 			AndExpression entries;
-			auto entries_str = distribution::split_entry(filter_str, "+");
+			auto          entries_str = distribution::split_entry(filter_str, "+");
 
 			for (auto& entry_str : entries_str) {
 				bool isNegated = false;
@@ -69,11 +68,11 @@ namespace INI
 			return entries;
 		}
 
-		template <typename T>
-		Expression parse_filters(const std::string& expression_str, std::function<std::optional<T>(std::string&)> parser)
+		template <class T>
+		OrExpression parse_filters(const std::string& expression_str, std::function<std::optional<T>(std::string&)> parser)
 		{
 			OrExpression filters;
-			auto filters_str = distribution::split_entry(expression_str);
+			auto         filters_str = distribution::split_entry(expression_str);
 			for (auto& filter_str : filters_str) {
 				filters.filters.push_back(parse_entries(filter_str, parser));
 			}
@@ -96,12 +95,12 @@ namespace INI
 
 			//KEYWORDS
 			if (kStrings < size) {
-				data.stringFilters = parse_filters<std::any>(sections[kStrings], [](std::string& entry_str) -> std::any {
+				data.stringFilters = parse_filters<StringValue>(sections[kStrings], [](std::string& entry_str) -> StringValue {
 					if (entry_str.at(0) == '*') {
 						entry_str.erase(0, 1);
 						return Wildcard{ entry_str };
 					} else {
-						return entry_str;
+						return Match{ entry_str };
 					}
 				});
 			}
@@ -117,6 +116,7 @@ namespace INI
 			if (kLevel < size) {
 				// Matches all types of level and skill filters
 				std::regex regex("^(?:(w)?(\\d+)\\((\\d+)?(?:\\/(\\d+)?)?\\)|(\\d+)?(?:\\/(\\d+)?)?)$", std::regex_constants::optimize);
+				// Indices of matched groups
 				enum
 				{
 					kMatch = 0,
@@ -203,71 +203,71 @@ namespace INI
 			}
 			return { data, std::nullopt };
 		}
+	}
 
-		std::pair<bool, bool> GetConfigs()
-		{
-			logger::info("{:*^50}", "INI");
+	std::pair<bool, bool> GetConfigs()
+	{
+		logger::info("{:*^50}", "INI");
 
-			std::vector<std::string> files = distribution::get_configs(R"(Data\)", "_DISTR"sv);
+		std::vector<std::string> files = distribution::get_configs(R"(Data\)", "_DISTR"sv);
 
-			if (files.empty()) {
-				logger::warn("	No .ini files with _DISTR suffix were found within the Data folder, aborting...");
-				return { false, false };
-			}
-
-			logger::info("\t{} matching inis found", files.size());
-
-			//initialize map
-			for (size_t i = 0; i < RECORD::kTotal; i++) {
-				configs[RECORD::add[i]] = DataVec{};
-			}
-
-			bool shouldLogErrors{ false };
-
-			for (const auto& path : files) {
-				logger::info("\tINI : {}", path);
-
-				CSimpleIniA ini;
-				ini.SetUnicode();
-				ini.SetMultiKey();
-
-				if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
-					logger::error("\t\tcouldn't read INI");
-					continue;
-				}
-
-				if (auto values = ini.GetSection(""); values && !values->empty()) {
-					std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
-					auto truncatedPath = path.substr(5);  //strip "Data\\"
-					for (auto& [key, entry] : *values) {
-						try {
-							auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
-							configs[key.pItem].emplace_back(data);
-
-							if (sanitized_str) {
-								oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
-							}
-						} catch (...) {
-							logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
-							shouldLogErrors = true;
-						}
-					}
-
-					if (!oldFormatMap.empty()) {
-						logger::info("\t\tsanitizing {} entries", oldFormatMap.size());
-
-						for (auto& [key, entry] : oldFormatMap) {
-							auto& [original, sanitized] = entry;
-							ini.DeleteValue("", key.pItem, original.c_str());
-							ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
-						}
-
-						(void)ini.SaveFile(path.c_str());
-					}
-				}
-			}
-
-			return { true, shouldLogErrors };
+		if (files.empty()) {
+			logger::warn("	No .ini files with _DISTR suffix were found within the Data folder, aborting...");
+			return { false, false };
 		}
+
+		logger::info("\t{} matching inis found", files.size());
+
+		//initialize map
+		for (size_t i = 0; i < RECORD::kTotal; i++) {
+			configs[RECORD::add[i]] = DataVec{};
+		}
+
+		bool shouldLogErrors{ false };
+
+		for (const auto& path : files) {
+			logger::info("\tINI : {}", path);
+
+			CSimpleIniA ini;
+			ini.SetUnicode();
+			ini.SetMultiKey();
+
+			if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
+				logger::error("\t\tcouldn't read INI");
+				continue;
+			}
+
+			if (auto values = ini.GetSection(""); values && !values->empty()) {
+				std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
+				auto                                                                                                  truncatedPath = path.substr(5);  //strip "Data\\"
+				for (auto& [key, entry] : *values) {
+					try {
+						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
+						configs[key.pItem].emplace_back(data);
+
+						if (sanitized_str) {
+							oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
+						}
+					} catch (...) {
+						logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
+						shouldLogErrors = true;
+					}
+				}
+
+				if (!oldFormatMap.empty()) {
+					logger::info("\t\tsanitizing {} entries", oldFormatMap.size());
+
+					for (auto& [key, entry] : oldFormatMap) {
+						auto& [original, sanitized] = entry;
+						ini.DeleteValue("", key.pItem, original.c_str());
+						ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
+					}
+
+					(void)ini.SaveFile(path.c_str());
+				}
+			}
+		}
+
+		return { true, shouldLogErrors };
 	}
 }

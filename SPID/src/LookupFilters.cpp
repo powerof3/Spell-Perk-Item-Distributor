@@ -1,232 +1,263 @@
 #include "LookupFilters.h"
 #include "LookupNPC.h"
 
+// ------- Specialized filter evaluator --------
 namespace Filter
 {
-	Data::Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, Chance a_chance) :
-		strings(std::move(a_strings)),
-		forms(std::move(a_formFilters)),
-		level(std::move(a_level)),
-		traits(a_traits),
-		chance(a_chance)
+	/// Evaluator that determines whether given NPC matches specified filter.
+	/// These evaluators are then specialized for each type of supported filters.
+	template <typename FilterType>
+	struct filter_eval
 	{
-		hasLeveledFilters = HasLevelFiltersImpl();
-	}
+		static Result evaluate([[maybe_unused]] const FilterType filter, [[maybe_unused]] const NPCData& a_npcData)
+		{
+			return Result::kFail;
+		}
+	};
 
-	Result Data::passed_string_filters(const NPCData& a_npcData) const
+	// ---------------- Strings ----------------
+
+	template <>
+	struct filter_eval<Match>
 	{
-		if (!strings.ALL.empty() && !a_npcData.HasStringFilter(strings.ALL, true)) {
-			return Result::kFail;
+		static bool evaluate(const Match filter, const NPCData& a_npcData)
+		{
+			return a_npcData.GetKeywords().contains(filter.value) ||
+			       string::iequals(a_npcData.GetName(), filter.value) ||
+			       string::iequals(a_npcData.GetOriginalEDID(), filter.value) ||
+			       string::iequals(a_npcData.GetTemplateEDID(), filter.value);
 		}
+	};
 
-		if (!strings.NOT.empty() && a_npcData.HasStringFilter(strings.NOT)) {
-			return Result::kFail;
-		}
-
-		if (!strings.MATCH.empty() && !a_npcData.HasStringFilter(strings.MATCH)) {
-			return Result::kFail;
-		}
-
-		if (!strings.ANY.empty() && !a_npcData.ContainsStringFilter(strings.ANY)) {
-			return Result::kFail;
-		}
-
-		return Result::kPass;
-	}
-
-	Result Data::passed_form_filters(const NPCData& a_npcData) const
+	template <>
+	struct filter_eval<Wildcard>
 	{
-		if (!forms.ALL.empty() && !a_npcData.HasFormFilter(forms.ALL, true)) {
-			return Result::kFail;
+		static bool evaluate(const Wildcard filter, const NPCData& a_npcData)
+		{
+			// Utilize regex here. (will also support one-sided wildcards (e.g. *Name and Name*)
+			// std::regex regex(filter.value, std::regex_constants::icase);
+			// std::regex_match(keyword, regex);
+			return std::ranges::any_of(a_npcData.GetKeywords(), [&](auto keyword) { return string::icontains(keyword, filter.value); }) ||
+			       string::icontains(a_npcData.GetName(), filter.value) ||
+			       string::icontains(a_npcData.GetOriginalEDID(), filter.value) ||
+			       string::icontains(a_npcData.GetTemplateEDID(), filter.value);
 		}
+	};
 
-		if (!forms.NOT.empty() && a_npcData.HasFormFilter(forms.NOT)) {
-			return Result::kFail;
-		}
+	// ---------------- Forms ----------------
 
-		if (!forms.MATCH.empty() && !a_npcData.HasFormFilter(forms.MATCH)) {
-			return Result::kFail;
-		}
-
-		return Result::kPass;
-	}
-
-	Result Data::passed_secondary_filters(const NPCData& a_npcData) const
+	template <>
+	struct filter_eval<FormOrMod>
 	{
-		// Actor Level
-		auto& [actorMin, actorMax] = std::get<0>(level);
-		const auto actorLevel = a_npcData.GetLevel();
-
-		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
-			if (actorLevel < actorMin || actorLevel > actorMax) {
-				return Result::kFail;
+		static bool evaluate(const FormOrMod filter, const NPCData& a_npcData)
+		{
+			if (std::holds_alternative<RE::TESForm*>(filter)) {
+				const auto form = std::get<RE::TESForm*>(filter);
+				return form && has_form(form, a_npcData);
 			}
-		} else if (actorMin < UINT16_MAX && actorLevel < actorMin) {
-			return Result::kFail;
-		} else if (actorMax < UINT16_MAX && actorLevel > actorMax) {
-			return Result::kFail;
+			if (std::holds_alternative<const RE::TESFile*>(filter)) {
+				const auto file = std::get<const RE::TESFile*>(filter);
+				return file && (file->IsFormInMod(a_npcData.GetOriginalFormID()) || file->IsFormInMod(a_npcData.GetTemplateFormID()));
+			}
+			return false;
 		}
 
-		const auto npc = a_npcData.GetNPC();
-
-		// Skill Level
-		for (auto& [skillType, skill] : std::get<1>(level)) {
-			auto& [skillMin, skillMax] = skill;
-
-			const auto skillLevel = npc->playerSkills.values[skillType];
-
-			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-				if (skillLevel < skillMin || skillLevel > skillMax) {
-					return Result::kFail;
+	private:
+		/// Determines whether given form is associated with an NPC.
+		static bool has_form(RE::TESForm* a_form, const NPCData& a_npcData)
+		{
+			auto npc = a_npcData.GetNPC();
+			switch (a_form->GetFormType()) {
+			case RE::FormType::CombatStyle:
+				return npc->GetCombatStyle() == a_form;
+			case RE::FormType::Class:
+				return npc->npcClass == a_form;
+			case RE::FormType::Faction:
+				{
+					const auto faction = a_form->As<RE::TESFaction>();
+					return npc->IsInFaction(faction);
 				}
-			} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
-				return Result::kFail;
-			} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
-				return Result::kFail;
+			case RE::FormType::Race:
+				return npc->GetRace() == a_form;
+			case RE::FormType::Outfit:
+				return npc->defaultOutfit == a_form;
+			case RE::FormType::NPC:
+				return npc == a_form;
+			case RE::FormType::VoiceType:
+				return npc->voiceType == a_form;
+			case RE::FormType::Spell:
+				{
+					const auto spell = a_form->As<RE::SpellItem>();
+					return npc->GetSpellList()->GetIndex(spell).has_value();
+				}
+			case RE::FormType::FormList:
+				{
+					bool result = false;
+
+					const auto list = a_form->As<RE::BGSListForm>();
+					list->ForEachForm([&](RE::TESForm& a_formInList) {
+						if (result = has_form(&a_formInList, a_npcData); result) {
+							return RE::BSContainer::ForEachResult::kStop;
+						}
+						return RE::BSContainer::ForEachResult::kContinue;
+					});
+
+					return result;
+				}
+			default:
+				return false;
 			}
 		}
+	};
 
-		if (const auto npcClass = npc->npcClass) {
-			const auto& skillWeights = npcClass->data.skillWeights;
+	// ---------------- Levels ----------------
 
-			// Skill Weight
-			for (auto& [skillType, skill] : std::get<2>(level)) {
-				auto& [skillMin, skillMax] = skill;
+	template <>
+	struct filter_eval<LevelRange>
+	{
+		static bool evaluate(const LevelRange filter, const NPCData& a_npcData)
+		{
+			const auto actorLevel = a_npcData.GetLevel();
+			return actorLevel >= filter.min && actorLevel <= filter.max;
+		}
+	};
 
-				std::uint8_t skillWeight = skillWeights.oneHanded;
-				using Skill = RE::TESNPC::Skills;
-				switch (skillType) {
-				case Skill::kOneHanded:
-					skillWeight = skillWeights.oneHanded;
-					break;
-				case Skill::kTwoHanded:
-					skillWeight = skillWeights.twoHanded;
-					break;
-				case Skill::kMarksman:
-					skillWeight = skillWeights.archery;
-					break;
-				case Skill::kBlock:
-					skillWeight = skillWeights.block;
-					break;
-				case Skill::kSmithing:
-					skillWeight = skillWeights.smithing;
-					break;
-				case Skill::kHeavyArmor:
-					skillWeight = skillWeights.heavyArmor;
-					break;
-				case Skill::kLightArmor:
-					skillWeight = skillWeights.lightArmor;
-					break;
-				case Skill::kPickpocket:
-					skillWeight = skillWeights.pickpocket;
-					break;
-				case Skill::kLockpicking:
-					skillWeight = skillWeights.lockpicking;
-					break;
-				case Skill::kSneak:
-					skillWeight = skillWeights.sneak;
-					break;
-				case Skill::kAlchemy:
-					skillWeight = skillWeights.alchemy;
-					break;
-				case Skill::kSpecchcraft:
-					skillWeight = skillWeights.speech;
-					break;
-				case Skill::kAlteration:
-					skillWeight = skillWeights.alteration;
-					break;
-				case Skill::kConjuration:
-					skillWeight = skillWeights.conjuration;
-					break;
-				case Skill::kDestruction:
-					skillWeight = skillWeights.destruction;
-					break;
-				case Skill::kIllusion:
-					skillWeight = skillWeights.illusion;
-					break;
-				case Skill::kRestoration:
-					skillWeight = skillWeights.restoration;
-					break;
-				case Skill::kEnchanting:
-					skillWeight = skillWeights.enchanting;
-					break;
+	template <>
+	struct filter_eval<SkillLevelRange>
+	{
+		static bool evaluate(const SkillLevelRange filter, const NPCData& a_npcData)
+		{
+			const auto npc = a_npcData.GetNPC();
+			const auto skillLevel = npc->playerSkills.values[filter.skill];
+			return skillLevel >= filter.min && skillLevel <= filter.max;
+		}
+	};
+
+	template <>
+	struct filter_eval<SkillWeightRange>
+	{
+		static bool evaluate(const SkillLevelRange filter, const NPCData& a_npcData)
+		{
+			if (auto skillWeight = weight(filter, a_npcData)) {
+				return skillWeight >= filter.min && skillWeight <= filter.max;
+			}
+			return false;
+		}
+
+	private:
+		static std::optional<std::uint8_t>
+			weight(const SkillLevelRange filter, const NPCData& a_npcData)
+		{
+			if (const auto npcClass = a_npcData.GetNPC()->npcClass) {
+				const auto& skillWeights = npcClass->data.skillWeights;
+				using Skills = SkillLevelRange::Skills;
+				switch (filter.skill) {
+				case Skills::kOneHanded:
+					return skillWeights.oneHanded;
+				case Skills::kTwoHanded:
+					return skillWeights.twoHanded;
+				case Skills::kMarksman:
+					return skillWeights.archery;
+				case Skills::kBlock:
+					return skillWeights.block;
+				case Skills::kSmithing:
+					return skillWeights.smithing;
+				case Skills::kHeavyArmor:
+					return skillWeights.heavyArmor;
+				case Skills::kLightArmor:
+					return skillWeights.lightArmor;
+				case Skills::kPickpocket:
+					return skillWeights.pickpocket;
+				case Skills::kLockpicking:
+					return skillWeights.lockpicking;
+				case Skills::kSneak:
+					return skillWeights.sneak;
+				case Skills::kAlchemy:
+					return skillWeights.alchemy;
+				case Skills::kSpecchcraft:
+					return skillWeights.speech;
+				case Skills::kAlteration:
+					return skillWeights.alteration;
+				case Skills::kConjuration:
+					return skillWeights.conjuration;
+				case Skills::kDestruction:
+					return skillWeights.destruction;
+				case Skills::kIllusion:
+					return skillWeights.illusion;
+				case Skills::kRestoration:
+					return skillWeights.restoration;
+				case Skills::kEnchanting:
+					return skillWeights.enchanting;
 				default:
-					continue;
+					return std::nullopt;
 				}
-
-				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-					if (skillWeight < skillMin || skillWeight > skillMax) {
-						return Result::kFail;
-					}
-				} else if (skillMin < UINT8_MAX && skillWeight < skillMin) {
-					return Result::kFail;
-				} else if (skillMax < UINT8_MAX && skillWeight > skillMax) {
-					return Result::kFail;
-				}
+			} else {
+				return std::nullopt;
 			}
 		}
+	};
 
-		// Traits
-		if (traits.sex && a_npcData.GetSex() != *traits.sex) {
-			return Result::kFail;
-		}
-		if (traits.unique && a_npcData.IsUnique() != *traits.unique) {
-			return Result::kFail;
-		}
-		if (traits.summonable && a_npcData.IsSummonable() != *traits.summonable) {
-			return Result::kFail;
-		}
-		if (traits.child && a_npcData.IsChild() != *traits.child) {
-			return Result::kFail;
-		}
+	// ---------------- Traits ----------------
 
-		return Result::kPass;
-	}
+	template <>
+	struct filter_eval<SexTrait>
+	{
+		static bool evaluate([[maybe_unused]] const SexTrait filter, const NPCData& a_npcData)
+		{
+			return a_npcData.GetSex() == filter.sex;
+		}
+	};
 
+	template <>
+	struct filter_eval<UniqueTrait>
+	{
+		static bool evaluate([[maybe_unused]] const UniqueTrait filter, const NPCData& a_npcData)
+		{
+			return a_npcData.IsUnique();
+		}
+	};
+
+	template <>
+	struct filter_eval<SummonableTrait>
+	{
+		static bool evaluate([[maybe_unused]] const SummonableTrait filter, const NPCData& a_npcData)
+		{
+			return a_npcData.IsSummonable();
+		}
+	};
+
+	template <>
+	struct filter_eval<ChildTrait>
+	{
+		static bool evaluate([[maybe_unused]] const ChildTrait filter, const NPCData& a_npcData)
+		{
+			return a_npcData.IsChild();
+		}
+	};
+
+	template <>
+	struct filter_eval<Chance>
+	{
+		inline static RNG staticRNG;
+
+		static bool evaluate(const Chance filter, [[maybe_unused]] const NPCData& a_npcData)
+		{
+			if (filter.maximum >= 100) {
+				return true;
+			}
+
+			const auto rng = staticRNG.Generate<Chance::chance>(0, 100);
+			return rng > filter.maximum;
+		}
+	};
+}
+
+// ------------------- Data --------------------
+namespace Filter
+{
 	bool Data::HasLevelFilters() const
 	{
-		return hasLeveledFilters;
-	}
-
-	bool Data::HasLevelFiltersImpl() const
-	{
-		const auto& [actorLevelPair, skillLevelPairs, _] = level;
-
-		auto& [actorMin, actorMax] = actorLevelPair;
-		if (actorMin < UINT16_MAX || actorMax < UINT16_MAX) {
-			return true;
-		}
-
-		return std::ranges::any_of(skillLevelPairs, [](const auto& skillPair) {
-			auto& [skillType, skill] = skillPair;
-			auto& [skillMin, skillMax] = skill;
-
-			return skillMin < UINT8_MAX || skillMax < UINT8_MAX;
-		});
-	}
-
-	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
-	{
-		// Fail chance first to avoid running unnecessary checks
-		if (chance < 100) {
-			const auto randNum = staticRNG.Generate<Chance>(0, 100);
-			if (randNum > chance) {
-				return Result::kFailRNG;
-			}
-		}
-
-		if (passed_string_filters(a_npcData) == Result::kFail) {
-			return Result::kFail;
-		}
-
-		if (passed_form_filters(a_npcData) == Result::kFail) {
-			return Result::kFail;
-		}
-
-		if (a_noPlayerLevelDistribution && HasLevelFilters() && a_npcData.GetNPC()->HasPCLevelMult()) {
-			return Result::kFail;
-		}
-
-		return passed_secondary_filters(a_npcData);
+		// TODO: Implement detection of level filters.
+		return false;
 	}
 }

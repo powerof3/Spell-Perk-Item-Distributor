@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Filters.h"
+#include "LookupFilters.h"
 
 namespace RECORD
 {
@@ -43,14 +43,14 @@ namespace INI
 
 	struct Data
 	{
-		FormOrEditorID                      rawForm{};
-		Filter::OrExpression                stringFilters{};
-		Filter::OrExpression                idFilters{};
-		Filter::OrExpression                levelFilters{};
-		Filter::OrExpression                traitFilters{};
-		Filter::FilterEntry<Filter::Chance> chanceFilters{ Filter::Chance(100) };
-		IdxOrCount                          idxOrCount{ 1 };
-		std::string                         path{};
+		FormOrEditorID     rawForm{};
+		Filter::Expression stringFilters{};
+		Filter::Expression idFilters{};
+		Filter::Expression levelFilters{};
+		Filter::Expression traitFilters{};
+		Filter::Expression chanceFilters{};
+		IdxOrCount         idxOrCount{ 1 };
+		std::string        path{};
 	};
 	using DataVec = std::vector<Data>;
 
