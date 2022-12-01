@@ -72,9 +72,10 @@ namespace INI
 		OrExpression parse_filters(const std::string& expression_str, std::function<std::optional<T>(std::string&)> parser)
 		{
 			OrExpression filters;
-			auto         filters_str = distribution::split_entry(expression_str);
-			for (auto& filter_str : filters_str) {
-				filters.filters.push_back(parse_entries(filter_str, parser));
+
+			auto filters_str = distribution::split_entry(expression_str);
+			for (const auto& filter_str : filters_str) {
+				filters.entries.push_back(parse_entries(filter_str, parser));
 			}
 			return filters;
 		}
@@ -192,7 +193,9 @@ namespace INI
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
 					auto chance = string::to_num<Chance::chance>(str);
-					data.chanceFilters = FilterEntry<Chance>(FilterEntry<Chance>(Chance(chance)));
+					OrExpression expr{};
+					expr.entries.push_back(FilterEntry<Chance>(Chance(chance)));
+					data.chanceFilters = expr;
 				}
 			}
 

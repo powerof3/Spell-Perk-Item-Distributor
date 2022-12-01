@@ -4,8 +4,11 @@
 
 namespace Filter
 {
+<<<<<<< HEAD
 	inline RNG staticRNG{};
 
+=======
+>>>>>>> 3237ee1 (Another round of integration)
 	enum class Result
 	{
 		kFail = 0,
@@ -118,11 +121,22 @@ namespace Filter
 // ---------------- Expressions ----------------
 namespace Filter
 {
+	/// Evaluator that determines whether given NPC matches specified filter.
+	/// These evaluators are then specialized for each type of supported filters.
+	template <typename FilterType>
+	struct filter_eval
+	{
+		static Result evaluate([[maybe_unused]] const FilterType filter, [[maybe_unused]] const NPCData& a_npcData)
+		{
+			return Result::kFail;
+		}
+	};
+
 	/// An abstract filter component that can be evaluated for specified NPC.
 	struct Evaluatable
 	{
 		/// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
-		virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) = 0;
+		virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const = 0;
 	};
 
 	/// NegatedFilter is an entry that is always inverts the result of evaluation.
@@ -138,7 +152,7 @@ namespace Filter
 		FilterEntry<FilterType>& operator=(const FilterEntry<FilterType>&) = default;
 		FilterEntry<FilterType>& operator=(FilterEntry<FilterType>&&) = default;
 
-		virtual Result evaluate(const NPCData& a_npcData) override
+		virtual Result evaluate(const NPCData& a_npcData) const override
 		{
 			return filter_eval<FilterType>::evaluate(value, a_npcData);
 		}
@@ -152,9 +166,9 @@ namespace Filter
 		NegatedFilter(FilterType value) :
 			FilterEntry(value) {}
 
-		virtual Result evaluate(const NPCData& a_npcData) override 
+		virtual Result evaluate(const NPCData& a_npcData) const override 
 		{
-			switch (filter_eval<FilterType>::evaluate(value, a_npcData)) {
+			switch (filter_eval<FilterType>::evaluate(FilterEntry<FilterType>::value, a_npcData)) {
 			case Result::kFail:
 			case Result::kFailRNG:
 				return Result::kPass;
@@ -171,14 +185,18 @@ namespace Filter
 	{
 		std::vector<Evaluatable> entries;
 
+		Expression(std::initializer_list<Evaluatable> entries) :
+			entries(entries) {}
+		Expression() = default;
+
 		template <class FilterType>
-		void for_each_filter(std::function<void(FilterType&)> a_callback)
+		void for_each_filter(std::function<void(FilterType&)> a_callback) const
 		{
 			for (auto& eval : entries) {
-				if (auto& filter = static_cast<Expression&>(eval)) {
-					filter.entries.for_each_filter<FilterType>(a_callback);
-				} else if (auto& entry = static_cast<FilterEntry<FilterType>&>(eval)) {
-					a_callback(entry);
+				if (auto& filter = static_cast<const Expression&>(eval)) {
+					filter.for_each_filter<FilterType>(a_callback);
+				} else if (auto& entry = static_cast<const FilterEntry<FilterType>&>(eval)) {
+					a_callback(entry.value);
 				}
 			}
 		}
@@ -187,25 +205,40 @@ namespace Filter
 		Expression map(std::function<MappedFilterType(FilterType&)> mapper)
 		{
 			Expression result = *this->copy();
-			for (auto eval : entries) {
-				if (auto& filter = static_cast<Expression&>(eval)) {
+			for (auto& eval : entries) {
+				if (auto& filter = static_cast<const Expression&>(eval)) {
 					result.entries.push_back(filter.map<FilterType, MappedFilterType>(mapper));
-				} else if (auto& entry = static_cast<FilterEntry<FilterType>&>(eval)) {
-					result.entries.push_back(mapper(entry));
+				} else if (auto& entry = static_cast<const NegatedFilter<FilterType>&>(eval)) {
+					result.entries.push_back(NegatedFilter<MappedFilterType>(mapper(entry.value)));
+				} else if (auto& entry = static_cast<const FilterEntry<FilterType>&>(eval)) {
+					result.entries.push_back(FilterEntry<MappedFilterType>(mapper(entry.value)));
 				}
 			}
 
 			return result;
 		}
 
+		template <class FilterType>
+		bool contains(std::function<bool(const FilterType&)> comparator) const
+		{
+			for (auto& eval : entries) {
+				if (auto& filter = static_cast<const Expression&>(eval); filter.contains<FilterType>(comparator)) {
+					return true;
+				} else if (auto& entry = static_cast<const FilterEntry<FilterType>&>(eval); comparator(entry.value)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 	protected:
-		virtual Expression* copy() { return this; }
+		virtual Expression* copy() const;
 	};
 
 	/// Entries are combined using AND logic.
 	struct AndExpression : Expression
 	{
-		virtual Result evaluate(const NPCData& a_npcData) override
+		virtual Result evaluate(const NPCData& a_npcData) const override
 		{
 			for (auto& entry : entries) {
 				auto res = entry.evaluate(a_npcData);
@@ -217,7 +250,7 @@ namespace Filter
 		}
 
 	protected:
-		virtual Expression* copy() override
+		virtual Expression* copy() const override
 		{
 			return new AndExpression();
 		}
@@ -226,7 +259,7 @@ namespace Filter
 	/// Entries are combined using OR logic.
 	struct OrExpression : Expression
 	{
-		virtual Result evaluate(const NPCData& a_npcData) override
+		virtual Result evaluate(const NPCData& a_npcData) const override
 		{
 			Result failure = Result::kFail;
 
@@ -246,7 +279,7 @@ namespace Filter
 		
 
 	protected:
-		virtual Expression* copy() override
+		virtual Expression* copy() const override
 		{
 			return new OrExpression();
 		}
@@ -258,17 +291,16 @@ namespace Filter
 {
 	struct Data
 	{
+		Data(AndExpression filters);
+
 		AndExpression filters;
+		bool          hasLeveledFilters;
 
 		[[nodiscard]] bool HasLevelFilters() const;
 		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData, bool a_noPlayerLevelDistribution) const;
 
 	private:
 		[[nodiscard]] bool HasLevelFiltersImpl() const;
-
-		[[nodiscard]] Result passed_string_filters(const NPC::Data& a_npcData) const;
-		[[nodiscard]] Result passed_form_filters(const NPC::Data& a_npcData) const;
-		[[nodiscard]] Result passed_secondary_filters(const NPC::Data& a_npcData) const;
 	};
 }
 

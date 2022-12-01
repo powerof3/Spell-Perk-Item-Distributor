@@ -294,7 +294,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-	    OrExpression filterForms = filterIDs.map<FormOrEditorID, FormOrMod>([&a_dataHandler](auto& formOrEditorID) {
+	    OrExpression filterForms = filterIDs.map<FormOrEditorID, FormOrMod>([&](auto& formOrEditorID) {
 			if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 				auto& [formID, modName] = *formModPair;
 				if (g_mergeMapperInterface) {
@@ -303,7 +303,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 				if (modName && !formID) {
 					if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
 						buffered_logger::info("\t\t\t[{}] Filter ({}) INFO - mod found", path, filterMod->fileName);
-						return FilterEntry<FormOrMod>(filterMod);
+						return filterMod;
 					} else {
 						buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - mod cannot be found", path, *modName);
 					}
@@ -314,7 +314,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					if (filterForm) {
 						const auto formType = filterForm->GetFormType();
 						if (Cache::FormType::GetWhitelisted(formType)) {
-							return FilterEntry<FormOrMod>(filterForm);
+							return filterForm;
 						} else {
 							buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", path, *formID, modName.value_or(""), formType);
 						}
@@ -327,7 +327,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					if (auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
 						const auto formType = filterForm->GetFormType();
 						if (Cache::FormType::GetWhitelisted(formType)) {
-							return FilterEntry<FormOrMod>(filterForm);
+							return filterForm;
 						} else {
 							buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", path, editorID, formType);
 						}

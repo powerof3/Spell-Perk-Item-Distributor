@@ -153,26 +153,18 @@ void Dependencies::ResolveKeywords()
 			return allKeywords[name];
 		};
 
-		const auto addDependencies = [&](const StringVec& a_strings, std::function<RE::BGSKeyword*(const std::string&)> matchingKeyword) {
-			for (const auto& str : a_strings) {
-				if (const auto& kwd = matchingKeyword(str); kwd) {
-					AddDependency(formData.form, kwd);
-				}
+		formData.filters.filters.for_each_filter<Filter::Match>([&](auto& entry) {
+			if (const auto& kwd = allKeywords[entry.value]; kwd) {
+				AddDependency(formData.form, kwd);
 			}
-		};
+		});
 
-		auto& stringFilters = formData.filters.strings;
-
-		addDependencies(stringFilters.ALL, findKeyword);
-		addDependencies(stringFilters.NOT, findKeyword);
-		addDependencies(stringFilters.MATCH, findKeyword);
-		addDependencies(stringFilters.ANY, [&](const std::string& name) -> RE::BGSKeyword* {
+		formData.filters.filters.for_each_filter<Filter::Wildcard>([&](auto& entry) {
 			for (const auto& [keywordName, keyword] : allKeywords) {
-				if (string::icontains(keywordName, name)) {
-					return keyword;
+				if (string::icontains(keywordName, entry.value)) {
+					AddDependency(formData.form, keyword);
 				}
 			}
-			return nullptr;
 		});
 	}
 
