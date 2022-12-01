@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LookupForms.h"
+#include "FormData.h"
 #include "LookupNPC.h"
 #include "PCLevelMultManager.h"
 
@@ -63,7 +63,7 @@ namespace Distribute
 		const NPCData& a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input& a_input,
-		std::function<bool(Form*, IdxOrCount&)> a_callback)
+		std::function<bool(Form*, IdxOrCount)> a_callback)
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
 
@@ -71,9 +71,7 @@ namespace Distribute
 		for (auto& formData : vec) {
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
-				auto form = formData.form;
-				auto idxOrCount = formData.idxOrCount;
-				a_callback(form, idxOrCount);
+				a_callback(formData.form, formData.idxOrCount);
 			}
 		}
 	}

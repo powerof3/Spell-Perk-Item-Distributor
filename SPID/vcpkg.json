@@ -8,7 +8,6 @@
     "boost-stl-interfaces",
     "clib-util",
     "mergemapper",
-    "robin-hood-hashing",
     "rsm-binary-io",
     "simpleini",
     "srell",

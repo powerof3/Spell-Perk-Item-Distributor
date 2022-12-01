@@ -1,6 +1,7 @@
 #include "DistributeManager.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
+#include "LookupForms.h"
 
 namespace Distribute
 {
@@ -101,7 +102,6 @@ namespace Distribute
 			logger::info("{:*^50}", "STATS");
 			auto avgTimeTaken = Actor::timeTaken / Actor::totalNPCs;
 			logger::info("{} entries", Forms::GetTotalEntries());
-			logger::info("{} leveled entries", Forms::GetTotalLeveledEntries());
 			logger::info("{} static NPCs processed", Actor::totalNPCs);
 			logger::info("Total distribution time : {}μs / {}ms", Actor::timeTaken, Actor::timeTaken / 1000.0f);
 			logger::info("Average distribution time per NPC : {}μs / {}ms", avgTimeTaken, avgTimeTaken / 1000.0f);

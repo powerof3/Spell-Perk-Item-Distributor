@@ -1,4 +1,5 @@
 #include "LookupForms.h"
+#include "FormData.h"
 #include "KeywordDependencies.h"
 
 bool Lookup::GetForms()
@@ -43,7 +44,7 @@ void Lookup::LogFormLookup()
 		const auto& recordName = RECORD::add[a_recordType];
 
 		const auto all = INI::configs[recordName].size();
-		const auto added = a_map.forms.size();
+		const auto added = a_map.GetSize();
 
 		// Only log entries that are actually present in INIs.
 		if (all > 0) {
@@ -66,36 +67,4 @@ void Lookup::LogFormLookup()
 
 	// Clear logger's buffer to free some memory :)
 	buffered_logger::clear();
-}
-
-std::size_t Forms::GetTotalEntries()
-{
-	return keywords.GetSize() +
-	       spells.GetSize() +
-	       perks.GetSize() +
-	       items.GetSize() +
-	       shouts.GetSize() +
-	       levSpells.GetSize() +
-	       packages.GetSize() +
-	       outfits.GetSize() +
-	       deathItems.GetSize() +
-	       factions.GetSize() +
-	       sleepOutfits.GetSize() +
-	       skins.GetSize();
-}
-
-std::size_t Forms::GetTotalLeveledEntries()
-{
-	return keywords.GetLeveledSize() +
-	       spells.GetLeveledSize() +
-	       perks.GetLeveledSize() +
-	       items.GetLeveledSize() +
-	       shouts.GetLeveledSize() +
-	       levSpells.GetLeveledSize() +
-	       packages.GetLeveledSize() +
-	       outfits.GetLeveledSize() +
-	       deathItems.GetLeveledSize() +
-	       factions.GetLeveledSize() +
-	       sleepOutfits.GetLeveledSize() +
-	       skins.GetLeveledSize();
 }

@@ -1,5 +1,5 @@
 #include "KeywordDependencies.h"
-#include "LookupForms.h"
+#include "FormData.h"
 
 /// An object that describes a keyword dependencies.
 struct DependencyNode
@@ -9,7 +9,7 @@ private:
 	std::unordered_map<RE::BGSKeyword*, DependencyNode*> children{};
 
 public:
-    explicit DependencyNode(RE::BGSKeyword* val) :
+	explicit DependencyNode(RE::BGSKeyword* val) :
 		value(val)
 	{}
 
@@ -26,7 +26,7 @@ public:
 	}
 
 	/// Checks whether current node has any dependencies.
-    [[nodiscard]] bool HasDependencies() const
+	[[nodiscard]] bool HasDependencies() const
 	{
 		return !children.empty();
 	}
@@ -69,7 +69,7 @@ DependencyNode* NodeForKeyword(RE::BGSKeyword* keyword)
 		return keywordDependencies[keyword].get();
 	}
 
-    const auto [it, result] = keywordDependencies.try_emplace(keyword, std::make_unique<DependencyNode>(keyword));
+	const auto [it, result] = keywordDependencies.try_emplace(keyword, std::make_unique<DependencyNode>(keyword));
 	return it->second.get();
 }
 
@@ -121,7 +121,9 @@ void Dependencies::ResolveKeywords()
 
 	// Pre-build a map of all available keywords by names.
 	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
-    const std::set distrKeywords(Forms::keywords.forms.begin(), Forms::keywords.forms.end());
+
+	auto& keywordForms = Forms::keywords.GetForms();
+	const std::set distrKeywords(keywordForms.begin(), keywordForms.end());
 
 	const auto dataHandler = RE::TESDataHandler::GetSingleton();
 	for (const auto& kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
@@ -174,10 +176,10 @@ void Dependencies::ResolveKeywords()
 		});
 	}
 
-	std::sort(Forms::keywords.forms.begin(), Forms::keywords.forms.end());
+	std::sort(keywordForms.begin(), keywordForms.end());
 
 	// Print only unique entries in the log.
-	Forms::DataVec<RE::BGSKeyword> resolvedKeywords(Forms::keywords.forms);
+	Forms::DataVec<RE::BGSKeyword> resolvedKeywords(keywordForms);
 	resolvedKeywords.erase(std::ranges::unique(resolvedKeywords).begin(), resolvedKeywords.end());
 
 	logger::info("\tKeywords have been sorted: ");
@@ -186,7 +188,7 @@ void Dependencies::ResolveKeywords()
 	}
 
 	// Clear keyword dependencies
-    keywordDependencies.clear();
+	keywordDependencies.clear();
 }
 
 /// Comparator that utilizes dependencies map created with Dependencies::ResolveKeywords() to sort keywords.
