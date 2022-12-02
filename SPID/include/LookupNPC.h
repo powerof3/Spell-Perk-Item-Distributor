@@ -17,7 +17,7 @@ namespace NPC
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
 
-		[[nodiscard]] Set<std::string> GetKeywords() const;
+		[[nodiscard]] StringSet        GetKeywords() const;
 		[[nodiscard]] std::string      GetName() const;
 		[[nodiscard]] std::string      GetOriginalEDID() const;
 		[[nodiscard]] std::string      GetTemplateEDID() const;
@@ -33,6 +33,8 @@ namespace NPC
 
 	private:
 		void cache_keywords();
+
+	    static bool is_child(RE::TESNPC* a_npc);
 
 		RE::TESNPC* npc;
 		RE::FormID  originalFormID;

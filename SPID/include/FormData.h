@@ -31,55 +31,28 @@ namespace Forms
 			}
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path)
+        template <class Value, class MappedValue>
+		void makeExpression(Expression* expression, INI::RawFilters<Value> rawFilters, std::function<std::optional<MappedValue>(Value&)> mapper)
 		{
-			if (a_rawFormVec.empty()) {
-				return true;
-			}
-			for (auto& formOrEditorID : a_rawFormVec) {
-				if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
-					auto& [formID, modName] = *formModPair;
-					if (g_mergeMapperInterface) {
-						get_merged_IDs(formID, modName);
-					}
-					if (modName && !formID) {
-						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
-							buffered_logger::info("\t\t\t[{}] Filter ({}) INFO - mod found", a_path, filterMod->fileName);
-							a_formVec.push_back(filterMod);
+			for (auto& rawExpression : rawFilters.entries) {
+				for (auto& rawValue : rawExpression.entries) {
+					std::optional<MappedValue> res = mapper(rawValue.value);
+					if (res) {
+						auto value = res.value();
+						if (rawValue.negated) {
+							expression->entries.push_back(NegatedFilter<MappedValue>(value));
 						} else {
-							buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
-						}
-					} else if (formID) {
-						auto filterForm = modName ?
-                                              a_dataHandler->LookupForm(*formID, *modName) :
-                                              RE::TESForm::LookupByID(*formID);
-						if (filterForm) {
-							const auto formType = filterForm->GetFormType();
-							if (Cache::FormType::GetWhitelisted(formType)) {
-								a_formVec.push_back(filterForm);
-							} else {
-								buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
-							}
-						} else {
-							buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
-						}
-					}
-				} else if (std::holds_alternative<std::string>(formOrEditorID)) {
-					if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
-						if (auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
-							const auto formType = filterForm->GetFormType();
-							if (Cache::FormType::GetWhitelisted(formType)) {
-								a_formVec.push_back(filterForm);
-							} else {
-								buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, editorID, formType);
-							}
-						} else {
-							buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - form doesn't exist", a_path, editorID);
+							expression->entries.push_back(FilterEntry<MappedValue>(value));
 						}
 					}
 				}
 			}
-			return !a_formVec.empty();
+		}
+
+		template <class Value>
+		void makeExpression(Expression* expression, INI::RawFilters<Value> rawFilters)
+		{
+			makeExpression<Value, Value>(expression, rawFilters, [](const Value& value) { return value; });
 		}
 	}
 
@@ -94,7 +67,7 @@ namespace Forms
 	{
 		Form*       form{ nullptr };
 		IdxOrCount  idxOrCount{ 1 };
-		FilterData  filters{};
+		FilterData  filters;
 		std::string path{};
 
 		bool operator<(const Data& a_rhs) const
@@ -204,7 +177,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 	forms.reserve(a_INIDataVec.size());
 
-	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
+	for (const auto& [formOrEditorID, strings, filterIDs, level, traits, chance, idxOrCount, path] : a_INIDataVec) {
 		Form* form = nullptr;
 
 		if (std::holds_alternative<FormModPair>(formOrEditorID)) {
@@ -294,11 +267,21 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-	    OrExpression filterForms = filterIDs.map<FormOrEditorID, FormOrMod>([&](auto& formOrEditorID) {
+	    // ----------------- Compile filters expressions ----------------
+
+	    OrExpression traitsExpr;
+		OrExpression levelsExpr;
+		OrExpression formsExpr;
+		OrExpression stringsExpr;
+
+		detail::makeExpression<Filter::Trait>(&traitsExpr, traits);
+		detail::makeExpression<Filter::LevelRange>(&levelsExpr, level);
+		detail::makeExpression<Filter::StringValue>(&stringsExpr, strings);
+	    detail::makeExpression<FormOrEditorID, FormOrMod>(&formsExpr, filterIDs, [&](FormOrEditorID& formOrEditorID) -> std::optional<FormOrMod> {
 			if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 				auto& [formID, modName] = *formModPair;
 				if (g_mergeMapperInterface) {
-					get_merged_IDs(formID, modName);
+					detail::get_merged_IDs(formID, modName);
 				}
 				if (modName && !formID) {
 					if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
@@ -336,11 +319,19 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					}
 				}
 			}
+			return std::nullopt;
 		});
 
-	    AndExpression result{ chance, traits, level, filterForms, strings };
+	                // I couldn't make this work with initializer list with either constructor or for loop. :(
+		AndExpression result;
 
-	    Forms::Data<Form> formData{ form, idxOrCount, FilterData{ result } };
+		result.entries.push_back(FilterEntry(chance));
+		result.entries.push_back(traitsExpr);
+		result.entries.push_back(levelsExpr);
+		result.entries.push_back(formsExpr);
+		result.entries.push_back(stringsExpr);
+
+	    Forms::Data<Form> formData{ form, idxOrCount, FilterData(result) };
 		forms.emplace_back(formData);
 	}
 }

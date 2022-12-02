@@ -46,10 +46,11 @@ namespace INI
 		}
 
 		template <class T>
-		Expression parse_entries(const std::string& filter_str, std::function<std::optional<T>(std::string&)> parser)
+		RawFilterEntries<T> parse_entries(const std::string& filter_str, std::function<std::optional<T>(std::string&)> parser)
 		{
-			AndExpression entries;
-			auto          entries_str = distribution::split_entry(filter_str, "+");
+
+			RawFilterEntries<T> entries;
+			auto entries_str = distribution::split_entry(filter_str, "+");
 
 			for (auto& entry_str : entries_str) {
 				bool isNegated = false;
@@ -58,24 +59,22 @@ namespace INI
 					entry_str.erase(0, 1);
 					isNegated = true;
 				}
-
-				if (auto val = parser(entry_str)) {
-					entries.entries.push_back(isNegated ? NegatedFilter(val) : FilterEntry(val));
-				} else {
-					buffered_logger::warn("\tUnrecognized filter: {}", entry_str);
+				std::optional<T> res = parser(entry_str);
+				if (res) {
+					RawFilterValue<T> value(res.value(), isNegated);
+					entries.entries.push_back(value);
 				}
 			}
 			return entries;
 		}
 
 		template <class T>
-		OrExpression parse_filters(const std::string& expression_str, std::function<std::optional<T>(std::string&)> parser)
+		RawFilters<T> parse_filters(const std::string& expression_str, std::function<std::optional<T>(std::string&)> parser)
 		{
-			OrExpression filters;
-
+			RawFilters<T> filters;
 			auto filters_str = distribution::split_entry(expression_str);
 			for (const auto& filter_str : filters_str) {
-				filters.entries.push_back(parse_entries(filter_str, parser));
+				filters.entries.push_back(parse_entries<T>(filter_str, parser));
 			}
 			return filters;
 		}
@@ -138,14 +137,16 @@ namespace INI
 							if (auto skill = string::to_num<SkillLevelRange::Skill>(matches[kSkill].str()); skill < SkillLevelRange::Skills::kTotal) {
 								auto min = matches[kSkillMin].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMin].str()) : LevelRange::MinLevel;
 								auto max = matches[kSkillMax].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMax].str()) : LevelRange::MaxLevel;
-								if (matches[kModifier] == 'w') {
-									return SkillWeightRange(skill, min, max);
-								} else if (matches[kModifier].length() == 0) {
+								if (matches[kModifier].length() == 0) {
 									return SkillLevelRange(skill, min, max);
+								} else if(matches[kModifier].str().at(0) == 'w') {
+									return SkillWeightRange(skill, min, max);
 								} else {
+									buffered_logger::warn("\tUnrecognized skill modifier in filter (\'{}\'): {}", matches[kModifier].str().at(0), entry_str);
 									return std::nullopt;
 								}
 							}
+							buffered_logger::warn("\tInvalid skill filter. Skill Type must be a number in range [0; 17]: {}", entry_str);
 							return std::nullopt;
 						} else {  // levels
 							auto min = matches[kLevelMin].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMin].str()) : LevelRange::MinLevel;
@@ -154,6 +155,8 @@ namespace INI
 							return LevelRange(min, max);
 						}
 					}
+					buffered_logger::warn("\tInvalid level or skill filter: {}", entry_str);
+					return std::nullopt;
 				});
 			}
 
@@ -161,7 +164,8 @@ namespace INI
 			if (kTraits < size) {
 				data.traitFilters = parse_filters<Trait>(sections[kTraits], [&](std::string& entry_str) -> std::optional<Trait> {
 					if (!entry_str.empty()) {
-						switch (tolower(entry_str.at(0))) {
+						auto trait = tolower(entry_str.at(0));
+						switch (trait) {
 						case 'm':
 							return SexTrait(RE::SEX::kMale);
 						case 'f':
@@ -173,9 +177,12 @@ namespace INI
 						case 'c':
 							return ChildTrait();
 						default:
+							buffered_logger::warn("\tUnrecognized trait filter (\'{}\'): {}", trait, entry_str);
 							return std::nullopt;
 						}
 					}
+					buffered_logger::critical("\tUnexpectedly found an empty trait filter. Please report this issue if you see this log :)");
+					return std::nullopt;
 				});
 			}
 
@@ -193,9 +200,7 @@ namespace INI
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
 					auto chance = string::to_num<Chance::chance>(str);
-					OrExpression expr{};
-					expr.entries.push_back(FilterEntry<Chance>(Chance(chance)));
-					data.chanceFilters = expr;
+					data.chanceFilters = Chance(chance);
 				}
 			}
 
@@ -242,7 +247,7 @@ namespace INI
 
 			if (auto values = ini.GetSection(""); values && !values->empty()) {
 				std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
-				auto                                                                                                  truncatedPath = path.substr(5);  //strip "Data\\"
+				auto truncatedPath = path.substr(5);  //strip "Data\\"
 				for (auto& [key, entry] : *values) {
 					try {
 						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);

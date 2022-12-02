@@ -153,13 +153,13 @@ void Dependencies::ResolveKeywords()
 			return allKeywords[name];
 		};
 
-		formData.filters.filters.for_each_filter<Filter::Match>([&](auto& entry) {
+		formData.filters.filters.for_each_filter<Filter::Match>([&](const auto& entry) {
 			if (const auto& kwd = allKeywords[entry.value]; kwd) {
 				AddDependency(formData.form, kwd);
 			}
 		});
 
-		formData.filters.filters.for_each_filter<Filter::Wildcard>([&](auto& entry) {
+		formData.filters.filters.for_each_filter<Filter::Wildcard>([&](const auto& entry) {
 			for (const auto& [keywordName, keyword] : allKeywords) {
 				if (string::icontains(keywordName, entry.value)) {
 					AddDependency(formData.form, keyword);

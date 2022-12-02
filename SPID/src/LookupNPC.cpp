@@ -99,7 +99,7 @@ namespace NPC
 		return npc;
 	}
 
-	Set<std::string> Data::GetKeywords() const
+	StringSet Data::GetKeywords() const
 	{
 		return keywords;
 	}

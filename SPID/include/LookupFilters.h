@@ -4,11 +4,6 @@
 
 namespace Filter
 {
-<<<<<<< HEAD
-	inline RNG staticRNG{};
-
-=======
->>>>>>> 3237ee1 (Another round of integration)
 	enum class Result
 	{
 		kFail = 0,
@@ -136,7 +131,9 @@ namespace Filter
 	struct Evaluatable
 	{
 		/// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
-		virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const = 0;
+		virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const {
+			return Result::kFail;
+		}
 	};
 
 	/// NegatedFilter is an entry that is always inverts the result of evaluation.
@@ -164,7 +161,7 @@ namespace Filter
 	struct NegatedFilter : FilterEntry<FilterType>
 	{
 		NegatedFilter(FilterType value) :
-			FilterEntry(value) {}
+			FilterEntry<FilterType>(value) {}
 
 		virtual Result evaluate(const NPCData& a_npcData) const override 
 		{
@@ -172,6 +169,7 @@ namespace Filter
 			case Result::kFail:
 			case Result::kFailRNG:
 				return Result::kPass;
+			default:
 			case Result::kPass:
 				return Result::kFail;
 			}
@@ -183,56 +181,32 @@ namespace Filter
 	/// To determine how entries in the expression are combined use either AndExpression or OrExpression.
 	struct Expression : Evaluatable
 	{
-		std::vector<Evaluatable> entries;
-
-		Expression(std::initializer_list<Evaluatable> entries) :
-			entries(entries) {}
-		Expression() = default;
+		std::vector<Evaluatable> entries{};
 
 		template <class FilterType>
-		void for_each_filter(std::function<void(FilterType&)> a_callback) const
+		void for_each_filter(std::function<void(const FilterType&)> a_callback) const
 		{
 			for (auto& eval : entries) {
-				if (auto& filter = static_cast<const Expression&>(eval)) {
-					filter.for_each_filter<FilterType>(a_callback);
-				} else if (auto& entry = static_cast<const FilterEntry<FilterType>&>(eval)) {
-					a_callback(entry.value);
+				if (auto filter = static_cast<const Expression*>(&eval)) {
+					filter->for_each_filter<FilterType>(a_callback);
+				} else if (auto entry = static_cast<const FilterEntry<FilterType>*>(&eval)) {
+					a_callback(entry->value);
 				}
 			}
-		}
-
-		template <class FilterType, class MappedFilterType>
-		Expression map(std::function<MappedFilterType(FilterType&)> mapper)
-		{
-			Expression result = *this->copy();
-			for (auto& eval : entries) {
-				if (auto& filter = static_cast<const Expression&>(eval)) {
-					result.entries.push_back(filter.map<FilterType, MappedFilterType>(mapper));
-				} else if (auto& entry = static_cast<const NegatedFilter<FilterType>&>(eval)) {
-					result.entries.push_back(NegatedFilter<MappedFilterType>(mapper(entry.value)));
-				} else if (auto& entry = static_cast<const FilterEntry<FilterType>&>(eval)) {
-					result.entries.push_back(FilterEntry<MappedFilterType>(mapper(entry.value)));
-				}
-			}
-
-			return result;
 		}
 
 		template <class FilterType>
 		bool contains(std::function<bool(const FilterType&)> comparator) const
 		{
 			for (auto& eval : entries) {
-				if (auto& filter = static_cast<const Expression&>(eval); filter.contains<FilterType>(comparator)) {
+				if (auto filter = static_cast<const Expression*>(&eval); filter->contains<FilterType>(comparator)) {
 					return true;
-				} else if (auto& entry = static_cast<const FilterEntry<FilterType>&>(eval); comparator(entry.value)) {
+				} else if (auto entry = static_cast<const FilterEntry<FilterType>*>(&eval); comparator(entry->value)) {
 					return true;
 				}
 			}
 			return false;
 		}
-
-	protected:
-		virtual Expression* copy() const;
 	};
 
 	/// Entries are combined using AND logic.
@@ -247,12 +221,6 @@ namespace Filter
 				}
 			}
 			return Result::kPass;
-		}
-
-	protected:
-		virtual Expression* copy() const override
-		{
-			return new AndExpression();
 		}
 	};
 
@@ -274,14 +242,6 @@ namespace Filter
 				}
 			}
 			return entries.empty() ? Result::kPass : failure;
-		}
-
-		
-
-	protected:
-		virtual Expression* copy() const override
-		{
-			return new OrExpression();
 		}
 	};
 }
