@@ -231,7 +231,7 @@ namespace INI
 
 		bool shouldLogErrors{ false };
 
-		for (auto& path : files) {
+		for (const auto& path : files) {
 			logger::info("\tINI : {}", path);
 
 			CSimpleIniA ini;
@@ -243,13 +243,14 @@ namespace INI
 				continue;
 			}
 
-			string::replace_first_instance(path, "Data\\", "");
-
 			if (auto values = ini.GetSection(""); values && !values->empty()) {
 				std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
-				for (auto& [key, entry] : *values) {
+
+				auto truncatedPath = path.substr(5); //strip "Data\\"
+
+			    for (auto& [key, entry] : *values) {
 					try {
-						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, path);
+						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
 						configs[key.pItem].emplace_back(data);
 
 						if (sanitized_str) {
