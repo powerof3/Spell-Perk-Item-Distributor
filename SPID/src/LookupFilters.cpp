@@ -76,81 +76,83 @@ namespace Filter
 			}
 		}
 
-		const auto& skillWeights = npc->npcClass->data.skillWeights;
+		if (const auto npcClass = npc->npcClass) {
+			const auto& skillWeights = npcClass->data.skillWeights;
 
-		// Skill Weight
-		for (auto& [skillType, skill] : std::get<2>(level)) {
-			auto& [skillMin, skillMax] = skill;
+			// Skill Weight
+			for (auto& [skillType, skill] : std::get<2>(level)) {
+				auto& [skillMin, skillMax] = skill;
 
-			std::uint8_t skillWeight = skillWeights.oneHanded;
-			using Skill = RE::TESNPC::Skills;
-			switch (skillType) {
-			case Skill::kOneHanded:
-				skillWeight = skillWeights.oneHanded;
-				break;
-			case Skill::kTwoHanded:
-				skillWeight = skillWeights.twoHanded;
-				break;
-			case Skill::kMarksman:
-				skillWeight = skillWeights.archery;
-				break;
-			case Skill::kBlock:
-				skillWeight = skillWeights.block;
-				break;
-			case Skill::kSmithing:
-				skillWeight = skillWeights.smithing;
-				break;
-			case Skill::kHeavyArmor:
-				skillWeight = skillWeights.heavyArmor;
-				break;
-			case Skill::kLightArmor:
-				skillWeight = skillWeights.lightArmor;
-				break;
-			case Skill::kPickpocket:
-				skillWeight = skillWeights.pickpocket;
-				break;
-			case Skill::kLockpicking:
-				skillWeight = skillWeights.lockpicking;
-				break;
-			case Skill::kSneak:
-				skillWeight = skillWeights.sneak;
-				break;
-			case Skill::kAlchemy:
-				skillWeight = skillWeights.alchemy;
-				break;
-			case Skill::kSpecchcraft:
-				skillWeight = skillWeights.speech;
-				break;
-			case Skill::kAlteration:
-				skillWeight = skillWeights.alteration;
-				break;
-			case Skill::kConjuration:
-				skillWeight = skillWeights.conjuration;
-				break;
-			case Skill::kDestruction:
-				skillWeight = skillWeights.destruction;
-				break;
-			case Skill::kIllusion:
-				skillWeight = skillWeights.illusion;
-				break;
-			case Skill::kRestoration:
-				skillWeight = skillWeights.restoration;
-				break;
-			case Skill::kEnchanting:
-				skillWeight = skillWeights.enchanting;
-				break;
-			default:
-				continue;
-			}
+				std::uint8_t skillWeight = skillWeights.oneHanded;
+				using Skill = RE::TESNPC::Skills;
+				switch (skillType) {
+				case Skill::kOneHanded:
+					skillWeight = skillWeights.oneHanded;
+					break;
+				case Skill::kTwoHanded:
+					skillWeight = skillWeights.twoHanded;
+					break;
+				case Skill::kMarksman:
+					skillWeight = skillWeights.archery;
+					break;
+				case Skill::kBlock:
+					skillWeight = skillWeights.block;
+					break;
+				case Skill::kSmithing:
+					skillWeight = skillWeights.smithing;
+					break;
+				case Skill::kHeavyArmor:
+					skillWeight = skillWeights.heavyArmor;
+					break;
+				case Skill::kLightArmor:
+					skillWeight = skillWeights.lightArmor;
+					break;
+				case Skill::kPickpocket:
+					skillWeight = skillWeights.pickpocket;
+					break;
+				case Skill::kLockpicking:
+					skillWeight = skillWeights.lockpicking;
+					break;
+				case Skill::kSneak:
+					skillWeight = skillWeights.sneak;
+					break;
+				case Skill::kAlchemy:
+					skillWeight = skillWeights.alchemy;
+					break;
+				case Skill::kSpecchcraft:
+					skillWeight = skillWeights.speech;
+					break;
+				case Skill::kAlteration:
+					skillWeight = skillWeights.alteration;
+					break;
+				case Skill::kConjuration:
+					skillWeight = skillWeights.conjuration;
+					break;
+				case Skill::kDestruction:
+					skillWeight = skillWeights.destruction;
+					break;
+				case Skill::kIllusion:
+					skillWeight = skillWeights.illusion;
+					break;
+				case Skill::kRestoration:
+					skillWeight = skillWeights.restoration;
+					break;
+				case Skill::kEnchanting:
+					skillWeight = skillWeights.enchanting;
+					break;
+				default:
+					continue;
+				}
 
-			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-				if (skillWeight < skillMin || skillWeight > skillMax) {
+				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
+					if (skillWeight < skillMin || skillWeight > skillMax) {
+						return Result::kFail;
+					}
+				} else if (skillMin < UINT8_MAX && skillWeight < skillMin) {
+					return Result::kFail;
+				} else if (skillMax < UINT8_MAX && skillWeight > skillMax) {
 					return Result::kFail;
 				}
-			} else if (skillMin < UINT8_MAX && skillWeight < skillMin) {
-				return Result::kFail;
-			} else if (skillMax < UINT8_MAX && skillWeight > skillMax) {
-				return Result::kFail;
 			}
 		}
 
