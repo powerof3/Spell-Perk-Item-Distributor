@@ -135,8 +135,6 @@ namespace Forms
 		DataVec<Form> forms{};
 		DataVec<Form> formsWithLevels{};
 		DataVec<Form> formsNoLevels{};
-
-		Map<Form*, std::uint32_t> results{};
 	};
 
 	inline Distributables<RE::SpellItem> spells;
@@ -284,7 +282,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					}
 				}
 				if (!form) {
-					buffered_logger::error("		[{}] {} FAIL - editorID doesn't exist", path, editorID);
+					buffered_logger::error("\t\t[{}] {} FAIL - editorID doesn't exist", path, editorID);
 				}
 			}
 		}

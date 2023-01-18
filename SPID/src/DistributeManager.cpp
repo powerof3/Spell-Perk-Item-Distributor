@@ -13,8 +13,8 @@ namespace Distribute
 	// Static actors
 	namespace Actor
 	{
-		// Refires when quitting to main menu and loading the game again
-		struct InitItemImpl
+		// Fires after TESNPC::CopyFromTemplateForms is called
+		struct FreeTintingData
 		{
 			static void thunk(RE::TESNPC* a_this)
 			{
@@ -55,15 +55,14 @@ namespace Distribute
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
-
-			static inline size_t index{ 0 };
-			static inline constexpr std::size_t size{ 0x13 };
 		};
 
 		void Install()
 		{
-			stl::write_vfunc<RE::TESNPC, InitItemImpl>();
-			logger::info("\tHooked actor init");
+			REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(13671, 13784), OFFSET(0x1DA,0x1B8) };
+			stl::write_thunk_call<FreeTintingData>(target.address());
+
+		    logger::info("\tHooked actor init");
 		}
 	}
 
@@ -83,8 +82,8 @@ namespace Distribute
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 
-			static inline size_t index{ 0 };
-			static inline size_t size{ 0x84 };
+			static inline constexpr std::size_t index{ 0 };
+			static inline constexpr std::size_t size{ 0x84 };
 		};
 
 		void Install()
