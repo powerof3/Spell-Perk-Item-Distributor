@@ -66,6 +66,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				Distribute::LogStats();
 			}
 		}
+		break;
 	case SKSE::MessagingInterface::kNewGame:
 		{
 			if (Distribute::shouldDistribute) {
