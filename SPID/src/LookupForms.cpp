@@ -29,6 +29,9 @@ bool Lookup::GetForms()
 		lookup_forms(RECORD::kFaction, factions);
 		lookup_forms(RECORD::kSleepOutfit, sleepOutfits);
 		lookup_forms(RECORD::kSkin, skins);
+
+		// clear INI map once lookup is done
+		INI::configs.clear();
 	}
 
 	return spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions || sleepOutfits || skins;

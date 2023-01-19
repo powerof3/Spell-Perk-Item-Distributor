@@ -52,7 +52,7 @@ namespace INI
 	};
 	using DataVec = std::vector<Data>;
 
-	inline Map<std::string_view, DataVec> configs;
+	inline StringMap<DataVec> configs{};
 
 	std::pair<bool, bool> GetConfigs();
 }

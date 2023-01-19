@@ -181,6 +181,8 @@ namespace INI
 					case "-C"_h:
 						data.traits.child = false;
 						break;
+					default:
+						break;
 					}
 				}
 			}
@@ -223,11 +225,6 @@ namespace INI
 		}
 
 		logger::info("\t{} matching inis found", files.size());
-
-		//initialize map
-		for (size_t i = 0; i < RECORD::kTotal; i++) {
-			configs[RECORD::add[i]] = DataVec{};
-		}
 
 		bool shouldLogErrors{ false };
 

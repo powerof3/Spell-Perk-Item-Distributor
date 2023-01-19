@@ -4,8 +4,20 @@ template <class K, class D>
 using Map = ankerl::unordered_dense::map<K, D>;
 template <class K>
 using Set = ankerl::unordered_dense::set<K>;
-template <class K, class H, class EQ>
-using CustomSet = ankerl::unordered_dense::set<K, H, EQ>;
+
+struct string_hash
+{
+	using is_transparent = void;  // enable heterogeneous overloads
+	using is_avalanching = void;  // mark class as high quality avalanching hash
+
+	[[nodiscard]] std::uint64_t operator()(std::string_view str) const noexcept
+	{
+		return ankerl::unordered_dense::hash<std::string_view>{}(str);
+	}
+};
+
+template <class D>
+using StringMap = ankerl::unordered_dense::map<std::string, D, string_hash, std::equal_to<>>;
 
 // Record = FormOrEditorID|StringFilters|RawFormFilters|LevelFilters|Traits|IdxOrCount|Chance
 
@@ -44,8 +56,8 @@ using SkillLevel = std::pair<
 	std::uint32_t,                           // skill type
 	std::pair<std::uint8_t, std::uint8_t>>;  // skill Level
 using LevelFilters = std::tuple<ActorLevel,
-	std::vector<SkillLevel>, // skill levels
-	std::vector<SkillLevel>>; // skill weights (from Class)
+	std::vector<SkillLevel>,   // skill levels
+	std::vector<SkillLevel>>;  // skill weights (from Class)
 
 struct Traits
 {

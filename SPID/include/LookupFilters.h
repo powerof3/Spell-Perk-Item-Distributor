@@ -7,7 +7,7 @@ namespace NPC
 
 namespace Filter
 {
-	inline RNG staticRNG;
+	inline RNG staticRNG{};
 
 	enum class Result
 	{
