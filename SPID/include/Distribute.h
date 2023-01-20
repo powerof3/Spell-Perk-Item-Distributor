@@ -16,19 +16,22 @@ namespace Distribute
 			std::uint32_t idx)
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
+			const auto hasLevelFilters = a_formData.filters.HasLevelFilters();
+			const auto distributedFormID = a_formData.form->GetFormID();
 
-			auto distributedFormID = a_formData.form->GetFormID();
-			if (pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
+			if (hasLevelFilters && pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
 				return false;
 			}
 
 			auto result = a_formData.filters.PassedFilters(a_npcData, a_input.noPlayerLevelDistribution);
-			if (result != Filter::Result::kPass) {
-				if (result == Filter::Result::kFailRNG) {
+
+		    if (result != Filter::Result::kPass) {
+				if (result == Filter::Result::kFailRNG && hasLevelFilters) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
 				}
 				return false;
 			}
+
 			return true;
 		}
 
@@ -91,8 +94,9 @@ namespace Distribute
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
-				if (auto form = formData.form; a_callback(form)) {
-					break;
+				auto form = formData.form; 
+			    if (a_callback(form)) {
+			        break;
 				}
 			}
 		}

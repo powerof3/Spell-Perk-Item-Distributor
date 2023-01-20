@@ -116,7 +116,10 @@ namespace NPC
 		case RE::FormType::Outfit:
 			return npc->defaultOutfit == a_form;
 		case RE::FormType::NPC:
-			return npc == a_form;
+			{
+                const auto filterFormID = a_form->GetFormID();
+				return npc == a_form || originalFormID == filterFormID || templateFormID == filterFormID;
+			}
 		case RE::FormType::VoiceType:
 			return npc->voiceType == a_form;
 		case RE::FormType::Spell:
