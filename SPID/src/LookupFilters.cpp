@@ -13,7 +13,7 @@ namespace Filter
 		hasLeveledFilters = HasLevelFiltersImpl();
 	}
 
-    Result Data::passed_string_filters(const NPCData& a_npcData) const
+	Result Data::passed_string_filters(const NPCData& a_npcData) const
 	{
 		if (!strings.ALL.empty() && !a_npcData.HasStringFilter(strings.ALL, true)) {
 			return Result::kFail;
