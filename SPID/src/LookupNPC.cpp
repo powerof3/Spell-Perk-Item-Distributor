@@ -42,7 +42,7 @@ namespace NPC
 		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
 				originalFormID = originalBase->GetFormID();
-			    originalEDID = Cache::EditorID::GetEditorID(originalBase);
+				originalEDID = Cache::EditorID::GetEditorID(originalBase);
 			}
 			if (const auto templateBase = extraLvlCreature->templateBase) {
 				templateFormID = templateBase->GetFormID();
@@ -124,6 +124,8 @@ namespace NPC
 				const auto spell = a_form->As<RE::SpellItem>();
 				return npc->GetSpellList()->GetIndex(spell).has_value();
 			}
+		case RE::FormType::Armor:
+			return npc->skin == a_form;
 		case RE::FormType::FormList:
 			{
 				bool result = false;

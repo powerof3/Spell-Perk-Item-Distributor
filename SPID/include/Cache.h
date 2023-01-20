@@ -23,7 +23,8 @@ namespace Cache
 			RE::FormType::NPC,
 			RE::FormType::VoiceType,
 			RE::FormType::FormList,
-			RE::FormType::Spell
+			RE::FormType::Spell,
+			RE::FormType::Armor
 		};
 
 		bool GetWhitelisted(RE::FormType a_type);
