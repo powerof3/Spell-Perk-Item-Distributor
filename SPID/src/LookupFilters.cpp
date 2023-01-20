@@ -3,7 +3,17 @@
 
 namespace Filter
 {
-	Result Data::passed_string_filters(const NPCData& a_npcData) const
+	Data::Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, Chance a_chance) :
+		strings(std::move(a_strings)),
+		forms(std::move(a_formFilters)),
+		level(std::move(a_level)),
+		traits(a_traits),
+		chance(a_chance)
+	{
+		hasLeveledFilters = HasLevelFiltersImpl();
+	}
+
+    Result Data::passed_string_filters(const NPCData& a_npcData) const
 	{
 		if (!strings.ALL.empty() && !a_npcData.HasStringFilter(strings.ALL, true)) {
 			return Result::kFail;
@@ -174,6 +184,11 @@ namespace Filter
 	}
 
 	bool Data::HasLevelFilters() const
+	{
+		return hasLeveledFilters;
+	}
+
+	bool Data::HasLevelFiltersImpl() const
 	{
 		const auto& [actorLevelPair, skillLevelPairs, _] = level;
 

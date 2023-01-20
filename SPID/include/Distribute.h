@@ -154,6 +154,9 @@ namespace Distribute
 		Set<RE::FormID> collectedFormIDs{};
 		collectedFormIDs.reserve(vec.size());
 
+		Set<RE::FormID> collectedLeveledFormIDs{};
+		collectedLeveledFormIDs.reserve(vec.size());
+
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
 			++vecIdx;
@@ -166,18 +169,23 @@ namespace Distribute
 				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
+					if (formData.filters.HasLevelFilters()) {
+						collectedLeveledFormIDs.emplace(formID);
+					}
 				}
 			} else {
 				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
+					if (formData.filters.HasLevelFilters()) {
+						collectedLeveledFormIDs.emplace(formID);
+					}
 				}
 			}
 		}
 
 		if (!collectedForms.empty()) {
 			a_callback(collectedForms);
-
-			PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedFormIDs);
+			PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedLeveledFormIDs);
 		}
 	}
 

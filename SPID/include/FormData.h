@@ -306,7 +306,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		forms.emplace_back(Data<Form>{ form, idxOrCount, FilterData{ strings, filterForms, level, traits, chance }, path });
+		forms.emplace_back(Data<Form>{ form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path });
 	}
 }
 
