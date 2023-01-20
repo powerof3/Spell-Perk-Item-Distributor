@@ -195,7 +195,7 @@ namespace Filter
 		// Fail chance first to avoid running unnecessary checks
 		if (chance < 100) {
 			const auto randNum = staticRNG.Generate<Chance>(0, 100);
-		    if (randNum > chance) {
+			if (randNum > chance) {
 				return Result::kFailRNG;
 			}
 		}

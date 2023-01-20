@@ -30,7 +30,7 @@ namespace Distribute
 					if (shouldDistribute) {
 						Lookup::LogFormLookup();
 
-					    const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+						const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
 						logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
 
 						if (Forms::GetTotalLeveledEntries() > 0) {
@@ -59,10 +59,10 @@ namespace Distribute
 
 		void Install()
 		{
-			REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(13671, 13784), OFFSET(0x1DA,0x1B8) };
+			REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(13671, 13784), OFFSET(0x1DA, 0x1B8) };
 			stl::write_thunk_call<FreeTintingData>(target.address());
 
-		    logger::info("\tHooked actor init");
+			logger::info("\tHooked actor init");
 		}
 	}
 

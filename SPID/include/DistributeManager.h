@@ -5,14 +5,14 @@ namespace Distribute
 	inline bool shouldDistribute{ false };
 	inline bool loggedStats{ false };
 
-    namespace detail
+	namespace detail
 	{
 		bool uses_template(const RE::TESNPC* a_npc);
 	}
 
 	namespace Actor
 	{
-	    inline std::once_flag lookupForms;
+		inline std::once_flag lookupForms;
 
 		inline std::uint64_t timeTaken{ 0 };
 		inline std::uint32_t totalNPCs{ 0 };

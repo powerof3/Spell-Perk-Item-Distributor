@@ -5,7 +5,8 @@ namespace Distribute::PlayerLeveledActor
 	namespace detail
 	{
 		template <class Form>
-	    auto set_to_vec(const Set<RE::FormID>& a_formIDSet) -> std::vector<Form*> {
+		auto set_to_vec(const Set<RE::FormID>& a_formIDSet) -> std::vector<Form*>
+		{
 			std::vector<Form*> forms{};
 			forms.reserve(a_formIDSet.size());
 			for (auto& formID : a_formIDSet) {
@@ -17,5 +18,5 @@ namespace Distribute::PlayerLeveledActor
 		}
 	}
 
-    void Install();
+	void Install();
 }

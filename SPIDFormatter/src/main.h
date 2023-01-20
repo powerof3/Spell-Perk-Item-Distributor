@@ -86,21 +86,21 @@ namespace INI
 		{
 			auto newValue = a_value;
 
-		    if (newValue.find('~') == std::string::npos) {
+			if (newValue.find('~') == std::string::npos) {
 				replace_first_instance(newValue, " - ", "~");
 			}
 
 			//strip spaces
-		    static const srell::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", srell::regex_constants::optimize);
+			static const srell::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_spaces, "$1");
 
 			//strip leading zeros
 			static const srell::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
 
-		    replace_all(newValue, "NOT ", "-");
+			replace_all(newValue, "NOT ", "-");
 
-		    return newValue;
+			return newValue;
 		}
 	};
 

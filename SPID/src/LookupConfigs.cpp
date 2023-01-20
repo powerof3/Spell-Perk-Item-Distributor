@@ -113,7 +113,7 @@ namespace INI
 						if (isWeightFilter) {
 							sanitizedLevel.erase(0, 1);
 						}
-                        //skill min max
+						//skill min max
 						if (auto skills = string::split(sanitizedLevel, " "); !skills.empty()) {
 							if (auto type = string::to_num<std::uint32_t>(skills[0]); type < 18) {
 								auto minLevel = string::to_num<std::uint8_t>(skills[1]);
@@ -135,7 +135,7 @@ namespace INI
 							}
 						}
 					} else {
-                        if (auto actor_level = string::split(levels, "/"); actor_level.size() > 1) {
+						if (auto actor_level = string::split(levels, "/"); actor_level.size() > 1) {
 							auto minLevel = string::to_num<std::uint16_t>(actor_level[0]);
 							auto maxLevel = string::to_num<std::uint16_t>(actor_level[1]);
 
@@ -243,9 +243,9 @@ namespace INI
 			if (auto values = ini.GetSection(""); values && !values->empty()) {
 				std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
 
-				auto truncatedPath = path.substr(5); //strip "Data\\"
+				auto truncatedPath = path.substr(5);  //strip "Data\\"
 
-			    for (auto& [key, entry] : *values) {
+				for (auto& [key, entry] : *values) {
 					try {
 						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
 						configs[key.pItem].emplace_back(data);

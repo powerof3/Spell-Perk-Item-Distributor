@@ -46,10 +46,10 @@ bool INI::Format(TYPE a_type)
 
 			if (!oldFormatMap.empty()) {
 				bool doOnce = false;
-			    for (auto [key, entry] : oldFormatMap) {
+				for (auto [key, entry] : oldFormatMap) {
 					auto& [original, sanitized] = entry;
 					if (a_type == INI::kDowngrade) {
-					    if (const auto count = std::ranges::count_if(sanitized, [](const char c) { return c == '~'; }); count > 0) {
+						if (const auto count = std::ranges::count_if(sanitized, [](const char c) { return c == '~'; }); count > 0) {
 							if (!doOnce) {
 								std::cout << "	Incompatible filter(s) detected (ie. 0x123~MyMod.esp). These must be removed manually\n";
 								doOnce = true;
@@ -58,7 +58,7 @@ bool INI::Format(TYPE a_type)
 						}
 					}
 
-				    ini.DeleteValue("", key.pItem, original.c_str());
+					ini.DeleteValue("", key.pItem, original.c_str());
 					ini.SetValue("", key.pItem, sanitized.c_str(), key.pComment, false);
 				}
 				(void)ini.SaveFile(path.c_str());
@@ -89,7 +89,7 @@ int main()
 	std::int32_t formatType{ INI::kInvalid };
 	do {
 		std::cin.clear();
-	    std::cout << "Enter format type. [1/2] : ";
+		std::cout << "Enter format type. [1/2] : ";
 		std::cin >> formatType;
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	} while (std::cin.fail() || formatType != INI::kUpgrade && formatType != INI::kDowngrade);

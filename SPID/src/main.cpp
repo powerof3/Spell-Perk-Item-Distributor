@@ -9,7 +9,7 @@ bool shouldLogErrors{ false };
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
-    switch (a_message->type) {
+	switch (a_message->type) {
 	case SKSE::MessagingInterface::kPostLoad:
 		{
 			logger::info("{:*^50}", "DEPENDENCIES");

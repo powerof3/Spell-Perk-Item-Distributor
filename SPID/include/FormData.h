@@ -49,8 +49,8 @@ namespace Forms
 						}
 					} else if (formID) {
 						auto filterForm = modName ?
-						                      a_dataHandler->LookupForm(*formID, *modName) :
-						                      RE::TESForm::LookupByID(*formID);
+                                              a_dataHandler->LookupForm(*formID, *modName) :
+                                              RE::TESForm::LookupByID(*formID);
 						if (filterForm) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
@@ -320,7 +320,7 @@ void Forms::Distributables<Form>::FinishLookupForms()
 	// reverse overridable form vectors, winning configs first (Zzzz -> Aaaa)
 	// entry order within config is preserved
 	// thanks, chatGPT!
-    if constexpr (std::is_same_v<RE::BGSOutfit, Form> || std::is_same_v<RE::TESObjectARMO, Form>) {
+	if constexpr (std::is_same_v<RE::BGSOutfit, Form> || std::is_same_v<RE::TESObjectARMO, Form>) {
 		std::map<std::string, std::vector<std::uint32_t>> indices;
 		for (std::uint32_t i = 0; i < forms.size(); i++) {
 			if (!indices.contains(forms[i].path)) {
