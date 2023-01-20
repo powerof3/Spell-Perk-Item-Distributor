@@ -25,7 +25,7 @@ namespace Distribute
 
 			auto result = a_formData.filters.PassedFilters(a_npcData, a_input.noPlayerLevelDistribution);
 
-		    if (result != Filter::Result::kPass) {
+			if (result != Filter::Result::kPass) {
 				if (result == Filter::Result::kFailRNG && hasLevelFilters) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
 				}
@@ -94,9 +94,9 @@ namespace Distribute
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
-				auto form = formData.form; 
-			    if (a_callback(form)) {
-			        break;
+				auto form = formData.form;
+				if (a_callback(form)) {
+					break;
 				}
 			}
 		}
