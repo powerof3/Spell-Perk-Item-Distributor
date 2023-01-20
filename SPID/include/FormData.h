@@ -93,6 +93,7 @@ namespace Forms
 		Form* form{ nullptr };
 		IdxOrCount idxOrCount{ 1 };
 		FilterData filters{};
+		std::string path{};
 
 		bool operator<(const Data& a_rhs) const
 		{
@@ -305,8 +306,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		Data<Form> formData{ form, idxOrCount, FilterData{ strings, filterForms, level, traits, chance } };
-		forms.emplace_back(formData);
+		forms.emplace_back(Data<Form>{ form, idxOrCount, FilterData{ strings, filterForms, level, traits, chance }, path });
 	}
 }
 
@@ -315,6 +315,28 @@ void Forms::Distributables<Form>::FinishLookupForms()
 {
 	if (forms.empty()) {
 		return;
+	}
+
+	// reverse overridable form vectors, winning configs first (Zzzz -> Aaaa)
+	// entry order within config is preserved
+	// thanks, chatGPT!
+    if constexpr (std::is_same_v<RE::BGSOutfit, Form> || std::is_same_v<RE::TESObjectARMO, Form>) {
+		std::map<std::string, std::vector<std::uint32_t>> indices;
+		for (std::uint32_t i = 0; i < forms.size(); i++) {
+			if (!indices.contains(forms[i].path)) {
+				indices[forms[i].path] = { i };
+			} else {
+				indices[forms[i].path].push_back(i);
+			}
+		}
+		DataVec<Form> reversedVec;
+		reversedVec.reserve(forms.size());
+		for (auto& [path, idxVec] : indices | std::views::reverse) {
+			for (auto idx : idxVec) {
+				reversedVec.emplace_back(forms[idx]);
+			}
+		}
+		forms = reversedVec;
 	}
 
 	formsWithLevels.reserve(forms.size());

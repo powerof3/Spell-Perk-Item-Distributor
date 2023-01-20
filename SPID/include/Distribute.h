@@ -88,7 +88,7 @@ namespace Distribute
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
 
 		std::uint32_t vecIdx = 0;
-		for (auto& formData : vec | std::views::reverse) {  //iterate from last inserted config (Zzz -> Aaaa)
+		for (auto& formData : vec) { // Vector is reversed in FinishLookupForms
 			++vecIdx;
 			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
 				if (auto form = formData.form; a_callback(form)) {
