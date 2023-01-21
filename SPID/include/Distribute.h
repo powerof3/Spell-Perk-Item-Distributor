@@ -185,7 +185,9 @@ namespace Distribute
 
 		if (!collectedForms.empty()) {
 			a_callback(collectedForms);
-			PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedLeveledFormIDs);
+			if (!collectedLeveledFormIDs.empty()) {
+				PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedLeveledFormIDs);
+			}
 		}
 	}
 
