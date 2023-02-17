@@ -38,7 +38,7 @@ namespace Distribute
 					}
 				});
 
-				if (auto npc = a_this->GetActorBase(); npc && !npc->IsPlayer() && !detail::uses_leveled_template(npc)) {
+				if (auto npc = a_this->GetActorBase(); npc && !detail::uses_leveled_template(npc)) {
 					if (const auto npcData = std::make_unique<NPCData>(npc); npcData->ShouldProcessNPC()) {
 						Distribute(*npcData, PCLevelMult::Input{ npc, false, true });
 					}

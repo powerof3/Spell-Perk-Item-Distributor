@@ -34,18 +34,18 @@ namespace NPC
 		[[nodiscard]] bool contains_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool has_form(RE::TESForm* a_form) const;
 
-		RE::TESNPC*      npc;
-		RE::FormID       originalFormID;
-		RE::FormID       templateFormID{ 0 };
-		std::string      name;
-		std::string      originalEDID;
-		std::string      templateEDID{};
-		Set<std::string> keywords{};
-		std::uint16_t    level;
-		RE::SEX          sex;
-		bool             unique;
-		bool             summonable;
-		bool             child;
+		RE::TESNPC*   npc;
+		RE::FormID    originalFormID;
+		RE::FormID    templateFormID{ 0 };
+		std::string   name;
+		std::string   originalEDID;
+		std::string   templateEDID{};
+		StringSet     keywords{};
+		std::uint16_t level;
+		RE::SEX       sex;
+		bool          unique;
+		bool          summonable;
+		bool          child;
 	};
 }
 

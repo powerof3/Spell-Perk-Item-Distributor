@@ -70,7 +70,7 @@ namespace NPC
 
 	bool Data::ShouldProcessNPC() const
 	{
-		if (keywords.contains(processedKeywordEDID.data())) {
+		if (keywords.contains(processedKeywordEDID)) {
 			return false;
 		}
 
