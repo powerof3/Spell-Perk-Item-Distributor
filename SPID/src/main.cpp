@@ -1,7 +1,7 @@
 #include "DistributeManager.h"
 #include "LookupConfigs.h"
-#include "PCLevelMultManager.h"
 #include "LookupNPC.h"
+#include "PCLevelMultManager.h"
 
 HMODULE tweaks{ nullptr };
 
@@ -20,7 +20,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 
 			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::GetConfigs(); shouldLookupForms) {
 				logger::info("{:*^50}", "HOOKS");
-			    Distribute::Actor::Install();
+				Distribute::Actor::Install();
 				Distribute::LeveledActor::Install();
 			}
 		}
