@@ -16,8 +16,8 @@ namespace NPC
 		}
 	}
 
-    bool Data::is_child(RE::TESNPC* a_npc)
-    {
+	bool Data::is_child(RE::TESNPC* a_npc)
+	{
 		if (const auto race = a_npc->GetRace()) {
 			if (race->IsChildRace()) {
 				return true;
@@ -26,10 +26,10 @@ namespace NPC
 				return true;
 			}
 		}
-        return false;
-    }
+		return false;
+	}
 
-    Data::Data(RE::TESNPC* a_npc) :
+	Data::Data(RE::TESNPC* a_npc) :
 		npc(a_npc),
 		originalFormID(a_npc->GetFormID()),
 		name(a_npc->GetName()),
