@@ -16,7 +16,20 @@ namespace NPC
 		}
 	}
 
-	Data::Data(RE::TESNPC* a_npc) :
+    bool Data::is_child(RE::TESNPC* a_npc)
+    {
+		if (const auto race = a_npc->GetRace()) {
+			if (race->IsChildRace()) {
+				return true;
+			}
+			if (race->formEditorID.contains("RaceChild")) {
+				return true;
+			}
+		}
+        return false;
+    }
+
+    Data::Data(RE::TESNPC* a_npc) :
 		npc(a_npc),
 		originalFormID(a_npc->GetFormID()),
 		name(a_npc->GetName()),
@@ -25,7 +38,7 @@ namespace NPC
 		sex(a_npc->GetSex()),
 		unique(a_npc->IsUnique()),
 		summonable(a_npc->IsSummonable()),
-		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
+		child(is_child(a_npc))
 	{
 		cache_keywords();
 	}
@@ -37,7 +50,7 @@ namespace NPC
 		sex(a_npc->GetSex()),
 		unique(a_npc->IsUnique()),
 		summonable(a_npc->IsSummonable()),
-		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
+		child(is_child(a_npc))
 	{
 		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {

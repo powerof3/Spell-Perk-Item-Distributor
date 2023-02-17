@@ -25,6 +25,7 @@ namespace NPC
 
 	private:
 		void cache_keywords();
+        static bool is_child(RE::TESNPC* a_npc);
 
 		[[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool contains_keyword_string(const std::string& a_string) const;
