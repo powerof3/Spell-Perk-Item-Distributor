@@ -68,6 +68,27 @@ namespace NPC
 		cache_keywords();
 	}
 
+	 bool Data::ShouldProcessNPC() const
+	{
+		if (keywords.contains("SPID_Processed")) {
+			return false;
+		}
+
+		if (!processedKeyword) {
+			const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
+			if (const auto keyword = factory ? factory->Create() : nullptr) {
+				keyword->formEditorID = "SPID_Processed";
+				processedKeyword = keyword;
+			}
+		}
+
+		if (processedKeyword) {
+			npc->AddKeyword(processedKeyword);
+		}
+
+		return true;
+	}
+
 	RE::TESNPC* Data::GetNPC() const
 	{
 		return npc;

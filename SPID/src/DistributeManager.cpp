@@ -5,9 +5,9 @@
 
 namespace Distribute
 {
-	bool detail::uses_template(const RE::TESNPC* a_npc)
+	bool detail::uses_leveled_template(const RE::TESNPC* a_npc)
 	{
-		return a_npc->UsesTemplate() || a_npc->baseTemplateForm != nullptr;
+		return a_npc->baseTemplateForm && a_npc->baseTemplateForm->Is(RE::FormType::LeveledNPC);
 	}
 
 	// Static actors
@@ -40,11 +40,13 @@ namespace Distribute
 					}
 				});
 
-				if (!a_this->IsPlayer() && (!detail::uses_template(a_this) || a_this->IsUnique())) {
+				if (!a_this->IsPlayer() && !detail::uses_leveled_template(a_this)) {
 					const auto startTime = std::chrono::steady_clock::now();
 
 					const auto npcData = std::make_unique<NPCData>(a_this);
-					Distribute(*npcData, PCLevelMult::Input{ a_this, false, true });
+					if (npcData->ShouldProcessNPC()) {
+						Distribute(*npcData, PCLevelMult::Input{ a_this, false, true });
+					}
 
 					const auto endTime = std::chrono::steady_clock::now();
 
@@ -75,9 +77,11 @@ namespace Distribute
 			{
 				func(a_this, a_npc);
 
-				if (a_npc && detail::uses_template(a_npc) && !a_npc->IsUnique()) {
+				if (a_npc) {
 					const auto npcData = std::make_unique<NPCData>(a_this, a_npc);
-					Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
+					if (npcData->ShouldProcessNPC()) {
+						Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
+					}
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;

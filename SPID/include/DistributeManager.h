@@ -7,7 +7,7 @@ namespace Distribute
 
 	namespace detail
 	{
-		bool uses_template(const RE::TESNPC* a_npc);
+		bool uses_leveled_template(const RE::TESNPC* a_npc);
 	}
 
 	namespace Actor
