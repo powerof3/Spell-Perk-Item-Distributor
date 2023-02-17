@@ -1,8 +1,8 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO martinus/unordered_dense
-    REF 612f2b5b2a4d44bb74a40debf6c3ff86ab476c62
-    SHA512 fe23fba77f9501dc386bb03a79b06471603b8d5729c6dcb3ff5abf6d7406fa5a5cc103fd95538d743bbdfd764400036d6c9ac4b70168ed2f98e9407c54d3ce2e
+    REF 8f10dcc28669abbf45d95fd3af4c00c617af489c
+    SHA512 b1ac766440bece4a5b411d1a271edb75df90c6d41eda92fcc5c8b536578a5460ac58deaa3f8a413771b72b4a20128eb4da6a36cc46691b27afdd089f7bd3948c
     HEAD_REF main
 )
 
