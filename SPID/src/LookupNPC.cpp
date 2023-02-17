@@ -70,14 +70,14 @@ namespace NPC
 
 	bool Data::ShouldProcessNPC() const
 	{
-		if (keywords.contains("SPID_Processed")) {
+		if (keywords.contains(processedKeywordEDID.data())) {
 			return false;
 		}
 
 		if (!processedKeyword) {
 			const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
 			if (const auto keyword = factory ? factory->Create() : nullptr) {
-				keyword->formEditorID = "SPID_Processed";
+				keyword->formEditorID = processedKeywordEDID;
 				processedKeyword = keyword;
 			}
 		}

@@ -2,7 +2,8 @@
 
 namespace NPC
 {
-	inline RE::BGSKeyword* processedKeyword{ nullptr };
+	inline constexpr std::string_view processedKeywordEDID{ "SPID_Processed" };
+	inline RE::BGSKeyword*            processedKeyword{ nullptr };
 
 	struct Data
 	{

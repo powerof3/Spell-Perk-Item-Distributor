@@ -13,13 +13,10 @@ namespace Distribute
 	// Static actors
 	namespace Actor
 	{
-		// Fires after TESNPC::CopyFromTemplateForms is called
-		struct FreeTintingData
+		struct InitItemImpl
 		{
-			static void thunk(RE::TESNPC* a_this)
+			static void thunk(RE::Character* a_this)
 			{
-				func(a_this);
-
 				std::call_once(lookupForms, [] {
 					logger::info("{:*^50}", "LOOKUP");
 
@@ -31,6 +28,7 @@ namespace Distribute
 						Lookup::LogFormLookup();
 
 						const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+						logger::info("Total entries : {}", Forms::GetTotalEntries());
 						logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
 
 						if (Forms::GetTotalLeveledEntries() > 0) {
@@ -40,30 +38,23 @@ namespace Distribute
 					}
 				});
 
-				if (!a_this->IsPlayer() && !detail::uses_leveled_template(a_this)) {
-					const auto startTime = std::chrono::steady_clock::now();
-
-					const auto npcData = std::make_unique<NPCData>(a_this);
-					if (npcData->ShouldProcessNPC()) {
-						Distribute(*npcData, PCLevelMult::Input{ a_this, false, true });
-					}
-
-					const auto endTime = std::chrono::steady_clock::now();
-
-					if (!loggedStats) {
-						timeTaken += std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-						++totalNPCs;
+				if (auto npc = a_this->GetActorBase(); npc && !npc->IsPlayer() && !detail::uses_leveled_template(npc)) {
+					if (const auto npcData = std::make_unique<NPCData>(npc); npcData->ShouldProcessNPC()) {
+						Distribute(*npcData, PCLevelMult::Input{ npc, false, true });
 					}
 				}
+
+				func(a_this);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
+
+			static inline constexpr std::size_t index{ 0 };
+			static inline constexpr std::size_t size{ 0x13 };
 		};
 
 		void Install()
 		{
-			REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(13671, 13784), OFFSET(0x1DA, 0x1B8) };
-			stl::write_thunk_call<FreeTintingData>(target.address());
-
+			stl::write_vfunc<RE::Character, InitItemImpl>();
 			logger::info("\tHooked actor init");
 		}
 	}
@@ -77,9 +68,8 @@ namespace Distribute
 			{
 				func(a_this, a_npc);
 
-				if (a_npc) {
-					const auto npcData = std::make_unique<NPCData>(a_this, a_npc);
-					if (npcData->ShouldProcessNPC()) {
+				if (a_npc && a_npc->IsDynamicForm()) {
+					if (const auto npcData = std::make_unique<NPCData>(a_this, a_npc); npcData->ShouldProcessNPC()) {
 						Distribute(*npcData, PCLevelMult::Input{ a_this, a_npc, false, false });
 					}
 				}
@@ -94,20 +84,6 @@ namespace Distribute
 		{
 			stl::write_vfunc<RE::Character, SetObjectReference>();
 			logger::info("\tHooked leveled actor init");
-		}
-	}
-
-	void LogStats()
-	{
-		if (!loggedStats) {
-			loggedStats = true;
-
-			logger::info("{:*^50}", "STATS");
-			auto avgTimeTaken = Actor::timeTaken / Actor::totalNPCs;
-			logger::info("{} entries", Forms::GetTotalEntries());
-			logger::info("{} static NPCs processed", Actor::totalNPCs);
-			logger::info("Total distribution time : {}μs / {}ms", Actor::timeTaken, Actor::timeTaken / 1000.0f);
-			logger::info("Average distribution time per NPC : {}μs / {}ms", avgTimeTaken, avgTimeTaken / 1000.0f);
 		}
 	}
 }

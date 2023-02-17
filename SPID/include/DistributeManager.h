@@ -14,9 +14,6 @@ namespace Distribute
 	{
 		inline std::once_flag lookupForms;
 
-		inline std::uint64_t timeTaken{ 0 };
-		inline std::uint32_t totalNPCs{ 0 };
-
 		void Install();
 	}
 
@@ -55,9 +52,4 @@ namespace Distribute
 			Manager& operator=(Manager&&) = delete;
 		};
 	}
-
-	// Distribute to all unique and static NPCs, after data load
-	void OnInit();
-
-	void LogStats();
 }
