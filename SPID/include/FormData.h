@@ -90,9 +90,9 @@ namespace Forms
 	template <class Form>
 	struct Data
 	{
-		Form* form{ nullptr };
-		IdxOrCount idxOrCount{ 1 };
-		FilterData filters{};
+		Form*       form{ nullptr };
+		IdxOrCount  idxOrCount{ 1 };
+		FilterData  filters{};
 		std::string path{};
 
 		bool operator<(const Data& a_rhs) const
@@ -125,7 +125,7 @@ namespace Forms
 		std::size_t GetLeveledSize();
 
 		const DataVec<Form>& GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution);
-		DataVec<Form>& GetForms();
+		DataVec<Form>&       GetForms();
 
 		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
 
@@ -138,18 +138,18 @@ namespace Forms
 		DataVec<Form> formsNoLevels{};
 	};
 
-	inline Distributables<RE::SpellItem> spells;
-	inline Distributables<RE::BGSPerk> perks;
+	inline Distributables<RE::SpellItem>      spells;
+	inline Distributables<RE::BGSPerk>        perks;
 	inline Distributables<RE::TESBoundObject> items;
-	inline Distributables<RE::TESShout> shouts;
-	inline Distributables<RE::TESLevSpell> levSpells;
-	inline Distributables<RE::TESForm> packages;
-	inline Distributables<RE::BGSOutfit> outfits;
-	inline Distributables<RE::BGSKeyword> keywords;
+	inline Distributables<RE::TESShout>       shouts;
+	inline Distributables<RE::TESLevSpell>    levSpells;
+	inline Distributables<RE::TESForm>        packages;
+	inline Distributables<RE::BGSOutfit>      outfits;
+	inline Distributables<RE::BGSKeyword>     keywords;
 	inline Distributables<RE::TESBoundObject> deathItems;
-	inline Distributables<RE::TESFaction> factions;
-	inline Distributables<RE::BGSOutfit> sleepOutfits;
-	inline Distributables<RE::TESObjectARMO> skins;
+	inline Distributables<RE::TESFaction>     factions;
+	inline Distributables<RE::BGSOutfit>      sleepOutfits;
+	inline Distributables<RE::TESObjectARMO>  skins;
 
 	std::size_t GetTotalEntries();
 	std::size_t GetTotalLeveledEntries();

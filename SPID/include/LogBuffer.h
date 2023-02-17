@@ -32,7 +32,7 @@ namespace LogBuffer
 	struct Entry
 	{
 		std::source_location loc;
-		std::string message;
+		std::string          message;
 
 		bool operator==(const Entry& other) const
 		{

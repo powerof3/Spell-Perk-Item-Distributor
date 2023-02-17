@@ -182,7 +182,7 @@ namespace PCLevelMult
 	void Manager::DeleteNPC(RE::FormID a_characterID)
 	{
 		Locker lock(_lock);
-		auto& currentCache = _cache[GetSingleton()->GetCurrentPlayerID()];
+		auto&  currentCache = _cache[GetSingleton()->GetCurrentPlayerID()];
 		if (const auto it = currentCache.find(a_characterID); it != currentCache.end()) {
 			currentCache.erase(it);
 		}

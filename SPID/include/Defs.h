@@ -62,9 +62,9 @@ using LevelFilters = std::tuple<ActorLevel,
 struct Traits
 {
 	std::optional<RE::SEX> sex{};
-	std::optional<bool> unique{};
-	std::optional<bool> summonable{};
-	std::optional<bool> child{};
+	std::optional<bool>    unique{};
+	std::optional<bool>    summonable{};
+	std::optional<bool>    child{};
 };
 
 using IdxOrCount = std::int32_t;

@@ -68,7 +68,7 @@ namespace NPC
 		cache_keywords();
 	}
 
-	 bool Data::ShouldProcessNPC() const
+	bool Data::ShouldProcessNPC() const
 	{
 		if (keywords.contains("SPID_Processed")) {
 			return false;

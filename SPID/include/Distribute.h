@@ -10,10 +10,10 @@ namespace Distribute
 	{
 		template <class Form>
 		bool passed_filters(
-			const NPCData& a_npcData,
+			const NPCData&            a_npcData,
 			const PCLevelMult::Input& a_input,
-			const Forms::Data<Form>& a_formData,
-			std::uint32_t idx)
+			const Forms::Data<Form>&  a_formData,
+			std::uint32_t             idx)
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 			const auto hasLevelFilters = a_formData.filters.HasLevelFilters();
@@ -47,7 +47,7 @@ namespace Distribute
 				return actorEffects && actorEffects->GetIndex(a_form).has_value();
 			} else if constexpr (std::is_same_v<RE::TESForm, Form>) {
 				if (a_form->Is(RE::TESPackage::FORMTYPE)) {
-					auto package = a_form->As<RE::TESPackage>();
+					auto  package = a_form->As<RE::TESPackage>();
 					auto& packageList = a_npc->aiPackages.packages;
 					return std::ranges::find(packageList, package) != packageList.end();
 				} else {
@@ -63,9 +63,9 @@ namespace Distribute
 	// for now, only packages/death items use this
 	template <class Form>
 	void for_each_form(
-		const NPCData& a_npcData,
-		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input& a_input,
+		const NPCData&                         a_npcData,
+		Forms::Distributables<Form>&           a_distributables,
+		const PCLevelMult::Input&              a_input,
 		std::function<bool(Form*, IdxOrCount)> a_callback)
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
@@ -83,10 +83,10 @@ namespace Distribute
 	// overridable forms
 	template <class Form>
 	void for_each_form(
-		const NPCData& a_npcData,
+		const NPCData&               a_npcData,
 		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input& a_input,
-		std::function<bool(Form*)> a_callback)
+		const PCLevelMult::Input&    a_input,
+		std::function<bool(Form*)>   a_callback)
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
 
@@ -105,9 +105,9 @@ namespace Distribute
 	// items
 	template <class Form>
 	void for_each_form(
-		const NPCData& a_npcData,
-		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input& a_input,
+		const NPCData&                                    a_npcData,
+		Forms::Distributables<Form>&                      a_distributables,
+		const PCLevelMult::Input&                         a_input,
 		std::function<bool(std::map<Form*, IdxOrCount>&)> a_callback)
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
@@ -135,9 +135,9 @@ namespace Distribute
 	// forms that can be added to
 	template <class Form>
 	void for_each_form(
-		NPCData& a_npcData,
-		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input& a_input,
+		NPCData&                                       a_npcData,
+		Forms::Distributables<Form>&                   a_distributables,
+		const PCLevelMult::Input&                      a_input,
 		std::function<void(const std::vector<Form*>&)> a_callback)
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
