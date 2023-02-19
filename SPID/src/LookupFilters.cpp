@@ -63,7 +63,7 @@ namespace Filter
 		/// Determines whether given form is associated with an NPC.
 		static bool has_form(RE::TESForm* a_form, const NPCData& a_npcData)
 		{
-			auto npc = a_npcData.GetNPC();
+			const auto npc = a_npcData.GetNPC();
 			switch (a_form->GetFormType()) {
 			case RE::FormType::CombatStyle:
 				return npc->GetCombatStyle() == a_form;
@@ -79,7 +79,10 @@ namespace Filter
 			case RE::FormType::Outfit:
 				return npc->defaultOutfit == a_form;
 			case RE::FormType::NPC:
-				return npc == a_form;
+				{
+					const auto filterFormID = a_form->GetFormID();
+					return npc == a_form || a_npcData.GetOriginalFormID() == filterFormID || a_npcData.GetTemplateFormID() == filterFormID;
+				}
 			case RE::FormType::VoiceType:
 				return npc->voiceType == a_form;
 			case RE::FormType::Spell:
@@ -87,6 +90,8 @@ namespace Filter
 					const auto spell = a_form->As<RE::SpellItem>();
 					return npc->GetSpellList()->GetIndex(spell).has_value();
 				}
+			case RE::FormType::Armor:
+				return npc->skin == a_form;
 			case RE::FormType::FormList:
 				{
 					bool result = false;
@@ -256,7 +261,7 @@ namespace Filter
 // ------------------- Data --------------------
 namespace Filter
 {
-	Data::Data(AndExpression filters) :
+	Data::Data(const AndExpression filters) :
 		filters(filters)
 	{
 		hasLeveledFilters = HasLevelFiltersImpl();
@@ -276,9 +281,8 @@ namespace Filter
 
 	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
 	{
-		const auto npc = a_npcData.GetNPC();
-
-		if (a_noPlayerLevelDistribution && HasLevelFilters() && npc->HasPCLevelMult()) {
+        if (const auto npc = a_npcData.GetNPC();
+			a_noPlayerLevelDistribution && HasLevelFilters() && npc->HasPCLevelMult()) {
 			return Result::kFail;
 		}
 
