@@ -281,7 +281,7 @@ namespace Filter
 
 	Result Data::PassedFilters(const NPCData& a_npcData) const
 	{
-        if (const auto npc = a_npcData.GetNPC(); HasLevelFilters() && npc->HasPCLevelMult()) {
+		if (const auto npc = a_npcData.GetNPC(); HasLevelFilters() && npc->HasPCLevelMult()) {
 			return Result::kFail;
 		}
 

@@ -77,7 +77,7 @@ namespace NPC
 		return name;
 	}
 
-    RE::TESRace* Data::GetRace() const
+	RE::TESRace* Data::GetRace() const
 	{
 		return race;
 	}

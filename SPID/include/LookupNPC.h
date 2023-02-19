@@ -6,7 +6,7 @@ namespace NPC
 	{
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
-	    bool InsertKeyword(const char* a_keyword);
+		bool InsertKeyword(const char* a_keyword);
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
 
@@ -30,26 +30,25 @@ namespace NPC
 		void cache_keywords();
 		void set_as_child();
 
-		RE::TESNPC* npc;
+		RE::TESNPC*  npc;
 		RE::Actor*   actor;
-		RE::FormID  originalFormID;
-		RE::FormID  templateFormID{ 0 };
-		std::string name;
+		RE::FormID   originalFormID;
+		RE::FormID   templateFormID{ 0 };
+		std::string  name;
 		RE::TESRace* race;
-		std::string originalEDID;
-		std::string templateEDID{};
-		StringSet   keywords{};
+		std::string  originalEDID;
+		std::string  templateEDID{};
+		StringSet    keywords{};
 
-
-		RE::TESNPC*   npc;
-		RE::Actor*    actor;
-		std::string   name;
-		RE::TESRace*  race;
-		RE::FormID    originalFormID;
-		std::string   originalEDID;
-		RE::FormID    templateFormID{ 0 };
-		std::string   templateEDID{};
-		StringSet     keywords{};
+		RE::TESNPC*  npc;
+		RE::Actor*   actor;
+		std::string  name;
+		RE::TESRace* race;
+		RE::FormID   originalFormID;
+		std::string  originalEDID;
+		RE::FormID   templateFormID{ 0 };
+		std::string  templateEDID{};
+		StringSet    keywords{};
 
 		std::uint16_t level;
 		RE::SEX       sex;
