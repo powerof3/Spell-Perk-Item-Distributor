@@ -99,7 +99,7 @@ namespace Forms
 		std::size_t GetSize();
 		std::size_t GetLeveledSize();
 
-		const DataVec<Form>& GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution);
+		const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
 		DataVec<Form>&       GetForms();
 
 		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
@@ -110,7 +110,6 @@ namespace Forms
 	private:
 		DataVec<Form> forms{};
 		DataVec<Form> formsWithLevels{};
-		DataVec<Form> formsNoLevels{};
 	};
 
 	inline Distributables<RE::SpellItem>      spells;
@@ -155,13 +154,10 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms()
 }
 
 template <class Form>
-const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution)
+const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries)
 {
 	if (a_onlyLevelEntries) {
 		return formsWithLevels;
-	}
-	if (a_noLevelDistribution) {
-		return formsNoLevels;
 	}
 	return forms;
 }
@@ -369,11 +365,5 @@ void Forms::Distributables<Form>::FinishLookupForms()
 
 	std::copy_if(forms.begin(), forms.end(),
 		std::back_inserter(formsWithLevels),
-		[](const auto& formData) { return formData.filters.HasLevelFilters(); });
-
-	formsNoLevels.reserve(forms.size());
-
-	std::remove_copy_if(forms.begin(), forms.end(),
-		std::back_inserter(formsNoLevels),
 		[](const auto& formData) { return formData.filters.HasLevelFilters(); });
 }

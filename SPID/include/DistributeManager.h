@@ -3,21 +3,16 @@
 namespace Distribute
 {
 	inline bool shouldDistribute{ false };
-	inline bool loggedStats{ false };
+
+	inline constexpr std::string_view processedKeywordEDID{ "SPID_Processed" };
+	inline RE::BGSKeyword*            processedKeyword{ nullptr };
 
 	namespace detail
 	{
-		bool uses_leveled_template(const RE::TESNPC* a_npc);
+		bool should_process_NPC(RE::TESNPC* a_npc);
 	}
 
 	namespace Actor
-	{
-		inline std::once_flag lookupForms;
-
-		void Install();
-	}
-
-	namespace LeveledActor
 	{
 		void Install();
 	}
@@ -52,4 +47,6 @@ namespace Distribute
 			Manager& operator=(Manager&&) = delete;
 		};
 	}
+
+	void LookupFormsOnce();
 }

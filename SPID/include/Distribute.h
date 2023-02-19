@@ -23,7 +23,7 @@ namespace Distribute
 				return false;
 			}
 
-			auto result = a_formData.filters.PassedFilters(a_npcData, a_input.noPlayerLevelDistribution);
+			auto result = a_formData.filters.PassedFilters(a_npcData);
 
 			if (result != Filter::Result::kPass) {
 				if (result == Filter::Result::kFailRNG && hasLevelFilters) {
@@ -68,7 +68,7 @@ namespace Distribute
 		const PCLevelMult::Input&              a_input,
 		std::function<bool(Form*, IdxOrCount)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
@@ -88,7 +88,7 @@ namespace Distribute
 		const PCLevelMult::Input&    a_input,
 		std::function<bool(Form*)>   a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
@@ -110,7 +110,7 @@ namespace Distribute
 		const PCLevelMult::Input&                         a_input,
 		std::function<bool(std::map<Form*, IdxOrCount>&)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		if (vec.empty()) {
 			return;
@@ -140,7 +140,7 @@ namespace Distribute
 		const PCLevelMult::Input&                      a_input,
 		std::function<void(const std::vector<Form*>&)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		if (vec.empty()) {
 			return;

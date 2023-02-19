@@ -258,7 +258,7 @@ namespace Filter
 		bool          hasLeveledFilters;
 
 		[[nodiscard]] bool   HasLevelFilters() const;
-		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData, bool a_noPlayerLevelDistribution) const;
+		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData) const;
 
 	private:
 		[[nodiscard]] bool HasLevelFiltersImpl() const;

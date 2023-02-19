@@ -75,7 +75,7 @@ namespace Filter
 					return npc->IsInFaction(faction);
 				}
 			case RE::FormType::Race:
-				return npc->GetRace() == a_form;
+				return a_npcData.GetRace() == a_form;
 			case RE::FormType::Outfit:
 				return npc->defaultOutfit == a_form;
 			case RE::FormType::NPC:
@@ -279,10 +279,9 @@ namespace Filter
 		});
 	}
 
-	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
+	Result Data::PassedFilters(const NPCData& a_npcData) const
 	{
-        if (const auto npc = a_npcData.GetNPC();
-			a_noPlayerLevelDistribution && HasLevelFilters() && npc->HasPCLevelMult()) {
+        if (const auto npc = a_npcData.GetNPC(); HasLevelFilters() && npc->HasPCLevelMult()) {
 			return Result::kFail;
 		}
 

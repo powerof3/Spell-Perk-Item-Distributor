@@ -2,18 +2,11 @@
 
 namespace NPC
 {
-	inline constexpr std::string_view processedKeywordEDID{ "SPID_Processed" };
-	inline RE::BGSKeyword*            processedKeyword{ nullptr };
-
 	struct Data
 	{
-		explicit Data(RE::TESNPC* a_npc);
-
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
-		[[nodiscard]] bool ShouldProcessNPC() const;
-
-		bool InsertKeyword(const char* a_keyword);
+	    bool InsertKeyword(const char* a_keyword);
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
 
@@ -31,18 +24,32 @@ namespace NPC
 		[[nodiscard]] bool          IsSummonable() const;
 		[[nodiscard]] bool          IsChild() const;
 
+		[[nodiscard]] RE::TESRace* GetRace() const;
+
 	private:
 		void cache_keywords();
-
-		static bool is_child(RE::TESNPC* a_npc);
+		void set_as_child();
 
 		RE::TESNPC* npc;
+		RE::Actor*   actor;
 		RE::FormID  originalFormID;
 		RE::FormID  templateFormID{ 0 };
 		std::string name;
+		RE::TESRace* race;
 		std::string originalEDID;
 		std::string templateEDID{};
 		StringSet   keywords{};
+
+
+		RE::TESNPC*   npc;
+		RE::Actor*    actor;
+		std::string   name;
+		RE::TESRace*  race;
+		RE::FormID    originalFormID;
+		std::string   originalEDID;
+		RE::FormID    templateFormID{ 0 };
+		std::string   templateEDID{};
+		StringSet     keywords{};
 
 		std::uint16_t level;
 		RE::SEX       sex;

@@ -1,23 +1,12 @@
 #include "PCLevelMultManager.h"
-#include "Distribute.h"
 
 namespace PCLevelMult
 {
-	Input::Input(const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
-		playerID(Manager::GetSingleton()->GetCurrentPlayerID()),
-		npcFormID(a_base->GetFormID()),
-		npcLevel(a_base->GetLevel()),
-		npcLevelCap(a_base->actorData.calcLevelMax),
-		onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
-		noPlayerLevelDistribution(a_noPlayerLevelDistribution)
-	{}
-
-	Input::Input(const RE::Actor* a_character, const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution) :
+	Input::Input(const RE::Actor* a_character, const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries) :
 		playerID(Manager::GetSingleton()->GetCurrentPlayerID()),
 		npcLevel(a_base->GetLevel()),
 		npcLevelCap(a_base->actorData.calcLevelMax),
-		onlyPlayerLevelEntries(a_onlyPlayerLevelEntries),
-		noPlayerLevelDistribution(a_noPlayerLevelDistribution)
+		onlyPlayerLevelEntries(a_onlyPlayerLevelEntries)
 	{
 		npcFormID = a_base->IsDynamicForm() ? a_character->GetFormID() : a_base->GetFormID();  // use character formID for permanent storage
 	}
@@ -40,15 +29,6 @@ namespace PCLevelMult
 				if (newGameStarted) {
 					newGameStarted = false;
 					currentPlayerID = newPlayerID;
-					if (const auto processLists = RE::ProcessLists::GetSingleton(); processLists) {
-						processLists->ForAllActors([&](RE::Actor& actor) {
-							if (auto npc = actor.GetActorBase(); npc && npc->HasPCLevelMult()) {
-								const auto npcData = std::make_unique<NPCData>(&actor, npc);
-								Distribute::Distribute(*npcData, Input{ &actor, npc, true, false });
-							}
-							return RE::BSContainer::ForEachResult::kContinue;
-						});
-					}
 				} else if (oldPlayerID != newPlayerID) {
 					remap_player_ids(oldPlayerID, newPlayerID);
 				}
@@ -59,10 +39,6 @@ namespace PCLevelMult
 
 	bool Manager::FindRejectedEntry(const Input& a_input, RE::FormID a_distributedFormID, std::uint32_t a_formDataIndex) const
 	{
-		if (a_input.noPlayerLevelDistribution) {
-			return false;
-		}
-
 		Locker lock(_lock);
 		if (const auto idIt = _cache.find(a_input.playerID); idIt != _cache.end()) {
 			auto& npcFormIDMap = idIt->second;
@@ -83,10 +59,6 @@ namespace PCLevelMult
 
 	bool Manager::InsertRejectedEntry(const Input& a_input, RE::FormID a_distributedFormID, std::uint32_t a_formDataIndex)
 	{
-		if (a_input.noPlayerLevelDistribution) {
-			return false;
-		}
-
 		Locker lock(_lock);
 		return _cache[a_input.playerID]
 		             [a_input.npcFormID]
@@ -129,20 +101,12 @@ namespace PCLevelMult
 
 	void Manager::InsertDistributedEntry(const Input& a_input, RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet)
 	{
-		if (a_input.noPlayerLevelDistribution) {
-			return;
-		}
-
 		Locker lock(_lock);
 		_cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries[a_formType].insert(a_formIDSet.begin(), a_formIDSet.end());
 	}
 
 	void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::FormType, const Set<RE::FormID>&, bool)> a_fn) const
 	{
-		if (a_input.noPlayerLevelDistribution) {
-			return;
-		}
-
 		Locker lock(_lock);
 		if (const auto playerID = _cache.find(a_input.playerID); playerID != _cache.end()) {
 			auto& npcFormIDMap = playerID->second;
