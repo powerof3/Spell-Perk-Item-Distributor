@@ -112,7 +112,7 @@ namespace Distribute::Event
 				const auto npcData = std::make_unique<NPCData>(actor, npc);
 
 				const auto input = PCLevelMult::Input{ actor, npc, false };
-			    for_each_form<RE::TESBoundObject>(*npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
+				for_each_form<RE::TESBoundObject>(*npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
 					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
 				});

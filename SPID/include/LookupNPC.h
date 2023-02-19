@@ -6,7 +6,7 @@ namespace NPC
 	{
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
-	    [[nodiscard]] RE::TESNPC* GetNPC() const;
+		[[nodiscard]] RE::TESNPC* GetNPC() const;
 
 		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings, bool a_all = false) const;
 		[[nodiscard]] bool ContainsStringFilter(const StringVec& a_strings) const;
@@ -25,7 +25,7 @@ namespace NPC
 		void cache_keywords();
 		void set_as_child();
 
-        [[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
+		[[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool contains_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool has_form(RE::TESForm* a_form) const;
 

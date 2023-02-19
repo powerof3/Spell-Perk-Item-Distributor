@@ -45,7 +45,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				Distribute::Event::Manager::Register();
 				PCLevelMult::Manager::GetSingleton()->Register();
 
-			    // Clear logger's buffer to free some memory :)
+				// Clear logger's buffer to free some memory :)
 				buffered_logger::clear();
 			}
 			if (shouldLogErrors) {
