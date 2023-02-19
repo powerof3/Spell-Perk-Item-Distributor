@@ -62,12 +62,12 @@ namespace NPC
 		return npc;
 	}
 
-    RE::Actor* Data::GetActor() const
-    {
-        return actor;
-    }
+	RE::Actor* Data::GetActor() const
+	{
+		return actor;
+	}
 
-    bool Data::has_keyword_string(const std::string& a_string) const
+	bool Data::has_keyword_string(const std::string& a_string) const
 	{
 		return std::ranges::any_of(keywords, [&](const auto& keyword) {
 			return string::iequals(keyword, a_string);

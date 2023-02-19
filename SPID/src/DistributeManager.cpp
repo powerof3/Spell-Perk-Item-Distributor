@@ -44,7 +44,7 @@ namespace Distribute
 		}
 	}
 
-    void InitProcessedKeyword()
+	void InitProcessedKeyword()
 	{
 		const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
 		if (const auto keyword = factory ? factory->Create() : nullptr) {
@@ -53,7 +53,7 @@ namespace Distribute
 		}
 	}
 
-    void SetupDistribution()
+	void SetupDistribution()
 	{
 		const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
 		if (const auto keyword = factory ? factory->Create() : nullptr) {
@@ -65,7 +65,7 @@ namespace Distribute
 			logger::info("{:*^50}", "HOOKS");
 			PlayerLeveledActor::Install();
 		}
-		
+
 		logger::info("{:*^50}", "EVENTS");
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
@@ -93,7 +93,7 @@ namespace Distribute::Event
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
 			logger::info("\tRegistered for {}", typeid(RE::TESFormDeleteEvent).name());
 
-		    if (Forms::deathItems) {
+			if (Forms::deathItems) {
 				scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
 				logger::info("\tRegistered for {}", typeid(RE::TESDeathEvent).name());
 			}

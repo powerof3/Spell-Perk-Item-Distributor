@@ -5,5 +5,5 @@ namespace Lookup
 	bool LookupForms();
 	void LogFormLookup();
 
-    bool DoFormLookup();
+	bool DoFormLookup();
 }
