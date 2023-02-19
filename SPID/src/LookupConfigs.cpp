@@ -48,9 +48,8 @@ namespace INI
 		template <class T>
 		RawFilterEntries<T> parse_entries(const std::string& filter_str, std::function<std::optional<T>(std::string&)> parser)
 		{
-
 			RawFilterEntries<T> entries;
-			auto entries_str = distribution::split_entry(filter_str, "+");
+			auto                entries_str = distribution::split_entry(filter_str, "+");
 
 			for (auto& entry_str : entries_str) {
 				bool isNegated = false;
@@ -72,7 +71,7 @@ namespace INI
 		RawFilters<T> parse_filters(const std::string& expression_str, std::function<std::optional<T>(std::string&)> parser)
 		{
 			RawFilters<T> filters;
-			auto filters_str = distribution::split_entry(expression_str);
+			auto          filters_str = distribution::split_entry(expression_str);
 			for (const auto& filter_str : filters_str) {
 				filters.entries.push_back(parse_entries<T>(filter_str, parser));
 			}
@@ -139,7 +138,7 @@ namespace INI
 								auto max = matches[kSkillMax].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMax].str()) : LevelRange::MaxLevel;
 								if (matches[kModifier].length() == 0) {
 									return SkillLevelRange(skill, min, max);
-								} else if(matches[kModifier].str().at(0) == 'w') {
+								} else if (matches[kModifier].str().at(0) == 'w') {
 									return SkillWeightRange(skill, min, max);
 								} else {
 									buffered_logger::warn("\tUnrecognized skill modifier in filter (\'{}\'): {}", matches[kModifier].str().at(0), entry_str);
@@ -247,7 +246,7 @@ namespace INI
 
 			if (auto values = ini.GetSection(""); values && !values->empty()) {
 				std::multimap<CSimpleIniA::Entry, std::pair<std::string, std::string>, CSimpleIniA::Entry::LoadOrder> oldFormatMap;
-				auto truncatedPath = path.substr(5);  //strip "Data\\"
+				auto                                                                                                  truncatedPath = path.substr(5);  //strip "Data\\"
 				for (auto& [key, entry] : *values) {
 					try {
 						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);

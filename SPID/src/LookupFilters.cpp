@@ -131,7 +131,7 @@ namespace Filter
 			const auto skillLevel = npc->playerSkills.values[filter.skill];
 			if (skillLevel >= filter.min && skillLevel <= filter.max) {
 				return Result::kPass;
-			} 
+			}
 			return Result::kFail;
 		}
 	};
@@ -142,7 +142,7 @@ namespace Filter
 		static Result evaluate(const SkillLevelRange filter, const NPCData& a_npcData)
 		{
 			if (auto skillWeight = weight(filter, a_npcData); skillWeight >= filter.min && skillWeight <= filter.max) {
-				return Result::kPass; 
+				return Result::kPass;
 			}
 			return Result::kFail;
 		}
@@ -194,8 +194,8 @@ namespace Filter
 					return std::nullopt;
 				}
 			}
-            return std::nullopt;
-        }
+			return std::nullopt;
+		}
 	};
 
 	// ---------------- Traits ----------------
@@ -256,8 +256,7 @@ namespace Filter
 // ------------------- Data --------------------
 namespace Filter
 {
-
-	Data::Data(AndExpression filters):
+	Data::Data(AndExpression filters) :
 		filters(filters)
 	{
 		hasLeveledFilters = HasLevelFiltersImpl();

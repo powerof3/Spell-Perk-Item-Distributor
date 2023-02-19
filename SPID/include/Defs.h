@@ -31,8 +31,8 @@ using FormOrEditorID = std::variant<
 	std::string>;  // editorID
 
 using RawFormVec = std::vector<FormOrEditorID>;
-using FormOrMod = std::variant<RE::TESForm*,		// form
-							   const RE::TESFile*>; // mod
+using FormOrMod = std::variant<RE::TESForm*,  // form
+	const RE::TESFile*>;                      // mod
 
 using FormVec = std::vector<FormOrMod>;
 using IdxOrCount = std::int32_t;

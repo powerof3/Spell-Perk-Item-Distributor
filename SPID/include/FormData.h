@@ -31,7 +31,7 @@ namespace Forms
 			}
 		}
 
-        template <class Value, class MappedValue>
+		template <class Value, class MappedValue>
 		void makeExpression(Expression* expression, INI::RawFilters<Value> rawFilters, std::function<std::optional<MappedValue>(Value&)> mapper)
 		{
 			for (auto& rawExpression : rawFilters.entries) {
@@ -267,9 +267,9 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-	    // ----------------- Compile filters expressions ----------------
+		// ----------------- Compile filters expressions ----------------
 
-	    OrExpression traitsExpr;
+		OrExpression traitsExpr;
 		OrExpression levelsExpr;
 		OrExpression formsExpr;
 		OrExpression stringsExpr;
@@ -277,7 +277,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		detail::makeExpression<Filter::Trait>(&traitsExpr, traits);
 		detail::makeExpression<Filter::LevelRange>(&levelsExpr, level);
 		detail::makeExpression<Filter::StringValue>(&stringsExpr, strings);
-	    detail::makeExpression<FormOrEditorID, FormOrMod>(&formsExpr, filterIDs, [&](FormOrEditorID& formOrEditorID) -> std::optional<FormOrMod> {
+		detail::makeExpression<FormOrEditorID, FormOrMod>(&formsExpr, filterIDs, [&](FormOrEditorID& formOrEditorID) -> std::optional<FormOrMod> {
 			if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 				auto& [formID, modName] = *formModPair;
 				if (g_mergeMapperInterface) {
@@ -292,8 +292,8 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					}
 				} else if (formID) {
 					auto filterForm = modName ?
-					                      a_dataHandler->LookupForm(*formID, *modName) :
-					                      RE::TESForm::LookupByID(*formID);
+                                          a_dataHandler->LookupForm(*formID, *modName) :
+                                          RE::TESForm::LookupByID(*formID);
 					if (filterForm) {
 						const auto formType = filterForm->GetFormType();
 						if (Cache::FormType::GetWhitelisted(formType)) {
@@ -322,7 +322,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			return std::nullopt;
 		});
 
-	                // I couldn't make this work with initializer list with either constructor or for loop. :(
+		// I couldn't make this work with initializer list with either constructor or for loop. :(
 		AndExpression result;
 
 		result.entries.push_back(FilterEntry(chance));
@@ -331,7 +331,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		result.entries.push_back(formsExpr);
 		result.entries.push_back(stringsExpr);
 
-	    Forms::Data<Form> formData{ form, idxOrCount, FilterData(result) };
+		Forms::Data<Form> formData{ form, idxOrCount, FilterData(result) };
 		forms.emplace_back(formData);
 	}
 }

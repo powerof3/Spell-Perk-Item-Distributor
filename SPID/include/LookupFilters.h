@@ -131,7 +131,8 @@ namespace Filter
 	struct Evaluatable
 	{
 		/// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
-		virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const {
+		virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const
+		{
 			return Result::kFail;
 		}
 	};
@@ -163,7 +164,7 @@ namespace Filter
 		NegatedFilter(FilterType value) :
 			FilterEntry<FilterType>(value) {}
 
-		virtual Result evaluate(const NPCData& a_npcData) const override 
+		virtual Result evaluate(const NPCData& a_npcData) const override
 		{
 			switch (filter_eval<FilterType>::evaluate(FilterEntry<FilterType>::value, a_npcData)) {
 			case Result::kFail:
@@ -256,7 +257,7 @@ namespace Filter
 		AndExpression filters;
 		bool          hasLeveledFilters;
 
-		[[nodiscard]] bool HasLevelFilters() const;
+		[[nodiscard]] bool   HasLevelFilters() const;
 		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData, bool a_noPlayerLevelDistribution) const;
 
 	private:

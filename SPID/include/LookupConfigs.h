@@ -45,13 +45,13 @@ namespace INI
 	struct RawFilterValue
 	{
 		ValueType value;
-		bool negated;
+		bool      negated;
 
 		RawFilterValue(ValueType val, bool isNegated) :
-			value(val), negated(isNegated) {} 
+			value(val), negated(isNegated) {}
 	};
 
-	template<class ValueType>
+	template <class ValueType>
 	struct RawExpression
 	{
 		std::vector<ValueType> entries;
@@ -60,12 +60,11 @@ namespace INI
 	template <class T>
 	using RawFilterEntries = RawExpression<RawFilterValue<T>>;
 
-	template<class T>
+	template <class T>
 	using RawFilters = RawExpression<RawFilterEntries<T>>;
 
 	struct Data
 	{
-
 		FormOrEditorID                  rawForm{};
 		RawFilters<Filter::StringValue> stringFilters{};
 		RawFilters<FormOrEditorID>      idFilters{};

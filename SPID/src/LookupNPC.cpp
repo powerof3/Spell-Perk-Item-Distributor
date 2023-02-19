@@ -104,7 +104,8 @@ namespace NPC
 		return keywords;
 	}
 
-	std::string Data::GetName() const {
+	std::string Data::GetName() const
+	{
 		return name;
 	}
 	std::string Data::GetOriginalEDID() const
@@ -120,8 +121,9 @@ namespace NPC
 	{
 		return originalFormID;
 	}
-	RE::FormID Data::GetTemplateFormID() const {
-		return templateFormID; 
+	RE::FormID Data::GetTemplateFormID() const
+	{
+		return templateFormID;
 	}
 
 	std::uint16_t Data::GetLevel() const
