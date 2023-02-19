@@ -2,17 +2,11 @@
 
 namespace NPC
 {
-	inline constexpr std::string_view processedKeywordEDID{ "SPID_Processed" };
-	inline RE::BGSKeyword*            processedKeyword{ nullptr };
-
 	struct Data
 	{
-		explicit Data(RE::TESNPC* a_npc);
-
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
-		[[nodiscard]] bool        ShouldProcessNPC() const;
-		[[nodiscard]] RE::TESNPC* GetNPC() const;
+	    [[nodiscard]] RE::TESNPC* GetNPC() const;
 
 		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings, bool a_all = false) const;
 		[[nodiscard]] bool ContainsStringFilter(const StringVec& a_strings) const;
@@ -25,20 +19,23 @@ namespace NPC
 		[[nodiscard]] bool          IsSummonable() const;
 		[[nodiscard]] bool          IsChild() const;
 
+		[[nodiscard]] RE::TESRace* GetRace() const;
+
 	private:
 		void cache_keywords();
+		void set_as_child();
 
-		static bool is_child(RE::TESNPC* a_npc);
-
-		[[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
+        [[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool contains_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool has_form(RE::TESForm* a_form) const;
 
 		RE::TESNPC*   npc;
-		RE::FormID    originalFormID;
-		RE::FormID    templateFormID{ 0 };
+		RE::Actor*    actor;
 		std::string   name;
+		RE::TESRace*  race;
+		RE::FormID    originalFormID;
 		std::string   originalEDID;
+		RE::FormID    templateFormID{ 0 };
 		std::string   templateEDID{};
 		StringSet     keywords{};
 		std::uint16_t level;

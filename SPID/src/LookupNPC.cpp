@@ -8,50 +8,35 @@ namespace NPC
 			keywords.emplace(a_keyword.GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
-		if (const auto race = npc->GetRace()) {
-			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-				keywords.emplace(a_keyword.GetFormEditorID());
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
-		}
+		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
 	}
 
-	bool Data::is_child(RE::TESNPC* a_npc)
+	void Data::set_as_child()
 	{
-		if (const auto race = a_npc->GetRace()) {
-			if (race->IsChildRace()) {
-				return true;
-			}
-			if (race->formEditorID.contains("RaceChild")) {
-				return true;
-			}
-		}
-		return false;
-	}
+		child = false;
 
-	Data::Data(RE::TESNPC* a_npc) :
-		npc(a_npc),
-		originalFormID(a_npc->GetFormID()),
-		name(a_npc->GetName()),
-		originalEDID(Cache::EditorID::GetEditorID(npc)),
-		level(a_npc->GetLevel()),
-		sex(a_npc->GetSex()),
-		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable()),
-		child(is_child(a_npc))
-	{
-		cache_keywords();
+		if (actor->IsChild()) {
+			child = true;
+		} else if (race->IsChildRace()) {
+			child = true;
+		} else if (race->formEditorID.contains("RaceChild")) {
+			child = true;
+		}
 	}
 
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
-		name(a_npc->GetName()),
+		actor(a_actor),
+		name(a_actor->GetName()),
 		level(a_npc->GetLevel()),
 		sex(a_npc->GetSex()),
 		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable()),
-		child(is_child(a_npc))
+		summonable(a_npc->IsSummonable())
 	{
+		race = a_npc->GetRace();
 		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
 				originalFormID = originalBase->GetFormID();
@@ -60,33 +45,16 @@ namespace NPC
 			if (const auto templateBase = extraLvlCreature->templateBase) {
 				templateFormID = templateBase->GetFormID();
 				templateEDID = Cache::EditorID::GetEditorID(templateBase);
+				if (auto templateRace = templateBase->As<RE::TESNPC>()->GetRace()) {
+					race = templateRace;
+				}
 			}
 		} else {
 			originalFormID = a_npc->GetFormID();
 			originalEDID = Cache::EditorID::GetEditorID(npc);
 		}
 		cache_keywords();
-	}
-
-	bool Data::ShouldProcessNPC() const
-	{
-		if (keywords.contains(processedKeywordEDID)) {
-			return false;
-		}
-
-		if (!processedKeyword) {
-			const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-			if (const auto keyword = factory ? factory->Create() : nullptr) {
-				keyword->formEditorID = processedKeywordEDID;
-				processedKeyword = keyword;
-			}
-		}
-
-		if (processedKeyword) {
-			npc->AddKeyword(processedKeyword);
-		}
-
-		return true;
+		set_as_child();
 	}
 
 	RE::TESNPC* Data::GetNPC() const
@@ -146,7 +114,7 @@ namespace NPC
 				return npc->IsInFaction(faction);
 			}
 		case RE::FormType::Race:
-			return npc->GetRace() == a_form;
+			return GetRace() == a_form;
 		case RE::FormType::Outfit:
 			return npc->defaultOutfit == a_form;
 		case RE::FormType::NPC:
@@ -227,4 +195,9 @@ namespace NPC
 	{
 		return child;
 	}
+
+    RE::TESRace* Data::GetRace() const
+    {
+        return race;
+    }
 }

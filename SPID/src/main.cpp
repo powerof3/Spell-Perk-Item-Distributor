@@ -1,5 +1,6 @@
 #include "DistributeManager.h"
 #include "LookupConfigs.h"
+#include "LookupForms.h"
 #include "PCLevelMultManager.h"
 
 HMODULE tweaks{ nullptr };
@@ -20,7 +21,6 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::GetConfigs(); shouldLookupForms) {
 				logger::info("{:*^50}", "HOOKS");
 				Distribute::Actor::Install();
-				Distribute::LeveledActor::Install();
 			}
 		}
 		break;
@@ -38,12 +38,14 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
+			Distribute::LookupFormsOnce();
+
 			if (Distribute::shouldDistribute) {
 				logger::info("{:*^50}", "EVENTS");
 				Distribute::Event::Manager::Register();
 				PCLevelMult::Manager::GetSingleton()->Register();
 
-				// Clear logger's buffer to free some memory :)
+			    // Clear logger's buffer to free some memory :)
 				buffered_logger::clear();
 			}
 			if (shouldLogErrors) {

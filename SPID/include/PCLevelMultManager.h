@@ -5,15 +5,13 @@ namespace PCLevelMult
 {
 	struct Input
 	{
-		Input(const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
-		Input(const RE::Actor* a_character, const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries, bool a_noPlayerLevelDistribution);
+		Input(const RE::Actor* a_character, const RE::TESNPC* a_base, bool a_onlyPlayerLevelEntries);
 
 		std::uint64_t playerID;
 		RE::FormID    npcFormID;
 		std::uint16_t npcLevel;
 		std::uint16_t npcLevelCap;
 		bool          onlyPlayerLevelEntries;
-		bool          noPlayerLevelDistribution;
 	};
 
 	class Manager : public RE::BSTEventSink<RE::MenuOpenCloseEvent>

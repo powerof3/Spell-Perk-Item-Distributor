@@ -205,7 +205,7 @@ namespace Filter
 		});
 	}
 
-	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
+	Result Data::PassedFilters(const NPCData& a_npcData) const
 	{
 		// Fail chance first to avoid running unnecessary checks
 		if (chance < 100) {
@@ -220,10 +220,6 @@ namespace Filter
 		}
 
 		if (passed_form_filters(a_npcData) == Result::kFail) {
-			return Result::kFail;
-		}
-
-		if (a_noPlayerLevelDistribution && HasLevelFilters() && a_npcData.GetNPC()->HasPCLevelMult()) {
 			return Result::kFail;
 		}
 

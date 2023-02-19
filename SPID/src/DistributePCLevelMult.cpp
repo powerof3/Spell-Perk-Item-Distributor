@@ -1,5 +1,6 @@
 #include "DistributePCLevelMult.h"
 #include "Distribute.h"
+#include "DistributeManager.h"
 #include "PCLevelMultManager.h"
 
 namespace Distribute::PlayerLeveledActor
@@ -10,7 +11,7 @@ namespace Distribute::PlayerLeveledActor
 		{
 			if (const auto npc = a_actor->GetActorBase()) {
 				const auto npcData = std::make_unique<NPCData>(a_actor, npc);
-				Distribute(*npcData, PCLevelMult::Input{ a_actor, npc, true, false });
+				Distribute(*npcData, PCLevelMult::Input{ a_actor, npc, true });
 			}
 
 			func(a_actor);
@@ -22,14 +23,10 @@ namespace Distribute::PlayerLeveledActor
 	{
 		static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
 		{
-			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult()) {
-				const auto input = PCLevelMult::Input{ a_this, npc, true, false };
+			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult() && npc->HasKeyword(processedKeyword)) {
+				const auto input = PCLevelMult::Input{ a_this, npc, true };
 
-				if (const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton(); !pcLevelMultManager->FindDistributedEntry(input)) {
-					//start distribution of leveled entries for first time
-					const auto npcData = std::make_unique<NPCData>(a_this, npc);
-					Distribute(*npcData, input);
-				} else {
+				if (const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton()) {
 					//handle redistribution and removal
 					pcLevelMultManager->ForEachDistributedEntry(input, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet, bool a_isBelowLevel) {
 						switch (a_formType) {
