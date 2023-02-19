@@ -2,8 +2,6 @@
 
 namespace Distribute
 {
-	inline bool shouldDistribute{ false };
-
 	inline constexpr std::string_view processedKeywordEDID{ "SPID_Processed" };
 	inline RE::BGSKeyword*            processedKeyword{ nullptr };
 
@@ -48,5 +46,5 @@ namespace Distribute
 		};
 	}
 
-	void LookupFormsOnce();
+	void SetupDistribution();
 }

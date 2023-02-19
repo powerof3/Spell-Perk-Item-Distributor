@@ -14,7 +14,7 @@ namespace PCLevelMult
 	void Manager::Register()
 	{
 		if (const auto UI = RE::UI::GetSingleton()) {
-			UI->AddEventSink(this);
+			UI->AddEventSink(GetSingleton());
 			logger::info("\tRegistered {}", typeid(Manager).name());
 		}
 	}

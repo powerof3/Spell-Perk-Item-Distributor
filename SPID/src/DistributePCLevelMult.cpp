@@ -126,12 +126,13 @@ namespace Distribute::PlayerLeveledActor
 
 	void Install()
 	{
-		// ProcessLists::HandlePlayerLevelUpdate
+	    // ProcessLists::HandlePlayerLevelUpdate
 		// inlined into SetLevel in AE
 		REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(40575, 41567), OFFSET(0x97, 0x137) };
 		stl::write_thunk_call<HandleUpdatePlayerLevel>(target.address());
 
 		stl::write_vfunc<RE::Character, LoadGame>();
+
 		logger::info("\tInstalled leveled distribution hooks");
 	}
 }

@@ -23,7 +23,7 @@ namespace PCLevelMult
 			return &singleton;
 		}
 
-		void Register();
+		static void Register();
 
 		[[nodiscard]] bool FindRejectedEntry(const Input& a_input, RE::FormID a_distributedFormID, std::uint32_t a_formDataIndex) const;
 		bool               InsertRejectedEntry(const Input& a_input, RE::FormID a_distributedFormID, std::uint32_t a_formDataIndex);

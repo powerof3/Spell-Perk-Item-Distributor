@@ -7,6 +7,7 @@ namespace NPC
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
+		[[nodiscard]] RE::Actor* GetActor() const;
 
 		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings, bool a_all = false) const;
 		[[nodiscard]] bool ContainsStringFilter(const StringVec& a_strings) const;

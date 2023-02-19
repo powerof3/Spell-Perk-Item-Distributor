@@ -2,6 +2,8 @@
 
 namespace Lookup
 {
-	bool GetForms();
+	bool LookupForms();
 	void LogFormLookup();
+
+    bool DoFormLookup();
 }

@@ -1,7 +1,6 @@
 #include "DistributeManager.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
-#include "LookupForms.h"
 
 namespace Distribute
 {
@@ -19,9 +18,9 @@ namespace Distribute
 	// Static actors
 	namespace Actor
 	{
-		struct Load3D
+		struct ShouldBackgroundClone
 		{
-			static RE::NiAVObject* thunk(RE::Character* a_this, bool a_arg2)
+			static bool thunk(RE::Character* a_this)
 			{
 				if (auto npc = a_this->GetActorBase()) {
 					if (detail::should_process_NPC(npc)) {
@@ -31,47 +30,48 @@ namespace Distribute
 					}
 				}
 
-				return func(a_this, a_arg2);
+				return func(a_this);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 
 			static inline constexpr std::size_t index{ 0 };
-			static inline constexpr std::size_t size{ 0x6A };
+			static inline constexpr std::size_t size{ 0x6D };
 		};
 
 		void Install()
 		{
-			stl::write_vfunc<RE::Character, Load3D>();
+			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 		}
 	}
 
-	void LookupFormsOnce()
+    void InitProcessedKeyword()
 	{
-		logger::info("{:*^50}", "LOOKUP");
-
-		const auto startTime = std::chrono::steady_clock::now();
-		shouldDistribute = Lookup::GetForms();
-		const auto endTime = std::chrono::steady_clock::now();
-
-		if (shouldDistribute) {
-			Lookup::LogFormLookup();
-
-			const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-			logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
-
-			if (Forms::GetTotalLeveledEntries() > 0) {
-				logger::info("{:*^50}", "HOOKS");
-				PlayerLeveledActor::Install();
-			}
-
-			if (!processedKeyword) {
-				const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-				if (const auto keyword = factory ? factory->Create() : nullptr) {
-					keyword->formEditorID = processedKeywordEDID;
-					processedKeyword = keyword;
-				}
-			}
+		const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
+		if (const auto keyword = factory ? factory->Create() : nullptr) {
+			keyword->formEditorID = processedKeywordEDID;
+			processedKeyword = keyword;
 		}
+	}
+
+    void SetupDistribution()
+	{
+		const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
+		if (const auto keyword = factory ? factory->Create() : nullptr) {
+			keyword->formEditorID = processedKeywordEDID;
+			processedKeyword = keyword;
+		}
+
+		if (Forms::GetTotalLeveledEntries() > 0) {
+			logger::info("{:*^50}", "HOOKS");
+			PlayerLeveledActor::Install();
+		}
+		
+		logger::info("{:*^50}", "EVENTS");
+		Event::Manager::Register();
+		PCLevelMult::Manager::Register();
+
+		// Clear logger's buffer to free some memory :)
+		buffered_logger::clear();
 	}
 }
 
@@ -92,7 +92,8 @@ namespace Distribute::Event
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
 			logger::info("\tRegistered for {}", typeid(RE::TESFormDeleteEvent).name());
-			if (Forms::deathItems) {
+
+		    if (Forms::deathItems) {
 				scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
 				logger::info("\tRegistered for {}", typeid(RE::TESDeathEvent).name());
 			}
