@@ -32,16 +32,6 @@ namespace NPC
 
 		RE::TESNPC*  npc;
 		RE::Actor*   actor;
-		RE::FormID   originalFormID;
-		RE::FormID   templateFormID{ 0 };
-		std::string  name;
-		RE::TESRace* race;
-		std::string  originalEDID;
-		std::string  templateEDID{};
-		StringSet    keywords{};
-
-		RE::TESNPC*  npc;
-		RE::Actor*   actor;
 		std::string  name;
 		RE::TESRace* race;
 		RE::FormID   originalFormID;

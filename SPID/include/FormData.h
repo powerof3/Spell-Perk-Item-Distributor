@@ -36,13 +36,12 @@ namespace Forms
 		{
 			for (auto& rawExpression : rawFilters.entries) {
 				for (auto& rawValue : rawExpression.entries) {
-					std::optional<MappedValue> res = mapper(rawValue.value);
-					if (res) {
+                    if (std::optional<MappedValue> res = mapper(rawValue.value)) {
 						auto value = res.value();
 						if (rawValue.negated) {
-							expression->entries.push_back(NegatedFilter<MappedValue>(value));
+							expression->emplace_back(NegatedFilter<MappedValue>(value));
 						} else {
-							expression->entries.push_back(FilterEntry<MappedValue>(value));
+							expression->emplace_back(FilterEntry<MappedValue>(value));
 						}
 					}
 				}
@@ -265,14 +264,14 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 		// ----------------- Compile filters expressions ----------------
 
-		OrExpression traitsExpr;
-		OrExpression levelsExpr;
-		OrExpression formsExpr;
-		OrExpression stringsExpr;
+		OrExpression traitsExpr{ "Traits" };
+		OrExpression levelsExpr{ "Levels" };
+		OrExpression formsExpr{ "Forms" };
+		OrExpression stringsExpr{ "Strings" };
 
-		detail::makeExpression<Filter::Trait>(&traitsExpr, traits);
-		detail::makeExpression<Filter::LevelRange>(&levelsExpr, level);
-		detail::makeExpression<Filter::StringValue>(&stringsExpr, strings);
+		detail::makeExpression<Trait>(&traitsExpr, traits);
+		detail::makeExpression<LevelRange>(&levelsExpr, level);
+		detail::makeExpression<StringValue>(&stringsExpr, strings);
 		detail::makeExpression<FormOrEditorID, FormOrMod>(&formsExpr, filterIDs, [&](FormOrEditorID& formOrEditorID) -> std::optional<FormOrMod> {
 			if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 				auto& [formID, modName] = *formModPair;
@@ -319,15 +318,15 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		});
 
 		// I couldn't make this work with initializer list with either constructor or for loop. :(
-		AndExpression result;
+		AndExpression result{ "Entry Filters" };
 
-		result.entries.push_back(FilterEntry(chance));
-		result.entries.push_back(traitsExpr);
-		result.entries.push_back(levelsExpr);
-		result.entries.push_back(formsExpr);
-		result.entries.push_back(stringsExpr);
+		result.emplace_back(FilterEntry(chance));
+		result.emplace_back(&traitsExpr);
+		result.emplace_back(&levelsExpr);
+		result.emplace_back(&formsExpr);
+		result.emplace_back(&stringsExpr);
 
-		Forms::Data<Form> formData{ form, idxOrCount, FilterData(result) };
+        Data<Form> formData{ form, idxOrCount, FilterData(result) };
 		forms.emplace_back(formData);
 	}
 }
