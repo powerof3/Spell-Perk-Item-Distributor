@@ -49,8 +49,8 @@ namespace Forms
 						}
 					} else if (formID) {
 						auto filterForm = modName ?
-						                      a_dataHandler->LookupForm(*formID, *modName) :
-						                      RE::TESForm::LookupByID(*formID);
+                                              a_dataHandler->LookupForm(*formID, *modName) :
+                                              RE::TESForm::LookupByID(*formID);
 						if (filterForm) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {

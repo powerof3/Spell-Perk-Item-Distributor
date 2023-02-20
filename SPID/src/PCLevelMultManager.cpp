@@ -146,7 +146,7 @@ namespace PCLevelMult
 	void Manager::DeleteNPC(RE::FormID a_characterID)
 	{
 		WriteLocker lock(_lock);
-		auto&  currentCache = _cache[GetSingleton()->GetCurrentPlayerID()];
+		auto&       currentCache = _cache[GetSingleton()->GetCurrentPlayerID()];
 		if (const auto it = currentCache.find(a_characterID); it != currentCache.end()) {
 			currentCache.erase(it);
 		}
@@ -157,7 +157,7 @@ namespace PCLevelMult
 		bool hitCap = (a_input.npcLevel == a_input.npcLevelCap);
 
 		WriteLocker lock(_lock);
-		auto& map = _cache[a_input.playerID];
+		auto&       map = _cache[a_input.playerID];
 		if (const auto it = map.find(a_input.npcFormID); it == map.end()) {
 			map[a_input.npcFormID].levelCapState = static_cast<LEVEL_CAP_STATE>(hitCap);
 		} else {
@@ -184,18 +184,18 @@ namespace PCLevelMult
 		return currentPlayerID;
 	}
 
-    std::uint64_t Manager::GetOldPlayerID() const
-    {
-        return oldPlayerID;
-    }
+	std::uint64_t Manager::GetOldPlayerID() const
+	{
+		return oldPlayerID;
+	}
 
-    void Manager::GetPlayerIDFromSave(const std::string& a_saveName)
+	void Manager::GetPlayerIDFromSave(const std::string& a_saveName)
 	{
 		// Quicksave0_2A73F01A_0_6E656C736F6E_Tamriel_000002_20220918174138_10_1.ess
 		// 2A73F01A is player ID
 
 		oldPlayerID = currentPlayerID;
-	    if (const auto save = string::split(a_saveName, "_"); save.size() > 1 && !string::is_only_letter(save[1])) {
+		if (const auto save = string::split(a_saveName, "_"); save.size() > 1 && !string::is_only_letter(save[1])) {
 			currentPlayerID = string::to_num<std::uint64_t>(save[1], true);
 		} else {
 			currentPlayerID = 0;  // non standard save name, use game playerID instead

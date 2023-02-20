@@ -18,7 +18,7 @@ namespace Distribute
 	namespace Actor
 	{
 		// Initial distribution
-	    struct ShouldBackgroundClone
+		struct ShouldBackgroundClone
 		{
 			static bool thunk(RE::Character* a_this)
 			{
@@ -38,14 +38,14 @@ namespace Distribute
 			static inline constexpr std::size_t size{ 0x6D };
 		};
 
-		// override baked outfit 
+		// override baked outfit
 		struct InitLoadGame
 		{
 			static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
 			{
 				func(a_this, a_buf);
 
-			    if (const auto npc = a_this->GetActorBase(); npc && npc->HasKeyword(processedKeyword)) {
+				if (const auto npc = a_this->GetActorBase(); npc && npc->HasKeyword(processedKeyword)) {
 					if (!a_this->HasOutfitItems(npc->defaultOutfit)) {
 						a_this->InitInventoryIfRequired();
 						a_this->AddWornOutfit(npc->defaultOutfit, false);

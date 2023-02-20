@@ -16,7 +16,7 @@ namespace Distribute
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 
-		    const auto hasLevelFilters = a_formData.filters.HasLevelFilters();
+			const auto hasLevelFilters = a_formData.filters.HasLevelFilters();
 			const auto distributedFormID = a_formData.form->GetFormID();
 			const auto index = a_formData.index;
 
@@ -71,7 +71,7 @@ namespace Distribute
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
-	    for (auto& formData : vec) {
+		for (auto& formData : vec) {
 			if (detail::passed_filters(a_npcData, a_input, formData)) {
 				a_callback(formData.form, formData.idxOrCount);
 			}
