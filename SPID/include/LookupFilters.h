@@ -53,7 +53,7 @@ namespace Filter
 
 		LevelRange(const Level min, const Level max)
 		{
-            const auto _min = min == MaxLevel ? MinLevel : min;
+			const auto _min = min == MaxLevel ? MinLevel : min;
 			this->min = std::min(_min, max);
 			this->max = std::max(_min, max);
 		}
@@ -384,19 +384,19 @@ namespace Filter
 // ---------------- Expressions ----------------
 namespace Filter
 {
-    /// An abstract filter component that can be evaluated for specified NPC.
+	/// An abstract filter component that can be evaluated for specified NPC.
 	struct Evaluatable
 	{
-	    virtual ~Evaluatable() = default;
+		virtual ~Evaluatable() = default;
 
-        /// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
-        [[nodiscard]] virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const
+		/// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
+		[[nodiscard]] virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const
 		{
 			return Result::kFail;
 		}
 	};
 
-    template <typename T>
+	template <typename T>
 	struct inherits_evaluatable
 	{
 		static constexpr bool value = std::is_base_of_v<Evaluatable, T>;
@@ -415,14 +415,13 @@ namespace Filter
 		FilterEntry(const FilterEntry& other) :
 			value(other.value) {}
 
-        [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
+		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 		{
 			return filter_eval<FilterType>::evaluate(value, a_npcData);
 		}
-    };
+	};
 
-
-    /// NegatedFilter is a filter that always inverts the result of evaluation.
+	/// NegatedFilter is a filter that always inverts the result of evaluation.
 	/// It corresponds to `-` prefix in a config file (e.g. "-ActorTypeNPC")
 	template <class FilterType>
 	struct NegatedFilter : FilterEntry<FilterType>
@@ -430,7 +429,7 @@ namespace Filter
 		NegatedFilter(FilterType value) :
 			FilterEntry<FilterType>(value) {}
 
-        [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
+		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 		{
 			switch (FilterEntry<FilterType>::evaluate(a_npcData)) {
 			case Result::kFail:
@@ -442,7 +441,7 @@ namespace Filter
 			}
 		}
 	};
-	
+
 	/// An expression is a combination of filters and/or nested expressions.
 	///
 	/// To determine how entries in the expression are combined use either AndExpression or OrExpression.
@@ -501,10 +500,10 @@ namespace Filter
 	/// Entries are combined using AND logic.
 	struct AndExpression : Expression
 	{
-		 explicit AndExpression(const std::string& name) :
+		explicit AndExpression(const std::string& name) :
 			Expression(name) {}
 
-        [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
+		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 		{
 			for (auto& entry : entries) {
 				const auto res = entry.get()->evaluate(a_npcData);
@@ -522,21 +521,21 @@ namespace Filter
 		explicit OrExpression(const std::string& name) :
 			Expression(name) {}
 
-        [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
+		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 		{
 			Result failure = Result::kFail;
 
 			for (auto& entry : entries) {
-                const auto res = entry.get()->evaluate(a_npcData);
+				const auto res = entry.get()->evaluate(a_npcData);
 				if (res == Result::kPass) {
 					return Result::kPass;
 				}
-                if (res > failure) {
-                    // we rely on Result cases being ordered in order of priorities.
-                    // Hence if there was a kFailRNG it will always be the result of this evaluation.
-                    failure = res;
-                }
-            }
+				if (res > failure) {
+					// we rely on Result cases being ordered in order of priorities.
+					// Hence if there was a kFailRNG it will always be the result of this evaluation.
+					failure = res;
+				}
+			}
 			return entries.empty() ? Result::kPass : failure;
 		}
 	};

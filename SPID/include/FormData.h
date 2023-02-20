@@ -36,7 +36,7 @@ namespace Forms
 		{
 			for (auto& rawExpression : rawFilters.entries) {
 				for (auto& rawValue : rawExpression.entries) {
-                    if (std::optional<MappedValue> res = mapper(rawValue.value)) {
+					if (std::optional<MappedValue> res = mapper(rawValue.value)) {
 						auto value = res.value();
 						if (rawValue.negated) {
 							expression->emplace_back(NegatedFilter<MappedValue>(value));
@@ -326,7 +326,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		result.emplace_back(&formsExpr);
 		result.emplace_back(&stringsExpr);
 
-        Data<Form> formData{ form, idxOrCount, FilterData(result) };
+		Data<Form> formData{ form, idxOrCount, FilterData(result) };
 		forms.emplace_back(formData);
 	}
 }
