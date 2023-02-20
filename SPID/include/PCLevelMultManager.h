@@ -39,14 +39,9 @@ namespace PCLevelMult
 		bool HasHitLevelCap(const Input& a_input);
 
 		std::uint64_t GetCurrentPlayerID();
+		std::uint64_t GetOldPlayerID() const;
 		void          GetPlayerIDFromSave(const std::string& a_saveName);
 		void          SetNewGameStarted();
-
-	protected:
-		static std::uint64_t get_game_playerID();
-		void                 remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID);
-
-		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 
 	private:
 		Manager() = default;
@@ -57,6 +52,10 @@ namespace PCLevelMult
 
 		Manager& operator=(const Manager&) = delete;
 		Manager& operator=(Manager&&) = delete;
+
+		using Lock = std::shared_mutex;
+		using ReadLocker = std::shared_lock<Lock>;
+	    using WriteLocker = std::unique_lock<Lock>;
 
 		enum class LEVEL_CAP_STATE
 		{
@@ -76,17 +75,19 @@ namespace PCLevelMult
 			Map<std::uint16_t, Entries> entries{};  // Actor Level, Entries
 		};
 
-		using Lock = std::shared_mutex;
-		using Locker = std::scoped_lock<Lock>;
+		static std::uint64_t get_game_playerID();
+		void                 remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID);
 
-		Map<std::uint64_t,          // PlayerID
-			Map<RE::FormID, Data>>  // NPC formID, Data
-					 _cache{};
-		mutable Lock _lock;
+		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override;
 
+		// members
 		std::uint64_t currentPlayerID{ 0 };
 		std::uint64_t oldPlayerID{ 0 };
+		bool          newGameStarted{ false };
 
-		bool newGameStarted{ false };
+		mutable Lock _lock;
+		Map<std::uint64_t,          // PlayerID
+			Map<RE::FormID, Data>>  // NPC formID, Data
+			_cache{};
 	};
 }

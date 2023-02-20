@@ -49,8 +49,8 @@ namespace Forms
 						}
 					} else if (formID) {
 						auto filterForm = modName ?
-                                              a_dataHandler->LookupForm(*formID, *modName) :
-                                              RE::TESForm::LookupByID(*formID);
+						                      a_dataHandler->LookupForm(*formID, *modName) :
+						                      RE::TESForm::LookupByID(*formID);
 						if (filterForm) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
@@ -90,10 +90,11 @@ namespace Forms
 	template <class Form>
 	struct Data
 	{
-		Form*       form{ nullptr };
-		IdxOrCount  idxOrCount{ 1 };
-		FilterData  filters{};
-		std::string path{};
+		std::uint32_t index{ 0 };
+		Form*         form{ nullptr };
+		IdxOrCount    idxOrCount{ 1 };
+		FilterData    filters{};
+		std::string   path{};
 
 		bool operator<(const Data& a_rhs) const
 		{
@@ -197,6 +198,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 	logger::info("\tStarting {} lookup", a_type);
 
 	forms.reserve(a_INIDataVec.size());
+	std::uint32_t index = 0;
 
 	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 		Form* form = nullptr;
@@ -302,7 +304,8 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		forms.emplace_back(Data<Form>{ form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path });
+		forms.emplace_back(Data<Form>{ index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path });
+		index++;
 	}
 }
 

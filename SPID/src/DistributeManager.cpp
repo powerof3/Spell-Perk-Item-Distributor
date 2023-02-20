@@ -15,10 +15,10 @@ namespace Distribute
 		return true;
 	}
 
-	// Static actors
 	namespace Actor
 	{
-		struct ShouldBackgroundClone
+		// Initial distribution
+	    struct ShouldBackgroundClone
 		{
 			static bool thunk(RE::Character* a_this)
 			{
@@ -38,18 +38,30 @@ namespace Distribute
 			static inline constexpr std::size_t size{ 0x6D };
 		};
 
+		// override baked outfit 
+		struct InitLoadGame
+		{
+			static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
+			{
+				func(a_this, a_buf);
+
+			    if (const auto npc = a_this->GetActorBase(); npc && npc->HasKeyword(processedKeyword)) {
+					if (!a_this->HasOutfitItems(npc->defaultOutfit)) {
+						a_this->InitInventoryIfRequired();
+						a_this->AddWornOutfit(npc->defaultOutfit, false);
+					}
+				}
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+
+			static inline size_t index{ 0 };
+			static inline size_t size{ 0x10 };
+		};
+
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-		}
-	}
-
-	void InitProcessedKeyword()
-	{
-		const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-		if (const auto keyword = factory ? factory->Create() : nullptr) {
-			keyword->formEditorID = processedKeywordEDID;
-			processedKeyword = keyword;
+			stl::write_vfunc<RE::Character, InitLoadGame>();
 		}
 	}
 
