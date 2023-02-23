@@ -71,6 +71,8 @@ namespace Distribute
 					processedKeyword = keyword;
 				}
 			}
+
+			Lookup::LogFilters();
 		}
 	}
 }

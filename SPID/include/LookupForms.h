@@ -4,4 +4,6 @@ namespace Lookup
 {
 	bool GetForms();
 	void LogFormLookup();
+	void LogFilters();
 }
+

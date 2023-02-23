@@ -395,6 +395,7 @@ namespace Filter
 	{
 		static std::ostringstream& describe(std::ostringstream& os, [[maybe_unused]] const Filter& filter)
 		{
+			os << "@UNKNOWN@";
 			return os;
 		}
 	};
@@ -555,7 +556,13 @@ namespace Filter
 
 		/// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
 		[[nodiscard]] virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const = 0;
-		virtual std::ostringstream& describe(std::ostringstream& os) const = 0;
+
+	    virtual std::ostringstream& describe(std::ostringstream& os) const = 0;
+
+		virtual std::size_t GetSize() const
+		{
+			return 1;
+		}
 	};
 
 	template <typename T>
@@ -622,6 +629,31 @@ namespace Filter
 	/// To determine how entries in the expression are combined use either AndExpression or OrExpression.
 	struct Expression : Evaluatable
 	{
+		// Expression are not filters in itself and serve as a shallow containers of actual filters.
+		// Thus, expression's size is a number of actual FilterEntry objects nested within.
+		// Any number of nested empty expressions will amount in a size of zero.
+        [[nodiscard]] std::size_t GetSize() const override
+		{
+			return std::accumulate(entries.begin(), entries.end(), static_cast<std::size_t>(0), [&](std::size_t res, const std::shared_ptr<Evaluatable>& ptr) {
+				return res + ptr->GetSize();
+			});
+		}
+
+		/// Removes nested empty expressions.
+        void flatten()
+        {
+			for (auto it = entries.begin(); it != entries.end(); it++) {
+                const auto eval = it->get();
+				if (const auto expression = dynamic_cast<Expression*>(eval)) {
+					if (expression->GetSize() == 0) {
+						entries.erase(it--);    
+					} else {
+						expression->flatten();
+					}
+				}
+			}
+        }
+
 	    template <typename T, typename = std::enable_if_t<evaluatable<T>::value>>
 		void emplace_back(T* ptr)
 		{
@@ -675,13 +707,13 @@ namespace Filter
 		{
 			auto       begin = entries.begin();
             const auto end = entries.end();
-			const bool isSingle = entries.size() == 1;
+			const bool isComposite = GetSize() > 1;
 
 			if (begin != end) {
-				if (isSingle)
+				if (isComposite)
 					os << "(";
 				(*begin++)->describe(os);
-				if (isSingle)
+				if (isComposite)
 					os << ")";
 				for (; begin != end; ++begin) {
 					os << separator << "(";

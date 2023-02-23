@@ -71,3 +71,65 @@ void Lookup::LogFormLookup()
 	// Clear logger's buffer to free some memory :)
 	buffered_logger::clear();
 }
+
+void Lookup::LogFilters()
+{
+	using namespace Forms;
+
+	logger::info("{:*^50}", "FILTERS");
+
+	const auto list_filters = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
+		const auto& recordName = RECORD::add[a_recordType];
+
+        // Only log entries that are actually present in INIs.
+		//if (!INI::configs[recordName].empty()) {
+
+			logger::info("\t{}:", recordName);
+
+			std::unordered_map<RE::FormID, DataVec<Form>> map;
+			for (const auto& data : a_map.GetForms()) {
+				if (const auto form = data.form) {
+					map[form->GetFormID()].push_back(data);
+				}
+			}
+
+			for (const auto & [id, vec] : map) {
+				std::string formID;
+				if (!vec.empty()) {
+					const auto& data = vec.front();
+					if (const std::string& edid = data.form->GetFormEditorID(); !edid.empty()) {
+						formID = edid;
+					} else {
+						formID = std::format("{:08X}", data.form->GetFormID());
+					}    
+				} else {
+					formID = std::format("{:08X}", id);
+				}
+				
+				logger::info("\t\t{}:", formID);
+
+			    for (const auto& data : vec) {
+					std::ostringstream ss;
+					const std::string  filters = data.filters.filters.describe(ss).str();
+					logger::info("\t\t\t{}", filters);
+				}
+			}
+		//}
+	};
+
+	list_filters(RECORD::kKeyword, keywords);
+	list_filters(RECORD::kSpell, spells);
+	list_filters(RECORD::kPerk, perks);
+	list_filters(RECORD::kItem, items);
+	list_filters(RECORD::kShout, shouts);
+	list_filters(RECORD::kLevSpell, levSpells);
+	list_filters(RECORD::kPackage, packages);
+	list_filters(RECORD::kOutfit, outfits);
+	list_filters(RECORD::kDeathItem, deathItems);
+	list_filters(RECORD::kFaction, factions);
+	list_filters(RECORD::kSleepOutfit, sleepOutfits);
+	list_filters(RECORD::kSkin, skins);
+
+	// Clear logger's buffer to free some memory :)
+	buffered_logger::clear();
+}

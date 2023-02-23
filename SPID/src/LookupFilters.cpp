@@ -27,8 +27,6 @@ namespace Filter
 		if (const auto npc = a_npcData.GetNPC(); HasLevelFilters() && npc->HasPCLevelMult()) {
 			return Result::kFail;
 		}
-		std::ostringstream ss;
-		logger::info("{}", filters.describe(ss).str());
 		return filters.evaluate(a_npcData);
 	}
 }

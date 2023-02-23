@@ -44,18 +44,15 @@ namespace INI
 	template <class ValueType>
 	struct RawFilterValue
 	{
-		ValueType value;
+	    std::shared_ptr<ValueType> value;
 		bool      negated;
 
-		RawFilterValue(ValueType val, bool isNegated) :
+		RawFilterValue(std::shared_ptr<ValueType> val, bool isNegated) :
 			value(val), negated(isNegated) {}
 	};
 
 	template <class ValueType>
-	struct RawExpression
-	{
-		std::vector<ValueType> entries;
-	};
+	using RawExpression = std::vector<ValueType>;
 
 	template <class T>
 	using RawFilterEntries = RawExpression<RawFilterValue<T>>;
