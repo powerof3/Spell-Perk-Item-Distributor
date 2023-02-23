@@ -264,10 +264,10 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 		// ----------------- Compile filters expressions ----------------
 
-		OrExpression traitsExpr{ "Traits" };
-		OrExpression levelsExpr{ "Levels" };
-		OrExpression formsExpr{ "Forms" };
-		OrExpression stringsExpr{ "Strings" };
+		OrExpression traitsExpr{ };
+		OrExpression levelsExpr{ };
+		OrExpression formsExpr{ };
+		OrExpression stringsExpr{ };
 
 		detail::makeExpression<Trait>(&traitsExpr, traits);
 		detail::makeExpression<LevelRange>(&levelsExpr, level);
@@ -318,7 +318,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		});
 
 		// I couldn't make this work with initializer list with either constructor or for loop. :(
-		AndExpression result{ "Entry Filters" };
+		AndExpression result{};
 
 		result.emplace_back(FilterEntry(chance));
 		result.emplace_back(&traitsExpr);

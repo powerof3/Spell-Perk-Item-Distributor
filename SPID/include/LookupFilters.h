@@ -15,7 +15,7 @@ namespace Filter
 // ------------- Filterable types --------------
 namespace Filter
 {
-	/// String value for a filter that represents a wildcard.
+	/// String value for a filter that represents any string.
 	struct StringValue
 	{
 		std::string value;
@@ -57,6 +57,7 @@ namespace Filter
 			this->min = std::min(_min, max);
 			this->max = std::max(_min, max);
 		}
+
 	};
 
 	/// Value that represents a range of acceptable Skill Level for particular skill.
@@ -83,14 +84,17 @@ namespace Filter
 
 	/// Generic trait of the NPC.
 	struct Trait
-	{};
+	{
+	protected:
+		Trait() = default;
+	};
 
 	struct SexTrait : Trait
 	{
 		RE::SEX sex;
 
 		SexTrait(RE::SEX sex) :
-			sex(sex){};
+			sex(sex){}
 	};
 
 	struct UniqueTrait : Trait
@@ -113,7 +117,7 @@ namespace Filter
 	};
 }
 
-// ------- Specialized filter evaluator --------
+// ------- Specialized filter evaluators --------
 namespace Filter
 {
 	/// Evaluator that determines whether given NPC matches specified filter.
@@ -121,7 +125,7 @@ namespace Filter
 	template <typename FilterType>
 	struct filter_eval
 	{
-		static Result evaluate([[maybe_unused]] const FilterType filter, [[maybe_unused]] const NPCData& a_npcData)
+		static Result evaluate([[maybe_unused]] const FilterType& filter, [[maybe_unused]] const NPCData& a_npcData)
 		{
 			return Result::kFail;
 		}
@@ -132,7 +136,7 @@ namespace Filter
 	template <>
 	struct filter_eval<Match>
 	{
-		static Result evaluate(const Match filter, const NPCData& a_npcData)
+		static Result evaluate(const Match& filter, const NPCData& a_npcData)
 		{
 			if (a_npcData.GetKeywords().contains(filter.value) ||
 				string::iequals(a_npcData.GetName(), filter.value) ||
@@ -148,7 +152,7 @@ namespace Filter
 	template <>
 	struct filter_eval<Wildcard>
 	{
-		static Result evaluate(const Wildcard filter, const NPCData& a_npcData)
+		static Result evaluate(const Wildcard& filter, const NPCData& a_npcData)
 		{
 			// Utilize regex here. (will also support one-sided wildcards (e.g. *Name and Name*)
 			// std::regex regex(filter.value, std::regex_constants::icase);
@@ -168,7 +172,7 @@ namespace Filter
 	template <>
 	struct filter_eval<FormOrMod>
 	{
-		static Result evaluate(const FormOrMod filter, const NPCData& a_npcData)
+		static Result evaluate(const FormOrMod& filter, const NPCData& a_npcData)
 		{
 			if (std::holds_alternative<RE::TESForm*>(filter)) {
 				if (const auto form = std::get<RE::TESForm*>(filter); form && has_form(form, a_npcData)) {
@@ -240,7 +244,7 @@ namespace Filter
 	template <>
 	struct filter_eval<LevelRange>
 	{
-		static Result evaluate(const LevelRange filter, const NPCData& a_npcData)
+		static Result evaluate(const LevelRange& filter, const NPCData& a_npcData)
 		{
 			const auto actorLevel = a_npcData.GetLevel();
 			if (actorLevel >= filter.min && actorLevel <= filter.max) {
@@ -253,7 +257,7 @@ namespace Filter
 	template <>
 	struct filter_eval<SkillLevelRange>
 	{
-		static Result evaluate(const SkillLevelRange filter, const NPCData& a_npcData)
+		static Result evaluate(const SkillLevelRange& filter, const NPCData& a_npcData)
 		{
 			const auto npc = a_npcData.GetNPC();
 			const auto skillLevel = npc->playerSkills.values[filter.skill];
@@ -267,16 +271,16 @@ namespace Filter
 	template <>
 	struct filter_eval<SkillWeightRange>
 	{
-		static Result evaluate(const SkillLevelRange filter, const NPCData& a_npcData)
+		static Result evaluate(const SkillLevelRange& filter, const NPCData& a_npcData)
 		{
-			if (auto skillWeight = weight(filter, a_npcData); skillWeight >= filter.min && skillWeight <= filter.max) {
+			if (const auto skillWeight = weight(filter, a_npcData); skillWeight >= filter.min && skillWeight <= filter.max) {
 				return Result::kPass;
 			}
 			return Result::kFail;
 		}
 
 	private:
-		static std::optional<std::uint8_t> weight(const SkillLevelRange filter, const NPCData& a_npcData)
+		static std::optional<std::uint8_t> weight(const SkillLevelRange& filter, const NPCData& a_npcData)
 		{
 			if (const auto npcClass = a_npcData.GetNPC()->npcClass) {
 				const auto& skillWeights = npcClass->data.skillWeights;
@@ -331,7 +335,7 @@ namespace Filter
 	template <>
 	struct filter_eval<SexTrait>
 	{
-		static Result evaluate([[maybe_unused]] const SexTrait filter, const NPCData& a_npcData)
+		static Result evaluate([[maybe_unused]] const SexTrait& filter, const NPCData& a_npcData)
 		{
 			return a_npcData.GetSex() == filter.sex ? Result::kPass : Result::kFail;
 		}
@@ -340,7 +344,7 @@ namespace Filter
 	template <>
 	struct filter_eval<UniqueTrait>
 	{
-		static Result evaluate([[maybe_unused]] const UniqueTrait filter, const NPCData& a_npcData)
+		static Result evaluate([[maybe_unused]] const UniqueTrait& filter, const NPCData& a_npcData)
 		{
 			return a_npcData.IsUnique() ? Result::kPass : Result::kFail;
 		}
@@ -349,7 +353,7 @@ namespace Filter
 	template <>
 	struct filter_eval<SummonableTrait>
 	{
-		static Result evaluate([[maybe_unused]] const SummonableTrait filter, const NPCData& a_npcData)
+		static Result evaluate([[maybe_unused]] const SummonableTrait& filter, const NPCData& a_npcData)
 		{
 			return a_npcData.IsSummonable() ? Result::kPass : Result::kFail;
 		}
@@ -358,7 +362,7 @@ namespace Filter
 	template <>
 	struct filter_eval<ChildTrait>
 	{
-		static Result evaluate([[maybe_unused]] const ChildTrait filter, const NPCData& a_npcData)
+		static Result evaluate([[maybe_unused]] const ChildTrait& filter, const NPCData& a_npcData)
 		{
 			return a_npcData.IsChild() ? Result::kPass : Result::kFail;
 		}
@@ -369,7 +373,7 @@ namespace Filter
 	{
 		inline static RNG staticRNG;
 
-		static Result evaluate(const Chance filter, [[maybe_unused]] const NPCData& a_npcData)
+		static Result evaluate(const Chance& filter, [[maybe_unused]] const NPCData& a_npcData)
 		{
 			if (filter.maximum >= 100) {
 				return Result::kPass;
@@ -377,6 +381,166 @@ namespace Filter
 
 			const auto rng = staticRNG.Generate<Chance::chance>(0, 100);
 			return rng > filter.maximum ? Result::kPass : Result::kFailRNG;
+		}
+	};
+}
+
+
+// ------- Specialized filter descriptors --------
+namespace Filter
+{
+
+	template <typename Filter>
+	struct filter_descriptor
+	{
+		static std::ostringstream& describe(std::ostringstream& os, [[maybe_unused]] const Filter& filter)
+		{
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<Match>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, const Match& filter)
+		{
+			os << "='" << filter.value << "'";
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<Wildcard>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, const Wildcard& filter)
+		{
+			os << "~'" << filter.value << "'";
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<FormOrMod>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, const FormOrMod& filter)
+		{
+			if (std::holds_alternative<RE::TESForm*>(filter)) {
+				if (const auto form = std::get<RE::TESForm*>(filter); form) {
+					if (const std::string& edid = form->GetFormEditorID(); !edid.empty()) {
+						os << "~" << edid;
+					} else {
+						os << "~"
+						   << std::setfill('0')
+						   << std::setw(sizeof(RE::FormID) * 2)
+						   << std::uppercase
+						   << std::hex
+						   << form->GetFormID();
+					}
+				}
+			} else if (std::holds_alternative<const RE::TESFile*>(filter)) {
+				if (const auto file = std::get<const RE::TESFile*>(filter); file) {
+					os << "~"
+					   << file->fileName;
+				}
+			}
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<LevelRange>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, const LevelRange& filter)
+		{
+			return describeLevel(os, "LVL", filter);
+		}
+
+		static std::ostringstream& describeLevel(std::ostringstream& os, const std::string& name, const LevelRange& range)
+		{
+            const int min = range.min;
+            const int max = range.max;
+			if (range.min == LevelRange::MinLevel && range.max == LevelRange::MaxLevel) {
+				os << name << "=ANY";
+			} else if (range.min == range.max) {
+				os << name << "=" << range.min;
+			} else if (range.min == LevelRange::MinLevel) {
+				os << name << "=" << max << "-";
+			} else if (range.max == LevelRange::MaxLevel) {
+				os << name << "=" << min << "+";
+			} else {
+				os << name << "=" << min << "-" << max;
+			}
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<SkillLevelRange>
+	{
+		using Base = filter_descriptor<LevelRange>;
+		static std::ostringstream& describe(std::ostringstream& os, const SkillLevelRange& filter)
+		{
+			return Base::describeLevel(os, "SKL", filter);
+		}
+	};
+
+	template <>
+	struct filter_descriptor<SkillWeightRange>
+	{
+		using Base = filter_descriptor<LevelRange>;
+		static std::ostringstream& describe(std::ostringstream& os, const SkillWeightRange& filter)
+		{
+			return Base::describeLevel(os, "SWE", filter);
+		}
+	};
+
+	template <>
+	struct filter_descriptor<SexTrait>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, const SexTrait& filter)
+		{
+			os << (filter.sex == RE::SEX::kMale ? "M" : "F");
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<UniqueTrait>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, [[maybe_unused]] const UniqueTrait& filter)
+		{
+			os << "U";
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<SummonableTrait>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, [[maybe_unused]] const SummonableTrait& filter)
+		{
+			os << "S";
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<ChildTrait>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, [[maybe_unused]] const ChildTrait& filter)
+		{
+			os << "C";
+			return os;
+		}
+	};
+
+	template <>
+	struct filter_descriptor<Chance>
+	{
+		static std::ostringstream& describe(std::ostringstream& os, const Chance& filter)
+		{
+			os << "RND " << filter.maximum << "%";
+			return os;
 		}
 	};
 }
@@ -390,21 +554,19 @@ namespace Filter
 		virtual ~Evaluatable() = default;
 
 		/// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
-		[[nodiscard]] virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const
-		{
-			return Result::kFail;
-		}
+		[[nodiscard]] virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const = 0;
+		virtual std::ostringstream& describe(std::ostringstream& os) const = 0;
 	};
 
 	template <typename T>
-	struct inherits_evaluatable
+	struct evaluatable
 	{
 		static constexpr bool value = std::is_base_of_v<Evaluatable, T>;
 	};
 
 	/// FilterEntry evaluates whether or not given NPC matches entry's value.
 	///	It uses filter_eval specialized to FilterType.
-	template <class FilterType>
+	template <typename FilterType>
 	struct FilterEntry : Evaluatable
 	{
 		const FilterType value;
@@ -419,19 +581,26 @@ namespace Filter
 		{
 			return filter_eval<FilterType>::evaluate(value, a_npcData);
 		}
+
+		std::ostringstream& describe(std::ostringstream& ss) const override
+		{
+			return filter_descriptor<FilterType>::describe(ss, value);
+		}
 	};
 
 	/// NegatedFilter is a filter that always inverts the result of evaluation.
 	/// It corresponds to `-` prefix in a config file (e.g. "-ActorTypeNPC")
-	template <class FilterType>
+	template <typename FilterType>
 	struct NegatedFilter : FilterEntry<FilterType>
 	{
-		NegatedFilter(FilterType value) :
-			FilterEntry<FilterType>(value) {}
+		using Base = FilterEntry<FilterType>;
+
+		NegatedFilter(const FilterType& value) :
+			Base(value) {}
 
 		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 		{
-			switch (FilterEntry<FilterType>::evaluate(a_npcData)) {
+			switch (Base::evaluate(a_npcData)) {
 			case Result::kFail:
 			case Result::kFailRNG:
 				return Result::kPass;
@@ -440,6 +609,12 @@ namespace Filter
 				return Result::kFail;
 			}
 		}
+
+		std::ostringstream& describe(std::ostringstream& ss) const override
+		{
+			ss << "NOT ";
+			return Base::describe(ss);
+		}
 	};
 
 	/// An expression is a combination of filters and/or nested expressions.
@@ -447,19 +622,14 @@ namespace Filter
 	/// To determine how entries in the expression are combined use either AndExpression or OrExpression.
 	struct Expression : Evaluatable
 	{
-		std::string name;
-
-		explicit Expression(const std::string& name) :
-			name(name) {}
-
-		template <typename T, typename = std::enable_if_t<inherits_evaluatable<T>::value>>
+	    template <typename T, typename = std::enable_if_t<evaluatable<T>::value>>
 		void emplace_back(T* ptr)
 		{
 			static_assert(std::is_constructible_v<std::shared_ptr<Evaluatable>, T*>, "T* must be constructible into shared_ptr<Evaluatable>.");
 			entries.emplace_back(std::make_shared<T>(*ptr));
 		}
 
-		template <typename T, typename = std::enable_if_t<inherits_evaluatable<T>::value>>
+		template <typename T, typename = std::enable_if_t<evaluatable<T>::value>>
 		void emplace_back(T&& obj)
 		{
 			// Not sure why, but this assertion fails, even though the method works. (this is ChatGPT stuff, so I'm not sure what exactly is wrong :))
@@ -493,16 +663,39 @@ namespace Filter
 			});
 		}
 
+		std::ostringstream& describe(std::ostringstream& ss) const override
+	    {
+			return join(", ", ss);
+	    }
+
 	protected:
 		std::vector<std::shared_ptr<Evaluatable>> entries{};
+
+		std::ostringstream& join(const std::string separator, std::ostringstream& os) const
+		{
+			auto       begin = entries.begin();
+            const auto end = entries.end();
+			const bool isSingle = entries.size() == 1;
+
+			if (begin != end) {
+				if (isSingle)
+					os << "(";
+				(*begin++)->describe(os);
+				if (isSingle)
+					os << ")";
+				for (; begin != end; ++begin) {
+					os << separator << "(";
+					(*begin)->describe(os);
+					os << ")";
+				}
+			}
+			return os;
+		}
 	};
 
 	/// Entries are combined using AND logic.
 	struct AndExpression : Expression
 	{
-		explicit AndExpression(const std::string& name) :
-			Expression(name) {}
-
 		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 		{
 			for (auto& entry : entries) {
@@ -513,14 +706,16 @@ namespace Filter
 			}
 			return Result::kPass;
 		}
+
+		std::ostringstream& describe(std::ostringstream& os) const override
+		{
+			return join(" AND ", os);
+		}
 	};
 
 	/// Entries are combined using OR logic.
 	struct OrExpression : Expression
 	{
-		explicit OrExpression(const std::string& name) :
-			Expression(name) {}
-
 		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 		{
 			Result failure = Result::kFail;
@@ -537,6 +732,11 @@ namespace Filter
 				}
 			}
 			return entries.empty() ? Result::kPass : failure;
+		}
+
+		std::ostringstream& describe(std::ostringstream& ss) const override
+		{
+			return join(" OR ", ss);
 		}
 	};
 }
