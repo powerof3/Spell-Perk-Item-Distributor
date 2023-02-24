@@ -32,7 +32,7 @@ namespace Distribute::PlayerLeveledActor
 				auto input = PCLevelMult::Input{ a_this, npc, true };
 				input.playerID = pcLevelMultManager->GetOldPlayerID();
 
-				pcLevelMultManager->ForEachDistributedEntry(input, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet, bool) {
+				pcLevelMultManager->ForEachDistributedEntry(input, false, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet) {
 					switch (a_formType) {
 					case RE::FormType::Keyword:
 						{
@@ -43,12 +43,9 @@ namespace Distribute::PlayerLeveledActor
 					case RE::FormType::Faction:
 						{
 							const auto factions = detail::set_to_vec<RE::TESFaction>(a_formIDSet);
-							for (auto& faction : factions) {
-								const auto it = std::ranges::find_if(npc->factions, [&](const auto& factionRank) {
-									return factionRank.faction == faction;
-								});
-								if (it != npc->factions.end()) {
-									(*it).rank = -1;
+							for (auto& factionRank : npc->factions) {
+								if (std::ranges::find(factions, factionRank.faction) != factions.end()) {
+									factionRank.rank = -1;
 								}
 							}
 						}
@@ -62,25 +59,19 @@ namespace Distribute::PlayerLeveledActor
 					case RE::FormType::Spell:
 						{
 							const auto spells = detail::set_to_vec<RE::SpellItem>(a_formIDSet);
-							if (const auto actorEffects = npc->GetSpellList()) {
-								actorEffects->RemoveSpells(spells);
-							}
+							npc->GetSpellList()->RemoveSpells(spells);
 						}
 						break;
 					case RE::FormType::LeveledSpell:
 						{
 							const auto spells = detail::set_to_vec<RE::TESLevSpell>(a_formIDSet);
-							if (const auto actorEffects = npc->GetSpellList()) {
-								actorEffects->RemoveLevSpells(spells);
-							}
+							npc->GetSpellList()->RemoveLevSpells(spells);
 						}
 						break;
 					case RE::FormType::Shout:
 						{
 							const auto shouts = detail::set_to_vec<RE::TESShout>(a_formIDSet);
-							if (const auto actorEffects = npc->GetSpellList()) {
-								actorEffects->RemoveShouts(shouts);
-							}
+							npc->GetSpellList()->RemoveShouts(shouts);
 						}
 						break;
 					default:
@@ -110,67 +101,46 @@ namespace Distribute::PlayerLeveledActor
 					Distribute(*npcData, input);
 				} else {
 					//handle redistribution
-					pcLevelMultManager->ForEachDistributedEntry(input, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet, bool a_isBelowLevel) {
+					pcLevelMultManager->ForEachDistributedEntry(input, true, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet) {
 						switch (a_formType) {
 						case RE::FormType::Keyword:
 							{
-								if (!a_isBelowLevel) {
-									const auto keywords = detail::set_to_vec<RE::BGSKeyword>(a_formIDSet);
-									npc->AddKeywords(keywords);
-								}
+								const auto keywords = detail::set_to_vec<RE::BGSKeyword>(a_formIDSet);
+								npc->AddKeywords(keywords);
 							}
 							break;
 						case RE::FormType::Faction:
 							{
-								if (!a_isBelowLevel) {
-									const auto factions = detail::set_to_vec<RE::TESFaction>(a_formIDSet);
-									for (auto& faction : factions) {
-										const auto it = std::ranges::find_if(npc->factions, [&](const auto& factionRank) {
-											return factionRank.faction == faction;
-										});
-										if (it != npc->factions.end()) {
-											(*it).rank = 1;
-										}
+								const auto factions = detail::set_to_vec<RE::TESFaction>(a_formIDSet);
+								for (auto& factionRank : npc->factions) {
+									if (std::ranges::find(factions, factionRank.faction) != factions.end()) {
+										factionRank.rank = 1;
 									}
 								}
 							}
 							break;
 						case RE::FormType::Perk:
 							{
-								if (!a_isBelowLevel) {
-									const auto perks = detail::set_to_vec<RE::BGSPerk>(a_formIDSet);
-									npc->AddPerks(perks, 1);
-								}
+								const auto perks = detail::set_to_vec<RE::BGSPerk>(a_formIDSet);
+								npc->AddPerks(perks, 1);
 							}
 							break;
 						case RE::FormType::Spell:
 							{
-								if (!a_isBelowLevel) {
-									if (const auto actorEffects = npc->GetSpellList()) {
-										const auto spells = detail::set_to_vec<RE::SpellItem>(a_formIDSet);
-										actorEffects->AddSpells(spells);
-									}
-								}
+								const auto spells = detail::set_to_vec<RE::SpellItem>(a_formIDSet);
+								npc->GetSpellList()->AddSpells(spells);
 							}
 							break;
 						case RE::FormType::LeveledSpell:
 							{
-								if (!a_isBelowLevel) {
-									const auto spells = detail::set_to_vec<RE::TESLevSpell>(a_formIDSet);
-									if (const auto actorEffects = npc->GetSpellList()) {
-										actorEffects->AddLevSpells(spells);
-									}
-								}
+								const auto spells = detail::set_to_vec<RE::TESLevSpell>(a_formIDSet);
+								npc->GetSpellList()->AddLevSpells(spells);
 							}
 							break;
 						case RE::FormType::Shout:
 							{
-								if (!a_isBelowLevel) {
-									const auto shouts = detail::set_to_vec<RE::TESShout>(a_formIDSet);
-									if (const auto actorEffects = npc->GetSpellList()) {
-										actorEffects->AddShouts(shouts);
-									}
-								}
+								const auto shouts = detail::set_to_vec<RE::TESShout>(a_formIDSet);
+								npc->GetSpellList()->AddShouts(shouts);
 							}
 							break;
 						default:

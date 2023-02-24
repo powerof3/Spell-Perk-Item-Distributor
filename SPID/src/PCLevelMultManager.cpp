@@ -105,23 +105,6 @@ namespace PCLevelMult
 		_cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries[a_formType].insert(a_formIDSet.begin(), a_formIDSet.end());
 	}
 
-	void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::FormType, const Set<RE::FormID>&, bool)> a_fn) const
-	{
-		ReadLocker lock(_lock);
-		if (const auto playerID = _cache.find(a_input.playerID); playerID != _cache.end()) {
-			auto& npcFormIDMap = playerID->second;
-			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
-				auto& [levelCapState, levelMap] = npcIt->second;
-				for (const auto& [level, cachedData] : levelMap) {
-					const bool is_below_level = a_input.npcLevel < level;
-					for (auto& [formType, formIDSet] : cachedData.distributedEntries) {
-						a_fn(formType, formIDSet, is_below_level);
-					}
-				}
-			}
-		}
-	}
-
 	void Manager::DumpDistributedEntries()
 	{
 		ReadLocker lock(_lock);
@@ -136,6 +119,24 @@ namespace PCLevelMult
 						for (auto& formID : formIDSet) {
 							logger::info("\t\t\t\tDist FormID : {} [{:X}]", Cache::EditorID::GetEditorID(formID), formID);
 						}
+					}
+				}
+			}
+		}
+	}
+
+	void Manager::ForEachDistributedEntry(const Input& a_input, bool a_onlyValidEntries, std::function<void(RE::FormType, const Set<RE::FormID>&)> a_fn) const
+	{
+		ReadLocker lock(_lock);
+		if (const auto pcIt = _cache.find(a_input.playerID); pcIt != _cache.end()) {
+			auto& npcFormIDMap = pcIt->second;
+			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
+				for (const auto& [level, cachedData] : npcIt->second.entries) {
+					if (a_onlyValidEntries && a_input.npcLevel < level) {
+						continue;
+					}
+					for (auto& [formType, entries] : cachedData.distributedEntries) {
+						a_fn(formType, entries);
 					}
 				}
 			}

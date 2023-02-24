@@ -51,8 +51,8 @@ namespace Filter
 		return Result::kPass;
 	}
 
-	Result Data::passed_secondary_filters(const NPCData& a_npcData) const
-	{
+    Result Data::passed_level_filters(const NPC::Data& a_npcData) const
+    {
 		// Actor Level
 		auto& [actorMin, actorMax] = std::get<0>(level);
 		const auto actorLevel = a_npcData.GetLevel();
@@ -93,7 +93,8 @@ namespace Filter
 			for (auto& [skillType, skill] : std::get<2>(level)) {
 				auto& [skillMin, skillMax] = skill;
 
-				std::uint8_t skillWeight = skillWeights.oneHanded;
+				std::uint8_t skillWeight;
+
 				using Skill = RE::TESNPC::Skills;
 				switch (skillType) {
 				case Skill::kOneHanded:
@@ -166,6 +167,11 @@ namespace Filter
 			}
 		}
 
+		return Result::kPass;
+    }
+
+    Result Data::passed_trait_filters(const NPCData& a_npcData) const
+	{
 		// Traits
 		if (traits.sex && a_npcData.GetSex() != *traits.sex) {
 			return Result::kFail;
@@ -223,6 +229,10 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		return passed_secondary_filters(a_npcData);
+		if (passed_level_filters(a_npcData) == Result::kFail) {
+			return Result::kFail;
+		}
+
+		return passed_trait_filters(a_npcData);
 	}
 }

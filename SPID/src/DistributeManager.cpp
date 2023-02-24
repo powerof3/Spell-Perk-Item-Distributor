@@ -22,11 +22,9 @@ namespace Distribute
 		{
 			static bool thunk(RE::Character* a_this)
 			{
-				if (auto npc = a_this->GetActorBase()) {
-					if (detail::should_process_NPC(npc)) {
-						if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
-							Distribute(*npcData, PCLevelMult::Input{ a_this, npc, false });
-						}
+				if (auto npc = a_this->GetActorBase(); npc && detail::should_process_NPC(npc)) {
+					if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
+						Distribute(*npcData, PCLevelMult::Input{ a_this, npc, false });
 					}
 				}
 
@@ -38,13 +36,14 @@ namespace Distribute
 			static inline constexpr std::size_t size{ 0x6D };
 		};
 
-		// override baked outfit
+		// Unbake outfits
 		struct InitLoadGame
 		{
 			static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
 			{
 				func(a_this, a_buf);
 
+				// Outfits
 				if (const auto npc = a_this->GetActorBase(); npc && npc->HasKeyword(processedKeyword)) {
 					if (!a_this->HasOutfitItems(npc->defaultOutfit)) {
 						a_this->InitInventoryIfRequired();
@@ -54,14 +53,14 @@ namespace Distribute
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 
-			static inline size_t index{ 0 };
-			static inline size_t size{ 0x10 };
+			static inline constexpr std::size_t index{ 0 };
+			static inline constexpr std::size_t size{ 0x10 };
 		};
 
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			stl::write_vfunc<RE::Character, InitLoadGame>();
+			//stl::write_vfunc<RE::Character, InitLoadGame>();
 		}
 	}
 

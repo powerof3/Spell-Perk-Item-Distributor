@@ -36,7 +36,8 @@ namespace Filter
 
 		[[nodiscard]] Result passed_string_filters(const NPC::Data& a_npcData) const;
 		[[nodiscard]] Result passed_form_filters(const NPC::Data& a_npcData) const;
-		[[nodiscard]] Result passed_secondary_filters(const NPC::Data& a_npcData) const;
+		[[nodiscard]] Result passed_level_filters(const NPC::Data& a_npcData) const;
+		[[nodiscard]] Result passed_trait_filters(const NPC::Data& a_npcData) const;
 	};
 }
 

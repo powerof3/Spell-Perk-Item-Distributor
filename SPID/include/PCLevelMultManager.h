@@ -31,11 +31,10 @@ namespace PCLevelMult
 
 		[[nodiscard]] bool FindDistributedEntry(const Input& a_input);
 		void               InsertDistributedEntry(const Input& a_input, RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet);
-		void               ForEachDistributedEntry(const Input& a_input, std::function<void(RE::FormType, const Set<RE::FormID>&, bool)> a_fn) const;
+		void               ForEachDistributedEntry(const Input& a_input, bool a_onlyValidEntries, std::function<void(RE::FormType, const Set<RE::FormID>&)> a_fn) const;
 		void               DumpDistributedEntries();
 
 		void DeleteNPC(RE::FormID a_characterID);
-
 		bool HasHitLevelCap(const Input& a_input);
 
 		std::uint64_t GetCurrentPlayerID();
