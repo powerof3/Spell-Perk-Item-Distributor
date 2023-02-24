@@ -51,8 +51,8 @@ namespace Filter
 		return Result::kPass;
 	}
 
-    Result Data::passed_level_filters(const NPC::Data& a_npcData) const
-    {
+	Result Data::passed_level_filters(const NPC::Data& a_npcData) const
+	{
 		// Actor Level
 		auto& [actorMin, actorMax] = std::get<0>(level);
 		const auto actorLevel = a_npcData.GetLevel();
@@ -168,9 +168,9 @@ namespace Filter
 		}
 
 		return Result::kPass;
-    }
+	}
 
-    Result Data::passed_trait_filters(const NPCData& a_npcData) const
+	Result Data::passed_trait_filters(const NPCData& a_npcData) const
 	{
 		// Traits
 		if (traits.sex && a_npcData.GetSex() != *traits.sex) {

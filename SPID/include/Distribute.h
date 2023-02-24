@@ -143,7 +143,7 @@ namespace Distribute
 
 		const auto npc = a_npcData.GetNPC();
 
-	    std::vector<Form*> collectedForms{};
+		std::vector<Form*> collectedForms{};
 		Set<RE::FormID>    collectedFormIDs{};
 		Set<RE::FormID>    collectedLeveledFormIDs{};
 
