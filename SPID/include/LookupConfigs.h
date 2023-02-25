@@ -41,35 +41,32 @@ namespace INI
 		kChance
 	};
 
-	template <class ValueType>
 	struct RawFilterValue
 	{
-	    std::shared_ptr<ValueType> value;
-		bool      negated;
+		std::unique_ptr<const Filter::FilterValue> value;
+		bool                                       negated;
 
-		RawFilterValue(std::shared_ptr<ValueType> val, bool isNegated) :
+		RawFilterValue(const Filter::FilterValue* val, bool isNegated) :
 			value(val), negated(isNegated) {}
 	};
 
 	template <class ValueType>
 	using RawExpression = std::vector<ValueType>;
 
-	template <class T>
-	using RawFilterEntries = RawExpression<RawFilterValue<T>>;
+	using RawFilterEntries = RawExpression<RawFilterValue>;
 
-	template <class T>
-	using RawFilters = RawExpression<RawFilterEntries<T>>;
+	using RawFilters = RawExpression<RawFilterEntries>;
 
 	struct Data
 	{
-		FormOrEditorID                  rawForm{};
-		RawFilters<Filter::StringValue> stringFilters{};
-		RawFilters<FormOrEditorID>      idFilters{};
-		RawFilters<Filter::LevelRange>  levelFilters{};
-		RawFilters<Filter::Trait>       traitFilters{};
-		Filter::Chance                  chanceFilters{ 100 };
-		IdxOrCount                      idxOrCount{ 1 };
-		std::string                     path{};
+		FormOrEditorID rawForm{};
+		RawFilters     stringFilters{};
+		RawFilters     idFilters{};
+		RawFilters     levelFilters{};
+		RawFilters     traitFilters{};
+		Filter::Chance chanceFilters{ 100 };
+		IdxOrCount     idxOrCount{ 1 };
+		std::string    path{};
 	};
 	using DataVec = std::vector<Data>;
 

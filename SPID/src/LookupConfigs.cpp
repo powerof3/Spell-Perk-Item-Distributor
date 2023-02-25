@@ -45,11 +45,10 @@ namespace INI
 			return newValue;
 		}
 
-		template <class T>
-		RawFilterEntries<T> parse_entries(const std::string& filter_str, std::function<std::shared_ptr<T>(const std::string&)> parser)
+		RawFilterEntries parse_entries(const std::string& filter_str, const std::function<const FilterValue*(const std::string&)> parser)
 		{
-			RawFilterEntries<T> entries;
-			auto                entries_str = distribution::split_entry(filter_str, "+");
+			RawFilterEntries entries;
+			auto             entries_str = distribution::split_entry(filter_str, "+");
 
 			for (auto& entry_str : entries_str) {
 				bool isNegated = false;
@@ -58,25 +57,23 @@ namespace INI
 					entry_str.erase(0, 1);
 					isNegated = true;
 				}
-                if (auto res = parser(entry_str)) {
-					entries.emplace_back(RawFilterValue<T>(res, isNegated));
+				if (const auto res = parser(entry_str)) {
+					entries.emplace_back(RawFilterValue(res, isNegated));
 				}
 			}
 			return entries;
 		}
 
-		template <class T>
-		void parse_filters(const std::string& expression_str, RawFilters<T>& filters, std::function<std::shared_ptr<T>(const std::string&)> parser)
+		void parse_filters(const std::string& expression_str, RawFilters &filters, const std::function<const FilterValue*(const std::string&)> parser)
 		{
             const auto filters_str = distribution::split_entry(expression_str, ",");
 			for (const auto& filter_str : filters_str) {
-				filters.emplace_back(parse_entries<T>(filter_str, parser));
+				filters.emplace_back(parse_entries(filter_str, parser));
 			}
 		}
 
 		std::pair<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 		{
-
 			Data data{};
 
 			auto       sanitized_value = sanitize(a_value);
@@ -91,27 +88,27 @@ namespace INI
 
 			//KEYWORDS
 			if (kStrings < size) {
-				parse_filters<StringValue>(sections[kStrings], data.stringFilters, [](const std::string& entry_str)->std::shared_ptr<StringValue> {
+				parse_filters(sections[kStrings], data.stringFilters, [](const std::string& entry_str)->StringValue* {
 					if (entry_str.at(0) == '*') {
 						std::string wildcard = entry_str;
 						wildcard.erase(0, 1);
-						return std::make_shared<Wildcard>(wildcard);
+						return new Wildcard(wildcard);
 					}
-					return std::make_shared<Match>(entry_str);
+					return new Match(entry_str);
 				});
 			}
 
 			//FILTER FORMS
 			if (kFilterIDs < size) {
-				parse_filters<FormOrEditorID>(sections[kFilterIDs], data.idFilters, [](const std::string& entry_str) {
-					return std::make_shared<FormOrEditorID>(distribution::get_record(entry_str));
+				parse_filters(sections[kFilterIDs], data.idFilters, [](const std::string& entry_str) {
+					return new FormFilterValue<FormOrEditorID>(distribution::get_record(entry_str));
 				});
 			}
 
 			//LEVEL
 			if (kLevel < size) {
 				// Matches all types of level and skill filters
-				std::regex regex(R"(^(?:(w)?(\d+)\((\d+)?(?:\/(\d+)?)?\)|(\d+)?(?:\/(\d+)?)?)$)", std::regex_constants::optimize);
+                const std::regex regex(R"(^(?:(w)?(\d+)\((\d+)?(?:\/(\d+)?)?\)|(\d+)?(?:\/(\d+)?)?)$)", std::regex_constants::optimize);
 				// Indices of matched groups
 				enum
 				{
@@ -126,18 +123,18 @@ namespace INI
 					kTotal
 
 				};
-				parse_filters<LevelRange>(sections[kLevel], data.levelFilters, [&](const std::string& entry_str)->std::shared_ptr<LevelRange> {
+				parse_filters(sections[kLevel], data.levelFilters, [&](const std::string& entry_str)-> LevelRange* {
 					std::smatch matches;
 					if (!entry_str.empty() && std::regex_search(entry_str, matches, regex) && matches.size() >= kTotal) {
 						if (matches[kSkill].length() > 0) {  // skills
-							if (auto skill = string::to_num<SkillLevelRange::Skill>(matches[kSkill].str()); skill < SkillLevelRange::Skills::kTotal) {
-								auto min = matches[kSkillMin].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMin].str()) : LevelRange::MinLevel;
-								auto max = matches[kSkillMax].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMax].str()) : LevelRange::MaxLevel;
+							if (const auto skill = string::to_num<SkillLevelRange::Skill>(matches[kSkill].str()); skill < SkillLevelRange::Skills::kTotal) {
+                                const auto min = matches[kSkillMin].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMin].str()) : LevelRange::MinLevel;
+                                const auto max = matches[kSkillMax].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMax].str()) : LevelRange::MaxLevel;
 								if (matches[kModifier].length() == 0) {
-									return std::make_shared<SkillLevelRange>(skill, min, max);
+									return new SkillLevelRange(skill, min, max);
 								}
                                 if (matches[kModifier].str().at(0) == 'w') {
-                                    return std::make_shared<SkillWeightRange>(skill, min, max);
+                                    return new SkillWeightRange(skill, min, max);
                                 }
                                 buffered_logger::warn("\tUnrecognized skill modifier in filter (\'{}\'): {}", matches[kModifier].str().at(0), entry_str);
                                 return nullptr;
@@ -146,10 +143,10 @@ namespace INI
 							return nullptr;
 						}
                         // levels
-                        auto min = matches[kLevelMin].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMin].str()) : LevelRange::MinLevel;
-                        auto max = matches[kLevelMax].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMax].str()) : LevelRange::MaxLevel;
+                        const auto min = matches[kLevelMin].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMin].str()) : LevelRange::MinLevel;
+                        const auto max = matches[kLevelMax].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMax].str()) : LevelRange::MaxLevel;
 
-                        return std::make_shared<LevelRange>(min, max);
+                        return new LevelRange(min, max);
                     }
 					buffered_logger::warn("\tInvalid level or skill filter: {}", entry_str);
 					return nullptr;
@@ -158,20 +155,19 @@ namespace INI
 
 			//TRAITS
 			if (kTraits < size) {
-				parse_filters<Trait>(sections[kTraits], data.traitFilters, [&](const std::string& entry_str)->std::shared_ptr<Trait> {
+				parse_filters(sections[kTraits], data.traitFilters, [&](const std::string& entry_str) -> Trait* {
 					if (!entry_str.empty()) {
-						auto trait = tolower(entry_str.at(0));
-						switch (trait) {
+                        switch (const auto trait = tolower(entry_str.at(0))) {
 						case 'm':
-							return std::make_shared<SexTrait>(RE::SEX::kMale);
+							return new SexTrait(RE::SEX::kMale);
 						case 'f':
-							return std::make_shared<SexTrait>(RE::SEX::kFemale);
+							return new SexTrait(RE::SEX::kFemale);
 						case 'u':
-							return std::make_shared<UniqueTrait>();
+							return new UniqueTrait();
 						case 's':
-							return std::make_shared<SummonableTrait>();
+							return new SummonableTrait();
 						case 'c':
-							return std::make_shared<ChildTrait>();
+							return new ChildTrait();
 						default:
 							buffered_logger::warn("\tUnrecognized trait filter (\'{}\'): {}", trait, entry_str);
 							return nullptr;
@@ -195,8 +191,7 @@ namespace INI
 			//CHANCE
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
-					auto chance = string::to_num<Chance::chance>(str);
-					data.chanceFilters = Chance(chance);
+					data.chanceFilters.maximum = string::to_num<Chance::chance>(str);
 				}
 			}
 

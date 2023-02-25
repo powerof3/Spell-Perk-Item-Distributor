@@ -15,13 +15,31 @@ namespace Filter
 // ------------- Filterable types --------------
 namespace Filter
 {
+
+	struct FilterValue
+	{
+		virtual ~FilterValue() = default;
+	};
+
+	template<typename FormIDType>
+    struct FormFilterValue: FilterValue
+    {
+		FormIDType form;
+
+		FormFilterValue(const FormIDType& form) :
+			form(form) {}
+
+		FormFilterValue(const FormIDType form) :
+			form(form) {}
+    };
+
 	/// String value for a filter that represents any string.
-	struct StringValue
+	struct StringValue: FilterValue
 	{
 		std::string value;
 
 	protected:
-		StringValue(const std::string value) :
+		StringValue(const std::string& value) :
 			value(value) {}
 	};
 
@@ -29,7 +47,7 @@ namespace Filter
 	/// The value must be without asterisks (e.g. filter "*Vampire" should be trimmed to "Vampire")
 	struct Wildcard : StringValue
 	{
-		Wildcard(const std::string value) :
+		Wildcard(const std::string& value) :
 			StringValue(value) {}
 	};
 
@@ -37,12 +55,12 @@ namespace Filter
 	/// The value is stored as-is.
 	struct Match : StringValue
 	{
-		Match(const std::string value) :
+		Match(const std::string& value) :
 			StringValue(value) {}
 	};
 
 	/// Value that represents a range of acceptable Actor levels.
-	struct LevelRange
+	struct LevelRange : FilterValue
 	{
 		using Level = std::uint8_t;
 		inline constexpr static Level MinLevel = 0;
@@ -83,7 +101,7 @@ namespace Filter
 	};
 
 	/// Generic trait of the NPC.
-	struct Trait
+	struct Trait : FilterValue
 	{
 	protected:
 		Trait() = default;
@@ -106,7 +124,7 @@ namespace Filter
 	struct ChildTrait : Trait
 	{};
 
-	struct Chance
+	struct Chance : FilterValue
 	{
 		using chance = std::uint32_t;
 

@@ -31,27 +31,33 @@ namespace Forms
 			}
 		}
 
-		template <class Value, class MappedValue>
-		void makeExpression(Expression* expression, INI::RawFilters<Value> rawFilters, std::function<std::optional<MappedValue>(Value*)> mapper)
+		template <typename MappedValue>
+		void makeExpression(Expression& expression, const INI::RawFilters& rawFilters, std::function<std::optional<MappedValue>(FilterValue&)> mapper)
 		{
 			for (auto& rawExpression : rawFilters) {
 				for (auto& rawValue : rawExpression) {
 					if (std::optional<MappedValue> res = mapper(rawValue.value.get())) {
 						auto value = res.value();
 						if (rawValue.negated) {
-							expression->emplace_back(NegatedFilter<MappedValue>(value));
+							expression.emplace_back(NegatedFilter<MappedValue>(value));
 						} else {
-							expression->emplace_back(FilterEntry<MappedValue>(value));
+							expression.emplace_back(FilterEntry<MappedValue>(value));
 						}
 					}
 				}
 			}
 		}
 
-		template <class Value>
-		void makeExpression(Expression* expression, INI::RawFilters<Value> rawFilters)
+	    template <typename T>
+		struct is_filter_value
 		{
-			makeExpression<Value, Value>(expression, rawFilters, [](const Value* value) { return *value; });
+			static constexpr bool value = std::is_base_of_v<FilterValue, T>;
+		};
+
+		template <typename MappedValue, typename = std::enable_if_t<is_filter_value<MappedValue>::value>>
+        void makeExpression(Expression& expression, const INI::RawFilters& rawFilters)
+		{
+			makeExpression<FilterValue>(expression, rawFilters, [](const FilterValue* value) { return *value; });
 		}
 	}
 
@@ -269,11 +275,11 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		OrExpression formsExpr{ };
 		OrExpression stringsExpr{ };
 
-		detail::makeExpression<Trait>(&traitsExpr, traits);
-		detail::makeExpression<LevelRange>(&levelsExpr, level);
-		detail::makeExpression<StringValue>(&stringsExpr, strings);
-		detail::makeExpression<FormOrEditorID, FormOrMod>(&formsExpr, filterIDs, [&](FormOrEditorID* formOrEditorID) -> std::optional<FormOrMod> {
-			if (const auto formModPair(std::get_if<FormModPair>(formOrEditorID)); formModPair) {
+		detail::makeExpression<Trait>(traitsExpr, traits);
+		detail::makeExpression<LevelRange>(levelsExpr, level);
+		detail::makeExpression<StringValue>(stringsExpr, strings);
+		detail::makeExpression<FormOrEditorID, FormOrMod>(formsExpr, filterIDs, [&](FormOrEditorID formOrEditorID) -> std::optional<FormOrMod> {
+			if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 				auto& [formID, modName] = *formModPair;
 				if (g_mergeMapperInterface) {
 					detail::get_merged_IDs(formID, modName);
@@ -300,8 +306,8 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 						buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", path, *formID, modName.value_or(""));
 					}
 				}
-			} else if (std::holds_alternative<std::string>(*formOrEditorID)) {
-				if (auto editorID = std::get<std::string>(*formOrEditorID); !editorID.empty()) {
+			} else if (std::holds_alternative<std::string>(formOrEditorID)) {
+				if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
 					if (auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
 						const auto formType = filterForm->GetFormType();
 						if (Cache::FormType::GetWhitelisted(formType)) {
