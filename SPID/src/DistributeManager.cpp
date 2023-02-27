@@ -72,7 +72,7 @@ namespace Distribute
 	void SetupDistribution()
 	{
 		// Create tag keywords
-	    if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
+		if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
 			if (processed = factory->Create(); processed) {
 				processed->formEditorID = processed_EDID;
 			}
