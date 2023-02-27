@@ -3,6 +3,16 @@
 
 namespace Filter
 {
+	Data::Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, Chance a_chance) :
+		strings(std::move(a_strings)),
+		forms(std::move(a_formFilters)),
+		level(std::move(a_level)),
+		traits(a_traits),
+		chance(a_chance)
+	{
+		hasLeveledFilters = HasLevelFiltersImpl();
+	}
+
 	Result Data::passed_string_filters(const NPCData& a_npcData) const
 	{
 		if (!strings.ALL.empty() && !a_npcData.HasStringFilter(strings.ALL, true)) {
@@ -41,7 +51,7 @@ namespace Filter
 		return Result::kPass;
 	}
 
-	Result Data::passed_secondary_filters(const NPCData& a_npcData) const
+	Result Data::passed_level_filters(const NPC::Data& a_npcData) const
 	{
 		// Actor Level
 		auto& [actorMin, actorMax] = std::get<0>(level);
@@ -83,7 +93,8 @@ namespace Filter
 			for (auto& [skillType, skill] : std::get<2>(level)) {
 				auto& [skillMin, skillMax] = skill;
 
-				std::uint8_t skillWeight = skillWeights.oneHanded;
+				std::uint8_t skillWeight;
+
 				using Skill = RE::TESNPC::Skills;
 				switch (skillType) {
 				case Skill::kOneHanded:
@@ -156,6 +167,11 @@ namespace Filter
 			}
 		}
 
+		return Result::kPass;
+	}
+
+	Result Data::passed_trait_filters(const NPCData& a_npcData) const
+	{
 		// Traits
 		if (traits.sex && a_npcData.GetSex() != *traits.sex) {
 			return Result::kFail;
@@ -175,6 +191,11 @@ namespace Filter
 
 	bool Data::HasLevelFilters() const
 	{
+		return hasLeveledFilters;
+	}
+
+	bool Data::HasLevelFiltersImpl() const
+	{
 		const auto& [actorLevelPair, skillLevelPairs, _] = level;
 
 		auto& [actorMin, actorMax] = actorLevelPair;
@@ -190,7 +211,7 @@ namespace Filter
 		});
 	}
 
-	Result Data::PassedFilters(const NPCData& a_npcData, bool a_noPlayerLevelDistribution) const
+	Result Data::PassedFilters(const NPCData& a_npcData) const
 	{
 		// Fail chance first to avoid running unnecessary checks
 		if (chance < 100) {
@@ -208,10 +229,10 @@ namespace Filter
 			return Result::kFail;
 		}
 
-		if (a_noPlayerLevelDistribution && HasLevelFilters() && a_npcData.GetNPC()->HasPCLevelMult()) {
+		if (passed_level_filters(a_npcData) == Result::kFail) {
 			return Result::kFail;
 		}
 
-		return passed_secondary_filters(a_npcData);
+		return passed_trait_filters(a_npcData);
 	}
 }

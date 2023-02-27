@@ -2,25 +2,18 @@
 
 namespace Distribute
 {
-	inline bool shouldDistribute{ false };
-	inline bool loggedStats{ false };
+	inline constexpr std::string_view processed_EDID{ "SPID_Processed" };
+	inline RE::BGSKeyword*            processed{ nullptr };
+
+	inline constexpr std::string_view processedOutfit_EDID{ "SPID_ProcessedOutfit" };
+	inline RE::BGSKeyword*            processedOutfit{ nullptr };
 
 	namespace detail
 	{
-		bool uses_template(const RE::TESNPC* a_npc);
+		bool should_process_NPC(RE::TESNPC* a_npc);
 	}
 
 	namespace Actor
-	{
-		inline std::once_flag lookupForms;
-
-		inline std::uint64_t timeTaken{ 0 };
-		inline std::uint32_t totalNPCs{ 0 };
-
-		void Install();
-	}
-
-	namespace LeveledActor
 	{
 		void Install();
 	}
@@ -56,8 +49,5 @@ namespace Distribute
 		};
 	}
 
-	// Distribute to all unique and static NPCs, after data load
-	void OnInit();
-
-	void LogStats();
+	void SetupDistribution();
 }

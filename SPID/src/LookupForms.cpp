@@ -2,7 +2,7 @@
 #include "FormData.h"
 #include "KeywordDependencies.h"
 
-bool Lookup::GetForms()
+bool Lookup::LookupForms()
 {
 	using namespace Forms;
 
@@ -70,4 +70,22 @@ void Lookup::LogFormLookup()
 
 	// Clear logger's buffer to free some memory :)
 	buffered_logger::clear();
+}
+
+bool Lookup::DoFormLookup()
+{
+	logger::info("{:*^50}", "LOOKUP");
+
+	const auto startTime = std::chrono::steady_clock::now();
+	const bool success = LookupForms();
+	const auto endTime = std::chrono::steady_clock::now();
+
+	if (success) {
+		LogFormLookup();
+
+		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+		logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
+	}
+
+	return success;
 }

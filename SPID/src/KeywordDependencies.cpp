@@ -5,7 +5,7 @@
 struct DependencyNode
 {
 private:
-	RE::BGSKeyword* value;
+	RE::BGSKeyword*                                      value;
 	std::unordered_map<RE::BGSKeyword*, DependencyNode*> children{};
 
 public:
@@ -122,7 +122,7 @@ void Dependencies::ResolveKeywords()
 	// Pre-build a map of all available keywords by names.
 	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
 
-	auto& keywordForms = Forms::keywords.GetForms();
+	auto&          keywordForms = Forms::keywords.GetForms();
 	const std::set distrKeywords(keywordForms.begin(), keywordForms.end());
 
 	const auto dataHandler = RE::TESDataHandler::GetSingleton();
@@ -132,8 +132,8 @@ void Dependencies::ResolveKeywords()
 				allKeywords[edid] = kwd;
 			} else {
 				if (const auto file = kwd->GetFile(0)) {
-					const auto modname = file->GetFilename();
-					const auto formID = kwd->GetLocalFormID();
+					const auto  modname = file->GetFilename();
+					const auto  formID = kwd->GetLocalFormID();
 					std::string mergeDetails;
 					if (g_mergeMapperInterface && g_mergeMapperInterface->isMerge(modname.data())) {
 						const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetOriginalFormID(

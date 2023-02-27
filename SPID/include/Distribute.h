@@ -10,25 +10,29 @@ namespace Distribute
 	{
 		template <class Form>
 		bool passed_filters(
-			const NPCData& a_npcData,
+			const NPCData&            a_npcData,
 			const PCLevelMult::Input& a_input,
-			const Forms::Data<Form>& a_formData,
-			std::uint32_t idx)
+			const Forms::Data<Form>&  a_formData)
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 
-			auto distributedFormID = a_formData.form->GetFormID();
-			if (pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
+			const auto hasLevelFilters = a_formData.filters.HasLevelFilters();
+			const auto distributedFormID = a_formData.form->GetFormID();
+			const auto index = a_formData.index;
+
+			if (hasLevelFilters && pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, index)) {
 				return false;
 			}
 
-			auto result = a_formData.filters.PassedFilters(a_npcData, a_input.noPlayerLevelDistribution);
+			auto result = a_formData.filters.PassedFilters(a_npcData);
+
 			if (result != Filter::Result::kPass) {
-				if (result == Filter::Result::kFailRNG) {
-					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
+				if (result == Filter::Result::kFailRNG && hasLevelFilters) {
+					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, index);
 				}
 				return false;
 			}
+
 			return true;
 		}
 
@@ -44,7 +48,7 @@ namespace Distribute
 				return actorEffects && actorEffects->GetIndex(a_form).has_value();
 			} else if constexpr (std::is_same_v<RE::TESForm, Form>) {
 				if (a_form->Is(RE::TESPackage::FORMTYPE)) {
-					auto package = a_form->As<RE::TESPackage>();
+					auto  package = a_form->As<RE::TESPackage>();
 					auto& packageList = a_npc->aiPackages.packages;
 					return std::ranges::find(packageList, package) != packageList.end();
 				} else {
@@ -60,17 +64,15 @@ namespace Distribute
 	// for now, only packages/death items use this
 	template <class Form>
 	void for_each_form(
-		const NPCData& a_npcData,
-		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input& a_input,
+		const NPCData&                         a_npcData,
+		Forms::Distributables<Form>&           a_distributables,
+		const PCLevelMult::Input&              a_input,
 		std::function<bool(Form*, IdxOrCount)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
-		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
-			++vecIdx;
-			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
+			if (detail::passed_filters(a_npcData, a_input, formData)) {
 				a_callback(formData.form, formData.idxOrCount);
 			}
 		}
@@ -80,18 +82,17 @@ namespace Distribute
 	// overridable forms
 	template <class Form>
 	void for_each_form(
-		const NPCData& a_npcData,
+		const NPCData&               a_npcData,
 		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input& a_input,
-		std::function<bool(Form*)> a_callback)
+		const PCLevelMult::Input&    a_input,
+		std::function<bool(Form*)>   a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
-		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
-			++vecIdx;
-			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
-				if (auto form = formData.form; a_callback(form)) {
+			if (detail::passed_filters(a_npcData, a_input, formData)) {
+				auto form = formData.form;
+				if (a_callback(form)) {
 					break;
 				}
 			}
@@ -101,12 +102,12 @@ namespace Distribute
 	// items
 	template <class Form>
 	void for_each_form(
-		const NPCData& a_npcData,
-		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input& a_input,
+		const NPCData&                                    a_npcData,
+		Forms::Distributables<Form>&                      a_distributables,
+		const PCLevelMult::Input&                         a_input,
 		std::function<bool(std::map<Form*, IdxOrCount>&)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		if (vec.empty()) {
 			return;
@@ -114,10 +115,8 @@ namespace Distribute
 
 		std::map<Form*, IdxOrCount> collectedForms{};
 
-		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
-			++vecIdx;
-			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
+			if (detail::passed_filters(a_npcData, a_input, formData)) {
 				collectedForms.emplace(formData.form, formData.idxOrCount);
 			}
 		}
@@ -131,12 +130,12 @@ namespace Distribute
 	// forms that can be added to
 	template <class Form>
 	void for_each_form(
-		NPCData& a_npcData,
-		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input& a_input,
+		NPCData&                                       a_npcData,
+		Forms::Distributables<Form>&                   a_distributables,
+		const PCLevelMult::Input&                      a_input,
 		std::function<void(const std::vector<Form*>&)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries, a_input.noPlayerLevelDistribution);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		if (vec.empty()) {
 			return;
@@ -145,35 +144,42 @@ namespace Distribute
 		const auto npc = a_npcData.GetNPC();
 
 		std::vector<Form*> collectedForms{};
+		Set<RE::FormID>    collectedFormIDs{};
+		Set<RE::FormID>    collectedLeveledFormIDs{};
+
 		collectedForms.reserve(vec.size());
-
-		Set<RE::FormID> collectedFormIDs{};
 		collectedFormIDs.reserve(vec.size());
+		collectedLeveledFormIDs.reserve(vec.size());
 
-		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
-			++vecIdx;
 			auto form = formData.form;
 			auto formID = form->GetFormID();
 			if (collectedFormIDs.contains(formID)) {
 				continue;
 			}
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
+				if (detail::passed_filters(a_npcData, a_input, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
+					if (formData.filters.HasLevelFilters()) {
+						collectedLeveledFormIDs.emplace(formID);
+					}
 				}
 			} else {
-				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+				if (detail::passed_filters(a_npcData, a_input, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
+					if (formData.filters.HasLevelFilters()) {
+						collectedLeveledFormIDs.emplace(formID);
+					}
 				}
 			}
 		}
 
 		if (!collectedForms.empty()) {
 			a_callback(collectedForms);
-
-			PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedFormIDs);
+			if (!collectedLeveledFormIDs.empty()) {
+				PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedLeveledFormIDs);
+			}
 		}
 	}
 

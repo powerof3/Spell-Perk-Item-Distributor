@@ -46,7 +46,7 @@ namespace INI
 		{
 			Data data{};
 
-			auto sanitized_value = sanitize(a_value);
+			auto       sanitized_value = sanitize(a_value);
 			const auto sections = string::split(sanitized_value, "|");
 
 			const auto size = sections.size();
@@ -100,7 +100,7 @@ namespace INI
 			}
 
 			//LEVEL
-			ActorLevel actorLevelPair{ UINT16_MAX, UINT16_MAX };
+			ActorLevel              actorLevelPair{ UINT16_MAX, UINT16_MAX };
 			std::vector<SkillLevel> skillLevelPairs;
 			std::vector<SkillLevel> skillWeightPairs;
 			if (kLevel < size) {
@@ -109,7 +109,7 @@ namespace INI
 					if (levels.contains('(')) {
 						//skill(min/max)
 						const auto isWeightFilter = levels.starts_with('w');
-						auto sanitizedLevel = string::remove_non_alphanumeric(levels);
+						auto       sanitizedLevel = string::remove_non_alphanumeric(levels);
 						if (isWeightFilter) {
 							sanitizedLevel.erase(0, 1);
 						}

@@ -1,4 +1,5 @@
 #include "Distribute.h"
+#include "DistributeManager.h"
 
 namespace Distribute
 {
@@ -9,6 +10,7 @@ namespace Distribute
 		}
 
 		const auto npc = a_npcData.GetNPC();
+		const auto actor = a_npcData.GetActor();
 
 		for_each_form<RE::BGSKeyword>(a_npcData, Forms::keywords, a_input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
 			npc->AddKeywords(a_keywords);
@@ -42,11 +44,15 @@ namespace Distribute
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (npc->defaultOutfit != a_outfit) {
-				npc->defaultOutfit = a_outfit;
+			if (actor->SetDefaultOutfit(a_outfit, false)) {
+				npc->AddKeyword(processedOutfit);
 				return true;
 			}
 			return false;
+		});
+
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {
+			return actor->SetSleepOutfit(a_outfit, false);
 		});
 
 		for_each_form<RE::TESForm>(a_npcData, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
@@ -103,14 +109,6 @@ namespace Distribute
 				return true;
 			}
 
-			return false;
-		});
-
-		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {
-			if (npc->sleepOutfit != a_outfit) {
-				npc->sleepOutfit = a_outfit;
-				return true;
-			}
 			return false;
 		});
 

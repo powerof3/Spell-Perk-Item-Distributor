@@ -90,10 +90,11 @@ namespace Forms
 	template <class Form>
 	struct Data
 	{
-		Form* form{ nullptr };
-		IdxOrCount idxOrCount{ 1 };
-		FilterData filters{};
-		std::string path{};
+		std::uint32_t index{ 0 };
+		Form*         form{ nullptr };
+		IdxOrCount    idxOrCount{ 1 };
+		FilterData    filters{};
+		std::string   path{};
 
 		bool operator<(const Data& a_rhs) const
 		{
@@ -124,8 +125,8 @@ namespace Forms
 		std::size_t GetSize();
 		std::size_t GetLeveledSize();
 
-		const DataVec<Form>& GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution);
-		DataVec<Form>& GetForms();
+		const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
+		DataVec<Form>&       GetForms();
 
 		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
 
@@ -135,21 +136,20 @@ namespace Forms
 	private:
 		DataVec<Form> forms{};
 		DataVec<Form> formsWithLevels{};
-		DataVec<Form> formsNoLevels{};
 	};
 
-	inline Distributables<RE::SpellItem> spells;
-	inline Distributables<RE::BGSPerk> perks;
+	inline Distributables<RE::SpellItem>      spells;
+	inline Distributables<RE::BGSPerk>        perks;
 	inline Distributables<RE::TESBoundObject> items;
-	inline Distributables<RE::TESShout> shouts;
-	inline Distributables<RE::TESLevSpell> levSpells;
-	inline Distributables<RE::TESForm> packages;
-	inline Distributables<RE::BGSOutfit> outfits;
-	inline Distributables<RE::BGSKeyword> keywords;
+	inline Distributables<RE::TESShout>       shouts;
+	inline Distributables<RE::TESLevSpell>    levSpells;
+	inline Distributables<RE::TESForm>        packages;
+	inline Distributables<RE::BGSOutfit>      outfits;
+	inline Distributables<RE::BGSKeyword>     keywords;
 	inline Distributables<RE::TESBoundObject> deathItems;
-	inline Distributables<RE::TESFaction> factions;
-	inline Distributables<RE::BGSOutfit> sleepOutfits;
-	inline Distributables<RE::TESObjectARMO> skins;
+	inline Distributables<RE::TESFaction>     factions;
+	inline Distributables<RE::BGSOutfit>      sleepOutfits;
+	inline Distributables<RE::TESObjectARMO>  skins;
 
 	std::size_t GetTotalEntries();
 	std::size_t GetTotalLeveledEntries();
@@ -180,13 +180,10 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms()
 }
 
 template <class Form>
-const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution)
+const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries)
 {
 	if (a_onlyLevelEntries) {
 		return formsWithLevels;
-	}
-	if (a_noLevelDistribution) {
-		return formsNoLevels;
 	}
 	return forms;
 }
@@ -201,6 +198,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 	logger::info("\tStarting {} lookup", a_type);
 
 	forms.reserve(a_INIDataVec.size());
+	std::uint32_t index = 0;
 
 	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 		Form* form = nullptr;
@@ -306,7 +304,8 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		forms.emplace_back(Data<Form>{ form, idxOrCount, FilterData{ strings, filterForms, level, traits, chance }, path });
+		forms.emplace_back(Data<Form>{ index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path });
+		index++;
 	}
 }
 
@@ -343,11 +342,5 @@ void Forms::Distributables<Form>::FinishLookupForms()
 
 	std::copy_if(forms.begin(), forms.end(),
 		std::back_inserter(formsWithLevels),
-		[](const auto& formData) { return formData.filters.HasLevelFilters(); });
-
-	formsNoLevels.reserve(forms.size());
-
-	std::remove_copy_if(forms.begin(), forms.end(),
-		std::back_inserter(formsNoLevels),
 		[](const auto& formData) { return formData.filters.HasLevelFilters(); });
 }
