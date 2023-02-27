@@ -6,11 +6,11 @@ namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc)
 	{
-		if (a_npc->HasKeyword(processedKeyword)) {
+		if (a_npc->HasKeyword(processed)) {
 			return false;
 		}
 
-		a_npc->AddKeyword(processedKeyword);
+		a_npc->AddKeyword(processed);
 
 		return true;
 	}
@@ -36,16 +36,21 @@ namespace Distribute
 			static inline constexpr std::size_t size{ 0x6D };
 		};
 
-		// Unbake outfits
+		// Post distribution
 		struct InitLoadGame
 		{
-			static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
+			static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
 			{
 				func(a_this, a_buf);
 
-				// Outfits
-				if (const auto npc = a_this->GetActorBase(); npc && npc->HasKeyword(processedKeyword)) {
-					if (!a_this->HasOutfitItems(npc->defaultOutfit)) {
+				if (const auto npc = a_this->GetActorBase()) {
+					// some npcs are completely reset upon loading
+					if (a_this->Is3DLoaded() && detail::should_process_NPC(npc)) {
+						if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
+							Distribute(*npcData, PCLevelMult::Input{ a_this, npc, false });
+						}
+					}
+					if (npc->HasKeyword(processedOutfit) && !a_this->HasOutfitItems(npc->defaultOutfit)) {
 						a_this->InitInventoryIfRequired();
 						a_this->AddWornOutfit(npc->defaultOutfit, false);
 					}
@@ -60,16 +65,20 @@ namespace Distribute
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			//stl::write_vfunc<RE::Character, InitLoadGame>();
+			stl::write_vfunc<RE::Character, InitLoadGame>();
 		}
 	}
 
 	void SetupDistribution()
 	{
-		const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-		if (const auto keyword = factory ? factory->Create() : nullptr) {
-			keyword->formEditorID = processedKeywordEDID;
-			processedKeyword = keyword;
+		// Create tag keywords
+	    if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
+			if (processed = factory->Create(); processed) {
+				processed->formEditorID = processed_EDID;
+			}
+			if (processedOutfit = factory->Create(); processedOutfit) {
+				processedOutfit->formEditorID = processedOutfit_EDID;
+			}
 		}
 
 		if (Forms::GetTotalLeveledEntries() > 0) {

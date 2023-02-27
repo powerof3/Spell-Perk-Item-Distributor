@@ -1,4 +1,5 @@
 #include "Distribute.h"
+#include "DistributeManager.h"
 
 namespace Distribute
 {
@@ -43,7 +44,11 @@ namespace Distribute
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			return actor->SetDefaultOutfit(a_outfit, false);
+			if (actor->SetDefaultOutfit(a_outfit, false)) {
+				npc->AddKeyword(processedOutfit);
+				return true;
+			}
+			return false;
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {

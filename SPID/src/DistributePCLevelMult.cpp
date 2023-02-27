@@ -9,7 +9,7 @@ namespace Distribute::PlayerLeveledActor
 	{
 		static void thunk(RE::Actor* a_actor)
 		{
-			if (const auto npc = a_actor->GetActorBase(); npc && npc->HasKeyword(processedKeyword)) {
+			if (const auto npc = a_actor->GetActorBase(); npc && npc->HasKeyword(processed)) {
 				const auto npcData = std::make_unique<NPCData>(a_actor, npc);
 				Distribute(*npcData, PCLevelMult::Input{ a_actor, npc, true });
 			}
@@ -22,11 +22,11 @@ namespace Distribute::PlayerLeveledActor
 	// Reset previous save/character dist. entries
 	struct Revert
 	{
-		static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
+		static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
 		{
 			func(a_this, a_buf);
 
-			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult() && npc->HasKeyword(processedKeyword)) {
+			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult() && npc->HasKeyword(processed)) {
 				const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 
 				auto input = PCLevelMult::Input{ a_this, npc, true };
@@ -89,9 +89,9 @@ namespace Distribute::PlayerLeveledActor
 	// Re-add dist entries if level is valid
 	struct LoadGame
 	{
-		static void thunk(RE::Character* a_this, std::uintptr_t a_buf)
+		static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
 		{
-			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult() && npc->HasKeyword(processedKeyword)) {
+			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult() && npc->HasKeyword(processed)) {
 				const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
 				const auto input = PCLevelMult::Input{ a_this, npc, true };
 

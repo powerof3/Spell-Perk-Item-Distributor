@@ -43,8 +43,7 @@ namespace PCLevelMult
 		if (const auto idIt = _cache.find(a_input.playerID); idIt != _cache.end()) {
 			auto& npcFormIDMap = idIt->second;
 			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
-				auto& [levelCapState, levelMap] = npcIt->second;
-				for (const auto& [level, cachedData] : levelMap) {
+				for (const auto& [level, cachedData] : npcIt->second.entries) {
 					if (a_input.npcLevel >= level) {
 						if (const auto formIt = cachedData.rejectedEntries.find(a_distributedFormID); formIt != cachedData.rejectedEntries.end()) {
 							return formIt->second.contains(a_formDataIndex);
