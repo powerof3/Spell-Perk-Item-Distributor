@@ -113,22 +113,22 @@
   ],
   "buildPresets": [
     {
-      "name": "ae",
+      "name": "vs2022-windows-vcpkg-ae",
       "configurePreset": "vs2022-windows-vcpkg-ae",
       "configuration": "Release"
     },
     {
-      "name": "se",
+      "name": "vs2022-windows-vcpkg-se",
       "configurePreset": "vs2022-windows-vcpkg-se",
       "configuration": "Release"
     },
     {
-      "name": "vs2022-vr",
+      "name": "vs2022-windows-vcpkg-vr",
       "configurePreset": "vs2022-windows-vcpkg-vr",
       "configuration": "Release"
     },
     {
-      "name": "vs2019-vr",
+      "name": "vs2019-windows-vcpkg-vr",
       "configurePreset": "vs2019-windows-vcpkg-vr",
       "configuration": "Release"
     }
