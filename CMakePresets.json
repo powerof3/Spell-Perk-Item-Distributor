@@ -38,12 +38,6 @@
       }
     },
     {
-      "name": "vs2019",
-      "hidden": true,
-      "generator": "Visual Studio 16 2019",
-      "toolset": "v143"
-    },
-    {
       "name": "vs2022",
       "hidden": true,
       "generator": "Visual Studio 17 2022",
@@ -52,12 +46,12 @@
     {
       "name": "se",
       "hidden": true,
-      "binaryDir": "${sourceDir}/build/se"
+      "binaryDir": "${sourceDir}/build"
     },
     {
       "name": "ae",
       "hidden": true,
-      "binaryDir": "${sourceDir}/build/ae",
+      "binaryDir": "${sourceDir}/buildae",
       "cacheVariables": {
         "BUILD_SKYRIMAE": true
       }
@@ -65,7 +59,7 @@
     {
       "name": "vr",
       "hidden": true,
-      "binaryDir": "${sourceDir}/build/vr",
+      "binaryDir": "${sourceDir}/buildvr",
       "cacheVariables": {
         "BUILD_SKYRIMVR": true
       }
@@ -75,8 +69,8 @@
       "inherits": [
         "cmake-dev",
         "vcpkg",
-        "vs2022",
         "windows",
+        "vs2022",
         "se"
       ]
     },
@@ -99,16 +93,6 @@
         "vs2022",
         "vr"
       ]
-    },
-    {
-      "name": "vs2019-windows-vcpkg-vr",
-      "inherits": [
-        "cmake-dev",
-        "vcpkg",
-        "windows",
-        "vs2019",
-        "vr"
-      ]
     }
   ],
   "buildPresets": [
@@ -125,11 +109,6 @@
     {
       "name": "vs2022-windows-vcpkg-vr",
       "configurePreset": "vs2022-windows-vcpkg-vr",
-      "configuration": "Release"
-    },
-    {
-      "name": "vs2019-windows-vcpkg-vr",
-      "configurePreset": "vs2019-windows-vcpkg-vr",
       "configuration": "Release"
     }
   ]
