@@ -9,7 +9,6 @@
     "clib-util",
     "mergemapper",
     "rsm-binary-io",
-    "simpleini",
     "srell",
     "spdlog",
     "unordered-dense",

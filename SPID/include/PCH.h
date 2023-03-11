@@ -11,9 +11,9 @@
 
 #include <ClibUtil/distribution.hpp>
 #include <ClibUtil/rng.hpp>
+#include <ClibUtil/simpleINI.hpp>
 #include <ClibUtil/string.hpp>
 #include <MergeMapperPluginAPI.h>
-#include <SimpleIni.h>
 #include <ankerl/unordered_dense.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
