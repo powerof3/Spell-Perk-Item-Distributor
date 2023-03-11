@@ -51,7 +51,7 @@ namespace Distribute
 						}
 					}
 					if (npc->HasKeyword(processedOutfit) && !a_this->HasOutfitItems(npc->defaultOutfit)) {
-					    a_this->InitInventoryIfRequired();
+						a_this->InitInventoryIfRequired();
 						detail::equip_worn_outfit(a_this, npc->defaultOutfit);
 					}
 				}

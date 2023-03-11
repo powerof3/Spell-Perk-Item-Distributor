@@ -30,7 +30,7 @@ namespace Distribute
 		}
 	}
 
-    void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
+	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
 			return;
@@ -71,18 +71,18 @@ namespace Distribute
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-		    if (!npc->HasKeyword(processedOutfit)) {
+			if (!npc->HasKeyword(processedOutfit)) {
 				if (npc->defaultOutfit == a_outfit) {
 					return false;
 				}
-		        actor->RemoveOutfitItems(npc->defaultOutfit);
+				actor->RemoveOutfitItems(npc->defaultOutfit);
 
-		        npc->defaultOutfit = a_outfit;
+				npc->defaultOutfit = a_outfit;
 
-		        actor->InitInventoryIfRequired();
+				actor->InitInventoryIfRequired();
 				detail::equip_worn_outfit(actor, a_outfit);
 
-			    npc->AddKeyword(processedOutfit);
+				npc->AddKeyword(processedOutfit);
 				return true;
 			}
 			return false;
