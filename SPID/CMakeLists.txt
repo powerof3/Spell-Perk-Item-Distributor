@@ -135,7 +135,6 @@ endif()
 
 find_package(unordered_dense CONFIG REQUIRED)
 
-find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 find_path(SRELL_INCLUDE_DIRS "srell.hpp")
 find_path(MERGEMAPPER_INCLUDE_DIRS "MergeMapperPluginAPI.h")
 find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
@@ -191,7 +190,6 @@ target_include_directories(
 	PRIVATE
 		${CMAKE_CURRENT_BINARY_DIR}/include
 		${CMAKE_CURRENT_SOURCE_DIR}/include
-		${SIMPLEINI_INCLUDE_DIRS}
 		${SRELL_INCLUDE_DIRS}
 		${MERGEMAPPER_INCLUDE_DIRS}
 		${CLIB_UTIL_INCLUDE_DIRS}

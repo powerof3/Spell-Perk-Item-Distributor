@@ -58,6 +58,8 @@ namespace Distribute
 				return false;
 			}
 		}
+
+		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit);
 	}
 
 	// old method (distributing one by one)

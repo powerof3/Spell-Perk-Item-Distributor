@@ -3,6 +3,33 @@
 
 namespace Distribute
 {
+	namespace detail
+	{
+		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
+		{
+			if (!actor || !a_outfit) {
+				return;
+			}
+
+			if (const auto invChanges = actor->GetInventoryChanges(false)) {
+				if (const auto entryLists = invChanges->entryList) {
+					const auto formID = a_outfit->GetFormID();
+
+					for (const auto& entryList : *entryLists) {
+						if (entryList && entryList->object && entryList->extraLists) {
+							for (const auto& xList : *entryList->extraLists) {
+								const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+								if (outfitItem && outfitItem->id == formID) {
+									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true, true);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
@@ -44,7 +71,17 @@ namespace Distribute
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (actor->SetDefaultOutfit(a_outfit, false)) {
+			if (!npc->HasKeyword(processedOutfit)) {
+				if (npc->defaultOutfit == a_outfit) {
+					return false;
+				}
+				actor->RemoveOutfitItems(npc->defaultOutfit);
+
+				npc->defaultOutfit = a_outfit;
+
+				actor->InitInventoryIfRequired();
+				detail::equip_worn_outfit(actor, a_outfit);
+
 				npc->AddKeyword(processedOutfit);
 				return true;
 			}
@@ -52,7 +89,11 @@ namespace Distribute
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {
-			return actor->SetSleepOutfit(a_outfit, false);
+			if (npc->sleepOutfit != a_outfit) {
+				npc->sleepOutfit = a_outfit;
+				return true;
+			}
+			return false;
 		});
 
 		for_each_form<RE::TESForm>(a_npcData, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {

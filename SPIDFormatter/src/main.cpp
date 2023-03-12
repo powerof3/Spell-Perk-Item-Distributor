@@ -2,26 +2,21 @@
 
 bool INI::Format(TYPE a_type)
 {
-	std::vector<std::string> configs;
-
-	for (const auto& entry : std::filesystem::directory_iterator("./")) {
-		if (entry.exists() && !entry.path().empty() && entry.path().extension() == ".ini") {
-			if (const auto path = entry.path().string(); path.rfind("_DISTR") != std::string::npos) {
-				configs.push_back(path);
-			}
-		}
-	}
+	std::vector<std::string> configs = clib_util::distribution::get_configs("./", "_DISTR");
 
 	if (configs.empty()) {
 		std::cout << "\nUnable to find _DISTR files in the current directory. Make sure you're running this from the Skyrim Data folder!\n";
 		return false;
 	}
 
-	auto size = configs.size();
-	a_type == INI::kUpgrade ? std ::cout << "\nUpgrading " << size << " INI files...\n\n" : std ::cout << "\nDowngrading " << size << " INI files...\n\n";
+	const auto size = configs.size();
+
+	a_type == INI::kUpgrade ?
+        std ::cout << "\nUpgrading " << size << " INI files...\n\n" :
+        std ::cout << "\nDowngrading " << size << " INI files...\n\n";
 
 	for (auto& path : configs) {
-		detail::replace_first_instance(path, "./", "");
+		clib_util::string::replace_first_instance(path, "./", "");
 		std::cout << "ini : " << path << "\n";
 
 		CSimpleIniA ini;
