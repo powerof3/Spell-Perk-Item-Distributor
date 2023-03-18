@@ -43,8 +43,8 @@ namespace INI
 
 	struct RawFilterValue
 	{
-		std::unique_ptr<const Filter::FilterValue> value;
-		bool                                       negated;
+		const Filter::FilterValue* value;
+		bool                       negated;
 
 		RawFilterValue(const Filter::FilterValue* val, bool isNegated) :
 			value(val), negated(isNegated) {}

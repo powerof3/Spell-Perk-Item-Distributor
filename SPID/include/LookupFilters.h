@@ -19,6 +19,8 @@ namespace Filter
 	struct FilterValue
 	{
 		virtual ~FilterValue() = default;
+	protected:
+		FilterValue() = default;
 	};
 
 	template<typename FormIDType>
@@ -27,9 +29,6 @@ namespace Filter
 		FormIDType form;
 
 		FormFilterValue(const FormIDType& form) :
-			form(form) {}
-
-		FormFilterValue(const FormIDType form) :
 			form(form) {}
     };
 
@@ -446,10 +445,9 @@ namespace Filter
 			if (std::holds_alternative<RE::TESForm*>(filter)) {
 				if (const auto form = std::get<RE::TESForm*>(filter); form) {
 					if (const std::string& edid = form->GetFormEditorID(); !edid.empty()) {
-						os << "~" << edid;
+						os << edid;
 					} else {
-						os << "~"
-						   << std::setfill('0')
+						os << std::setfill('0')
 						   << std::setw(sizeof(RE::FormID) * 2)
 						   << std::uppercase
 						   << std::hex
@@ -458,8 +456,7 @@ namespace Filter
 				}
 			} else if (std::holds_alternative<const RE::TESFile*>(filter)) {
 				if (const auto file = std::get<const RE::TESFile*>(filter); file) {
-					os << "~"
-					   << file->fileName;
+					os << file->fileName;
 				}
 			}
 			return os;
@@ -577,7 +574,7 @@ namespace Filter
 
 	    virtual std::ostringstream& describe(std::ostringstream& os) const = 0;
 
-		virtual std::size_t GetSize() const
+        [[nodiscard]] virtual std::size_t GetSize() const
 		{
 			return 1;
 		}
@@ -613,6 +610,7 @@ namespace Filter
 		}
 	};
 
+	// TODO: Make this a general NegatedEvaluatable, so that it supports negating all kinds of evaluatables.
 	/// NegatedFilter is a filter that always inverts the result of evaluation.
 	/// It corresponds to `-` prefix in a config file (e.g. "-ActorTypeNPC")
 	template <typename FilterType>
@@ -727,18 +725,16 @@ namespace Filter
             const auto end = entries.end();
 			const bool isComposite = GetSize() > 1;
 
+			if (isComposite)
+				os << "(";
 			if (begin != end) {
-				if (isComposite)
-					os << "(";
 				(*begin++)->describe(os);
-				if (isComposite)
-					os << ")";
 				for (; begin != end; ++begin) {
-					os << separator << "(";
 					(*begin)->describe(os);
-					os << ")";
 				}
 			}
+			if (isComposite)
+				os << ")";
 			return os;
 		}
 	};

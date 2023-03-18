@@ -101,7 +101,7 @@ namespace INI
 			//FILTER FORMS
 			if (kFilterIDs < size) {
 				parse_filters(sections[kFilterIDs], data.idFilters, [](const std::string& entry_str) {
-					return new FormFilterValue<FormOrEditorID>(distribution::get_record(entry_str));
+						return new FormFilterValue<FormOrEditorID>(distribution::get_record(entry_str));
 				});
 			}
 
@@ -123,6 +123,7 @@ namespace INI
 					kTotal
 
 				};
+
 				parse_filters(sections[kLevel], data.levelFilters, [&](const std::string& entry_str)-> LevelRange* {
 					std::smatch matches;
 					if (!entry_str.empty() && std::regex_search(entry_str, matches, regex) && matches.size() >= kTotal) {
@@ -230,7 +231,7 @@ namespace INI
 			CSimpleIniA ini;
 			ini.SetUnicode();
 			ini.SetMultiKey();
-
+			
 			if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
 				logger::error("\t\tcouldn't read INI");
 				continue;
