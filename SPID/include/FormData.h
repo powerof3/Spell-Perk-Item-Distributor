@@ -240,7 +240,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		}
 
 		// ----------------- Map Form Filters expressions ----------------
-		filterIDs->map<SPID::UnknownFormIDFilter, SPID::FormFilter>([&](SPID::UnknownFormIDFilter* const filter) -> SPID::FormFilter* {
+		filterIDs->map<SPID::UnknownFormIDFilter, SPID::FormFilter>([&](SPID::UnknownFormIDFilter* filter) -> SPID::FormFilter* {
 			auto& formOrEditorID = filter->value;
 			if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 				auto& [formID, modName] = *formModPair;
@@ -250,7 +250,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 				if (modName && !formID) {
 					if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
 						buffered_logger::info("\t\t\t[{}] Filter ({}) INFO - mod found", path, filterMod->fileName);
-						return new SPID::FormFilter(filterMod);
+						return new SPID::FormFilter(FormOrMod(filterMod));
 					}
 					buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - mod cannot be found", path, *modName);
 				} else if (formID) {
@@ -259,7 +259,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					                          RE::TESForm::LookupByID(*formID)) {
 						const auto formType = filterForm->GetFormType();
 						if (Cache::FormType::GetWhitelisted(formType)) {
-							return new SPID::FormFilter(filterForm);
+							return new SPID::FormFilter(FormOrMod(filterForm));
 						}
 						buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", path, *formID, modName.value_or(""), formType);
 					} else {
@@ -271,7 +271,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					if (auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
 						const auto formType = filterForm->GetFormType();
 						if (Cache::FormType::GetWhitelisted(formType)) {
-							return new SPID::FormFilter(filterForm);
+							return new SPID::FormFilter(FormOrMod(filterForm));
 						}
 						buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", path, editorID, formType);
 					} else {
@@ -284,15 +284,15 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		});
 
 		// I couldn't make this work with initializer list with either constructor or for loop. :(
-		AndExpression result{};
+        const auto result = new AndExpression();
 
-		result.emplace_back(new SPID::ChanceFilter(chance));
-		result.emplace_back(traits);
-		result.emplace_back(level);
-		result.emplace_back(filterIDs);
-		result.emplace_back(strings);
+		result->emplace_back(new SPID::ChanceFilter(chance));
+		result->emplace_back(traits);
+		result->emplace_back(level);
+		result->emplace_back(filterIDs);
+		result->emplace_back(strings);
+		result->flatten();
 
-		result.flatten();
 		Data<Form> formData{ form, idxOrCount, FilterData(result) };
 		forms.emplace_back(formData);
 	}

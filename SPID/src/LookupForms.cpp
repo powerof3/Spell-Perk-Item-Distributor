@@ -110,7 +110,7 @@ void Lookup::LogFilters()
 
 			    for (const auto& data : vec) {
 					std::ostringstream ss;
-					const std::string  filters = data.filters.filters.describe(ss).str();
+					const std::string  filters = data.filters.filters->describe(ss).str();
 					logger::info("\t\t\t{}", filters);
 				}
 			}

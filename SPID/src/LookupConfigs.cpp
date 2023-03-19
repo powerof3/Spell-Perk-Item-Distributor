@@ -10,7 +10,7 @@ namespace INI
 
 		std::string sanitize(const std::string& a_value)
 		{
-			auto newValue = a_value;
+			std::string newValue = a_value;
 
 			//formID hypen
 			if (!newValue.contains('~')) {
@@ -98,7 +98,7 @@ namespace INI
 			if (kStrings < size) {
 				data.stringFilters = parse_filters(sections[kStrings], [](const std::string& entry_str)->Filter* {
 					if (entry_str.at(0) == '*') {
-						auto wildcard = entry_str;
+						std::string wildcard = entry_str;
 						wildcard.erase(0, 1);
 						return new WildcardFilter(wildcard);
 					}

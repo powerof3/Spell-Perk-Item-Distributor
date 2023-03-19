@@ -46,8 +46,6 @@ namespace filters
 
 	    ValueFilter(const Value& value) : Filter(),
 			value(value) {}
-
-	protected:
 		ValueFilter() = default;
 	};
 
@@ -59,20 +57,13 @@ namespace filters
 	/// To determine how entries in the expression are combined use either AndExpression or OrExpression.
 	struct Expression : Evaluatable
 	{
-		~Expression() override
-        {
-		    for (const auto entry : entries) {
-				delete entry;
-		    }
-		}
-
 		// Expression are not filters in itself and serve as a shallow containers of actual filters.
 		// Thus, expression's size is a number of actual Filter objects nested within.
 		// Any number of nested empty expressions will amount in a size of zero.
         [[nodiscard]] std::size_t GetSize() const override
 		{
-			return std::accumulate(entries.begin(), entries.end(), static_cast<std::size_t>(0), [&](std::size_t res, const Evaluatable* ptr) {
-				return res + ptr->GetSize();
+			return std::accumulate(entries.begin(), entries.end(), static_cast<std::size_t>(0), [&](std::size_t res, const auto& ptr) {
+				return res + ptr.get()->GetSize();
 			});
 		}
 
@@ -80,7 +71,7 @@ namespace filters
         void flatten()
         {
 			for (auto it = entries.begin(); it != entries.end(); it++) {
-                const auto eval = *it;
+                const auto eval = it->get();
 				if (const auto expression = dynamic_cast<Expression*>(eval)) {
 					if (expression->GetSize() == 0) {
 						entries.erase(it--);    
@@ -99,10 +90,10 @@ namespace filters
 		template <filtertype FilterType>
 		void for_each_filter(std::function<void(const FilterType*)> a_callback) const
 		{
-			for (const auto eval : entries) {
-				if (auto expression = dynamic_cast<Expression*>(eval)) {
+			for (const auto& eval : entries) {
+				if (const auto expression = dynamic_cast<Expression*>(eval.get())) {
 					expression->for_each_filter<FilterType>(a_callback);
-				} else if (auto entry = dynamic_cast<FilterType*>(eval)) {
+				} else if (const auto entry = dynamic_cast<FilterType*>(eval.get())) {
 					a_callback(entry);
 				}
 			}
@@ -111,25 +102,30 @@ namespace filters
 		template <filtertype FilterType, filtertype NewFilterType>
 		void map(std::function<NewFilterType* (FilterType*)> mapper)
 		{
-			for (auto& eval : entries) {
-				if (auto expression = dynamic_cast<Expression*>(eval)) {
+			// TODO: Figure out the mapping..
+			// Could try to merge UnknownFormIDFilter and FormFilter into one and use a for_each_filter instead to map correct Form.
+		/*	std::vector<std::unique_ptr<Evaluatable>> newEntries{};
+			std::transform(entries.begin(), entries.end(), std::back_inserter(newEntries), [&mapper] (std::unique_ptr<Evaluatable> eval) {
+				if (const auto expression = dynamic_cast<Expression*>(eval.get())) {
 					expression->map<FilterType, NewFilterType>(mapper);
-				} else if (auto entry = dynamic_cast<FilterType*>(eval)) {
-					if (auto newFilter = mapper(entry)) {
-						eval = newFilter;
-					}
-				}
-			}
+				} else if (const auto entry = dynamic_cast<FilterType*>(eval.get())) {
+					if (const auto newFilter = mapper(entry); newFilter) {
+                        return std::unique_ptr<Evaluatable>(newFilter);
+                    }
+                }
+				return std::unique_ptr(std::move(eval));
+            });*/
+			//entries = newEntries;
 		}
 
 		template <filtertype FilterType>
 		bool contains(std::function<bool(const FilterType*)> comparator) const
 		{
-			return std::ranges::any_of(entries, [&](const auto eval) {
-				if (auto filter = dynamic_cast<Expression*>(eval)) {
+			return std::ranges::any_of(entries, [&](const auto& eval) {
+				if (const auto filter = dynamic_cast<Expression*>(eval.get())) {
 					return filter->contains<FilterType>(comparator);
 				}
-				if (auto entry = dynamic_cast<const FilterType*>(eval)) {
+				if (const auto entry = dynamic_cast<const FilterType*>(eval.get())) {
 					return comparator(entry);
 				}
 				return false;
@@ -142,7 +138,7 @@ namespace filters
 	    }
 
 	protected:
-		std::vector<Evaluatable*> entries{};
+		std::vector<std::unique_ptr<Evaluatable>> entries{};
 
         std::ostringstream& join(const std::string& separator, std::ostringstream& os) const
 		{
@@ -211,7 +207,7 @@ namespace filters
 
 		Evaluatable* wrapped_value() const
         {
-			return entries.front();
+			return entries.front().get();
 		}
 	};
 
@@ -220,8 +216,8 @@ namespace filters
 	{
 		[[nodiscard]] Result evaluate(const NPCData& npcData) const override
 		{
-			for (const auto entry : entries) {
-				const auto res = entry->evaluate(npcData);
+			for (const auto& entry : entries) {
+				const auto res = entry.get()->evaluate(npcData);
 				if (res != Result::kPass) {
 					return res;
 				}
@@ -242,8 +238,8 @@ namespace filters
 		{
             auto failure = Result::kFail;
 
-			for (const auto entry : entries) {
-				const auto res = entry->evaluate(npcData);
+			for (const auto& entry : entries) {
+				const auto res = entry.get()->evaluate(npcData);
 				if (res == Result::kPass) {
 					return Result::kPass;
 				}
@@ -268,10 +264,10 @@ namespace filters
 {
 	struct Data
 	{
-		Data(AndExpression filters);
+		Data(AndExpression* filters);
 
-		AndExpression filters;
-		bool          hasLeveledFilters;
+		std::shared_ptr<AndExpression> filters;
+		bool                           hasLeveledFilters;
 
 		[[nodiscard]] bool   HasLevelFilters() const;
 		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData) const;
