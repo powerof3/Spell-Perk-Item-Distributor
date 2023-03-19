@@ -5,7 +5,8 @@ namespace INI
 {
 	namespace detail
 	{
-		using namespace Filter;
+		using namespace filters;
+		using namespace SPID;
 
 		std::string sanitize(const std::string& a_value)
 		{
@@ -45,10 +46,10 @@ namespace INI
 			return newValue;
 		}
 
-		RawFilterEntries parse_entries(const std::string& filter_str, const std::function<const FilterValue*(const std::string&)> parser)
+		AndExpression* parse_entries(const std::string& filter_str, const std::function<Filter* (const std::string&)> parser)
 		{
-			RawFilterEntries entries;
-			auto             entries_str = distribution::split_entry(filter_str, "+");
+            auto entries = new AndExpression();
+			auto entries_str = distribution::split_entry(filter_str, "+");
 
 			for (auto& entry_str : entries_str) {
 				bool isNegated = false;
@@ -58,18 +59,25 @@ namespace INI
 					isNegated = true;
 				}
 				if (const auto res = parser(entry_str)) {
-					entries.emplace_back(RawFilterValue(res, isNegated));
+					if (isNegated) {
+						entries->emplace_back(new Negated(res));
+					} else {
+						entries->emplace_back(res);
+					}
 				}
 			}
 			return entries;
 		}
 
-		void parse_filters(const std::string& expression_str, RawFilters &filters, const std::function<const FilterValue*(const std::string&)> parser)
+		OrExpression* parse_filters(const std::string& expression_str, const std::function<Filter* (const std::string&)> parser)
 		{
+            const auto expression = new OrExpression();
             const auto filters_str = distribution::split_entry(expression_str, ",");
 			for (const auto& filter_str : filters_str) {
-				filters.emplace_back(parse_entries(filter_str, parser));
+				expression->emplace_back(parse_entries(filter_str, parser));
 			}
+
+			return expression;
 		}
 
 		std::pair<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
@@ -88,20 +96,20 @@ namespace INI
 
 			//KEYWORDS
 			if (kStrings < size) {
-				parse_filters(sections[kStrings], data.stringFilters, [](const std::string& entry_str)->StringValue* {
+				data.stringFilters = parse_filters(sections[kStrings], [](const std::string& entry_str)->Filter* {
 					if (entry_str.at(0) == '*') {
-						std::string wildcard = entry_str;
+						auto wildcard = entry_str;
 						wildcard.erase(0, 1);
-						return new Wildcard(wildcard);
+						return new WildcardFilter(wildcard);
 					}
-					return new Match(entry_str);
+					return new MatchFilter(entry_str);
 				});
 			}
 
 			//FILTER FORMS
 			if (kFilterIDs < size) {
-				parse_filters(sections[kFilterIDs], data.idFilters, [](const std::string& entry_str) {
-						return new FormFilterValue<FormOrEditorID>(distribution::get_record(entry_str));
+				data.idFilters = parse_filters(sections[kFilterIDs], [](const std::string& entry_str) {
+				    return new UnknownFormIDFilter(distribution::get_record(entry_str));
 				});
 			}
 
@@ -124,18 +132,18 @@ namespace INI
 
 				};
 
-				parse_filters(sections[kLevel], data.levelFilters, [&](const std::string& entry_str)-> LevelRange* {
+				data.levelFilters = parse_filters(sections[kLevel], [&](const std::string& entry_str) -> Filter* {
 					std::smatch matches;
 					if (!entry_str.empty() && std::regex_search(entry_str, matches, regex) && matches.size() >= kTotal) {
 						if (matches[kSkill].length() > 0) {  // skills
-							if (const auto skill = string::to_num<SkillLevelRange::Skill>(matches[kSkill].str()); skill < SkillLevelRange::Skills::kTotal) {
-                                const auto min = matches[kSkillMin].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMin].str()) : LevelRange::MinLevel;
-                                const auto max = matches[kSkillMax].length() > 0 ? string::to_num<SkillLevelRange::Level>(matches[kSkillMax].str()) : LevelRange::MaxLevel;
+							if (const auto skill = string::to_num<SkillFilter::Skill>(matches[kSkill].str()); skill < SkillFilter::Skills::kTotal) {
+								const auto min = matches[kSkillMin].length() > 0 ? string::to_num<Level>(matches[kSkillMin].str()) : LevelFilter::MinLevel;
+								const auto max = matches[kSkillMax].length() > 0 ? string::to_num<Level>(matches[kSkillMax].str()) : LevelFilter::MaxLevel;
 								if (matches[kModifier].length() == 0) {
-									return new SkillLevelRange(skill, min, max);
+									return new SkillFilter(skill, min, max);
 								}
                                 if (matches[kModifier].str().at(0) == 'w') {
-                                    return new SkillWeightRange(skill, min, max);
+                                    return new SkillWeightFilter(skill, min, max);
                                 }
                                 buffered_logger::warn("\tUnrecognized skill modifier in filter (\'{}\'): {}", matches[kModifier].str().at(0), entry_str);
                                 return nullptr;
@@ -144,10 +152,10 @@ namespace INI
 							return nullptr;
 						}
                         // levels
-                        const auto min = matches[kLevelMin].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMin].str()) : LevelRange::MinLevel;
-                        const auto max = matches[kLevelMax].length() > 0 ? string::to_num<LevelRange::Level>(matches[kLevelMax].str()) : LevelRange::MaxLevel;
+                        const auto min = matches[kLevelMin].length() > 0 ? string::to_num<Level>(matches[kLevelMin].str()) : LevelFilter::MinLevel;
+                        const auto max = matches[kLevelMax].length() > 0 ? string::to_num<Level>(matches[kLevelMax].str()) : LevelFilter::MaxLevel;
 
-                        return new LevelRange(min, max);
+                        return new LevelFilter(min, max);
                     }
 					buffered_logger::warn("\tInvalid level or skill filter: {}", entry_str);
 					return nullptr;
@@ -156,19 +164,19 @@ namespace INI
 
 			//TRAITS
 			if (kTraits < size) {
-				parse_filters(sections[kTraits], data.traitFilters, [&](const std::string& entry_str) -> Trait* {
+				data.traitFilters = parse_filters(sections[kTraits], [&](const std::string& entry_str) -> Filter* {
 					if (!entry_str.empty()) {
                         switch (const auto trait = tolower(entry_str.at(0))) {
 						case 'm':
-							return new SexTrait(RE::SEX::kMale);
+							return new SexFilter(RE::SEX::kMale);
 						case 'f':
-							return new SexTrait(RE::SEX::kFemale);
+							return new SexFilter(RE::SEX::kFemale);
 						case 'u':
-							return new UniqueTrait();
+							return new UniqueFilter();
 						case 's':
-							return new SummonableTrait();
+							return new SummonableFilter();
 						case 'c':
-							return new ChildTrait();
+							return new ChildFilter();
 						default:
 							buffered_logger::warn("\tUnrecognized trait filter (\'{}\'): {}", trait, entry_str);
 							return nullptr;
@@ -192,7 +200,7 @@ namespace INI
 			//CHANCE
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
-					data.chanceFilters.maximum = string::to_num<Chance::chance>(str);
+					data.chanceFilters.value = string::to_num<chance>(str);
 				}
 			}
 

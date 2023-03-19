@@ -2,7 +2,7 @@
 #include "LookupNPC.h"
 
 // ------------------- Data --------------------
-namespace Filter
+namespace filters
 {
 	Data::Data(const AndExpression filters) :
 		filters(filters)
@@ -17,8 +17,8 @@ namespace Filter
 
 	bool Data::HasLevelFiltersImpl() const
 	{
-		return filters.contains<LevelRange>([](const auto& value) -> bool {
-			return value.min != LevelRange::MinLevel || value.max != LevelRange::MaxLevel;
+		return filters.contains<SPID::LevelFilter>([](const auto* filter) -> bool {
+			return filter->value.first != SPID::LevelFilter::MinLevel || filter->value.second != SPID::LevelFilter::MaxLevel;
 		});
 	}
 

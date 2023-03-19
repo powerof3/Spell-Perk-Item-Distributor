@@ -41,32 +41,16 @@ namespace INI
 		kChance
 	};
 
-	struct RawFilterValue
-	{
-		const Filter::FilterValue* value;
-		bool                       negated;
-
-		RawFilterValue(const Filter::FilterValue* val, bool isNegated) :
-			value(val), negated(isNegated) {}
-	};
-
-	template <class ValueType>
-	using RawExpression = std::vector<ValueType>;
-
-	using RawFilterEntries = RawExpression<RawFilterValue>;
-
-	using RawFilters = RawExpression<RawFilterEntries>;
-
 	struct Data
 	{
-		FormOrEditorID rawForm{};
-		RawFilters     stringFilters{};
-		RawFilters     idFilters{};
-		RawFilters     levelFilters{};
-		RawFilters     traitFilters{};
-		Filter::Chance chanceFilters{ 100 };
-		IdxOrCount     idxOrCount{ 1 };
-		std::string    path{};
+		FormOrEditorID              rawForm{};
+		filters::OrExpression*      stringFilters;
+		filters::OrExpression*      idFilters;
+		filters::OrExpression*      levelFilters;
+		filters::OrExpression*      traitFilters;
+		filters::SPID::ChanceFilter chanceFilters{ 100 };
+		IdxOrCount                  idxOrCount{ 1 };
+		std::string                 path{};
 	};
 	using DataVec = std::vector<Data>;
 
