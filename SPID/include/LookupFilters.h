@@ -84,7 +84,9 @@ namespace filters
 
 		void emplace_back(Evaluatable* ptr)
 		{
-			entries.emplace_back(ptr);
+			if (ptr) {
+				entries.emplace_back(ptr);
+			}
 		}
 
 		template <filtertype FilterType>
@@ -102,20 +104,16 @@ namespace filters
 		template <filtertype FilterType, filtertype NewFilterType>
 		void map(std::function<NewFilterType* (FilterType*)> mapper)
 		{
-			// TODO: Figure out the mapping..
-			// Could try to merge UnknownFormIDFilter and FormFilter into one and use a for_each_filter instead to map correct Form.
-		/*	std::vector<std::unique_ptr<Evaluatable>> newEntries{};
-			std::transform(entries.begin(), entries.end(), std::back_inserter(newEntries), [&mapper] (std::unique_ptr<Evaluatable> eval) {
+			for (auto& eval : entries) {
 				if (const auto expression = dynamic_cast<Expression*>(eval.get())) {
 					expression->map<FilterType, NewFilterType>(mapper);
 				} else if (const auto entry = dynamic_cast<FilterType*>(eval.get())) {
 					if (const auto newFilter = mapper(entry); newFilter) {
-                        return std::unique_ptr<Evaluatable>(newFilter);
-                    }
-                }
-				return std::unique_ptr(std::move(eval));
-            });*/
-			//entries = newEntries;
+						auto newEval = std::unique_ptr<Evaluatable>(newFilter);
+						eval.swap(newEval);
+					}
+				}
+			}
 		}
 
 		template <filtertype FilterType>
