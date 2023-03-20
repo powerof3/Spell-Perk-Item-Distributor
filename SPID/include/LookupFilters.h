@@ -323,6 +323,7 @@ namespace filters
 			}
 		};
 
+		// TODO: Split up FormFilter and ModFilter for granularity
 		struct FormFilter : ValueFilter<FormOrMod>
 		{
 			using ValueFilter::ValueFilter;
@@ -418,6 +419,9 @@ namespace filters
 				}
 			}
 		};
+
+		// TODO: Consider moving keywords to a dedicated Filter, since they are already loaded as forms in ResolveKeywords
+		// See KeywordDependencies.cpp:L156. There we could use map to map generic WildcardFilter for matching KeywordFilter
 
 		/// String value for a filter that represents a wildcard.
 		/// The value must be without asterisks (e.g. filter "*Vampire" should be trimmed to "Vampire")

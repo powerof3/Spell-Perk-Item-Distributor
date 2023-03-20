@@ -72,6 +72,7 @@ void Lookup::LogFormLookup()
 	buffered_logger::clear();
 }
 
+// TODO: Fine tune the output to be less cluttered
 void Lookup::LogFilters()
 {
 	using namespace Forms;

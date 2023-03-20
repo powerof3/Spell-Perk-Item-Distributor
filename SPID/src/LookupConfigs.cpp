@@ -43,6 +43,11 @@ namespace INI
 			//NOT to hyphen
 			string::replace_all(newValue, "NOT ", "-");
 
+			// TODO: Sanitize () to be [] to support future ability to group filters with ()
+
+			// TODO: Santize "-" filters to properly behave in the new system.
+			// "A,B+C,-D,-E" should become "A-D-E,B+C-D-E"
+
 			return newValue;
 		}
 
@@ -50,6 +55,7 @@ namespace INI
 		{
             auto entries = new AndExpression();
 			auto entries_str = distribution::split_entry(filter_str, "+");
+			// TODO: Allow omitting "+" when there is already a "-" (e.g. instead of "A+-B" allow "A-B")
 
 			for (auto& entry_str : entries_str) {
 				bool isNegated = false;
