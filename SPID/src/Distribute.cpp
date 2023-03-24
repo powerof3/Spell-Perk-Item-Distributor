@@ -67,7 +67,7 @@ namespace Distribute
 		});
 
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects) {
-			return npc->AddObjectsToContainer(a_objects, a_npcData.GetNPC());
+			return npc->AddObjectsToContainer(a_objects, npc);
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
@@ -76,14 +76,12 @@ namespace Distribute
 					return false;
 				}
 				actor->RemoveOutfitItems(npc->defaultOutfit);
-
 				npc->defaultOutfit = a_outfit;
-
 				actor->InitInventoryIfRequired();
 				detail::equip_worn_outfit(actor, a_outfit);
-
 				npc->AddKeyword(processedOutfit);
-				return true;
+
+			    return true;
 			}
 			return false;
 		});
@@ -160,5 +158,10 @@ namespace Distribute
 			}
 			return false;
 		});
+	}
+
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries)
+	{
+		Distribute(a_npcData, PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries });
 	}
 }
