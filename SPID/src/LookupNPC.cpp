@@ -2,6 +2,31 @@
 
 namespace NPC
 {
+	Data::ID::ID(RE::TESActorBase* a_base) :
+		formID(a_base->GetFormID()),
+		editorID(Cache::EditorID::GetEditorID(a_base))
+	{}
+
+	bool Data::ID::contains(const std::string& a_str) const
+	{
+		return string::icontains(editorID, a_str);
+	}
+
+	bool Data::ID::operator==(const RE::TESFile* a_mod) const
+	{
+		return a_mod->IsFormInMod(formID);
+	}
+
+	bool Data::ID::operator==(const std::string& a_str) const
+	{
+		return string::iequals(editorID, a_str);
+	}
+
+	bool Data::ID::operator==(RE::FormID a_formID) const
+	{
+		return formID == a_formID;
+	}
+
 	void Data::cache_keywords()
 	{
 		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
@@ -14,47 +39,31 @@ namespace NPC
 		});
 	}
 
-	void Data::set_as_child()
-	{
-		child = false;
-
-		if (actor->IsChild()) {
-			child = true;
-		} else if (race->IsChildRace()) {
-			child = true;
-		} else if (race->formEditorID.contains("RaceChild")) {
-			child = true;
-		}
-	}
-
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
-		name(a_actor->GetName()),
-		level(a_npc->GetLevel()),
-		sex(a_npc->GetSex()),
-		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable())
+		name(actor->GetName()),
+		race(npc->GetRace()),
+		level(npc->GetLevel()),
+		sex(npc->GetSex()),
+		unique(npc->IsUnique()),
+		summonable(npc->IsSummonable()),
+		child(actor->IsChild() || race->formEditorID.contains("RaceChild"))
 	{
-		race = a_npc->GetRace();
-		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
+		if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
-				originalFormID = originalBase->GetFormID();
-				originalEDID = Cache::EditorID::GetEditorID(originalBase);
+				originalIDs = ID(originalBase);
 			}
 			if (const auto templateBase = extraLvlCreature->templateBase) {
-				templateFormID = templateBase->GetFormID();
-				templateEDID = Cache::EditorID::GetEditorID(templateBase);
-				if (auto templateRace = templateBase->As<RE::TESNPC>()->GetRace()) {
+				templateIDs = ID(templateBase);
+				if (const auto templateRace = templateBase->As<RE::TESNPC>()->GetRace()) {
 					race = templateRace;
 				}
 			}
 		} else {
-			originalFormID = a_npc->GetFormID();
-			originalEDID = Cache::EditorID::GetEditorID(npc);
+			originalIDs = ID(npc);
 		}
 		cache_keywords();
-		set_as_child();
 	}
 
 	RE::TESNPC* Data::GetNPC() const
@@ -89,7 +98,7 @@ namespace NPC
 			});
 		} else {
 			return std::ranges::any_of(a_strings, [&](const auto& str) {
-				return has_keyword_string(str) || string::iequals(name, str) || string::iequals(originalEDID, str) || string::iequals(templateEDID, str);
+				return has_keyword_string(str) || string::iequals(name, str) || originalIDs == str || templateIDs == str;
 			});
 		}
 	}
@@ -97,7 +106,7 @@ namespace NPC
 	bool Data::ContainsStringFilter(const StringVec& a_strings) const
 	{
 		return std::ranges::any_of(a_strings, [&](const auto& str) {
-			return contains_keyword_string(str) || string::icontains(name, str) || string::icontains(originalEDID, str) || string::icontains(templateEDID, str);
+			return contains_keyword_string(str) || string::icontains(name, str) || originalIDs.contains(str) || templateIDs.contains(str);
 		});
 	}
 
@@ -125,7 +134,7 @@ namespace NPC
 		case RE::FormType::NPC:
 			{
 				const auto filterFormID = a_form->GetFormID();
-				return npc == a_form || originalFormID == filterFormID || templateFormID == filterFormID;
+				return npc == a_form || originalIDs == filterFormID || templateIDs == filterFormID;
 			}
 		case RE::FormType::VoiceType:
 			return npc->voiceType == a_form;
@@ -164,7 +173,7 @@ namespace NPC
 			}
 			if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
 				const auto file = std::get<const RE::TESFile*>(a_formFile);
-				return file && (file->IsFormInMod(originalFormID) || file->IsFormInMod(templateFormID));
+				return file && (originalIDs == file || templateIDs == file);
 			}
 			return false;
 		};

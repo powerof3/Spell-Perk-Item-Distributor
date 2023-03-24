@@ -23,8 +23,22 @@ namespace NPC
 		[[nodiscard]] RE::TESRace* GetRace() const;
 
 	private:
+		struct ID
+		{
+			ID() = default;
+			explicit ID(RE::TESActorBase* a_base);
+
+			[[nodiscard]] bool contains(const std::string& a_str) const;
+
+			bool operator==(const RE::TESFile* a_mod) const;
+			bool operator==(const std::string& a_str) const;
+			bool operator==(RE::FormID a_formID) const;
+
+			RE::FormID  formID{ 0 };
+			std::string editorID{};
+		};
+
 		void cache_keywords();
-		void set_as_child();
 
 		[[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool contains_keyword_string(const std::string& a_string) const;
@@ -34,10 +48,8 @@ namespace NPC
 		RE::Actor*    actor;
 		std::string   name;
 		RE::TESRace*  race;
-		RE::FormID    originalFormID;
-		std::string   originalEDID;
-		RE::FormID    templateFormID{ 0 };
-		std::string   templateEDID{};
+		ID            originalIDs;
+		ID            templateIDs{};
 		StringSet     keywords{};
 		std::uint16_t level;
 		RE::SEX       sex;
