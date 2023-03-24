@@ -68,7 +68,7 @@ void Lookup::LogFormLookup()
 	// Clear INI map once lookup is done
 	INI::configs.clear();
 
-    // Clear logger's buffer to free some memory :)
+	// Clear logger's buffer to free some memory :)
 	buffered_logger::clear();
 }
 

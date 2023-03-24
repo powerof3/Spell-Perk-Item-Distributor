@@ -81,7 +81,7 @@ namespace Distribute
 				detail::equip_worn_outfit(actor, a_outfit);
 				npc->AddKeyword(processedOutfit);
 
-			    return true;
+				return true;
 			}
 			return false;
 		});
