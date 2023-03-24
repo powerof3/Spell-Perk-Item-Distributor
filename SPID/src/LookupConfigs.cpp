@@ -220,7 +220,7 @@ namespace INI
 		std::vector<std::string> files = distribution::get_configs(R"(Data\)", "_DISTR"sv);
 
 		if (files.empty()) {
-			logger::warn("	No .ini files with _DISTR suffix were found within the Data folder, aborting...");
+			logger::warn("\tNo .ini files with _DISTR suffix were found within the Data folder, aborting...");
 			return { false, false };
 		}
 

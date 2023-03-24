@@ -3,8 +3,6 @@
 #include "LookupForms.h"
 #include "PCLevelMultManager.h"
 
-HMODULE tweaks{ nullptr };
-
 bool shouldLookupForms{ false };
 bool shouldLogErrors{ false };
 bool shouldDistribute{ false };

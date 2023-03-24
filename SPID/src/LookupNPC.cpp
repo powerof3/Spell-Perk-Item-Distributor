@@ -4,7 +4,7 @@ namespace NPC
 {
 	Data::ID::ID(RE::TESActorBase* a_base) :
 		formID(a_base->GetFormID()),
-		editorID(Cache::EditorID::GetEditorID(a_base))
+		editorID(EditorID::GetEditorID(a_base))
 	{}
 
 	bool Data::ID::contains(const std::string& a_str) const
@@ -145,6 +145,11 @@ namespace NPC
 			}
 		case RE::FormType::Armor:
 			return npc->skin == a_form;
+		case RE::FormType::Location:
+			{
+				const auto location = a_form->As<RE::BGSLocation>();
+				return actor->GetEditorLocation() == location;
+			}
 		case RE::FormType::FormList:
 			{
 				bool result = false;
