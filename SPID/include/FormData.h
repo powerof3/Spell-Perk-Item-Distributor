@@ -292,7 +292,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		result->emplace_back(level);
 		result->emplace_back(filterIDs);
 		result->emplace_back(strings);
-		result->flatten();
+		result->reduce();
 
 		Data<Form> formData{ form, idxOrCount, FilterData(result) };
 		forms.emplace_back(formData);

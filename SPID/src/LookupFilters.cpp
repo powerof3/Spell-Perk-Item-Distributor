@@ -4,7 +4,7 @@
 // ------------------- Data --------------------
 namespace filters
 {
-	Data::Data(AndExpression* filters) :
+	Data::Data(Expression* filters) :
 		filters(filters)
 	{
 		hasLeveledFilters = HasLevelFiltersImpl();

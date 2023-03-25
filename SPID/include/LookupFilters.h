@@ -23,15 +23,23 @@ namespace filters
         /// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
 		[[nodiscard]] virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const = 0;
 
-	    virtual std::ostringstream& describe(std::ostringstream& os) const = 0;
+		virtual std::ostringstream& describe(std::ostringstream& os) const = 0;
 
-        [[nodiscard]] virtual std::size_t GetSize() const = 0;
+		[[nodiscard]] virtual std::size_t size() const = 0;
+
+		/// Returns a flag that determines whether given Evaluatable doesn't contribute
+		/// to overall composition of Evaluatables.
+		/// This is usually true for Evaluatable which always return Result::kPass, or empty Expressions.
+		[[nodiscard]] virtual bool isSuperfluous() const = 0;
         
 	};
 
     struct Filter: Evaluatable
 	{
-		[[nodiscard]] std::size_t GetSize() const override { return 1; }
+		[[nodiscard]] std::size_t size() const override { return 1; }
+
+		// All Filters by default are not superfluous, unless the explicitly override this method.
+		[[nodiscard]] bool isSuperfluous() const override { return false; }
 
 	protected:
 		Filter() = default;
@@ -60,24 +68,37 @@ namespace filters
 		// Expression are not filters in itself and serve as a shallow containers of actual filters.
 		// Thus, expression's size is a number of actual Filter objects nested within.
 		// Any number of nested empty expressions will amount in a size of zero.
-        [[nodiscard]] std::size_t GetSize() const override
+		[[nodiscard]] std::size_t size() const override
 		{
 			return std::accumulate(entries.begin(), entries.end(), static_cast<std::size_t>(0), [&](std::size_t res, const auto& ptr) {
-				return res + ptr.get()->GetSize();
+				return res + ptr.get()->size();
 			});
 		}
 
-		/// Removes nested empty expressions.
-        void flatten()
+		// Expression is considered superfluous if it is empty or contains only superfluous Evaluatables.
+        [[nodiscard]] bool isSuperfluous() const override
         {
-			for (auto it = entries.begin(); it != entries.end(); it++) {
+			if (entries.empty()) {
+				return true;
+			}
+
+			return std::ranges::all_of(entries.begin(), entries.end(), [](const auto& entry) {
+				return entry->isSuperfluous();
+			});
+        }
+		
+		/// Reduces the expression by removing any contained superfluous Evaluatables.
+        void reduce()
+        {
+			for (auto it = entries.begin(); it != entries.end();) {
                 const auto eval = it->get();
 				if (const auto expression = dynamic_cast<Expression*>(eval)) {
-					if (expression->GetSize() == 0) {
-						entries.erase(it--);    
-					} else {
-						expression->flatten();
-					}
+					expression->reduce();
+				}
+				if (eval->isSuperfluous()) {
+					it = entries.erase(it);
+				} else {
+					++it;    
 				}
 			}
         }
@@ -149,7 +170,7 @@ namespace filters
 		{
 			auto       begin = entries.begin();
             const auto end = entries.end();
-			const bool isComposite = GetSize() > 1;
+			const bool isComposite = size() > 1;
 
 			if (isComposite)
 				os << "(";
@@ -200,13 +221,20 @@ namespace filters
 			return os;
 		}
 
-        [[nodiscard]] std::size_t GetSize() const override
+	    [[nodiscard]] std::size_t size() const override
 		{
 			if (const auto eval = wrapped_value()) {
-				return eval->GetSize();
+				return eval->size();
 			}
 			return 0;
 		}
+
+		[[nodiscard]] bool isSuperfluous() const override
+	    {
+			// At the moment we can't detect whether a Negated expression is superflous even if wrapped Evaluatable is.
+			// So Negated expression is only considered superflous if it doesn't have a wrapped value (which should never be the case btw :) )
+			return wrapped_value() == nullptr;
+	    }
 
 	private:
 
@@ -269,10 +297,10 @@ namespace filters
 {
 	struct Data
 	{
-		Data(AndExpression* filters);
+		Data(Expression* filters);
 
-		std::shared_ptr<AndExpression> filters;
-		bool                           hasLeveledFilters;
+		std::shared_ptr<Expression> filters;
+		bool                        hasLeveledFilters;
 
 		[[nodiscard]] bool   HasLevelFilters() const;
 		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData) const;
@@ -509,7 +537,7 @@ namespace filters
 			LevelFilter(LevelPair value) = delete;
 			LevelFilter(const LevelPair& value) = delete;
 
-			Result evaluate(const NPCData& a_npcData) const override
+			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
 				const auto actorLevel = a_npcData.GetLevel();
 				if (actorLevel >= value.first && actorLevel <= value.second) {
@@ -559,7 +587,7 @@ namespace filters
 
 			SkillFilter(Level min, Level max) = delete;
 
-			Result evaluate(const NPCData& a_npcData) const override
+			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
 				const auto npc = a_npcData.GetNPC();
 				const auto skillLevel = npc->playerSkills.values[skill];
@@ -648,7 +676,7 @@ namespace filters
 
 			using ValueFilter::ValueFilter;
 
-			Result evaluate(const NPCData& a_npcData) const override
+			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
 				return a_npcData.GetSex() == value ? Result::kPass : Result::kFail;
 			}
@@ -663,7 +691,7 @@ namespace filters
 		struct UniqueFilter : Filter
 		{
 
-			Result evaluate(const NPCData& a_npcData) const override
+			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
 				return a_npcData.IsUnique() ? Result::kPass : Result::kFail;
 			}
@@ -713,25 +741,32 @@ namespace filters
 
 			using ValueFilter::ValueFilter;
 
-			Result evaluate([[maybe_unused]] const NPCData& a_npcData) const override
-            {
-				if (value >= 100) {
+			[[nodiscard]] bool isSuperfluous() const override
+			{
+				return value >= MAX;
+			}
+
+			[[nodiscard]] Result evaluate([[maybe_unused]] const NPCData& a_npcData) const override
+			{
+				if (value >= MAX) {
 					return Result::kPass;
 				}
+				if (value <= 0) {
+					return Result::kFailRNG;
+				}
 
-				const auto rng = staticRNG.Generate<chance>(0, 100);
+				const auto rng = staticRNG.Generate<chance>(0, MAX);
 				return rng > value ? Result::kPass : Result::kFailRNG;
 			}
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				if (value >= 100) {
-					os << "ALWAYS";
-				} else {
-					os << "WITH " << value << "% CHANCE";
-				}
+				os << "WITH " << value << "% CHANCE";
 				return os;
 			}
+
+		private:
+			static constexpr chance MAX = 100;
 		};
 	}
 }
