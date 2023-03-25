@@ -101,18 +101,25 @@ namespace filters
 			}
 		}
 
+        /// Calls the mapper function on every Evaluatable of specified type FilterType within the Expression (including nested Expressions)
+        /// and replaces such Evaluatables with a new Evaluatable returned from mapper.
+        /// If mapper returns a nullptr original Evaluatable is removed from the Expression.
 		template <filtertype FilterType>
-		void map(std::function<Filter* (FilterType*)> mapper)
+		void map(std::function<Evaluatable*(FilterType*)> mapper)
 		{
-			for (auto& eval : entries) {
-				if (const auto expression = dynamic_cast<Expression*>(eval.get())) {
+			for (auto it = entries.begin(); it != entries.end();) {
+				if (const auto expression = dynamic_cast<Expression*>(it->get())) {
 					expression->map<FilterType>(mapper);
-				} else if (const auto entry = dynamic_cast<FilterType*>(eval.get())) {
+				} else if (const auto entry = dynamic_cast<FilterType*>(it->get())) {
 					if (const auto newFilter = mapper(entry); newFilter) {
 						auto newEval = std::unique_ptr<Evaluatable>(newFilter);
-						eval.swap(newEval);
+						it->swap(newEval);
+					} else {
+						it = entries.erase(it);
+						continue;
 					}
 				}
+				++it;
 			}
 		}
 
