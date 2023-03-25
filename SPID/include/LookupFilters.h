@@ -101,12 +101,12 @@ namespace filters
 			}
 		}
 
-		template <filtertype FilterType, filtertype NewFilterType>
-		void map(std::function<NewFilterType* (FilterType*)> mapper)
+		template <filtertype FilterType>
+		void map(std::function<Filter* (FilterType*)> mapper)
 		{
 			for (auto& eval : entries) {
 				if (const auto expression = dynamic_cast<Expression*>(eval.get())) {
-					expression->map<FilterType, NewFilterType>(mapper);
+					expression->map<FilterType>(mapper);
 				} else if (const auto entry = dynamic_cast<FilterType*>(eval.get())) {
 					if (const auto newFilter = mapper(entry); newFilter) {
 						auto newEval = std::unique_ptr<Evaluatable>(newFilter);
@@ -295,7 +295,7 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				os << "Unknown ";
+				os << "<UNKNOWN> ";
 				if (std::holds_alternative<FormModPair>(value)) {
 					const auto& formModPair = std::get<FormModPair>(value);
 					auto& [formID, modName] = formModPair;
@@ -324,46 +324,36 @@ namespace filters
 		};
 
 		// TODO: Split up FormFilter and ModFilter for granularity
-		struct FormFilter : ValueFilter<FormOrMod>
+		struct FormFilter : ValueFilter<RE::TESForm*>
 		{
 			using ValueFilter::ValueFilter;
 
             [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
-				if (std::holds_alternative<RE::TESForm*>(value)) {
-					if (const auto form = std::get<RE::TESForm*>(value); form && has_form(form, a_npcData)) {
-						return Result::kPass;
-					}
-				} else if (std::holds_alternative<const RE::TESFile*>(value)) {
-					if (const auto file = std::get<const RE::TESFile*>(value); file && (file->IsFormInMod(a_npcData.GetOriginalFormID()) || file->IsFormInMod(a_npcData.GetTemplateFormID()))) {
-						return Result::kPass;
-					}
-				}
+                if (value && has_form(value, a_npcData)) {
+                    return Result::kPass;
+                }
 				return Result::kFail;
 			}
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				if (std::holds_alternative<RE::TESForm*>(value)) {
-					if (const auto form = std::get<RE::TESForm*>(value)) {
-						if (const std::string& edid = form->GetFormEditorID(); !edid.empty()) {
-							os << edid;
-						}
-						os << "["
-						   << std::to_string(form->GetFormType())
-						   << ":"
-						   << std::setfill('0')
-						   << std::setw(sizeof(RE::FormID) * 2)
-						   << std::uppercase
-						   << std::hex
-						   << form->GetFormID()
-						   << "]";
-					}
-				} else if (std::holds_alternative<const RE::TESFile*>(value)) {
-					if (const auto file = std::get<const RE::TESFile*>(value); file) {
-						os << file->fileName;
-					}
+				if (value) {
+					os << "HAS ";
+				    if (const std::string& edid = value->GetFormEditorID(); !edid.empty()) {
+						os << edid << " ";
+				    }
+				    os << "["
+				       << std::to_string(value->GetFormType())
+				       << ":"
+				       << std::setfill('0')
+				       << std::setw(sizeof(RE::FormID) * 2)
+				       << std::uppercase
+				       << std::hex
+				       << value->GetFormID()
+				       << "]";
 				}
+		
 				return os;
 			}
 
@@ -417,6 +407,27 @@ namespace filters
 				default:
 					return false;
 				}
+			}
+		};
+
+		struct ModFilter : ValueFilter<const RE::TESFile*>
+		{
+			using ValueFilter::ValueFilter;
+
+			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
+			{
+				if (value && (value->IsFormInMod(a_npcData.GetOriginalFormID()) || value->IsFormInMod(a_npcData.GetTemplateFormID()))) {
+					return Result::kPass;
+				}
+				return Result::kFail;
+			}
+
+			std::ostringstream& describe(std::ostringstream& os) const override
+			{
+				if (value) {
+					os << "FROM " << value->fileName;
+				}
+				return os;
 			}
 		};
 
@@ -576,11 +587,10 @@ namespace filters
 			}
 
 		private:
-			std::optional<std::uint8_t> weight(const NPCData& a_npcData) const
+            [[nodiscard]] std::optional<std::uint8_t> weight(const NPCData& a_npcData) const
             {
 				if (const auto npcClass = a_npcData.GetNPC()->npcClass) {
 					const auto& skillWeights = npcClass->data.skillWeights;
-					using Skills = SkillFilter::Skills;
 					switch (skill) {
 					case Skills::kOneHanded:
 						return skillWeights.oneHanded;
