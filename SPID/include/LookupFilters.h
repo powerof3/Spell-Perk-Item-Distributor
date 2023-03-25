@@ -25,21 +25,21 @@ namespace filters
 
 		virtual std::ostringstream& describe(std::ostringstream& os) const = 0;
 
-		[[nodiscard]] virtual std::size_t size() const = 0;
-
 		/// Returns a flag that determines whether given Evaluatable doesn't contribute
 		/// to overall composition of Evaluatables.
 		/// This is usually true for Evaluatable which always return Result::kPass, or empty Expressions.
 		[[nodiscard]] virtual bool isSuperfluous() const = 0;
-        
+
+		[[nodiscard]] virtual bool isValid() const = 0;
 	};
 
     struct Filter: Evaluatable
 	{
-		[[nodiscard]] std::size_t size() const override { return 1; }
-
-		// All Filters by default are not superfluous, unless the explicitly override this method.
+		// All Filters by default are not superfluous, unless they explicitly override this method.
 		[[nodiscard]] bool isSuperfluous() const override { return false; }
+
+        // All Filters by default are valid, unless they explicitly override this method.
+		[[nodiscard]] bool isValid() const override { return true; }
 
 	protected:
 		Filter() = default;
@@ -65,16 +65,6 @@ namespace filters
 	/// To determine how entries in the expression are combined use either AndExpression or OrExpression.
 	struct Expression : Evaluatable
 	{
-		// Expression are not filters in itself and serve as a shallow containers of actual filters.
-		// Thus, expression's size is a number of actual Filter objects nested within.
-		// Any number of nested empty expressions will amount in a size of zero.
-		[[nodiscard]] std::size_t size() const override
-		{
-			return std::accumulate(entries.begin(), entries.end(), static_cast<std::size_t>(0), [&](std::size_t res, const auto& ptr) {
-				return res + ptr.get()->size();
-			});
-		}
-
 		// Expression is considered superfluous if it is empty or contains only superfluous Evaluatables.
         [[nodiscard]] bool isSuperfluous() const override
         {
@@ -84,6 +74,18 @@ namespace filters
 
 			return std::ranges::all_of(entries.begin(), entries.end(), [](const auto& entry) {
 				return entry->isSuperfluous();
+			});
+        }
+
+		// Expression is considered valid only when all Evaluatables it contains are valid.
+		[[nodiscard]] bool isValid() const override
+        {
+			if (entries.empty()) {
+				return true;
+			}
+
+			return std::ranges::all_of(entries.begin(), entries.end(), [](const auto& entry) {
+				return entry->isValid();
 			});
         }
 		
@@ -124,23 +126,18 @@ namespace filters
 
         /// Calls the mapper function on every Evaluatable of specified type FilterType within the Expression (including nested Expressions)
         /// and replaces such Evaluatables with a new Evaluatable returned from mapper.
-        /// If mapper returns a nullptr original Evaluatable is removed from the Expression.
 		template <filtertype FilterType>
 		void map(std::function<Evaluatable*(FilterType*)> mapper)
 		{
-			for (auto it = entries.begin(); it != entries.end();) {
+			for (auto it = entries.begin(); it != entries.end(); ++it) {
 				if (const auto expression = dynamic_cast<Expression*>(it->get())) {
 					expression->map<FilterType>(mapper);
 				} else if (const auto entry = dynamic_cast<FilterType*>(it->get())) {
 					if (const auto newFilter = mapper(entry); newFilter) {
 						auto newEval = std::unique_ptr<Evaluatable>(newFilter);
 						it->swap(newEval);
-					} else {
-						it = entries.erase(it);
-						continue;
 					}
 				}
-				++it;
 			}
 		}
 
@@ -170,7 +167,9 @@ namespace filters
 		{
 			auto       begin = entries.begin();
             const auto end = entries.end();
-			const bool isComposite = size() > 1;
+			const bool isComposite = std::ranges::count_if(entries, [](const auto& entry) {
+				return !entry->isSuperfluous();
+			}) > 1;
 
 			if (isComposite)
 				os << "(";
@@ -219,14 +218,6 @@ namespace filters
 				return eval->describe(os);
 			}
 			return os;
-		}
-
-	    [[nodiscard]] std::size_t size() const override
-		{
-			if (const auto eval = wrapped_value()) {
-				return eval->size();
-			}
-			return 0;
 		}
 
 		[[nodiscard]] bool isSuperfluous() const override
@@ -323,6 +314,9 @@ namespace filters
 		{
 			using ValueFilter::ValueFilter;
 
+			// UnknownFormIDFilter is never valid and renders the whole entry containing it invalid, thus causing it to being skipped.
+			bool isValid() const override { return false; }
+
 			[[nodiscard]] Result evaluate([[maybe_unused]] const NPCData& a_npcData) const override
 			{
 				return Result::kFail;
@@ -358,7 +352,6 @@ namespace filters
 			}
 		};
 
-		// TODO: Split up FormFilter and ModFilter for granularity
 		struct FormFilter : ValueFilter<RE::TESForm*>
 		{
 			using ValueFilter::ValueFilter;
@@ -375,7 +368,7 @@ namespace filters
 			{
 				if (value) {
 					os << "HAS ";
-				    if (const std::string& edid = value->GetFormEditorID(); !edid.empty()) {
+					if (const auto& edid = Cache::EditorID::GetEditorID(value); !edid.empty()) {
 						os << edid << " ";
 				    }
 				    os << "["

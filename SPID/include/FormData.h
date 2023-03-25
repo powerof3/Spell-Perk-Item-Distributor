@@ -294,8 +294,10 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		result->emplace_back(strings);
 		result->reduce();
 
-		Data<Form> formData{ form, idxOrCount, FilterData(result) };
-		forms.emplace_back(formData);
+		if (result->isValid()) {
+			Data<Form> formData{ form, idxOrCount, FilterData(result) };
+			forms.emplace_back(formData);
+		}
 	}
 }
 

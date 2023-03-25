@@ -98,8 +98,8 @@ void Lookup::LogFilters()
 				std::string formID;
 				if (!vec.empty()) {
 					const auto& data = vec.front();
-					if (const std::string& edid = data.form->GetFormEditorID(); !edid.empty()) {
-						formID = edid;
+					if (const std::string& edid = Cache::EditorID::GetEditorID(data.form); !edid.empty()) {
+						formID = std::format("{} [{:08X}]", edid, data.form->GetFormID());
 					} else {
 						formID = std::format("{:08X}", data.form->GetFormID());
 					}    
