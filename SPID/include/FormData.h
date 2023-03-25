@@ -256,8 +256,8 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 						buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - mod cannot be found", path, *modName);
 					} else if (formID) {
 						if (const auto filterForm = modName ?
-						                          a_dataHandler->LookupForm(*formID, *modName) :
-						                          RE::TESForm::LookupByID(*formID)) {
+                                                        a_dataHandler->LookupForm(*formID, *modName) :
+                                                        RE::TESForm::LookupByID(*formID)) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								return new SPID::FormFilter(filterForm);
@@ -285,7 +285,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			});
 		}
 		// I couldn't make this work with initializer list with either constructor or for loop. :(
-        const auto result = new AndExpression();
+		const auto result = new AndExpression();
 
 		result->emplace_back(new SPID::ChanceFilter(chance));
 		result->emplace_back(traits);

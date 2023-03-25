@@ -82,39 +82,39 @@ void Lookup::LogFilters()
 	const auto list_filters = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
 		const auto& recordName = RECORD::add[a_recordType];
 
-        // Only log entries that are actually present in INIs.
+		// Only log entries that are actually present in INIs.
 		//if (!INI::configs[recordName].empty()) {
 
-			logger::info("\t{}:", recordName);
+		logger::info("\t{}:", recordName);
 
-			std::unordered_map<RE::FormID, DataVec<Form>> map;
-			for (const auto& data : a_map.GetForms()) {
-				if (const auto form = data.form) {
-					map[form->GetFormID()].push_back(data);
-				}
+		std::unordered_map<RE::FormID, DataVec<Form>> map;
+		for (const auto& data : a_map.GetForms()) {
+			if (const auto form = data.form) {
+				map[form->GetFormID()].push_back(data);
 			}
+		}
 
-			for (const auto & [id, vec] : map) {
-				std::string formID;
-				if (!vec.empty()) {
-					const auto& data = vec.front();
-					if (const std::string& edid = Cache::EditorID::GetEditorID(data.form); !edid.empty()) {
-						formID = std::format("{} [{:08X}]", edid, data.form->GetFormID());
-					} else {
-						formID = std::format("{:08X}", data.form->GetFormID());
-					}    
+		for (const auto& [id, vec] : map) {
+			std::string formID;
+			if (!vec.empty()) {
+				const auto& data = vec.front();
+				if (const std::string& edid = Cache::EditorID::GetEditorID(data.form); !edid.empty()) {
+					formID = std::format("{} [{:08X}]", edid, data.form->GetFormID());
 				} else {
-					formID = std::format("{:08X}", id);
+					formID = std::format("{:08X}", data.form->GetFormID());
 				}
-				
-				logger::info("\t\t{}:", formID);
-
-			    for (const auto& data : vec) {
-					std::ostringstream ss;
-					const std::string  filters = data.filters.filters->describe(ss).str();
-					logger::info("\t\t\t{}", filters);
-				}
+			} else {
+				formID = std::format("{:08X}", id);
 			}
+
+			logger::info("\t\t{}:", formID);
+
+			for (const auto& data : vec) {
+				std::ostringstream ss;
+				const std::string  filters = data.filters.filters->describe(ss).str();
+				logger::info("\t\t\t{}", filters);
+			}
+		}
 		//}
 	};
 

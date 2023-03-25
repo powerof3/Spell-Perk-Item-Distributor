@@ -6,4 +6,3 @@ namespace Lookup
 	void LogFormLookup();
 	void LogFilters();
 }
-
