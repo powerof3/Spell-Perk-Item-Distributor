@@ -10,9 +10,8 @@ namespace Distribute::PlayerLeveledActor
 		static void thunk(RE::Actor* a_actor)
 		{
 			if (const auto npc = a_actor->GetActorBase(); npc && npc->HasKeyword(processed)) {
-				if (const auto npcData = std::make_unique<NPCData>(a_actor, npc)) {
-					Distribute(*npcData, true);
-				}
+				auto npcData = NPCData(a_actor, npc);
+			    Distribute(npcData, true);
 			}
 
 			func(a_actor);
@@ -98,9 +97,8 @@ namespace Distribute::PlayerLeveledActor
 
 				if (!pcLevelMultManager->FindDistributedEntry(input)) {
 					//start distribution of leveled entries for first time
-					if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
-						Distribute(*npcData, input);
-					}
+					auto npcData = NPCData(a_this, npc);
+				    Distribute(npcData, input);
 				} else {
 					//handle redistribution
 					pcLevelMultManager->ForEachDistributedEntry(input, true, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet) {

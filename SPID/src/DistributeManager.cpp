@@ -23,9 +23,8 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (auto npc = a_this->GetActorBase(); npc && detail::should_process_NPC(npc)) {
-					if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
-						Distribute(*npcData, false);
-					}
+					auto npcData = NPCData(a_this, npc);
+				    Distribute(npcData, false);
 				}
 
 				return func(a_this);
@@ -46,9 +45,8 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					// some npcs are completely reset upon loading
 					if (a_this->Is3DLoaded() && detail::should_process_NPC(npc)) {
-						if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
-							Distribute(*npcData, false);
-						}
+						auto npcData = NPCData(a_this, npc);
+					    Distribute(npcData, false);
 					}
 					if (npc->HasKeyword(processedOutfit) && !a_this->HasOutfitItems(npc->defaultOutfit)) {
 						a_this->InitInventoryIfRequired();
@@ -130,14 +128,14 @@ namespace Distribute::Event
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				if (const auto npcData = std::make_unique<NPCData>(actor, npc)) {
-					const auto input = PCLevelMult::Input{ actor, npc, false };
+				auto       npcData = NPCData(actor, npc);
+				const auto input = PCLevelMult::Input{ actor, npc, false };
 
-					for_each_form<RE::TESBoundObject>(*npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
-						detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
-						return true;
-					});
-				}
+				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
+					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
+					return true;
+				});
+				
 			}
 		}
 
