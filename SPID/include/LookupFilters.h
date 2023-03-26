@@ -204,7 +204,6 @@ namespace filters
 				case Result::kFail:
 				case Result::kFailRNG:
 					return Result::kPass;
-				default:
 				case Result::kPass:
 					return Result::kFail;
 				}
@@ -459,10 +458,7 @@ namespace filters
 			}
 		};
 
-		// TODO: Consider moving keywords to a dedicated Filter, since they are already loaded as forms in ResolveKeywords
-		// See KeywordDependencies.cpp:L156. There we could use map to map generic WildcardFilter for matching KeywordFilter
-
-		/// String value for a filter that represents a wildcard.
+	    /// String value for a filter that represents a wildcard.
 		/// The value must be without asterisks (e.g. filter "*Vampire" should be trimmed to "Vampire")
 		struct WildcardFilter : ValueFilter<std::string>
 		{
@@ -473,8 +469,7 @@ namespace filters
 				// Utilize regex here. (will also support one-sided wildcards (e.g. *Name and Name*)
 				// std::regex regex(filter.value, std::regex_constants::icase);
 				// std::regex_match(keyword, regex);
-				if (std::ranges::any_of(npcData.GetKeywords(), [&](auto keyword) { return string::icontains(keyword, value); }) ||
-					string::icontains(npcData.GetName(), value) ||
+				if (string::icontains(npcData.GetName(), value) ||
 					string::icontains(npcData.GetOriginalEDID(), value) ||
 					string::icontains(npcData.GetTemplateEDID(), value)) {
 					return Result::kPass;
@@ -497,8 +492,7 @@ namespace filters
 
 			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
-				if (a_npcData.GetKeywords().contains(value) ||
-					string::iequals(a_npcData.GetName(), value) ||
+				if (string::iequals(a_npcData.GetName(), value) ||
 					string::iequals(a_npcData.GetOriginalEDID(), value) ||
 					string::iequals(a_npcData.GetTemplateEDID(), value)) {
 					return Result::kPass;
@@ -511,6 +505,48 @@ namespace filters
 				os << "='" << value << "'";
 				return os;
 			}
+		};
+
+		struct KeywordFilter: ValueFilter<RE::BGSKeyword*>
+		{
+			using ValueFilter::ValueFilter;
+
+		    [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
+		    {
+		        if (const auto npc = a_npcData.GetNPC()) {
+		            if (npc->HasKeyword(value)) {
+						return Result::kPass;
+		            }
+		        }
+
+				if (const auto race = a_npcData.GetRace()) {
+					if (race->HasKeyword(value)) {
+						return Result::kPass;
+					}
+				}
+
+				return Result::kFail;
+		    }
+
+			std::ostringstream& describe(std::ostringstream& os) const override
+		    {
+				if (value) {
+					os << "HAS ";
+					if (const auto& edid = Cache::EditorID::GetEditorID(value); !edid.empty()) {
+						os << edid << " ";
+					}
+					os << "["
+					   << std::to_string(value->GetFormType())
+					   << ":"
+					   << std::setfill('0')
+					   << std::setw(sizeof(RE::FormID) * 2)
+					   << std::uppercase
+					   << std::hex
+					   << value->GetFormID()
+					   << "]";
+				}
+				return os;
+		    }
 		};
 
 		using Level = std::uint8_t;

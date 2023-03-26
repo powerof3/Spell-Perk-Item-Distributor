@@ -2,18 +2,6 @@
 
 namespace NPC
 {
-	void Data::cache_keywords()
-	{
-		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-	}
-
 	void Data::set_as_child()
 	{
 		child = false;
@@ -53,23 +41,12 @@ namespace NPC
 			originalFormID = a_npc->GetFormID();
 			originalEDID = Cache::EditorID::GetEditorID(npc);
 		}
-		cache_keywords();
 		set_as_child();
-	}
-
-	bool Data::InsertKeyword(const char* a_keyword)
-	{
-		return keywords.emplace(a_keyword).second;
 	}
 
 	RE::TESNPC* Data::GetNPC() const
 	{
 		return npc;
-	}
-
-	StringSet Data::GetKeywords() const
-	{
-		return keywords;
 	}
 
 	std::string Data::GetName() const

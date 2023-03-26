@@ -284,6 +284,39 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 				return nullptr;
 			});
 		}
+
+		if (strings) {
+			const auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
+
+			strings->map<SPID::MatchFilter>([&](const SPID::MatchFilter* filter) -> Filter* {
+				auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
+					return keyword && keyword->formEditorID == filter->value.c_str();
+				});
+
+				if (result != keywordArray.end()) {
+					if (const auto keyword = *result; keyword) {
+						return new SPID::KeywordFilter(keyword);
+					}
+				}
+
+				return nullptr;
+			});
+
+			strings->map<SPID::WildcardFilter>([&](const SPID::WildcardFilter* filter) -> Filter* {
+				const auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
+					return keyword && string::icontains(keyword->formEditorID, filter->value);
+				});
+
+				if (result != keywordArray.end()) {
+					if (const auto keyword = *result; keyword) {
+						return new SPID::KeywordFilter(keyword);
+					}
+				}
+
+				return nullptr;
+			});
+		}
+
 		// I couldn't make this work with initializer list with either constructor or for loop. :(
 		const auto result = new AndExpression();
 

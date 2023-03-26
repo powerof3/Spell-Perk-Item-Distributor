@@ -124,46 +124,12 @@ void Dependencies::ResolveKeywords()
 
 	auto&          keywordForms = Forms::keywords.GetForms();
 	const std::set distrKeywords(keywordForms.begin(), keywordForms.end());
-
-	const auto dataHandler = RE::TESDataHandler::GetSingleton();
-	for (const auto& kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
-		if (kwd) {
-			if (const auto edid = kwd->GetFormEditorID(); !string::is_empty(edid)) {
-				allKeywords[edid] = kwd;
-			} else {
-				if (const auto file = kwd->GetFile(0)) {
-					const auto  modname = file->GetFilename();
-					const auto  formID = kwd->GetLocalFormID();
-					std::string mergeDetails;
-					if (g_mergeMapperInterface && g_mergeMapperInterface->isMerge(modname.data())) {
-						const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetOriginalFormID(
-							modname.data(),
-							formID);
-						mergeDetails = std::format("->0x{:X}~{}", mergedFormID, mergedModName);
-					}
-					logger::error(" WARNING : [0x{:X}~{}{}] keyword has an empty editorID!", formID, modname, mergeDetails);
-				}
-			}
-		}
-	}
-
+	
 	// Fill keywordDependencies based on Keywords found in configs.
 	for (auto& formData : distrKeywords) {
-		const auto findKeyword = [&](const std::string& name) -> RE::BGSKeyword* {
-			return allKeywords[name];
-		};
-
-		formData.filters.filters->for_each_filter<filters::SPID::MatchFilter>([&](const auto* entry) {
-			if (const auto& kwd = allKeywords[entry->value]; kwd) {
+		formData.filters.filters->for_each_filter<filters::SPID::KeywordFilter>([&](const auto* entry) {
+			if (const auto kwd = entry->value) {
 				AddDependency(formData.form, kwd);
-			}
-		});
-
-		formData.filters.filters->for_each_filter<filters::SPID::WildcardFilter>([&](const auto* entry) {
-			for (const auto& [keywordName, keyword] : allKeywords) {
-				if (string::icontains(keywordName, entry->value)) {
-					AddDependency(formData.form, keyword);
-				}
 			}
 		});
 	}
@@ -171,7 +137,7 @@ void Dependencies::ResolveKeywords()
 	std::sort(keywordForms.begin(), keywordForms.end());
 
 	// Print only unique entries in the log.
-	Forms::DataVec<RE::BGSKeyword> resolvedKeywords(keywordForms);
+	auto resolvedKeywords = keywordForms;
 	resolvedKeywords.erase(std::ranges::unique(resolvedKeywords).begin(), resolvedKeywords.end());
 
 	logger::info("\tKeywords have been sorted: ");
