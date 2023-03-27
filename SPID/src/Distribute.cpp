@@ -11,7 +11,7 @@ namespace Distribute
 				return;
 			}
 
-			if (const auto invChanges = actor->GetInventoryChanges(false)) {
+			if (const auto invChanges = actor->GetInventoryChanges()) {
 				if (const auto entryLists = invChanges->entryList) {
 					const auto formID = a_outfit->GetFormID();
 
@@ -79,6 +79,7 @@ namespace Distribute
 				npc->defaultOutfit = a_outfit;
 				actor->InitInventoryIfRequired();
 				detail::equip_worn_outfit(actor, a_outfit);
+
 				npc->AddKeyword(processedOutfit);
 
 				return true;
