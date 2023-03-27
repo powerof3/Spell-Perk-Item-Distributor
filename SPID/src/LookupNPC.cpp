@@ -15,6 +15,18 @@ namespace NPC
 		}
 	}
 
+    void Data::cache_keywords()
+	{
+		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.formID);
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.formID);
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+	}
+
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
@@ -42,6 +54,7 @@ namespace NPC
 			originalEDID = Cache::EditorID::GetEditorID(npc);
 		}
 		set_as_child();
+		cache_keywords();
 	}
 
 	RE::TESNPC* Data::GetNPC() const
@@ -59,7 +72,7 @@ namespace NPC
 		return race;
 	}
 
-	std::string Data::GetOriginalEDID() const
+    std::string Data::GetOriginalEDID() const
 	{
 		return originalEDID;
 	}
@@ -101,5 +114,15 @@ namespace NPC
 	bool Data::IsChild() const
 	{
 		return child;
+	}
+
+	bool Data::HasKeyword(const RE::BGSKeyword* kwd) const
+	{
+		return kwd && keywords.contains(kwd->formID);
+	}
+
+    bool Data::InsertKeyword(const RE::BGSKeyword* kwd)
+	{
+		return kwd && keywords.emplace(kwd->formID).second;
 	}
 }

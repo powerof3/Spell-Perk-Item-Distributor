@@ -513,19 +513,7 @@ namespace filters
 
 		    [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 		    {
-		        if (const auto npc = a_npcData.GetNPC()) {
-		            if (npc->HasKeyword(value)) {
-						return Result::kPass;
-		            }
-		        }
-
-				if (const auto race = a_npcData.GetRace()) {
-					if (race->HasKeyword(value)) {
-						return Result::kPass;
-					}
-				}
-
-				return Result::kFail;
+				return a_npcData.HasKeyword(value) ? Result::kPass : Result::kFail;
 		    }
 
 			std::ostringstream& describe(std::ostringstream& os) const override

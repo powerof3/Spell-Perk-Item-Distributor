@@ -158,15 +158,15 @@ namespace Distribute
 		collectedLeveledFormIDs.reserve(vec.size());
 
 		std::uint32_t vecIdx = 0;
-		for (auto& formData : vec) {
+		for (const auto& formData : vec) {
 			++vecIdx;
-			auto form = formData.form;
-			auto formID = form->GetFormID();
+			const auto form = formData.form;
+			const auto formID = form->GetFormID();
 			if (collectedFormIDs.contains(formID)) {
 				continue;
 			}
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
+				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && a_npcData.InsertKeyword(form)) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
 					if (formData.filters.HasLevelFilters()) {

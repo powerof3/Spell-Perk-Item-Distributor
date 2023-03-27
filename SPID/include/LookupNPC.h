@@ -23,8 +23,12 @@ namespace NPC
 
 		[[nodiscard]] RE::TESRace* GetRace() const;
 
+		[[nodiscard]] bool HasKeyword(const RE::BGSKeyword* kwd) const;
+		[[nodiscard]] bool InsertKeyword(const RE::BGSKeyword* kwd);
+
 	private:
 		void set_as_child();
+		void cache_keywords();
 
 		RE::TESNPC*  npc;
 		RE::Actor*   actor;
@@ -40,6 +44,8 @@ namespace NPC
 		bool          unique;
 		bool          summonable;
 		bool          child;
+
+		std::set<RE::FormID> keywords;
 	};
 }
 
