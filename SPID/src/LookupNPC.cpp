@@ -15,7 +15,7 @@ namespace NPC
 		}
 	}
 
-    void Data::cache_keywords()
+	void Data::cache_keywords()
 	{
 		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
 			keywords.emplace(a_keyword.formID);
@@ -72,7 +72,7 @@ namespace NPC
 		return race;
 	}
 
-    std::string Data::GetOriginalEDID() const
+	std::string Data::GetOriginalEDID() const
 	{
 		return originalEDID;
 	}
@@ -121,7 +121,7 @@ namespace NPC
 		return kwd && keywords.contains(kwd->formID);
 	}
 
-    bool Data::InsertKeyword(const RE::BGSKeyword* kwd)
+	bool Data::InsertKeyword(const RE::BGSKeyword* kwd)
 	{
 		return kwd && keywords.emplace(kwd->formID).second;
 	}

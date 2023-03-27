@@ -124,7 +124,7 @@ void Dependencies::ResolveKeywords()
 
 	auto&          keywordForms = Forms::keywords.GetForms();
 	const std::set distrKeywords(keywordForms.begin(), keywordForms.end());
-	
+
 	// Fill keywordDependencies based on Keywords found in configs.
 	for (auto& formData : distrKeywords) {
 		formData.filters.filters->for_each_filter<filters::SPID::KeywordFilter>([&](const auto* entry) {

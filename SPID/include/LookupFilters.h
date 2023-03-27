@@ -458,7 +458,7 @@ namespace filters
 			}
 		};
 
-	    /// String value for a filter that represents a wildcard.
+		/// String value for a filter that represents a wildcard.
 		/// The value must be without asterisks (e.g. filter "*Vampire" should be trimmed to "Vampire")
 		struct WildcardFilter : ValueFilter<std::string>
 		{
@@ -507,17 +507,17 @@ namespace filters
 			}
 		};
 
-		struct KeywordFilter: ValueFilter<RE::BGSKeyword*>
+		struct KeywordFilter : ValueFilter<RE::BGSKeyword*>
 		{
 			using ValueFilter::ValueFilter;
 
-		    [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
-		    {
+			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
+			{
 				return a_npcData.HasKeyword(value) ? Result::kPass : Result::kFail;
-		    }
+			}
 
 			std::ostringstream& describe(std::ostringstream& os) const override
-		    {
+			{
 				if (value) {
 					os << "HAS ";
 					if (const auto& edid = Cache::EditorID::GetEditorID(value); !edid.empty()) {
@@ -534,7 +534,7 @@ namespace filters
 					   << "]";
 				}
 				return os;
-		    }
+			}
 		};
 
 		using Level = std::uint8_t;
@@ -569,7 +569,7 @@ namespace filters
 				return describeLevel(os, "LVL");
 			}
 
-            [[nodiscard]] bool isSuperfluous() const override
+			[[nodiscard]] bool isSuperfluous() const override
 			{
 				return value.first == MinLevel && value.second == MaxLevel;
 			}

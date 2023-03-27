@@ -132,10 +132,10 @@ namespace INI
 					kModifier,
 					kSkill,
 					kSkillMin,
-					kSkillRange, // marker for one-sided range
+					kSkillRange,  // marker for one-sided range
 					kSkillMax,
 					kLevelMin,
-					kLevelRange, // marker for one-sided range
+					kLevelRange,  // marker for one-sided range
 					kLevelMax,
 
 					kTotal
@@ -148,7 +148,8 @@ namespace INI
 						if (matches[kSkill].length() > 0) {  // skills
 							if (const auto skill = string::to_num<SkillFilter::Skill>(matches[kSkill].str()); skill < SkillFilter::Skills::kTotal) {
 								const auto min = matches[kSkillMin].length() > 0 ? string::to_num<Level>(matches[kSkillMin].str()) : LevelFilter::MinLevel;
-								const auto max = matches[kSkillMax].length() > 0 ? string::to_num<Level>(matches[kSkillMax].str()) : matches[kSkillRange].length() > 0 ? LevelFilter::MaxLevel : min;
+								const auto max = matches[kSkillMax].length() > 0 ? string::to_num<Level>(matches[kSkillMax].str()) : matches[kSkillRange].length() > 0 ? LevelFilter::MaxLevel :
+                                                                                                                                                                         min;
 								if (matches[kModifier].length() == 0) {
 									return new SkillFilter(skill, min, max);
 								}
@@ -163,7 +164,8 @@ namespace INI
 						}
 						// levels
 						const auto min = matches[kLevelMin].length() > 0 ? string::to_num<Level>(matches[kLevelMin].str()) : LevelFilter::MinLevel;
-						const auto max = matches[kLevelMax].length() > 0 ? string::to_num<Level>(matches[kLevelMax].str()) : matches[kLevelRange].length() > 0 ? LevelFilter::MaxLevel : min;
+						const auto max = matches[kLevelMax].length() > 0 ? string::to_num<Level>(matches[kLevelMax].str()) : matches[kLevelRange].length() > 0 ? LevelFilter::MaxLevel :
+                                                                                                                                                                 min;
 
 						return new LevelFilter(min, max);
 					}
