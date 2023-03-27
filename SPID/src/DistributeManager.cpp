@@ -24,7 +24,7 @@ namespace Distribute
 			{
 				if (auto npc = a_this->GetActorBase(); npc && detail::should_process_NPC(npc)) {
 					auto npcData = NPCData(a_this, npc);
-				    Distribute(npcData, false);
+					Distribute(npcData, false);
 				}
 
 				return func(a_this);
@@ -46,7 +46,7 @@ namespace Distribute
 					// some npcs are completely reset upon loading
 					if (a_this->Is3DLoaded() && detail::should_process_NPC(npc)) {
 						auto npcData = NPCData(a_this, npc);
-					    Distribute(npcData, false);
+						Distribute(npcData, false);
 					}
 					if (npc->HasKeyword(processedOutfit) && !a_this->HasOutfitItems(npc->defaultOutfit)) {
 						a_this->InitInventoryIfRequired();
@@ -135,7 +135,6 @@ namespace Distribute::Event
 					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
 				});
-				
 			}
 		}
 

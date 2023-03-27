@@ -11,7 +11,7 @@ namespace Distribute::PlayerLeveledActor
 		{
 			if (const auto npc = a_actor->GetActorBase(); npc && npc->HasKeyword(processed)) {
 				auto npcData = NPCData(a_actor, npc);
-			    Distribute(npcData, true);
+				Distribute(npcData, true);
 			}
 
 			func(a_actor);
@@ -98,7 +98,7 @@ namespace Distribute::PlayerLeveledActor
 				if (!pcLevelMultManager->FindDistributedEntry(input)) {
 					//start distribution of leveled entries for first time
 					auto npcData = NPCData(a_this, npc);
-				    Distribute(npcData, input);
+					Distribute(npcData, input);
 				} else {
 					//handle redistribution
 					pcLevelMultManager->ForEachDistributedEntry(input, true, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet) {
