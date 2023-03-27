@@ -43,6 +43,8 @@ namespace INI
 			//NOT to hyphen
 			string::replace_all(newValue, "NOT ", "-");
 
+			// TODO: Sanitize level filters with a single number so that they will be replaced with an one-sided range: 5(20) => 5(20/)
+
 			// TODO: Sanitize () to be [] to support future ability to group filters with ()
 
 			// TODO: Santize "-" filters to properly behave in the new system.
@@ -122,7 +124,7 @@ namespace INI
 			//LEVEL
 			if (kLevel < size) {
 				// Matches all types of level and skill filters
-				const std::regex regex(R"(^(?:(w)?(\d+)\((\d+)?(?:\/(\d+)?)?\)|(\d+)?(?:\/(\d+)?)?)$)", std::regex_constants::optimize);
+				const std::regex regex(R"(^(?:(w)?(\d+)\((\d+)?(\/(\d+)?)?\)|(\d+)?(\/(\d+)?)?)$)", std::regex_constants::optimize);
 				// Indices of matched groups
 				enum
 				{
@@ -130,8 +132,10 @@ namespace INI
 					kModifier,
 					kSkill,
 					kSkillMin,
+					kSkillRange, // marker for one-sided range
 					kSkillMax,
 					kLevelMin,
+					kLevelRange, // marker for one-sided range
 					kLevelMax,
 
 					kTotal
@@ -144,7 +148,7 @@ namespace INI
 						if (matches[kSkill].length() > 0) {  // skills
 							if (const auto skill = string::to_num<SkillFilter::Skill>(matches[kSkill].str()); skill < SkillFilter::Skills::kTotal) {
 								const auto min = matches[kSkillMin].length() > 0 ? string::to_num<Level>(matches[kSkillMin].str()) : LevelFilter::MinLevel;
-								const auto max = matches[kSkillMax].length() > 0 ? string::to_num<Level>(matches[kSkillMax].str()) : LevelFilter::MaxLevel;
+								const auto max = matches[kSkillMax].length() > 0 ? string::to_num<Level>(matches[kSkillMax].str()) : matches[kSkillRange].length() > 0 ? LevelFilter::MaxLevel : min;
 								if (matches[kModifier].length() == 0) {
 									return new SkillFilter(skill, min, max);
 								}
@@ -159,7 +163,7 @@ namespace INI
 						}
 						// levels
 						const auto min = matches[kLevelMin].length() > 0 ? string::to_num<Level>(matches[kLevelMin].str()) : LevelFilter::MinLevel;
-						const auto max = matches[kLevelMax].length() > 0 ? string::to_num<Level>(matches[kLevelMax].str()) : LevelFilter::MaxLevel;
+						const auto max = matches[kLevelMax].length() > 0 ? string::to_num<Level>(matches[kLevelMax].str()) : matches[kLevelRange].length() > 0 ? LevelFilter::MaxLevel : min;
 
 						return new LevelFilter(min, max);
 					}
