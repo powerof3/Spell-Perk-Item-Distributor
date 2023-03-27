@@ -569,14 +569,17 @@ namespace filters
 				return describeLevel(os, "LVL");
 			}
 
+            [[nodiscard]] bool isSuperfluous() const override
+			{
+				return value.first == MinLevel && value.second == MaxLevel;
+			}
+
 		protected:
 			std::ostringstream& describeLevel(std::ostringstream& os, const std::string& name) const
 			{
 				const int min = value.first;
 				const int max = value.second;
-				if (value.first == MinLevel && value.second == MaxLevel) {
-					os << name << "=ANY";
-				} else if (value.first == value.second) {
+				if (value.first == value.second) {
 					os << name << "=" << value.first;
 				} else if (value.first == MinLevel) {
 					os << name << "=" << max << "-";
