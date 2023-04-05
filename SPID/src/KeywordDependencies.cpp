@@ -112,8 +112,10 @@ void Dependencies::ResolveKeywords()
 	keywordForms.clear();
 	logger::info("	Keywords have been sorted: ");
 	for (const auto& keyword : result) {
-		logger::info("		{}", describe(keyword));
 		const auto& [begin, end] = dataKeywords.equal_range(keyword);
+		if (begin != end) {
+			logger::info("		{}", describe(begin->second.form));
+		}
 		for (auto it = begin; it != end; ++it) {
 			keywordForms.push_back(it->second);
 		}
