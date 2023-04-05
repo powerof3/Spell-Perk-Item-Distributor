@@ -123,14 +123,6 @@ class DependencyResolver
 	/// A container that holds nodes associated with each value that DependencyResolver was constructed with.
 	std::unordered_map<Value, Node*> nodes{};
 
-	/// A vector of nodes that are ordered in a way that would make resolution the most efficient
-	///	by reducing number of lookups for all nodes to resolved the graph.
-	///
-	///	<p>
-	///	Note that sorting happens during every call to resolve() method to ensure that all dependencies are accounted for.
-	///	</p>
-	std::vector<Node*> orderedNodes{};
-
 	/// Looks up dependencies of a single node and places it into the result vector afterwards.
 	void resolveNode(Node* const node, std::vector<Value>& result) const
 	{
@@ -145,14 +137,14 @@ class DependencyResolver
 	}
 
 public:
+
+	DependencyResolver() = default;
+
 	DependencyResolver(const std::vector<Value>& values) :
 		comparator(std::move(Comparator()))
 	{
 		for (const auto& value : values) {
-			const auto node = new Node(value, comparator);
-			if (nodes.try_emplace(value, node).second) {
-				orderedNodes.push_back(node);
-			}
+			nodes.try_emplace(value, new Node(value, comparator));
 		}
 	}
 
@@ -162,13 +154,9 @@ public:
 			delete pair.second;
 		}
 	}
-
+	
 	/// Attempts to create a dependency rule between `parent` and `dependency` objects.
-	///
-	///	<p>
-	///	Both objects must be present in the original vector of values that were passed to DependencyResolver's constructor.
-	///	If either of those objects were not present in the original vector an UnknownDependencyException will be thrown.
-	///	</p>
+	///	If either of those objects were not present in the original vector they'll be added in-place.
 	///
 	/// <p>
 	///	<b>May throw one of the following exceptions when Directed Acyclic Graph rules are being violated.</b>
@@ -176,27 +164,48 @@ public:
 	///	CyclicDependencyException
 	///	SuperfluousDependencyException
 	///	SelfReferenceDependencyException
-	///	UnknownDependencyException
 	///	</list>
 	///	</p>
-	void addDependency(const Value& parent, const Value& dependency) const
+	void addDependency(const Value& parent, const Value& dependency)
 	{
-		if (const auto parentNode = nodes.find(parent); parentNode != nodes.end()) {
-			if (const auto dependencyNode = nodes.find(dependency); dependencyNode != nodes.end()) {
-				parentNode->second->addDependency(dependencyNode->second);
-			} else {
-				throw UnknownDependencyException(dependency);
-			}
+		Node* parentNode;
+		Node* dependencyNode;
+
+		if (const auto it = nodes.find(parent); it != nodes.end()) {
+			parentNode = it->second;
 		} else {
-			throw UnknownDependencyException(parent);
+			parentNode = new Node(parent, comparator);
+			nodes.try_emplace(parent, parentNode);  
+		}
+
+		if (const auto it = nodes.find(dependency); it != nodes.end()) {
+			dependencyNode = it->second;
+		} else {
+			dependencyNode = new Node(dependency, comparator);
+			nodes.try_emplace(dependency, dependencyNode);
+		}
+		
+		if (parentNode && dependencyNode) {
+		    parentNode->addDependency(dependencyNode);
 		}
 	}
 
 	/// Creates a vector that contains all values sorted topologically according to dependencies provided with addDependency method.
-	[[nodiscard]] std::vector<Value> resolve()
+	[[nodiscard]] std::vector<Value> resolve() const
 	{
 		std::vector<Value> result;
 
+	    /// A vector of nodes that are ordered in a way that would make resolution the most efficient
+		///	by reducing number of lookups for all nodes to resolved the graph.
+		///
+		///	<p>
+		///	Note that sorting happens during every call to resolve() method to ensure that all dependencies are accounted for.
+		///	</p>
+		std::vector<Node*> orderedNodes{};
+
+		std::ranges::transform(nodes, std::back_inserter(orderedNodes), [](const auto& pair) {
+			return pair.second;
+		});
 		// Sort nodes in correct order of processing.
 		std::sort(orderedNodes.begin(), orderedNodes.end(), node_less());
 
@@ -248,15 +257,5 @@ public:
 		const Value             current;
 		const Value             superfluous;
 		const std::stack<Value> path;
-	};
-
-	/// An exception thrown when DependencyResolver attempts to add a dependency between parent and dependency values when either of those was not passed to the DependencyResolver's constructor.
-	struct UnknownDependencyException : std::exception
-	{
-		UnknownDependencyException(const Value value) :
-			value(value)
-		{}
-
-		const Value value;
 	};
 };

@@ -14,25 +14,14 @@ struct keyword_less
 
 using Resolver = DependencyResolver<Keyword, keyword_less>;
 
-/// Handy function that can will catch and log exceptions related to dependency resolution when trying to add dependencies to resolver.
-void AddDependency(const Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
+/// Handy function that will catch and log exceptions related to dependency resolution when trying to add dependencies to resolver.
+void AddDependency(Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
 {
 	try {
 		resolver.addDependency(lhs, rhs);
 	} catch (Resolver::SelfReferenceDependencyException& e) {
-		logger::warn("	SKIP - {} is referencing itself", describe(e.current));
-	} catch (Resolver::SuperfluousDependencyException& e) {
-		logger::info("	INFO - {} does already implicitly depend on {}. This filter may be omitted.", describe(e.current), describe(e.superfluous));
-		auto path = e.path;
-		path.pop();
-		std::ostringstream os;
-		while (!path.empty()) {
-			os << " -> " << path.top();
-			path.pop();
-		}
-		logger::info("		Full path: {}", os.str());
+		buffered_logger::warn("	INFO - {} is referencing itself", describe(e.current));
 	} catch (Resolver::CyclicDependencyException& e) {
-		logger::warn("	SKIP - {} and {} use each other in their filters. Distribution might not work as expected.", describe(e.second), describe(e.first), describe(e.second));
 		std::ostringstream os;
 		os << e.path.top();
 		auto path = e.path;
@@ -41,9 +30,9 @@ void AddDependency(const Resolver& resolver, const Keyword& lhs, const Keyword& 
 			os << " -> " << path.top();
 			path.pop();
 		}
-		logger::info("		Full path: {}", os.str());
-	} catch (Resolver::UnknownDependencyException& e) {
-		logger::error("	FAIL - {} was not present in configs. If you see this report to sasnikol :)", describe(e.value));
+		buffered_logger::warn("	INFO - {} and {} depend on each other. Distribution might not work as expected.\n					Full path: {}", describe(e.first), describe(e.second), os.str());
+	} catch (...) {
+	    // we'll ignore other exceptions
 	}
 }
 
@@ -82,13 +71,8 @@ void Dependencies::ResolveKeywords()
 		}
 	}
 
-	std::vector<Keyword> keywords;
+	Resolver resolver;
 
-	std::ranges::transform(keywordForms, std::back_inserter(keywords), [](const auto& elem) {
-		return elem.form;
-	});
-
-	auto resolver = Resolver(keywords);
 	/// A map that will be used to map back keywords to their data wrappers.
 	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;
 
