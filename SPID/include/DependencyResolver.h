@@ -2,12 +2,13 @@
 
 #include <functional>
 
-/// An object that is able to build a dependency graph for any arbitrary objects
-/// and resolve it into a vector that contains these objects in the order
-/// that ensures that dependent objects are placed after those they depend on.
+/// DependencyResolver builds a dependency graph for any arbitrary Values
+/// and resolves it into a vector of the Values in the order
+/// that ensures that dependent Values are placed after those they depend on.
 /// <p>
-///	<b>Note: If custom Value type does not define overloaded operator `<` you should provide a Comparator functor,
-///	that will be used to determine whether one value is less than the other. </b>
+///	<b>Note: If custom Value type does not define overloaded operator `<` you may provide a Comparator functor,
+///	that will be used to control the order in which Values will be processed.
+///	This Comparator should indicate whether one value is less than the other.</b>
 ///	</p>
 template <typename Value, typename Comparator = std::less<Value>>
 class DependencyResolver
@@ -120,7 +121,7 @@ class DependencyResolver
 	///	This comparator is used to determine ordering in which nodes should be processed for the optimal resolution.
 	const Comparator comparator;
 
-	/// A container that holds nodes associated with each value that DependencyResolver was constructed with.
+	/// A container that holds nodes associated with each value that was added to DependencyResolver.
 	std::unordered_map<Value, Node*> nodes{};
 
 	/// Looks up dependencies of a single node and places it into the result vector afterwards.
@@ -196,11 +197,7 @@ public:
 
 		/// A vector of nodes that are ordered in a way that would make resolution the most efficient
 		///	by reducing number of lookups for all nodes to resolved the graph.
-		///
-		///	<p>
-		///	Note that sorting happens during every call to resolve() method to ensure that all dependencies are accounted for.
-		///	</p>
-		std::vector<Node*> orderedNodes{};
+		std::vector<Node*> orderedNodes;
 
 		std::ranges::transform(nodes, std::back_inserter(orderedNodes), [](const auto& pair) {
 			return pair.second;
