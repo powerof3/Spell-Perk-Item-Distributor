@@ -70,3 +70,39 @@ struct Traits
 
 using IdxOrCount = std::int32_t;
 using Chance = std::uint32_t;
+
+/// A standardized way of converting any object to string.
+///
+///	<p>
+///	Overload `operator<<` to provide custom formatting for your value.
+///	Alternatively, specialize this method and provide your own implementation.
+///	</p>
+ template<typename Value>
+std::string describe(Value value) {
+	std::ostringstream os;
+	os << value;
+	return os.str();
+}
+
+inline std::ostream& operator<<(std::ostream& os, RE::TESFile* file)
+{
+	os << file->fileName;
+}
+
+inline std::ostream& operator<<(std::ostream& os, RE::TESForm* form)
+{
+	if (const auto& edid = Cache::EditorID::GetEditorID(form); !edid.empty()) {
+		os << edid << " ";
+	}
+	os << "["
+	   << std::to_string(form->GetFormType())
+	   << ":"
+	   << std::setfill('0')
+	   << std::setw(sizeof(RE::FormID) * 2)
+	   << std::uppercase
+	   << std::hex
+	   << form->GetFormID()
+	   << "]";
+
+	return os;
+}
