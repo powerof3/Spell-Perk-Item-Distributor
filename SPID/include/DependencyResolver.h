@@ -137,7 +137,6 @@ class DependencyResolver
 	}
 
 public:
-
 	DependencyResolver() = default;
 
 	DependencyResolver(const std::vector<Value>& values) :
@@ -154,7 +153,7 @@ public:
 			delete pair.second;
 		}
 	}
-	
+
 	/// Attempts to create a dependency rule between `parent` and `dependency` objects.
 	///	If either of those objects were not present in the original vector they'll be added in-place.
 	///
@@ -175,7 +174,7 @@ public:
 			parentNode = it->second;
 		} else {
 			parentNode = new Node(parent, comparator);
-			nodes.try_emplace(parent, parentNode);  
+			nodes.try_emplace(parent, parentNode);
 		}
 
 		if (const auto it = nodes.find(dependency); it != nodes.end()) {
@@ -184,9 +183,9 @@ public:
 			dependencyNode = new Node(dependency, comparator);
 			nodes.try_emplace(dependency, dependencyNode);
 		}
-		
+
 		if (parentNode && dependencyNode) {
-		    parentNode->addDependency(dependencyNode);
+			parentNode->addDependency(dependencyNode);
 		}
 	}
 
@@ -195,7 +194,7 @@ public:
 	{
 		std::vector<Value> result;
 
-	    /// A vector of nodes that are ordered in a way that would make resolution the most efficient
+		/// A vector of nodes that are ordered in a way that would make resolution the most efficient
 		///	by reducing number of lookups for all nodes to resolved the graph.
 		///
 		///	<p>

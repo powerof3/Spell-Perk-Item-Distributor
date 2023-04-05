@@ -77,8 +77,9 @@ using Chance = std::uint32_t;
 ///	Overload `operator<<` to provide custom formatting for your value.
 ///	Alternatively, specialize this method and provide your own implementation.
 ///	</p>
- template<typename Value>
-std::string describe(Value value) {
+template <typename Value>
+std::string describe(Value value)
+{
 	std::ostringstream os;
 	os << value;
 	return os.str();

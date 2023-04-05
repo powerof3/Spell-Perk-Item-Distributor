@@ -32,7 +32,7 @@ void AddDependency(Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
 		}
 		buffered_logger::warn("	INFO - {} and {} depend on each other. Distribution might not work as expected.\n					Full path: {}", describe(e.first), describe(e.second), os.str());
 	} catch (...) {
-	    // we'll ignore other exceptions
+		// we'll ignore other exceptions
 	}
 }
 

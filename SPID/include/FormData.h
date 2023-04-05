@@ -90,8 +90,8 @@ namespace Forms
 		FilterData    filters{};
 		std::string   path{};
 
-        bool operator==(const Data& a_rhs) const;
-    };
+		bool operator==(const Data& a_rhs) const;
+	};
 
 	template <class Form>
 	using DataVec = std::vector<Data<Form>>;
@@ -292,7 +292,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		forms.emplace_back(index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path );
+		forms.emplace_back(index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path);
 		index++;
 	}
 }
