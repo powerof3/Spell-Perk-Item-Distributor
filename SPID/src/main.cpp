@@ -31,7 +31,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				const auto version = g_mergeMapperInterface->GetBuildNumber();
 				logger::info("\tGot MergeMapper interface buildnumber {}", version);
 			} else {
-				logger::info("\tMergeMapper not detected");
+				logger::info("MergeMapper not detected");
 			}
 		}
 		break;

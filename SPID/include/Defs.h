@@ -88,11 +88,12 @@ std::string describe(Value value)
 inline std::ostream& operator<<(std::ostream& os, RE::TESFile* file)
 {
 	os << file->fileName;
+	return os;
 }
 
 inline std::ostream& operator<<(std::ostream& os, RE::TESForm* form)
 {
-	if (const auto& edid = Cache::EditorID::GetEditorID(form); !edid.empty()) {
+	if (const auto& edid = EditorID::GetEditorID(form); !edid.empty()) {
 		os << edid << " ";
 	}
 	os << "["

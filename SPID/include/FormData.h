@@ -49,8 +49,8 @@ namespace Forms
 						}
 					} else if (formID) {
 						auto filterForm = modName ?
-                                              a_dataHandler->LookupForm(*formID, *modName) :
-                                              RE::TESForm::LookupByID(*formID);
+						                      a_dataHandler->LookupForm(*formID, *modName) :
+						                      RE::TESForm::LookupByID(*formID);
 						if (filterForm) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
@@ -308,22 +308,9 @@ void Forms::Distributables<Form>::FinishLookupForms()
 	// entry order within config is preserved
 	// thanks, chatGPT!
 	if constexpr (std::is_same_v<RE::BGSOutfit, Form> || std::is_same_v<RE::TESObjectARMO, Form>) {
-		std::map<std::string, std::vector<std::uint32_t>> indices;
-		for (std::uint32_t i = 0; i < forms.size(); i++) {
-			if (!indices.contains(forms[i].path)) {
-				indices[forms[i].path] = { i };
-			} else {
-				indices[forms[i].path].push_back(i);
-			}
-		}
-		DataVec<Form> reversedVec;
-		reversedVec.reserve(forms.size());
-		for (auto& [path, idxVec] : indices | std::views::reverse) {
-			for (auto idx : idxVec) {
-				reversedVec.emplace_back(forms[idx]);
-			}
-		}
-		forms = reversedVec;
+		std::stable_sort(forms.begin(), forms.end(), [](const auto& a_form1, const auto& a_form2) {
+			return a_form1.path > a_form2.path;  // Compare paths in reverse order
+		});
 	}
 
 	formsWithLevels.reserve(forms.size());
