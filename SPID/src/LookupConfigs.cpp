@@ -32,6 +32,10 @@ namespace INI
 			static const srell::regex re_comma(R"(\s*,\s*)", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_comma, ",");
 
+			//convert 00012345 formIDs to 0x12345
+			static const srell::regex re_formID(R"(\b00+([0-9a-fA-F]{1,6})\b)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_formID, "0x$1");
+
 			//strip leading zeros
 			static const srell::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
