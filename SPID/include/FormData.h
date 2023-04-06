@@ -81,12 +81,6 @@ namespace Forms
 		}
 	}
 
-	/// Custom ordering for keywords that ensures that dependent keywords are distributed after the keywords that they depend on.
-	struct KeywordDependencySorter
-	{
-		static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
-	};
-
 	template <class Form>
 	struct Data
 	{
@@ -96,22 +90,7 @@ namespace Forms
 		FilterData    filters{};
 		std::string   path{};
 
-		bool operator<(const Data& a_rhs) const
-		{
-			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				return KeywordDependencySorter::sort(form, a_rhs.form);
-			} else {
-				return true;
-			}
-		}
-
-		bool operator==(const Data& a_rhs) const
-		{
-			if (!form || !a_rhs.form) {
-				return false;
-			}
-			return form->GetFormID() == a_rhs.form->GetFormID();
-		}
+		bool operator==(const Data& a_rhs) const;
 	};
 
 	template <class Form>
@@ -153,6 +132,15 @@ namespace Forms
 
 	std::size_t GetTotalEntries();
 	std::size_t GetTotalLeveledEntries();
+}
+
+template <class Form>
+bool Forms::Data<Form>::operator==(const Data& a_rhs) const
+{
+	if (!form || !a_rhs.form) {
+		return false;
+	}
+	return form->GetFormID() == a_rhs.form->GetFormID();
 }
 
 template <class Form>
@@ -304,7 +292,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		forms.emplace_back(Data<Form>{ index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path });
+		forms.emplace_back(index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path);
 		index++;
 	}
 }
