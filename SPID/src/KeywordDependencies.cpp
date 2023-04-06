@@ -44,8 +44,9 @@ void Dependencies::ResolveKeywords()
 
 	logger::info("{:*^50}", "RESOLVING KEYWORDS");
 	const auto startTime = std::chrono::steady_clock::now();
-	// Pre-build a map of all available keywords by names.
-	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
+
+    // Pre-build a map of all available keywords by names.
+	StringMap<RE::BGSKeyword*> allKeywords{};
 
 	auto& keywordForms = Forms::keywords.GetForms();
 
@@ -110,7 +111,7 @@ void Dependencies::ResolveKeywords()
 	const auto endTime = std::chrono::steady_clock::now();
 
 	keywordForms.clear();
-	logger::info("\tKeywords have been sorted: ");
+	logger::info("\tKeywords have been sorted:");
 	for (const auto& keyword : result) {
 		const auto& [begin, end] = dataKeywords.equal_range(keyword);
 		if (begin != end) {

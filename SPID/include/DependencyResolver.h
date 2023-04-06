@@ -27,7 +27,7 @@ class DependencyResolver
 		/// <p>
 		///	<b>Use dependsOn() method to determine whether current node depends on another</b>.
 		///	</p>
-		std::unordered_set<Node*> dependencies{};
+		Set<Node*> dependencies{};
 
 		/// Flag that is used by DependencyResolver during resolution process
 		///	to detect whether given Node was already resolved.
@@ -42,19 +42,19 @@ class DependencyResolver
 			value(std::move(value)), comparator(comparator), isResolved(false) {}
 		~Node() = default;
 
-		bool dependsOn(const Node* const node, std::stack<Value>& path) const
+		bool dependsOn(Node* const node, std::stack<Value>& path) const
 		{
 			if (dependencies.empty()) {
 				return false;
 			}
 
-			if (std::find(dependencies.begin(), dependencies.end(), node) != dependencies.end()) {
+			if (dependencies.contains(node)) {
 				path.push(node->value);
 				path.push(this->value);
 				return true;
 			}
 
-			if (auto nextNode = std::find_if(dependencies.begin(), dependencies.end(), [&](const auto dependency) { return dependency->dependsOn(node, path); }); nextNode != dependencies.end()) {
+			if (auto nextNode = std::find_if(dependencies.begin(), dependencies.end(), [&](const auto& dependency) { return dependency->dependsOn(node, path); }); nextNode != dependencies.end()) {
 				path.push(this->value);
 				return true;
 			}
@@ -122,7 +122,7 @@ class DependencyResolver
 	const Comparator comparator;
 
 	/// A container that holds nodes associated with each value that was added to DependencyResolver.
-	std::unordered_map<Value, Node*> nodes{};
+	Map<Value, Node*> nodes{};
 
 	/// Looks up dependencies of a single node and places it into the result vector afterwards.
 	void resolveNode(Node* const node, std::vector<Value>& result) const
@@ -130,7 +130,7 @@ class DependencyResolver
 		if (node->isResolved) {
 			return;
 		}
-		for (const auto dependency : node->dependencies) {
+		for (const auto& dependency : node->dependencies) {
 			resolveNode(dependency, result);
 		}
 		result.push_back(node->value);
