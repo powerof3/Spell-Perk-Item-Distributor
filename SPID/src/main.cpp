@@ -3,8 +3,6 @@
 #include "LookupForms.h"
 #include "PCLevelMultManager.h"
 
-HMODULE tweaks{ nullptr };
-
 bool shouldLookupForms{ false };
 bool shouldLogErrors{ false };
 bool shouldDistribute{ false };
@@ -33,7 +31,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				const auto version = g_mergeMapperInterface->GetBuildNumber();
 				logger::info("\tGot MergeMapper interface buildnumber {}", version);
 			} else {
-				logger::info("\tMergeMapper not detected");
+				logger::info("INFO - MergeMapper not detected");
 			}
 		}
 		break;

@@ -10,8 +10,8 @@ namespace Distribute::PlayerLeveledActor
 		static void thunk(RE::Actor* a_actor)
 		{
 			if (const auto npc = a_actor->GetActorBase(); npc && npc->HasKeyword(processed)) {
-				const auto npcData = std::make_unique<NPCData>(a_actor, npc);
-				Distribute(*npcData, PCLevelMult::Input{ a_actor, npc, true });
+				auto npcData = NPCData(a_actor, npc);
+				Distribute(npcData, true);
 			}
 
 			func(a_actor);
@@ -97,8 +97,8 @@ namespace Distribute::PlayerLeveledActor
 
 				if (!pcLevelMultManager->FindDistributedEntry(input)) {
 					//start distribution of leveled entries for first time
-					const auto npcData = std::make_unique<NPCData>(a_this, npc);
-					Distribute(*npcData, input);
+					auto npcData = NPCData(a_this, npc);
+					Distribute(npcData, input);
 				} else {
 					//handle redistribution
 					pcLevelMultManager->ForEachDistributedEntry(input, true, [&](RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet) {
@@ -168,6 +168,7 @@ namespace Distribute::PlayerLeveledActor
 		stl::write_vfunc<RE::Character, Revert>();
 		stl::write_vfunc<RE::Character, LoadGame>();
 
-		logger::info("\tInstalled leveled distribution hooks");
+		logger::info("{:*^50}", "HOOKS");
+	    logger::info("Installed leveled distribution hooks");
 	}
 }

@@ -186,4 +186,5 @@ namespace Distribute
 	}
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input);
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries);
 }

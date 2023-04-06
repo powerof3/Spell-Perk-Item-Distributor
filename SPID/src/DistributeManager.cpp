@@ -23,9 +23,8 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (auto npc = a_this->GetActorBase(); npc && detail::should_process_NPC(npc)) {
-					if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
-						Distribute(*npcData, PCLevelMult::Input{ a_this, npc, false });
-					}
+					auto npcData = NPCData(a_this, npc);
+					Distribute(npcData, false);
 				}
 
 				return func(a_this);
@@ -46,9 +45,8 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					// some npcs are completely reset upon loading
 					if (a_this->Is3DLoaded() && detail::should_process_NPC(npc)) {
-						if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
-							Distribute(*npcData, PCLevelMult::Input{ a_this, npc, false });
-						}
+						auto npcData = NPCData(a_this, npc);
+						Distribute(npcData, false);
 					}
 					if (npc->HasKeyword(processedOutfit) && !a_this->HasOutfitItems(npc->defaultOutfit)) {
 						a_this->InitInventoryIfRequired();
@@ -66,6 +64,8 @@ namespace Distribute
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
+
+			logger::info("Installed actor load hooks");
 		}
 	}
 
@@ -82,7 +82,6 @@ namespace Distribute
 		}
 
 		if (Forms::GetTotalLeveledEntries() > 0) {
-			logger::info("{:*^50}", "HOOKS");
 			PlayerLeveledActor::Install();
 		}
 
@@ -111,11 +110,11 @@ namespace Distribute::Event
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
-			logger::info("\tRegistered for {}", typeid(RE::TESFormDeleteEvent).name());
+			logger::info("Registered for {}", typeid(RE::TESFormDeleteEvent).name());
 
 			if (Forms::deathItems) {
 				scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
-				logger::info("\tRegistered for {}", typeid(RE::TESDeathEvent).name());
+				logger::info("Registered for {}", typeid(RE::TESDeathEvent).name());
 			}
 		}
 	}
@@ -130,10 +129,10 @@ namespace Distribute::Event
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				const auto npcData = std::make_unique<NPCData>(actor, npc);
-
+				auto       npcData = NPCData(actor, npc);
 				const auto input = PCLevelMult::Input{ actor, npc, false };
-				for_each_form<RE::TESBoundObject>(*npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
+
+				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
 					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
 				});
