@@ -55,11 +55,11 @@ void Dependencies::ResolveKeywords()
 	/// A map that will be used to map back keywords to their data wrappers.
 	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;
 
-	// Fill keywordDependencies based on Keywords found in configs.
 	for (auto& formData : keywordForms) {
 		dataKeywords.emplace(formData.form, formData);
+		resolver.addIsolated(formData.form);
 		formData.filters.filters->for_each_filter<filters::SPID::KeywordFilter>([&](const auto* entry) {
-			if (const auto kwd = entry->value) {
+			if (const auto& kwd = entry->value) {
 				AddDependency(resolver, formData.form, kwd);
 			}
 		});
