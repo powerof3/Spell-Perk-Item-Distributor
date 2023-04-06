@@ -190,11 +190,11 @@ public:
 		}
 	}
 
-    /// Add an isolated object to the resolver's graph.
-    ///
-    /// Isolated object is the one that doesn't have any dependencies on the others.
-    /// However, dependencies can be added later using addDependency() method.
-    void addIsolated(const Value& value)
+	/// Add an isolated object to the resolver's graph.
+	///
+	/// Isolated object is the one that doesn't have any dependencies on the others.
+	/// However, dependencies can be added later using addDependency() method.
+	void addIsolated(const Value& value)
 	{
 		if (!nodes.contains(value)) {
 			nodes.try_emplace(value, new Node(value, comparator));
