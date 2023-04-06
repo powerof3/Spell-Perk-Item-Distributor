@@ -20,7 +20,7 @@ void AddDependency(Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
 	try {
 		resolver.addDependency(lhs, rhs);
 	} catch (Resolver::SelfReferenceDependencyException& e) {
-		buffered_logger::warn("	INFO - {} is referencing itself", describe(e.current));
+		buffered_logger::warn("\tINFO - {} is referencing itself", describe(e.current));
 	} catch (Resolver::CyclicDependencyException& e) {
 		std::ostringstream os;
 		os << e.path.top();
@@ -30,7 +30,7 @@ void AddDependency(Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
 			os << " -> " << path.top();
 			path.pop();
 		}
-		buffered_logger::warn("	INFO - {} and {} depend on each other. Distribution might not work as expected.\n					Full path: {}", describe(e.first), describe(e.second), os.str());
+		buffered_logger::warn("\tINFO - {} and {} depend on each other. Distribution might not work as expected.\n\t\t\t\t\tFull path: {}", describe(e.first), describe(e.second), os.str());
 	} catch (...) {
 		// we'll ignore other exceptions
 	}
@@ -65,7 +65,7 @@ void Dependencies::ResolveKeywords()
 							formID);
 						mergeDetails = std::format("->0x{:X}~{}", mergedFormID, mergedModName);
 					}
-					logger::error(" WARN : [0x{:X}~{}{}] keyword has an empty editorID!", formID, modname, mergeDetails);
+					logger::error("\tWARN : [0x{:X}~{}{}] keyword has an empty editorID!", formID, modname, mergeDetails);
 				}
 			}
 		}
@@ -110,11 +110,11 @@ void Dependencies::ResolveKeywords()
 	const auto endTime = std::chrono::steady_clock::now();
 
 	keywordForms.clear();
-	logger::info("	Keywords have been sorted: ");
+	logger::info("\tKeywords have been sorted: ");
 	for (const auto& keyword : result) {
 		const auto& [begin, end] = dataKeywords.equal_range(keyword);
 		if (begin != end) {
-			logger::info("		{}", describe(begin->second.form));
+			logger::info("\t\t{}", describe(begin->second.form));
 		}
 		for (auto it = begin; it != end; ++it) {
 			keywordForms.push_back(it->second);
