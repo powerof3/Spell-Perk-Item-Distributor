@@ -78,6 +78,7 @@ void Dependencies::ResolveKeywords()
 
 	for (const auto& formData : keywordForms) {
 		dataKeywords.emplace(formData.form, formData);
+		resolver.addIsolated(formData.form);
 
 		const auto findKeyword = [&](const std::string& name) -> RE::BGSKeyword* {
 			return allKeywords[name];
