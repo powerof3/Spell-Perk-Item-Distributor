@@ -48,7 +48,7 @@ void Lookup::LogFormLookup()
 
 		// Only log entries that are actually present in INIs.
 		if (all > 0) {
-			logger::info("\tAdding {}/{} {}s", added, all, recordName);
+			logger::info("Adding {}/{} {}s", added, all, recordName);
 		}
 	};
 
@@ -84,7 +84,7 @@ bool Lookup::DoFormLookup()
 		LogFormLookup();
 
 		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-		logger::info("\tLookup took {}μs / {}ms", duration, duration / 1000.0f);
+		logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
 	}
 
 	return success;

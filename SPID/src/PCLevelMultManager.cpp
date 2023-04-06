@@ -15,7 +15,7 @@ namespace PCLevelMult
 	{
 		if (const auto UI = RE::UI::GetSingleton()) {
 			UI->AddEventSink(GetSingleton());
-			logger::info("\tRegistered {}", typeid(Manager).name());
+			logger::info("Registered {}", typeid(Manager).name());
 		}
 	}
 

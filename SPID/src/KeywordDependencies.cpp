@@ -42,7 +42,6 @@ void Dependencies::ResolveKeywords()
 		return;
 	}
 
-	logger::info("{:*^50}", "RESOLVING KEYWORDS");
 	const auto startTime = std::chrono::steady_clock::now();
 
 	// Pre-build a map of all available keywords by names.
@@ -111,7 +110,7 @@ void Dependencies::ResolveKeywords()
 	const auto endTime = std::chrono::steady_clock::now();
 
 	keywordForms.clear();
-	logger::info("\tKeywords have been sorted:");
+	logger::info("\tSorting keywords :");
 	for (const auto& keyword : result) {
 		const auto& [begin, end] = dataKeywords.equal_range(keyword);
 		if (begin != end) {
@@ -123,5 +122,5 @@ void Dependencies::ResolveKeywords()
 	}
 
 	const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-	logger::info("Keywords resolution took {}μs / {}ms", duration, duration / 1000.0f);
+	logger::info("\tKeyword resolution took {}μs / {}ms", duration, duration / 1000.0f);
 }

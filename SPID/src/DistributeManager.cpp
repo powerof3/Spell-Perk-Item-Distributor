@@ -64,6 +64,8 @@ namespace Distribute
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
+
+			logger::info("Installed actor load hooks");
 		}
 	}
 
@@ -80,7 +82,6 @@ namespace Distribute
 		}
 
 		if (Forms::GetTotalLeveledEntries() > 0) {
-			logger::info("{:*^50}", "HOOKS");
 			PlayerLeveledActor::Install();
 		}
 
@@ -109,11 +110,11 @@ namespace Distribute::Event
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
-			logger::info("\tRegistered for {}", typeid(RE::TESFormDeleteEvent).name());
+			logger::info("Registered for {}", typeid(RE::TESFormDeleteEvent).name());
 
 			if (Forms::deathItems) {
 				scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
-				logger::info("\tRegistered for {}", typeid(RE::TESDeathEvent).name());
+				logger::info("Registered for {}", typeid(RE::TESDeathEvent).name());
 			}
 		}
 	}
