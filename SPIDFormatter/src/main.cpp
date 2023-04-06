@@ -24,7 +24,7 @@ bool INI::Format(TYPE a_type)
 		ini.SetMultiKey();
 
 		if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
-			std::cout << "	Unable to load INI, skipping... \n";
+			std::cout << "\tUnable to load INI, skipping... \n";
 			continue;
 		}
 
@@ -46,10 +46,10 @@ bool INI::Format(TYPE a_type)
 					if (a_type == INI::kDowngrade) {
 						if (const auto count = std::ranges::count_if(sanitized, [](const char c) { return c == '~'; }); count > 0) {
 							if (!doOnce) {
-								std::cout << "	Incompatible filter(s) detected (ie. 0x123~MyMod.esp). These must be removed manually\n";
+								std::cout << "\tIncompatible filter(s) detected (ie. 0x123~MyMod.esp). These must be removed manually\n";
 								doOnce = true;
 							}
-							std::cout << "		" << sanitized << "\n ";
+							std::cout << "\t\t" << sanitized << "\n ";
 						}
 					}
 
@@ -58,7 +58,7 @@ bool INI::Format(TYPE a_type)
 				}
 				(void)ini.SaveFile(path.c_str());
 
-				std::cout << "	Sanitized " << oldFormatMap.size() << " entries \n";
+				std::cout << "\tSanitized " << oldFormatMap.size() << " entries \n";
 			}
 		}
 	}

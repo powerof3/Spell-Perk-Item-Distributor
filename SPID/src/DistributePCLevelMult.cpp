@@ -168,6 +168,7 @@ namespace Distribute::PlayerLeveledActor
 		stl::write_vfunc<RE::Character, Revert>();
 		stl::write_vfunc<RE::Character, LoadGame>();
 
-		logger::info("\tInstalled leveled distribution hooks");
+		logger::info("{:*^50}", "HOOKS");
+	    logger::info("Installed leveled distribution hooks");
 	}
 }
