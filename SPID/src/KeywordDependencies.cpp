@@ -45,7 +45,7 @@ void Dependencies::ResolveKeywords()
 	logger::info("{:*^50}", "RESOLVING KEYWORDS");
 	const auto startTime = std::chrono::steady_clock::now();
 
-    // Pre-build a map of all available keywords by names.
+	// Pre-build a map of all available keywords by names.
 	StringMap<RE::BGSKeyword*> allKeywords{};
 
 	auto& keywordForms = Forms::keywords.GetForms();
