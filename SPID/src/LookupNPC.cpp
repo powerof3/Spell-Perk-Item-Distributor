@@ -1,20 +1,37 @@
 #include "LookupNPC.h"
 
+// ID
 namespace NPC
 {
-	void Data::set_as_child()
-	{
-		child = false;
+	Data::ID::ID(RE::TESActorBase* a_base) :
+		formID(a_base->GetFormID()),
+		editorID(EditorID::GetEditorID(a_base))
+	{}
 
-		if (actor->IsChild()) {
-			child = true;
-		} else if (race->IsChildRace()) {
-			child = true;
-		} else if (race->formEditorID.contains("RaceChild")) {
-			child = true;
-		}
+	bool Data::ID::contains(const std::string& a_str) const
+	{
+		return string::icontains(editorID, a_str);
 	}
 
+	bool Data::ID::operator==(const RE::TESFile* a_mod) const
+	{
+		return a_mod->IsFormInMod(formID);
+	}
+
+	bool Data::ID::operator==(const std::string& a_str) const
+	{
+		return string::iequals(editorID, a_str);
+	}
+
+	bool Data::ID::operator==(RE::FormID a_formID) const
+	{
+		return formID == a_formID;
+	}
+}
+
+// Data
+namespace NPC
+{
 	void Data::cache_keywords()
 	{
 		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
@@ -30,30 +47,27 @@ namespace NPC
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
-		name(a_actor->GetName()),
-		level(a_npc->GetLevel()),
-		sex(a_npc->GetSex()),
-		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable())
+		name(actor->GetName()),
+		race(npc->GetRace()),
+		level(npc->GetLevel()),
+		sex(npc->GetSex()),
+		unique(npc->IsUnique()),
+		summonable(npc->IsSummonable()),
+		child(actor->IsChild() || race->formEditorID.contains("RaceChild"))
 	{
-		race = a_npc->GetRace();
-		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
+		if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
-				originalFormID = originalBase->GetFormID();
-				originalEDID = Cache::EditorID::GetEditorID(originalBase);
+				originalIDs = ID(originalBase);
 			}
 			if (const auto templateBase = extraLvlCreature->templateBase) {
-				templateFormID = templateBase->GetFormID();
-				templateEDID = Cache::EditorID::GetEditorID(templateBase);
-				if (auto templateRace = templateBase->As<RE::TESNPC>()->GetRace()) {
+				templateIDs = ID(templateBase);
+				if (const auto templateRace = templateBase->As<RE::TESNPC>()->GetRace()) {
 					race = templateRace;
 				}
 			}
 		} else {
-			originalFormID = a_npc->GetFormID();
-			originalEDID = Cache::EditorID::GetEditorID(npc);
+			originalIDs = ID(npc);
 		}
-		set_as_child();
 		cache_keywords();
 	}
 
@@ -62,7 +76,12 @@ namespace NPC
 		return npc;
 	}
 
-	std::string Data::GetName() const
+	RE::Actor* Data::GetActor() const
+	{
+		return actor;
+	}
+
+    std::string Data::GetName() const
 	{
 		return name;
 	}
@@ -74,21 +93,22 @@ namespace NPC
 
 	std::string Data::GetOriginalEDID() const
 	{
-		return originalEDID;
+		return originalIDs.editorID;
 	}
+
 	std::string Data::GetTemplateEDID() const
 	{
-		return templateEDID;
+		return templateIDs.editorID;
 	}
 
 	RE::FormID Data::GetOriginalFormID() const
 	{
-		return originalFormID;
+		return originalIDs.formID;
 	}
 
 	RE::FormID Data::GetTemplateFormID() const
 	{
-		return templateFormID;
+		return templateIDs.formID;
 	}
 
 	std::uint16_t Data::GetLevel() const

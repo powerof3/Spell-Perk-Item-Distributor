@@ -1,7 +1,35 @@
 #include "Distribute.h"
+#include "DistributeManager.h"
 
 namespace Distribute
 {
+	namespace detail
+	{
+		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
+		{
+			if (!actor || !a_outfit) {
+				return;
+			}
+
+			if (const auto invChanges = actor->GetInventoryChanges()) {
+				if (const auto entryLists = invChanges->entryList) {
+					const auto formID = a_outfit->GetFormID();
+
+					for (const auto& entryList : *entryLists) {
+						if (entryList && entryList->object && entryList->extraLists) {
+							for (const auto& xList : *entryList->extraLists) {
+								const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+								if (outfitItem && outfitItem->id == formID) {
+									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true, true);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
@@ -9,6 +37,7 @@ namespace Distribute
 		}
 
 		const auto npc = a_npcData.GetNPC();
+		const auto actor = a_npcData.GetActor();
 
 		for_each_form<RE::BGSKeyword>(a_npcData, Forms::keywords, a_input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
 			npc->AddKeywords(a_keywords);
@@ -38,12 +67,29 @@ namespace Distribute
 		});
 
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects) {
-			return npc->AddObjectsToContainer(a_objects, a_npcData.GetNPC());
+			return npc->AddObjectsToContainer(a_objects, npc);
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (npc->defaultOutfit != a_outfit) {
+			if (!npc->HasKeyword(processedOutfit)) {
+				if (npc->defaultOutfit == a_outfit) {
+					return false;
+				}
+				actor->RemoveOutfitItems(npc->defaultOutfit);
 				npc->defaultOutfit = a_outfit;
+				actor->InitInventoryIfRequired();
+				detail::equip_worn_outfit(actor, a_outfit);
+
+				npc->AddKeyword(processedOutfit);
+
+				return true;
+			}
+			return false;
+		});
+
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {
+			if (npc->sleepOutfit != a_outfit) {
+				npc->sleepOutfit = a_outfit;
 				return true;
 			}
 			return false;
@@ -106,14 +152,6 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {
-			if (npc->sleepOutfit != a_outfit) {
-				npc->sleepOutfit = a_outfit;
-				return true;
-			}
-			return false;
-		});
-
 		for_each_form<RE::TESObjectARMO>(a_npcData, Forms::skins, a_input, [&](auto* a_skin) {
 			if (npc->skin != a_skin) {
 				npc->skin = a_skin;
@@ -121,5 +159,10 @@ namespace Distribute
 			}
 			return false;
 		});
+	}
+
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries)
+	{
+		Distribute(a_npcData, PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries });
 	}
 }

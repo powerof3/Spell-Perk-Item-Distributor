@@ -1,116 +1,39 @@
 #include "KeywordDependencies.h"
+#include "DependencyResolver.h"
 #include "FormData.h"
 
-/// An object that describes a keyword dependencies.
-struct DependencyNode
+using Keyword = RE::BGSKeyword*;
+
+struct keyword_less
 {
-private:
-	RE::BGSKeyword*                                      value;
-	std::unordered_map<RE::BGSKeyword*, DependencyNode*> children{};
-
-public:
-	explicit DependencyNode(RE::BGSKeyword* val) :
-		value(val)
-	{}
-
-	~DependencyNode() = default;
-
-	/// Adds given node as a child of the current node.
-	/// If the same keyword has already been added, subsequent attempts will be ignored.
-	void AddChild(DependencyNode* childNode)
+	bool operator()(const Keyword& a, const Keyword& b) const
 	{
-		auto child = childNode->value;
-		if (child && child != value) {
-			children.try_emplace(child, childNode);
-		}
-	}
-
-	/// Checks whether current node has any dependencies.
-	[[nodiscard]] bool HasDependencies() const
-	{
-		return !children.empty();
-	}
-
-	/// Returns number of dependencies that this node has.
-	[[nodiscard]] std::size_t DependenciesCount() const
-	{
-		return children.size();
-	}
-
-	/// Checks if given keyword is either a direct child of the current node or is a child of one of the descendants.
-	bool IsNestedChild(RE::BGSKeyword* keyword)
-	{
-		if (!value || keyword == value || children.empty()) {
-			return false;
-		}
-
-		if (children.contains(keyword)) {
-			return true;
-		}
-
-		for (const auto& dep : children | std::views::values) {
-			if (dep->IsNestedChild(keyword)) {
-				return true;
-			}
-		}
-
-		return false;
+		return a->GetFormEditorID() < b->GetFormEditorID();
 	}
 };
 
-/// A map that associates keywords with their dependency nodes, holding all keyword's dependencies.
-inline std::unordered_map<RE::BGSKeyword*, std::unique_ptr<DependencyNode>> keywordDependencies;
+using Resolver = DependencyResolver<Keyword, keyword_less>;
 
-/// Finds an existing dependency node for given keyword.
-/// If none found, a new node will be created and placed into the map.
-DependencyNode* NodeForKeyword(RE::BGSKeyword* keyword)
+/// Handy function that will catch and log exceptions related to dependency resolution when trying to add dependencies to resolver.
+void AddDependency(Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
 {
-	if (keywordDependencies.contains(keyword)) {
-		return keywordDependencies[keyword].get();
+	try {
+		resolver.addDependency(lhs, rhs);
+	} catch (Resolver::SelfReferenceDependencyException& e) {
+		buffered_logger::warn("\tINFO - {} is referencing itself", describe(e.current));
+	} catch (Resolver::CyclicDependencyException& e) {
+		std::ostringstream os;
+		os << e.path.top();
+		auto path = e.path;
+		path.pop();
+		while (!path.empty()) {
+			os << " -> " << path.top();
+			path.pop();
+		}
+		buffered_logger::warn("\tINFO - {} and {} depend on each other. Distribution might not work as expected.\n\t\t\t\t\tFull path: {}", describe(e.first), describe(e.second), os.str());
+	} catch (...) {
+		// we'll ignore other exceptions
 	}
-
-	const auto [it, result] = keywordDependencies.try_emplace(keyword, std::make_unique<DependencyNode>(keyword));
-	return it->second.get();
-}
-
-/// Returns number of dependencies that given `keyword` has.
-std::size_t DependenciesCount(RE::BGSKeyword* keyword)
-{
-	const auto iter = keywordDependencies.find(keyword);
-	return iter != keywordDependencies.end() ? iter->second->DependenciesCount() : 0;
-}
-
-/// Checks whether `parent` keyword is dependent on `dependency` keyword.
-bool IsDepending(RE::BGSKeyword* parent, RE::BGSKeyword* dependency)
-{
-	const auto iter = keywordDependencies.find(parent);
-	return iter != keywordDependencies.end() && iter->second->IsNestedChild(dependency);
-}
-
-/// Makes `parent` keyword dependent on `dependency` keyword.
-/// If `dependency` keyword is already depending on `parent` then no association will be created for `parent` -> `dependency` to avoid circular dependencies.
-void AddDependency(RE::BGSKeyword* parent, RE::BGSKeyword* dependency)
-{
-	if (parent == dependency) {
-		logger::warn("		{} SKIP - Keyword referencing itself in its filters.", parent->GetFormEditorID());
-		return;
-	}
-
-	// If dependency is already present in parent's tree then no need to add it.
-	if (IsDepending(parent, dependency)) {
-		return;
-	}
-
-	// Skip circular dependencies.
-	if (IsDepending(dependency, parent)) {
-		logger::warn("		{} SKIP - Keywords {} and {} use each other in their filters.", parent->GetFormEditorID(), parent->GetFormEditorID(), dependency->GetFormEditorID(), parent->GetFormEditorID(), dependency->GetFormEditorID());
-		return;
-	}
-
-	const auto parentNode = NodeForKeyword(parent);
-	const auto dependencyNode = NodeForKeyword(dependency);
-
-	parentNode->AddChild(dependencyNode);
 }
 
 void Dependencies::ResolveKeywords()
@@ -119,54 +42,44 @@ void Dependencies::ResolveKeywords()
 		return;
 	}
 
-	// Pre-build a map of all available keywords by names.
-	std::unordered_map<std::string, RE::BGSKeyword*> allKeywords{};
+	const auto startTime = std::chrono::steady_clock::now();
 
-	auto&          keywordForms = Forms::keywords.GetForms();
-	const std::set distrKeywords(keywordForms.begin(), keywordForms.end());
+	// Pre-build a map of all available keywords by names.
+	StringMap<RE::BGSKeyword*> allKeywords{};
+
+	auto& keywordForms = Forms::keywords.GetForms();
+
+
+	Resolver resolver;
+
+	/// A map that will be used to map back keywords to their data wrappers.
+	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;
 
 	// Fill keywordDependencies based on Keywords found in configs.
-	for (auto& formData : distrKeywords) {
+	for (auto& formData : keywordForms) {
+		dataKeywords.emplace(formData.form, formData);
 		formData.filters.filters->for_each_filter<filters::SPID::KeywordFilter>([&](const auto* entry) {
 			if (const auto kwd = entry->value) {
-				AddDependency(formData.form, kwd);
+				AddDependency(resolver, formData.form, kwd);
 			}
 		});
 	}
 
-	std::sort(keywordForms.begin(), keywordForms.end());
+	const auto result = resolver.resolve();
+	const auto endTime = std::chrono::steady_clock::now();
 
-	// Print only unique entries in the log.
-	auto resolvedKeywords = keywordForms;
-	resolvedKeywords.erase(std::ranges::unique(resolvedKeywords).begin(), resolvedKeywords.end());
-
-	logger::info("\tKeywords have been sorted: ");
-	for (const auto& keywordData : resolvedKeywords) {
-		logger::info("\t\t{} [0x{:X}]", keywordData.form->GetFormEditorID(), keywordData.form->GetFormID());
+	keywordForms.clear();
+	logger::info("\tSorting keywords :");
+	for (const auto& keyword : result) {
+		const auto& [begin, end] = dataKeywords.equal_range(keyword);
+		if (begin != end) {
+			logger::info("\t\t{}", describe(begin->second.form));
+		}
+		for (auto it = begin; it != end; ++it) {
+			keywordForms.push_back(it->second);
+		}
 	}
 
-	// Clear keyword dependencies
-	keywordDependencies.clear();
-}
-
-/// Comparator that utilizes dependencies map created with Dependencies::ResolveKeywords() to sort keywords.
-///
-/// Order is determined by the following rules:
-/// 1) If A is a dependency of B, then A must always be placed before B
-/// 2) If B is a dependency of A, then A must always be placed after B
-/// 3) If A has less dependencies than B, then A must be placed before B and vise versa. ("leaf" keywords should be on top)
-/// 4) If A and B has the same number of dependencies they should be ordered alphabetically.
-bool Forms::KeywordDependencySorter::sort(RE::BGSKeyword* a, RE::BGSKeyword* b)
-{
-	if (IsDepending(b, a)) {
-		return true;
-	} else if (IsDepending(a, b)) {
-		return false;
-	} else if (DependenciesCount(a) < DependenciesCount(b)) {
-		return true;
-	} else if (DependenciesCount(a) > DependenciesCount(b)) {
-		return false;
-	} else {
-		return _stricmp(a->GetFormEditorID(), b->GetFormEditorID()) < 0;
-	}
+	const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+	logger::info("\tKeyword resolution took {}μs / {}ms", duration, duration / 1000.0f);
 }

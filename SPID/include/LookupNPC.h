@@ -7,8 +7,11 @@ namespace NPC
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
+		[[nodiscard]] RE::Actor*  GetActor() const;
 
 		[[nodiscard]] std::string GetName() const;
+
+		// All these are deprecated:
 		[[nodiscard]] std::string GetOriginalEDID() const;
 		[[nodiscard]] std::string GetTemplateEDID() const;
 
@@ -27,17 +30,29 @@ namespace NPC
 		[[nodiscard]] bool InsertKeyword(const RE::BGSKeyword* kwd);
 
 	private:
-		void set_as_child();
+		struct ID
+		{
+			ID() = default;
+			explicit ID(RE::TESActorBase* a_base);
+
+			[[nodiscard]] bool contains(const std::string& a_str) const;
+
+			bool operator==(const RE::TESFile* a_mod) const;
+			bool operator==(const std::string& a_str) const;
+			bool operator==(RE::FormID a_formID) const;
+
+			RE::FormID  formID{ 0 };
+			std::string editorID{};
+		};
+
 		void cache_keywords();
 
-		RE::TESNPC*  npc;
-		RE::Actor*   actor;
-		std::string  name;
-		RE::TESRace* race;
-		RE::FormID   originalFormID;
-		std::string  originalEDID;
-		RE::FormID   templateFormID{ 0 };
-		std::string  templateEDID{};
+		RE::TESNPC*   npc;
+		RE::Actor*    actor;
+		std::string   name;
+		RE::TESRace*  race;
+		ID            originalIDs;
+		ID            templateIDs{};
 
 		std::uint16_t level;
 		RE::SEX       sex;

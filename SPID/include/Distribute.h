@@ -12,14 +12,15 @@ namespace Distribute
 		bool passed_filters(
 			const NPCData&            a_npcData,
 			const PCLevelMult::Input& a_input,
-			const Forms::Data<Form>&  a_formData,
-			std::uint32_t             idx)
+			const Forms::Data<Form>&  a_formData)
 		{
 			const auto pcLevelMultManager = PCLevelMult::Manager::GetSingleton();
+
 			const auto hasLevelFilters = a_formData.filters.HasLevelFilters();
 			const auto distributedFormID = a_formData.form->GetFormID();
+			const auto index = a_formData.index;
 
-			if (hasLevelFilters && pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, idx)) {
+			if (hasLevelFilters && pcLevelMultManager->FindRejectedEntry(a_input, distributedFormID, index)) {
 				return false;
 			}
 
@@ -27,7 +28,7 @@ namespace Distribute
 
 			if (result != filters::Result::kPass) {
 				if (result == filters::Result::kFailRNG && hasLevelFilters) {
-					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, idx);
+					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, index);
 				}
 				return false;
 			}
@@ -57,6 +58,8 @@ namespace Distribute
 				return false;
 			}
 		}
+
+		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit);
 	}
 
 	// old method (distributing one by one)
@@ -70,10 +73,8 @@ namespace Distribute
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
-		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
-			++vecIdx;
-			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
+			if (detail::passed_filters(a_npcData, a_input, formData)) {
 				a_callback(formData.form, formData.idxOrCount);
 			}
 		}
@@ -90,10 +91,8 @@ namespace Distribute
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
-		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
-			++vecIdx;
-			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
+			if (detail::passed_filters(a_npcData, a_input, formData)) {
 				auto form = formData.form;
 				if (a_callback(form)) {
 					break;
@@ -118,10 +117,8 @@ namespace Distribute
 
 		std::map<Form*, IdxOrCount> collectedForms{};
 
-		std::uint32_t vecIdx = 0;
 		for (auto& formData : vec) {
-			++vecIdx;
-			if (detail::passed_filters(a_npcData, a_input, formData, vecIdx)) {
+			if (detail::passed_filters(a_npcData, a_input, formData)) {
 				collectedForms.emplace(formData.form, formData.idxOrCount);
 			}
 		}
@@ -149,24 +146,22 @@ namespace Distribute
 		const auto npc = a_npcData.GetNPC();
 
 		std::vector<Form*> collectedForms{};
+		Set<RE::FormID>    collectedFormIDs{};
+		Set<RE::FormID>    collectedLeveledFormIDs{};
+
 		collectedForms.reserve(vec.size());
-
-		Set<RE::FormID> collectedFormIDs{};
 		collectedFormIDs.reserve(vec.size());
-
-		Set<RE::FormID> collectedLeveledFormIDs{};
 		collectedLeveledFormIDs.reserve(vec.size());
 
-		std::uint32_t vecIdx = 0;
 		for (const auto& formData : vec) {
-			++vecIdx;
 			const auto form = formData.form;
 			const auto formID = form->GetFormID();
+
 			if (collectedFormIDs.contains(formID)) {
 				continue;
 			}
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && a_npcData.InsertKeyword(form)) {
+				if (detail::passed_filters(a_npcData, a_input, formData) && a_npcData.InsertKeyword(form)) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
 					if (formData.filters.HasLevelFilters()) {
@@ -174,7 +169,7 @@ namespace Distribute
 					}
 				}
 			} else {
-				if (detail::passed_filters(a_npcData, a_input, formData, vecIdx) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+				if (detail::passed_filters(a_npcData, a_input, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
 					if (formData.filters.HasLevelFilters()) {
 						collectedLeveledFormIDs.emplace(formID);
@@ -192,4 +187,5 @@ namespace Distribute
 	}
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input);
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries);
 }

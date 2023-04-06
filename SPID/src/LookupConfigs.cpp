@@ -36,6 +36,10 @@ namespace INI
 			static const srell::regex re_comma(R"(\s*,\s*)", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_comma, ",");
 
+			//convert 00012345 formIDs to 0x12345
+			static const srell::regex re_formID(R"(\b00+([0-9a-fA-F]{1,6})\b)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_formID, "0x$1");
+
 			//strip leading zeros
 			static const srell::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
@@ -232,11 +236,11 @@ namespace INI
 		std::vector<std::string> files = distribution::get_configs(R"(Data\)", "_DISTR"sv);
 
 		if (files.empty()) {
-			logger::warn("	No .ini files with _DISTR suffix were found within the Data folder, aborting...");
+			logger::warn("No .ini files with _DISTR suffix were found within the Data folder, aborting...");
 			return { false, false };
 		}
 
-		logger::info("\t{} matching inis found", files.size());
+		logger::info("{} matching inis found", files.size());
 
 		//initialize map
 		for (size_t i = 0; i < RECORD::kTotal; i++) {

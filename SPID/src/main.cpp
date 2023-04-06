@@ -3,10 +3,9 @@
 #include "LookupForms.h"
 #include "PCLevelMultManager.h"
 
-HMODULE tweaks{ nullptr };
-
 bool shouldLookupForms{ false };
 bool shouldLogErrors{ false };
+bool shouldDistribute{ false };
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
@@ -32,22 +31,16 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				const auto version = g_mergeMapperInterface->GetBuildNumber();
 				logger::info("\tGot MergeMapper interface buildnumber {}", version);
 			} else {
-				logger::info("\tMergeMapper not detected");
+				logger::info("INFO - MergeMapper not detected");
 			}
 		}
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
-			Distribute::LookupFormsOnce();
-
-			if (Distribute::shouldDistribute) {
-				logger::info("{:*^50}", "EVENTS");
-				Distribute::Event::Manager::Register();
-				PCLevelMult::Manager::GetSingleton()->Register();
-
-				// Clear logger's buffer to free some memory :)
-				buffered_logger::clear();
+			if (shouldDistribute = Lookup::DoFormLookup(); shouldDistribute) {
+				Distribute::SetupDistribution();
 			}
+
 			if (shouldLogErrors) {
 				const auto error = fmt::format("[SPID] Errors found when reading configs. Check {}.log in {} for more info\n", Version::PROJECT, SKSE::log::log_directory()->string());
 				RE::ConsoleLog::GetSingleton()->Print(error.c_str());
@@ -56,7 +49,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kPreLoadGame:
 		{
-			if (Distribute::shouldDistribute) {
+			if (shouldDistribute) {
 				const std::string savePath{ static_cast<char*>(a_message->data), a_message->dataLen };
 				PCLevelMult::Manager::GetSingleton()->GetPlayerIDFromSave(savePath);
 			}
@@ -64,7 +57,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kNewGame:
 		{
-			if (Distribute::shouldDistribute) {
+			if (shouldDistribute) {
 				PCLevelMult::Manager::GetSingleton()->SetNewGameStarted();
 			}
 		}

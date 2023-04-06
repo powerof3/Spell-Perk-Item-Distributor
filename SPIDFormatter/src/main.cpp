@@ -2,26 +2,21 @@
 
 bool INI::Format(TYPE a_type)
 {
-	std::vector<std::string> configs;
-
-	for (const auto& entry : std::filesystem::directory_iterator("./")) {
-		if (entry.exists() && !entry.path().empty() && entry.path().extension() == ".ini") {
-			if (const auto path = entry.path().string(); path.rfind("_DISTR") != std::string::npos) {
-				configs.push_back(path);
-			}
-		}
-	}
+	std::vector<std::string> configs = clib_util::distribution::get_configs("./", "_DISTR");
 
 	if (configs.empty()) {
 		std::cout << "\nUnable to find _DISTR files in the current directory. Make sure you're running this from the Skyrim Data folder!\n";
 		return false;
 	}
 
-	auto size = configs.size();
-	a_type == INI::kUpgrade ? std ::cout << "\nUpgrading " << size << " INI files...\n\n" : std ::cout << "\nDowngrading " << size << " INI files...\n\n";
+	const auto size = configs.size();
+
+	a_type == INI::kUpgrade ?
+        std ::cout << "\nUpgrading " << size << " INI files...\n\n" :
+        std ::cout << "\nDowngrading " << size << " INI files...\n\n";
 
 	for (auto& path : configs) {
-		detail::replace_first_instance(path, "./", "");
+		clib_util::string::replace_first_instance(path, "./", "");
 		std::cout << "ini : " << path << "\n";
 
 		CSimpleIniA ini;
@@ -29,7 +24,7 @@ bool INI::Format(TYPE a_type)
 		ini.SetMultiKey();
 
 		if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
-			std::cout << "	Unable to load INI, skipping... \n";
+			std::cout << "\tUnable to load INI, skipping... \n";
 			continue;
 		}
 
@@ -51,10 +46,10 @@ bool INI::Format(TYPE a_type)
 					if (a_type == INI::kDowngrade) {
 						if (const auto count = std::ranges::count_if(sanitized, [](const char c) { return c == '~'; }); count > 0) {
 							if (!doOnce) {
-								std::cout << "	Incompatible filter(s) detected (ie. 0x123~MyMod.esp). These must be removed manually\n";
+								std::cout << "\tIncompatible filter(s) detected (ie. 0x123~MyMod.esp). These must be removed manually\n";
 								doOnce = true;
 							}
-							std::cout << "		" << sanitized << "\n ";
+							std::cout << "\t\t" << sanitized << "\n ";
 						}
 					}
 
@@ -63,7 +58,7 @@ bool INI::Format(TYPE a_type)
 				}
 				(void)ini.SaveFile(path.c_str());
 
-				std::cout << "	Sanitized " << oldFormatMap.size() << " entries \n";
+				std::cout << "\tSanitized " << oldFormatMap.size() << " entries \n";
 			}
 		}
 	}

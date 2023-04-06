@@ -2,10 +2,11 @@
 
 namespace Distribute
 {
-	inline bool shouldDistribute{ false };
+	inline constexpr std::string_view processed_EDID{ "SPID_Processed" };
+	inline RE::BGSKeyword*            processed{ nullptr };
 
-	inline constexpr std::string_view processedKeywordEDID{ "SPID_Processed" };
-	inline RE::BGSKeyword*            processedKeyword{ nullptr };
+	inline constexpr std::string_view processedOutfit_EDID{ "SPID_ProcessedOutfit" };
+	inline RE::BGSKeyword*            processedOutfit{ nullptr };
 
 	namespace detail
 	{
@@ -48,5 +49,5 @@ namespace Distribute
 		};
 	}
 
-	void LookupFormsOnce();
+	void SetupDistribution();
 }

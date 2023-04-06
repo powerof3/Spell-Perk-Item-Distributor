@@ -1,79 +1,96 @@
 #include "DistributeManager.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
-#include "LookupForms.h"
 
 namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc)
 	{
-		if (a_npc->HasKeyword(processedKeyword)) {
+		if (a_npc->HasKeyword(processed)) {
 			return false;
 		}
 
-		a_npc->AddKeyword(processedKeyword);
+		a_npc->AddKeyword(processed);
 
 		return true;
 	}
 
-	// Static actors
 	namespace Actor
 	{
-		struct Load3D
+		// Initial distribution
+		struct ShouldBackgroundClone
 		{
-			static RE::NiAVObject* thunk(RE::Character* a_this, bool a_arg2)
+			static bool thunk(RE::Character* a_this)
 			{
-				if (auto npc = a_this->GetActorBase()) {
-					if (detail::should_process_NPC(npc)) {
-						if (const auto npcData = std::make_unique<NPCData>(a_this, npc)) {
-							Distribute(*npcData, PCLevelMult::Input{ a_this, npc, false });
-						}
-					}
+				if (auto npc = a_this->GetActorBase(); npc && detail::should_process_NPC(npc)) {
+					auto npcData = NPCData(a_this, npc);
+					Distribute(npcData, false);
 				}
 
-				return func(a_this, a_arg2);
+				return func(a_this);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 
 			static inline constexpr std::size_t index{ 0 };
-			static inline constexpr std::size_t size{ 0x6A };
+			static inline constexpr std::size_t size{ 0x6D };
+		};
+
+		// Post distribution
+		struct InitLoadGame
+		{
+			static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
+			{
+				func(a_this, a_buf);
+
+				if (const auto npc = a_this->GetActorBase()) {
+					// some npcs are completely reset upon loading
+					if (a_this->Is3DLoaded() && detail::should_process_NPC(npc)) {
+						auto npcData = NPCData(a_this, npc);
+						Distribute(npcData, false);
+					}
+					if (npc->HasKeyword(processedOutfit) && !a_this->HasOutfitItems(npc->defaultOutfit)) {
+						a_this->InitInventoryIfRequired();
+						detail::equip_worn_outfit(a_this, npc->defaultOutfit);
+					}
+				}
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+
+			static inline constexpr std::size_t index{ 0 };
+			static inline constexpr std::size_t size{ 0x10 };
 		};
 
 		void Install()
 		{
-			stl::write_vfunc<RE::Character, Load3D>();
+			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
+			stl::write_vfunc<RE::Character, InitLoadGame>();
+
+			logger::info("Installed actor load hooks");
 		}
 	}
 
-	void LookupFormsOnce()
+	void SetupDistribution()
 	{
-		logger::info("{:*^50}", "LOOKUP");
-
-		const auto startTime = std::chrono::steady_clock::now();
-		shouldDistribute = Lookup::GetForms();
-		const auto endTime = std::chrono::steady_clock::now();
-
-		if (shouldDistribute) {
-			Lookup::LogFormLookup();
-
-			const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-			logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
-
-			if (Forms::GetTotalLeveledEntries() > 0) {
-				logger::info("{:*^50}", "HOOKS");
-				PlayerLeveledActor::Install();
+		// Create tag keywords
+		if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
+			if (processed = factory->Create(); processed) {
+				processed->formEditorID = processed_EDID;
 			}
-
-			if (!processedKeyword) {
-				const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-				if (const auto keyword = factory ? factory->Create() : nullptr) {
-					keyword->formEditorID = processedKeywordEDID;
-					processedKeyword = keyword;
-				}
+			if (processedOutfit = factory->Create(); processedOutfit) {
+				processedOutfit->formEditorID = processedOutfit_EDID;
 			}
-
-			Lookup::LogFilters();
 		}
+
+		if (Forms::GetTotalLeveledEntries() > 0) {
+			PlayerLeveledActor::Install();
+		}
+
+		logger::info("{:*^50}", "EVENTS");
+		Event::Manager::Register();
+		PCLevelMult::Manager::Register();
+
+		// Clear logger's buffer to free some memory :)
+		buffered_logger::clear();
 	}
 }
 
@@ -93,10 +110,11 @@ namespace Distribute::Event
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
-			logger::info("\tRegistered for {}", typeid(RE::TESFormDeleteEvent).name());
+			logger::info("Registered for {}", typeid(RE::TESFormDeleteEvent).name());
+
 			if (Forms::deathItems) {
 				scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
-				logger::info("\tRegistered for {}", typeid(RE::TESDeathEvent).name());
+				logger::info("Registered for {}", typeid(RE::TESDeathEvent).name());
 			}
 		}
 	}
@@ -111,10 +129,10 @@ namespace Distribute::Event
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				const auto npcData = std::make_unique<NPCData>(actor, npc);
-
+				auto       npcData = NPCData(actor, npc);
 				const auto input = PCLevelMult::Input{ actor, npc, false };
-				for_each_form<RE::TESBoundObject>(*npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
+
+				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
 					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 					return true;
 				});

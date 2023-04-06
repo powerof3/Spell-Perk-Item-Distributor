@@ -14,8 +14,8 @@ namespace PCLevelMult
 	void Manager::Register()
 	{
 		if (const auto UI = RE::UI::GetSingleton()) {
-			UI->AddEventSink(this);
-			logger::info("\tRegistered {}", typeid(Manager).name());
+			UI->AddEventSink(GetSingleton());
+			logger::info("Registered {}", typeid(Manager).name());
 		}
 	}
 
@@ -39,12 +39,11 @@ namespace PCLevelMult
 
 	bool Manager::FindRejectedEntry(const Input& a_input, RE::FormID a_distributedFormID, std::uint32_t a_formDataIndex) const
 	{
-		Locker lock(_lock);
+		ReadLocker lock(_lock);
 		if (const auto idIt = _cache.find(a_input.playerID); idIt != _cache.end()) {
 			auto& npcFormIDMap = idIt->second;
 			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
-				auto& [levelCapState, levelMap] = npcIt->second;
-				for (const auto& [level, cachedData] : levelMap) {
+				for (const auto& [level, cachedData] : npcIt->second.entries) {
 					if (a_input.npcLevel >= level) {
 						if (const auto formIt = cachedData.rejectedEntries.find(a_distributedFormID); formIt != cachedData.rejectedEntries.end()) {
 							return formIt->second.contains(a_formDataIndex);
@@ -59,7 +58,7 @@ namespace PCLevelMult
 
 	bool Manager::InsertRejectedEntry(const Input& a_input, RE::FormID a_distributedFormID, std::uint32_t a_formDataIndex)
 	{
-		Locker lock(_lock);
+		WriteLocker lock(_lock);
 		return _cache[a_input.playerID]
 		             [a_input.npcFormID]
 		                 .entries[a_input.npcLevel]
@@ -70,15 +69,15 @@ namespace PCLevelMult
 
 	void Manager::DumpRejectedEntries()
 	{
-		Locker lock(_lock);
+		ReadLocker lock(_lock);
 		for (auto& [playerID, npcFormIDs] : _cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("\tNPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
+				logger::info("\tNPC : {} [{:X}]", EditorID::GetEditorID(npcFormID), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
 					logger::info("\t\tLevel : {}", level);
 					for (auto& [distFormID, idxSet] : distFormMap.rejectedEntries) {
-						logger::info("\t\t\tDist FormID : {} [{:X}]", Cache::EditorID::GetEditorID(distFormID), distFormID);
+						logger::info("\t\t\tDist FormID : {} [{:X}]", EditorID::GetEditorID(distFormID), distFormID);
 						for (auto& idx : idxSet) {
 							logger::info("\t\t\t\tIDX : {}", idx);
 						}
@@ -90,7 +89,7 @@ namespace PCLevelMult
 
 	bool Manager::FindDistributedEntry(const Input& a_input)
 	{
-		Locker lock(_lock);
+		ReadLocker lock(_lock);
 		if (const auto it = _cache.find(a_input.playerID); it != _cache.end()) {
 			if (const auto npcIt = it->second.find(a_input.npcFormID); npcIt != it->second.end()) {
 				return !npcIt->second.entries.empty();
@@ -101,41 +100,42 @@ namespace PCLevelMult
 
 	void Manager::InsertDistributedEntry(const Input& a_input, RE::FormType a_formType, const Set<RE::FormID>& a_formIDSet)
 	{
-		Locker lock(_lock);
+		WriteLocker lock(_lock);
 		_cache[a_input.playerID][a_input.npcFormID].entries[a_input.npcLevel].distributedEntries[a_formType].insert(a_formIDSet.begin(), a_formIDSet.end());
 	}
 
-	void Manager::ForEachDistributedEntry(const Input& a_input, std::function<void(RE::FormType, const Set<RE::FormID>&, bool)> a_fn) const
+	void Manager::DumpDistributedEntries()
 	{
-		Locker lock(_lock);
-		if (const auto playerID = _cache.find(a_input.playerID); playerID != _cache.end()) {
-			auto& npcFormIDMap = playerID->second;
-			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
-				auto& [levelCapState, levelMap] = npcIt->second;
-				for (const auto& [level, cachedData] : levelMap) {
-					const bool is_below_level = a_input.npcLevel < level;
-					for (auto& [formType, formIDSet] : cachedData.distributedEntries) {
-						a_fn(formType, formIDSet, is_below_level);
+		ReadLocker lock(_lock);
+		for (auto& [playerID, npcFormIDs] : _cache) {
+			logger::info("PlayerID : {:X}", playerID);
+			for (auto& [npcFormID, levelMap] : npcFormIDs) {
+				logger::info("\tNPC : {} [{:X}]", EditorID::GetEditorID(npcFormID), npcFormID);
+				for (auto& [level, distFormMap] : levelMap.entries) {
+					logger::info("\t\tLevel : {}", level);
+					for (auto& [formType, formIDSet] : distFormMap.distributedEntries) {
+						logger::info("\t\t\tDist FormType : {}", formType);
+						for (auto& formID : formIDSet) {
+							logger::info("\t\t\t\tDist FormID : {} [{:X}]", EditorID::GetEditorID(formID), formID);
+						}
 					}
 				}
 			}
 		}
 	}
 
-	void Manager::DumpDistributedEntries()
+	void Manager::ForEachDistributedEntry(const Input& a_input, bool a_onlyValidEntries, std::function<void(RE::FormType, const Set<RE::FormID>&)> a_fn) const
 	{
-		Locker lock(_lock);
-		for (auto& [playerID, npcFormIDs] : _cache) {
-			logger::info("PlayerID : {:X}", playerID);
-			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("\tNPC : {} [{:X}]", Cache::EditorID::GetEditorID(npcFormID), npcFormID);
-				for (auto& [level, distFormMap] : levelMap.entries) {
-					logger::info("\t\tLevel : {}", level);
-					for (auto& [formType, formIDSet] : distFormMap.distributedEntries) {
-						logger::info("\t\t\tDist FormType : {}", formType);
-						for (auto& formID : formIDSet) {
-							logger::info("\t\t\t\tDist FormID : {} [{:X}]", Cache::EditorID::GetEditorID(formID), formID);
-						}
+		ReadLocker lock(_lock);
+		if (const auto pcIt = _cache.find(a_input.playerID); pcIt != _cache.end()) {
+			auto& npcFormIDMap = pcIt->second;
+			if (const auto npcIt = npcFormIDMap.find(a_input.npcFormID); npcIt != npcFormIDMap.end()) {
+				for (const auto& [level, cachedData] : npcIt->second.entries) {
+					if (a_onlyValidEntries && a_input.npcLevel < level) {
+						continue;
+					}
+					for (auto& [formType, entries] : cachedData.distributedEntries) {
+						a_fn(formType, entries);
 					}
 				}
 			}
@@ -145,8 +145,8 @@ namespace PCLevelMult
 	// For spawned actors with FF reference IDs
 	void Manager::DeleteNPC(RE::FormID a_characterID)
 	{
-		Locker lock(_lock);
-		auto&  currentCache = _cache[GetSingleton()->GetCurrentPlayerID()];
+		WriteLocker lock(_lock);
+		auto&       currentCache = _cache[GetSingleton()->GetCurrentPlayerID()];
 		if (const auto it = currentCache.find(a_characterID); it != currentCache.end()) {
 			currentCache.erase(it);
 		}
@@ -156,9 +156,8 @@ namespace PCLevelMult
 	{
 		bool hitCap = (a_input.npcLevel == a_input.npcLevelCap);
 
-		Locker lock(_lock);
-
-		auto& map = _cache[a_input.playerID];
+		WriteLocker lock(_lock);
+		auto&       map = _cache[a_input.playerID];
 		if (const auto it = map.find(a_input.npcFormID); it == map.end()) {
 			map[a_input.npcFormID].levelCapState = static_cast<LEVEL_CAP_STATE>(hitCap);
 		} else {
@@ -185,11 +184,17 @@ namespace PCLevelMult
 		return currentPlayerID;
 	}
 
+	std::uint64_t Manager::GetOldPlayerID() const
+	{
+		return oldPlayerID;
+	}
+
 	void Manager::GetPlayerIDFromSave(const std::string& a_saveName)
 	{
 		// Quicksave0_2A73F01A_0_6E656C736F6E_Tamriel_000002_20220918174138_10_1.ess
 		// 2A73F01A is player ID
 
+		oldPlayerID = currentPlayerID;
 		if (const auto save = string::split(a_saveName, "_"); save.size() > 1 && !string::is_only_letter(save[1])) {
 			currentPlayerID = string::to_num<std::uint64_t>(save[1], true);
 		} else {
@@ -209,7 +214,7 @@ namespace PCLevelMult
 
 	void Manager::remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID)
 	{
-		Locker lock(_lock);
+		WriteLocker lock(_lock);
 		if (!_cache.contains(a_newID)) {
 			if (const auto it = _cache.find(a_oldID); it != _cache.end()) {
 				_cache[a_newID] = it->second;
