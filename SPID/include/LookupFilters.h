@@ -1,295 +1,25 @@
 #pragma once
 
 #include "LookupNPC.h"
-
-namespace filters
-{
-	enum class Result
-	{
-		kFail = 0,
-		kFailRNG,
-		kPass
-	};
-}
-
-// ---------------- Expressions ----------------
-namespace filters
-{
-	/// An abstract filter component that can be evaluated for specified NPC.
-	struct Evaluatable
-	{
-		virtual ~Evaluatable() = default;
-
-		/// Evaluates whether specified NPC matches conditions defined by this Evaluatable.
-		[[nodiscard]] virtual Result evaluate([[maybe_unused]] const NPCData& a_npcData) const = 0;
-
-		virtual std::ostringstream& describe(std::ostringstream& os) const = 0;
-
-		/// Returns a flag that determines whether given Evaluatable doesn't contribute
-		/// to overall composition of Evaluatables.
-		/// This is usually true for Evaluatable which always return Result::kPass, or empty Expressions.
-		[[nodiscard]] virtual bool isSuperfluous() const = 0;
-
-		[[nodiscard]] virtual bool isValid() const = 0;
-	};
-
-	struct Filter : Evaluatable
-	{
-		// All Filters by default are not superfluous, unless they explicitly override this method.
-		[[nodiscard]] bool isSuperfluous() const override { return false; }
-
-		// All Filters by default are valid, unless they explicitly override this method.
-		[[nodiscard]] bool isValid() const override { return true; }
-
-	protected:
-		Filter() = default;
-	};
-
-	/// Filter evaluates whether or not given NPC matches specific value provided to the filter.
-	///	Inherit it to define your own filters.
-	template <typename Value>
-	struct ValueFilter : Filter
-	{
-		Value value;
-
-		ValueFilter(const Value& value) :
-			Filter(),
-			value(value) {}
-		ValueFilter() = default;
-	};
-
-	template <typename T>
-	concept filtertype = std::derived_from<T, Filter>;
-
-	/// An expression is a combination of filters and/or nested expressions.
-	///
-	/// To determine how entries in the expression are combined use either AndExpression or OrExpression.
-	struct Expression : Evaluatable
-	{
-		// Expression is considered superfluous if it is empty or contains only superfluous Evaluatables.
-		[[nodiscard]] bool isSuperfluous() const override
-		{
-			if (entries.empty()) {
-				return true;
-			}
-
-			return std::ranges::all_of(entries.begin(), entries.end(), [](const auto& entry) {
-				return entry->isSuperfluous();
-			});
-		}
-
-		// Expression is considered valid only when all Evaluatables it contains are valid.
-		[[nodiscard]] bool isValid() const override
-		{
-			if (entries.empty()) {
-				return true;
-			}
-
-			return std::ranges::all_of(entries.begin(), entries.end(), [](const auto& entry) {
-				return entry->isValid();
-			});
-		}
-
-		/// Reduces the expression by removing any contained superfluous Evaluatables.
-		void reduce()
-		{
-			for (auto it = entries.begin(); it != entries.end();) {
-				const auto eval = it->get();
-				if (const auto expression = dynamic_cast<Expression*>(eval)) {
-					expression->reduce();
-				}
-				if (eval->isSuperfluous()) {
-					it = entries.erase(it);
-				} else {
-					++it;
-				}
-			}
-		}
-
-		void emplace_back(Evaluatable* ptr)
-		{
-			if (ptr) {
-				entries.emplace_back(ptr);
-			}
-		}
-
-		template <filtertype FilterType>
-		void for_each_filter(std::function<void(const FilterType*)> a_callback) const
-		{
-			for (const auto& eval : entries) {
-				if (const auto expression = dynamic_cast<Expression*>(eval.get())) {
-					expression->for_each_filter<FilterType>(a_callback);
-				} else if (const auto entry = dynamic_cast<FilterType*>(eval.get())) {
-					a_callback(entry);
-				}
-			}
-		}
-
-		/// Calls the mapper function on every Evaluatable of specified type FilterType within the Expression (including nested Expressions)
-		/// and replaces such Evaluatables with a new Evaluatable returned from mapper.
-		template <filtertype FilterType>
-		void map(std::function<Evaluatable*(FilterType*)> mapper)
-		{
-			for (auto it = entries.begin(); it != entries.end(); ++it) {
-				if (const auto expression = dynamic_cast<Expression*>(it->get())) {
-					expression->map<FilterType>(mapper);
-				} else if (const auto entry = dynamic_cast<FilterType*>(it->get())) {
-					if (const auto newFilter = mapper(entry); newFilter) {
-						auto newEval = std::unique_ptr<Evaluatable>(newFilter);
-						it->swap(newEval);
-					}
-				}
-			}
-		}
-
-		template <filtertype FilterType>
-		bool contains(std::function<bool(const FilterType*)> comparator) const
-		{
-			return std::ranges::any_of(entries, [&](const auto& eval) {
-				if (const auto filter = dynamic_cast<Expression*>(eval.get())) {
-					return filter->contains<FilterType>(comparator);
-				}
-				if (const auto entry = dynamic_cast<const FilterType*>(eval.get())) {
-					return comparator(entry);
-				}
-				return false;
-			});
-		}
-
-		std::ostringstream& describe(std::ostringstream& ss) const override
-		{
-			return join(", ", ss);
-		}
-
-	protected:
-		std::vector<std::unique_ptr<Evaluatable>> entries{};
-
-		std::ostringstream& join(const std::string& separator, std::ostringstream& os) const
-		{
-			auto       begin = entries.begin();
-			const auto end = entries.end();
-			const bool isComposite = std::ranges::count_if(entries, [](const auto& entry) {
-				return !entry->isSuperfluous();
-			}) > 1;
-
-			if (isComposite)
-				os << "(";
-			if (begin != end) {
-				(*begin++)->describe(os);
-				for (; begin != end; ++begin) {
-					os << separator;
-					(*begin)->describe(os);
-				}
-			}
-			if (isComposite)
-				os << ")";
-			return os;
-		}
-	};
-
-	/// Negated is an evaluatable wrapper that always inverts the result of the wrapped evaluation.
-	/// It corresponds to `-` prefix in a config file (e.g. "-ActorTypeNPC")
-	struct Negated : Expression
-	{
-		Negated(Evaluatable* const eval) :
-			Expression()
-		{
-			entries.emplace_back(eval);
-		}
-
-		[[nodiscard]] Result evaluate(const NPCData& npcData) const override
-		{
-			if (const auto eval = wrapped_value()) {
-				switch (eval->evaluate(npcData)) {
-				case Result::kFail:
-				case Result::kFailRNG:
-					return Result::kPass;
-				case Result::kPass:
-					return Result::kFail;
-				}
-			}
-			return Result::kFail;
-		}
-
-		std::ostringstream& describe(std::ostringstream& os) const override
-		{
-			if (const auto eval = wrapped_value()) {
-				os << "NOT ";
-				return eval->describe(os);
-			}
-			return os;
-		}
-
-		[[nodiscard]] bool isSuperfluous() const override
-		{
-			// At the moment we can't detect whether a Negated expression is superflous even if wrapped Evaluatable is.
-			// So Negated expression is only considered superflous if it doesn't have a wrapped value (which should never be the case btw :) )
-			return wrapped_value() == nullptr;
-		}
-
-	private:
-		Evaluatable* wrapped_value() const
-		{
-			return entries.front().get();
-		}
-	};
-
-	/// Entries are combined using AND logic.
-	struct AndExpression : Expression
-	{
-		[[nodiscard]] Result evaluate(const NPCData& npcData) const override
-		{
-			for (const auto& entry : entries) {
-				const auto res = entry.get()->evaluate(npcData);
-				if (res != Result::kPass) {
-					return res;
-				}
-			}
-			return Result::kPass;
-		}
-
-		std::ostringstream& describe(std::ostringstream& os) const override
-		{
-			return join(" AND ", os);
-		}
-	};
-
-	/// Entries are combined using OR logic.
-	struct OrExpression : Expression
-	{
-		[[nodiscard]] Result evaluate(const NPCData& npcData) const override
-		{
-			auto failure = Result::kFail;
-
-			for (const auto& entry : entries) {
-				const auto res = entry.get()->evaluate(npcData);
-				if (res == Result::kPass) {
-					return Result::kPass;
-				}
-				if (res > failure) {
-					// we rely on Result cases being ordered in order of priorities.
-					// Hence if there was a kFailRNG it will always be the result of this evaluation.
-					failure = res;
-				}
-			}
-			return entries.empty() ? Result::kPass : failure;
-		}
-
-		std::ostringstream& describe(std::ostringstream& ss) const override
-		{
-			return join(" OR ", ss);
-		}
-	};
-}
-
+#include "Expressions.h"
 // ------------------- Data --------------------
 namespace filters
 {
+	using namespace Expressions;
+
+	using Result = Expressions::Result;
+	using NPCExpression = Expression<NPCData>;
+	using NPCAndExpression = AndExpression<NPCData>;
+	using NPCOrExpression = OrExpression<NPCData>;
+	using NPCFilter = Filter<NPCData>;
+	template<typename Value>
+    using NPCValueFilter = ValueFilter<NPCData, Value>;
+
 	struct Data
 	{
-		Data(Expression* filters);
+		Data(NPCExpression* filters);
 
-		std::shared_ptr<Expression> filters;
+		std::shared_ptr<NPCExpression> filters;
 		bool                        hasLeveledFilters;
 
 		[[nodiscard]] bool   HasLevelFilters() const;
@@ -309,12 +39,12 @@ namespace filters
 	{
 		/// Form filter that wasn't bound to an actual RE::TESForm.
 		///	This filter will always fail and will log a warning when described.
-		struct UnknownFormIDFilter : ValueFilter<FormOrEditorID>
+		struct UnknownFormIDFilter : NPCValueFilter<FormOrEditorID>
 		{
 			using ValueFilter::ValueFilter;
 
 			// UnknownFormIDFilter is never valid and renders the whole entry containing it invalid, thus causing it to being skipped.
-			bool isValid() const override { return false; }
+			[[nodiscard]] bool isValid() const override { return false; }
 
 			[[nodiscard]] Result evaluate([[maybe_unused]] const NPCData& a_npcData) const override
 			{
@@ -351,7 +81,7 @@ namespace filters
 			}
 		};
 
-		struct FormFilter : ValueFilter<RE::TESForm*>
+		struct FormFilter : NPCValueFilter<RE::TESForm*>
 		{
 			using ValueFilter::ValueFilter;
 
@@ -425,7 +155,7 @@ namespace filters
 			}
 		};
 
-		struct ModFilter : ValueFilter<const RE::TESFile*>
+		struct ModFilter : NPCValueFilter<const RE::TESFile*>
 		{
 			using ValueFilter::ValueFilter;
 
@@ -448,7 +178,7 @@ namespace filters
 
 		/// String value for a filter that represents a wildcard.
 		/// The value must be without asterisks (e.g. filter "*Vampire" should be trimmed to "Vampire")
-		struct WildcardFilter : ValueFilter<std::string>
+		struct WildcardFilter : NPCValueFilter<std::string>
 		{
 			using ValueFilter::ValueFilter;
 
@@ -474,7 +204,7 @@ namespace filters
 
 		/// String value for a filter that represents an exact match.
 		/// The value is stored as-is.
-		struct MatchFilter : ValueFilter<std::string>
+		struct MatchFilter : NPCValueFilter<std::string>
 		{
 			using ValueFilter::ValueFilter;
 
@@ -495,7 +225,7 @@ namespace filters
 			}
 		};
 
-		struct KeywordFilter : ValueFilter<RE::BGSKeyword*>
+		struct KeywordFilter : NPCValueFilter<RE::BGSKeyword*>
 		{
 			using ValueFilter::ValueFilter;
 
@@ -516,7 +246,7 @@ namespace filters
 		using Level = std::uint8_t;
 		using LevelPair = std::pair<Level, Level>;
 		/// Value that represents a range of acceptable Actor levels.
-		struct LevelFilter : ValueFilter<LevelPair>
+		struct LevelFilter : NPCValueFilter<LevelPair>
 		{
 			inline constexpr static Level MinLevel = 0;
 			inline constexpr static Level MaxLevel = UINT8_MAX;
@@ -713,7 +443,7 @@ namespace filters
 			}
 		};
 
-		struct SexFilter : ValueFilter<RE::SEX>
+		struct SexFilter : NPCValueFilter<RE::SEX>
 		{
 			using ValueFilter::ValueFilter;
 
@@ -729,7 +459,7 @@ namespace filters
 			}
 		};
 
-		struct UniqueFilter : Filter
+		struct UniqueFilter : NPCFilter
 		{
 			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
@@ -743,7 +473,7 @@ namespace filters
 			}
 		};
 
-		struct SummonableFilter : Filter
+		struct SummonableFilter : NPCFilter
 		{
             [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
@@ -757,9 +487,9 @@ namespace filters
 			}
 		};
 
-		struct ChildFilter : Filter
+		struct ChildFilter : NPCFilter
 		{
-			Result evaluate(const NPCData& a_npcData) const override
+			[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
 				return a_npcData.IsChild() ? Result::kPass : Result::kFail;
 			}
@@ -772,7 +502,7 @@ namespace filters
 		};
 
 		using chance = std::uint32_t;
-		struct ChanceFilter : ValueFilter<chance>
+		struct ChanceFilter : NPCValueFilter<chance>
 		{
 			inline static RNG staticRNG{};
 
@@ -789,11 +519,11 @@ namespace filters
 					return Result::kPass;
 				}
 				if (value <= 0) {
-					return Result::kFailRNG;
+					return Result::kDiscard;
 				}
 
 				const auto rng = staticRNG.Generate<chance>(0, MAX);
-				return rng > value ? Result::kPass : Result::kFailRNG;
+				return rng > value ? Result::kPass : Result::kDiscard;
 			}
 
 			std::ostringstream& describe(std::ostringstream& os) const override

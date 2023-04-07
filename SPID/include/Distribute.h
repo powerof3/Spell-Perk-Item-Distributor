@@ -27,7 +27,7 @@ namespace Distribute
 			auto result = a_formData.filters.PassedFilters(a_npcData);
 
 			if (result != filters::Result::kPass) {
-				if (result == filters::Result::kFailRNG && hasLevelFilters) {
+				if (result == filters::Result::kDiscard && hasLevelFilters) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, index);
 				}
 				return false;

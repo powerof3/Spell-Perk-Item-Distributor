@@ -44,10 +44,10 @@ namespace INI
 	struct Data
 	{
 		FormOrEditorID              rawForm{};
-		filters::Expression*        stringFilters;
-		filters::Expression*        idFilters;
-		filters::Expression*        levelFilters;
-		filters::Expression*        traitFilters;
+		filters::NPCExpression*     stringFilters;
+		filters::NPCExpression*     idFilters;
+		filters::NPCExpression*     levelFilters;
+		filters::NPCExpression*     traitFilters;
 		filters::SPID::ChanceFilter chanceFilters{ 100 };
 		IdxOrCount                  idxOrCount{ 1 };
 		std::string                 path{};

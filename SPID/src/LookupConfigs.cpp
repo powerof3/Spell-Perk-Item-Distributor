@@ -57,9 +57,9 @@ namespace INI
 			return newValue;
 		}
 
-		AndExpression* parse_entries(const std::string& filter_str, const std::function<Filter*(const std::string&)> parser)
+		NPCAndExpression* parse_entries(const std::string& filter_str, const std::function<NPCFilter*(const std::string&)> parser)
 		{
-			auto entries = new AndExpression();
+			auto entries = new NPCAndExpression();
 			auto entries_str = distribution::split_entry(filter_str, "+");
 			// TODO: Allow omitting "+" when there is already a "-" (e.g. instead of "A+-B" allow "A-B")
 
@@ -81,9 +81,9 @@ namespace INI
 			return entries;
 		}
 
-		OrExpression* parse_filters(const std::string& expression_str, const std::function<Filter*(const std::string&)> parser)
+		NPCOrExpression* parse_filters(const std::string& expression_str, const std::function<NPCFilter*(const std::string&)> parser)
 		{
-			const auto expression = new OrExpression();
+			const auto expression = new NPCOrExpression();
 			const auto filters_str = distribution::split_entry(expression_str, ",");
 			for (const auto& filter_str : filters_str) {
 				expression->emplace_back(parse_entries(filter_str, parser));
@@ -108,7 +108,7 @@ namespace INI
 
 			//KEYWORDS
 			if (kStrings < size) {
-				data.stringFilters = parse_filters(sections[kStrings], [](const std::string& entry_str) -> Filter* {
+				data.stringFilters = parse_filters(sections[kStrings], [](const std::string& entry_str) -> NPCFilter* {
 					if (entry_str.at(0) == '*') {
 						std::string wildcard = entry_str;
 						wildcard.erase(0, 1);
@@ -146,7 +146,7 @@ namespace INI
 
 				};
 
-				data.levelFilters = parse_filters(sections[kLevel], [&](const std::string& entry_str) -> Filter* {
+				data.levelFilters = parse_filters(sections[kLevel], [&](const std::string& entry_str) -> NPCFilter* {
 					std::smatch matches;
 					if (!entry_str.empty() && std::regex_search(entry_str, matches, regex) && matches.size() >= kTotal) {
 						if (matches[kSkill].length() > 0) {  // skills
@@ -180,7 +180,7 @@ namespace INI
 
 			//TRAITS
 			if (kTraits < size) {
-				data.traitFilters = parse_filters(sections[kTraits], [&](const std::string& entry_str) -> Filter* {
+				data.traitFilters = parse_filters(sections[kTraits], [&](const std::string& entry_str) -> NPCFilter* {
 					if (!entry_str.empty()) {
 						switch (const auto trait = tolower(entry_str.at(0))) {
 						case 'm':

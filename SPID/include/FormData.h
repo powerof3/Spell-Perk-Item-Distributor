@@ -231,7 +231,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 		// ----------------- Map Form Filters expressions ----------------
 		if (filterIDs) {
-			filterIDs->map<SPID::UnknownFormIDFilter>([&](SPID::UnknownFormIDFilter* filter) -> Filter* {
+			filterIDs->map<SPID::UnknownFormIDFilter>([&](SPID::UnknownFormIDFilter* filter) -> NPCFilter* {
 				auto& formOrEditorID = filter->value;
 				if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 					auto& [formID, modName] = *formModPair;
@@ -278,7 +278,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		if (strings) {
 			const auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
 
-			strings->map<SPID::MatchFilter>([&](const SPID::MatchFilter* filter) -> Filter* {
+			strings->map<SPID::MatchFilter>([&](const SPID::MatchFilter* filter) -> NPCFilter* {
 				auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
 					return keyword && keyword->formEditorID == filter->value.c_str();
 				});
@@ -292,7 +292,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 				return nullptr;
 			});
 
-			strings->map<SPID::WildcardFilter>([&](const SPID::WildcardFilter* filter) -> Filter* {
+			strings->map<SPID::WildcardFilter>([&](const SPID::WildcardFilter* filter) -> NPCFilter* {
 				const auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
 					return keyword && string::icontains(keyword->formEditorID, filter->value);
 				});
@@ -308,7 +308,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		}
 
 		// I couldn't make this work with initializer list with either constructor or for loop. :(
-		const auto result = new AndExpression();
+		const auto result = new NPCAndExpression();
 
 		result->emplace_back(new SPID::ChanceFilter(chance));
 		result->emplace_back(traits);

@@ -4,7 +4,7 @@
 // ------------------- Data --------------------
 namespace filters
 {
-	Data::Data(Expression* filters) :
+	Data::Data(NPCExpression* filters) :
 		filters(filters)
 	{
 		hasLeveledFilters = HasLevelFiltersImpl();
@@ -17,7 +17,7 @@ namespace filters
 
 	bool Data::HasLevelFiltersImpl() const
 	{
-		return filters->contains<SPID::LevelFilter>([](const auto* filter) -> bool {
+		return filters->contains<SPID::LevelFilter>([](const auto& filter) -> bool {
 			return filter->value.first != SPID::LevelFilter::MinLevel || filter->value.second != SPID::LevelFilter::MaxLevel;
 		});
 	}
