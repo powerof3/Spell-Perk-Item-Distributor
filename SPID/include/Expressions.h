@@ -4,22 +4,22 @@ namespace Expressions
 {
 	enum class Result
 	{
-        /// Expression has failed evaluation.
-        ///
-        /// This result is not permanent and the same target might pass future evaluations.
-        kFail = 0,
+		/// Expression has failed evaluation.
+		///
+		/// This result is not permanent and the same target might pass future evaluations.
+		kFail = 0,
 
 		/// Expression has discarded evaluation.
 		///
-	    ///	This result is similar to kPass.
-	    ///	It may or may not be permanent, but some parts of the Expression explicitly requested to permanently discard that entry,
-	    ///	and do not try evaluating it again.
-	    kDiscard,
+		///	This result is similar to kPass.
+		///	It may or may not be permanent, but some parts of the Expression explicitly requested to permanently discard that entry,
+		///	and do not try evaluating it again.
+		kDiscard,
 
 		/// Expression has passed evaluation.
 		///
 		///	This result is not permanent and the same target might fail future evaluations.
-	    kPass
+		kPass
 	};
 }
 
@@ -27,7 +27,7 @@ namespace Expressions
 namespace Expressions
 {
 	/// An abstract filter component that can be evaluated for specified Target.
-	template<typename Target>
+	template <typename Target>
 	struct Evaluatable
 	{
 		virtual ~Evaluatable() = default;
@@ -58,8 +58,8 @@ namespace Expressions
 		Filter() = default;
 	};
 
-    /// Requires template type to be of any Filter sub-types.
-    template <typename T, typename Target>
+	/// Requires template type to be of any Filter sub-types.
+	template <typename T, typename Target>
 	concept filtertype = std::derived_from<T, Filter<Target>>;
 
 	/// Filter evaluates whether or not given Target matches specific value provided to the filter.
@@ -75,12 +75,11 @@ namespace Expressions
 		ValueFilter() = default;
 	};
 
-
 	/// An expression is a combination of filters and/or nested expressions.
 	///
 	/// To determine how entries in the expression are combined use either AndExpression or OrExpression.
 	template <typename Target>
-    struct Expression : Evaluatable<Target>
+	struct Expression : Evaluatable<Target>
 	{
 		// Expression is considered superfluous if it is empty or contains only superfluous Evaluatables.
 		[[nodiscard]] bool isSuperfluous() const override
@@ -130,7 +129,7 @@ namespace Expressions
 		}
 
 		template <typename FilterType>
-			requires filtertype<FilterType, Target>
+		requires filtertype<FilterType, Target>
 		void for_each_filter(std::function<void(const FilterType*)> a_callback) const
 		{
 			for (const auto& eval : entries) {
@@ -145,7 +144,7 @@ namespace Expressions
 		/// Calls the mapper function on every Evaluatable of specified type FilterType within the Expression (including nested Expressions)
 		/// and replaces such Evaluatables with a new Evaluatable returned from mapper.
 		template <typename FilterType>
-			requires filtertype<FilterType, Target>
+		requires filtertype<FilterType, Target>
 		void map(std::function<Evaluatable<Target>*(FilterType*)> mapper)
 		{
 			for (auto it = entries.begin(); it != entries.end(); ++it) {
@@ -161,7 +160,7 @@ namespace Expressions
 		}
 
 		template <typename FilterType>
-			requires filtertype<FilterType, Target>
+		requires filtertype<FilterType, Target>
 		[[nodiscard]] bool contains(std::function<bool(const FilterType*)> comparator) const
 		{
 			return std::ranges::any_of(entries, [&](const auto& eval) {
@@ -209,7 +208,7 @@ namespace Expressions
 	/// Negated is an evaluatable wrapper that always inverts the result of the wrapped evaluation.
 	/// It corresponds to `-` prefix in a config file (e.g. "-ActorTypeNPC")
 	template <typename Target>
-    struct Negated : Expression<Target>
+	struct Negated : Expression<Target>
 	{
 		Negated(Evaluatable<Target>* const eval) :
 			Expression<Target>()
@@ -256,7 +255,7 @@ namespace Expressions
 
 	/// Entries are combined using AND logic.
 	template <typename Target>
-    struct AndExpression : Expression<Target>
+	struct AndExpression : Expression<Target>
 	{
 		[[nodiscard]] Result evaluate(const Target& target) const override
 		{
@@ -277,7 +276,7 @@ namespace Expressions
 
 	/// Entries are combined using OR logic.
 	template <typename Target>
-    struct OrExpression : Expression<Target>
+	struct OrExpression : Expression<Target>
 	{
 		[[nodiscard]] Result evaluate(const Target& target) const override
 		{

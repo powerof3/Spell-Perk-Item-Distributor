@@ -81,7 +81,7 @@ namespace NPC
 		return actor;
 	}
 
-    std::string Data::GetName() const
+	std::string Data::GetName() const
 	{
 		return name;
 	}

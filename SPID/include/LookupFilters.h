@@ -231,7 +231,6 @@ namespace filters
 			return os;
 		}
 	};
-	
 
 }
 
@@ -286,7 +285,7 @@ namespace filters
 			return os;
 		}
 	};
-}	
+}
 
 // Levels ----------------------------------
 namespace filters

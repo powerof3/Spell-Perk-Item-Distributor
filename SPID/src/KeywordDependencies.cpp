@@ -49,7 +49,6 @@ void Dependencies::ResolveKeywords()
 
 	auto& keywordForms = Forms::keywords.GetForms();
 
-
 	Resolver resolver;
 
 	/// A map that will be used to map back keywords to their data wrappers.
