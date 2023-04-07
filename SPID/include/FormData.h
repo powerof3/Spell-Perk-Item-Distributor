@@ -231,7 +231,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 		// ----------------- Map Form Filters expressions ----------------
 		if (filterIDs) {
-			filterIDs->map<SPID::UnknownFormIDFilter>([&](SPID::UnknownFormIDFilter* filter) -> NPCFilter* {
+			filterIDs->map<UnknownFormIDFilter>([&](UnknownFormIDFilter* filter) -> NPCFilter* {
 				auto& formOrEditorID = filter->value;
 				if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 					auto& [formID, modName] = *formModPair;
@@ -241,7 +241,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					if (modName && !formID) {
 						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
 							buffered_logger::info("\t\t[{}] Filter ({}) INFO - mod found", path, filterMod->fileName);
-							return new SPID::ModFilter(filterMod);
+							return new ModFilter(filterMod);
 						}
 						buffered_logger::error("\t\t[{}] Filter ({}) SKIP - mod cannot be found", path, *modName);
 					} else if (formID) {
@@ -250,7 +250,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
                                                         RE::TESForm::LookupByID(*formID)) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
-								return new SPID::FormFilter(filterForm);
+								return new FormFilter(filterForm);
 							}
 							buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", path, *formID, modName.value_or(""), formType);
 						} else {
@@ -262,7 +262,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 						if (const auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
-								return new SPID::FormFilter(filterForm);
+								return new FormFilter(filterForm);
 							}
 							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", path, editorID, formType);
 						} else {
@@ -278,28 +278,28 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		if (strings) {
 			const auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
 
-			strings->map<SPID::MatchFilter>([&](const SPID::MatchFilter* filter) -> NPCFilter* {
+			strings->map<MatchFilter>([&](const MatchFilter* filter) -> NPCFilter* {
 				auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
 					return keyword && keyword->formEditorID == filter->value.c_str();
 				});
 
 				if (result != keywordArray.end()) {
 					if (const auto keyword = *result; keyword) {
-						return new SPID::KeywordFilter(keyword);
+						return new KeywordFilter(keyword);
 					}
 				}
 
 				return nullptr;
 			});
 
-			strings->map<SPID::WildcardFilter>([&](const SPID::WildcardFilter* filter) -> NPCFilter* {
+			strings->map<WildcardFilter>([&](const WildcardFilter* filter) -> NPCFilter* {
 				const auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
 					return keyword && string::icontains(keyword->formEditorID, filter->value);
 				});
 
 				if (result != keywordArray.end()) {
 					if (const auto keyword = *result; keyword) {
-						return new SPID::KeywordFilter(keyword);
+						return new KeywordFilter(keyword);
 					}
 				}
 
@@ -310,7 +310,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		// I couldn't make this work with initializer list with either constructor or for loop. :(
 		const auto result = new NPCAndExpression();
 
-		result->emplace_back(new SPID::ChanceFilter(chance));
+		result->emplace_back(new ChanceFilter(chance));
 		result->emplace_back(traits);
 		result->emplace_back(level);
 		result->emplace_back(filterIDs);

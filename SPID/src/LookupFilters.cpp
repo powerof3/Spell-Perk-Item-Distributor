@@ -17,8 +17,8 @@ namespace filters
 
 	bool Data::HasLevelFiltersImpl() const
 	{
-		return filters->contains<SPID::LevelFilter>([](const auto& filter) -> bool {
-			return filter->value.first != SPID::LevelFilter::MinLevel || filter->value.second != SPID::LevelFilter::MaxLevel;
+		return filters->contains<LevelFilter>([](const auto& filter) -> bool {
+			return filter->value.first != LevelFilter::MinLevel || filter->value.second != LevelFilter::MaxLevel;
 		});
 	}
 

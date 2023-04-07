@@ -58,7 +58,7 @@ void Dependencies::ResolveKeywords()
 	for (auto& formData : keywordForms) {
 		dataKeywords.emplace(formData.form, formData);
 		resolver.addIsolated(formData.form);
-		formData.filters.filters->for_each_filter<filters::SPID::KeywordFilter>([&](const auto* entry) {
+		formData.filters.filters->for_each_filter<filters::KeywordFilter>([&](const auto* entry) {
 			if (const auto& kwd = entry->value) {
 				AddDependency(resolver, formData.form, kwd);
 			}

@@ -43,14 +43,14 @@ namespace INI
 
 	struct Data
 	{
-		FormOrEditorID              rawForm{};
-		filters::NPCExpression*     stringFilters;
-		filters::NPCExpression*     idFilters;
-		filters::NPCExpression*     levelFilters;
-		filters::NPCExpression*     traitFilters;
-		filters::SPID::ChanceFilter chanceFilters{ 100 };
-		IdxOrCount                  idxOrCount{ 1 };
-		std::string                 path{};
+		FormOrEditorID          rawForm{};
+		filters::NPCExpression* stringFilters;
+		filters::NPCExpression* idFilters;
+		filters::NPCExpression* levelFilters;
+		filters::NPCExpression* traitFilters;
+		filters::ChanceFilter   chanceFilters{ 100 };
+		IdxOrCount              idxOrCount{ 1 };
+		std::string             path{};
 	};
 	using DataVec = std::vector<Data>;
 

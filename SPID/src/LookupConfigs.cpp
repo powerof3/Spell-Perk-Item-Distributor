@@ -6,7 +6,6 @@ namespace INI
 	namespace detail
 	{
 		using namespace filters;
-		using namespace SPID;
 
 		std::string sanitize(const std::string& a_value)
 		{
