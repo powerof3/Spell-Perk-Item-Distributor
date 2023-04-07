@@ -72,7 +72,6 @@ namespace Lookup
 		buffered_logger::clear();
 	}
 
-	// TODO: Fine tune the output to be less cluttered
 	void LogFilters()
 	{
 		logger::info("{:*^50}", "FILTERS");
@@ -81,39 +80,28 @@ namespace Lookup
 			const auto& recordName = RECORD::add[a_recordType];
 
 			// Only log entries that are actually present in INIs.
-			//if (!INI::configs[recordName].empty()) {
+			if (a_map) {
+				logger::info("\t{}:", recordName);
 
-			logger::info("\t{}:", recordName);
-
-			std::unordered_map<RE::FormID, DataVec<Form>> map;
-			for (const auto& data : a_map.GetForms()) {
-				if (const auto form = data.form) {
-					map[form->GetFormID()].push_back(data);
-				}
-			}
-
-			for (const auto& [id, vec] : map) {
-				std::string formID;
-				if (!vec.empty()) {
-					const auto& data = vec.front();
-					if (const std::string& edid = Cache::EditorID::GetEditorID(data.form); !edid.empty()) {
-						formID = std::format("{} [{:08X}]", edid, data.form->GetFormID());
-					} else {
-						formID = std::format("{:08X}", data.form->GetFormID());
+				// Group all entries by form
+				std::unordered_map<RE::FormID, DataVec<Form>> map;
+				for (const auto& data : a_map.GetForms()) {
+					if (const auto form = data.form) {
+						map[form->GetFormID()].push_back(data);
 					}
-				} else {
-					formID = std::format("{:08X}", id);
 				}
 
-				logger::info("\t\t{}:", formID);
-
-				for (const auto& data : vec) {
-					std::ostringstream ss;
-					const std::string  filters = data.filters.filters->describe(ss).str();
-					logger::info("\t\t\t{}", filters);
+				for (const auto& [id, vec] : map) {
+					if (!vec.empty()) {
+						logger::info("\t\t{}:", describe(vec.front().form));
+						for (const auto& data : vec) {
+							std::ostringstream ss;
+							const std::string  filters = data.filters.filters->describe(ss).str();
+							logger::info("\t\t\t{}", filters);
+						}
+					}					
 				}
 			}
-			//}
 		};
 
 		list_filters(RECORD::kKeyword, keywords);

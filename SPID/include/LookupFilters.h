@@ -366,19 +366,7 @@ namespace filters
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
 				if (value) {
-					os << "HAS ";
-					if (const auto& edid = Cache::EditorID::GetEditorID(value); !edid.empty()) {
-						os << edid << " ";
-					}
-					os << "["
-					   << std::to_string(value->GetFormType())
-					   << ":"
-					   << std::setfill('0')
-					   << std::setw(sizeof(RE::FormID) * 2)
-					   << std::uppercase
-					   << std::hex
-					   << value->GetFormID()
-					   << "]";
+					os << "HAS \"" << value << "\"";
 				}
 
 				return os;
@@ -452,7 +440,7 @@ namespace filters
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
 				if (value) {
-					os << "FROM " << value->fileName;
+					os << "IS FROM \"" << value->fileName << "\" MOD";
 				}
 				return os;
 			}
@@ -479,7 +467,7 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				os << "~'" << value << "'";
+				os << "NAME CONTAINS \"" << value << "\"";
 				return os;
 			}
 		};
@@ -502,7 +490,7 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				os << "='" << value << "'";
+				os << "IS NAMED \"" << value << "\"";
 				return os;
 			}
 		};
@@ -519,19 +507,7 @@ namespace filters
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
 				if (value) {
-					os << "HAS ";
-					if (const auto& edid = Cache::EditorID::GetEditorID(value); !edid.empty()) {
-						os << edid << " ";
-					}
-					os << "["
-					   << std::to_string(value->GetFormType())
-					   << ":"
-					   << std::setfill('0')
-					   << std::setw(sizeof(RE::FormID) * 2)
-					   << std::uppercase
-					   << std::hex
-					   << value->GetFormID()
-					   << "]";
+					os << "HAS \"" << value << "\"";
 				}
 				return os;
 			}
@@ -566,7 +542,7 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				return describeLevel(os, "LVL");
+				return describeLevel(os, "LEVEL");
 			}
 
 			[[nodiscard]] bool isSuperfluous() const override
@@ -579,14 +555,15 @@ namespace filters
 			{
 				const int min = value.first;
 				const int max = value.second;
+				os << name << " IS ";
 				if (value.first == value.second) {
-					os << name << "=" << value.first;
+					os << "EXACTLY " << min;
 				} else if (value.first == MinLevel) {
-					os << name << "=" << max << "-";
+					os << "LESS THAN " << max;
 				} else if (value.second == MaxLevel) {
-					os << name << "=" << min << "+";
+					os << "GREATER THAN " << min;
 				} else {
-					os << name << "=" << min << "-" << max;
+					os << "BETWEEN " << min << " AND " << max;
 				}
 				return os;
 			}
@@ -620,7 +597,51 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				return describeLevel(os, "SKL");
+				return describeLevel(os, skillName(skill) + " SKILL");
+			}
+		protected:
+            static std::string skillName(const Skill& skill)
+            {
+                switch (skill) {
+				case Skills::kOneHanded:
+					return "ONE-HANDED";
+				case Skills::kTwoHanded:
+					return "TWO-HANDED";
+				case Skills::kMarksman:
+					return "ARCHERY";
+				case Skills::kBlock:
+					return "BLOCK";
+				case Skills::kSmithing:
+					return "SMITHING";
+				case Skills::kHeavyArmor:
+					return "HEAVY ARMOR";
+				case Skills::kLightArmor:
+					return "LIGHT ARMOR";
+				case Skills::kPickpocket:
+					return "PICKPOCKET";
+				case Skills::kLockpicking:
+					return "LOCKPICKING";
+				case Skills::kSneak:
+					return "SNEAK";
+				case Skills::kAlchemy:
+					return "ALCHEMY";
+				case Skills::kSpecchcraft:
+					return "SPEECH";
+				case Skills::kAlteration:
+					return "ALTERATION";
+				case Skills::kConjuration:
+					return "CONJURATION";
+				case Skills::kDestruction:
+					return "DESTRUCTION";
+				case Skills::kIllusion:
+					return "ILLUSION";
+				case Skills::kRestoration:
+					return "RESTORATION";
+				case Skills::kEnchanting:
+					return "ENCHANTING";
+				default:
+					return "UNKNOWN";
+                }
 			}
 		};
 
@@ -639,7 +660,7 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				return describeLevel(os, "SWE");
+				return describeLevel(os, skillName(skill) + " SKILL WEIGHT");
 			}
 
 		private:
@@ -703,7 +724,7 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				os << (value == RE::SEX::kMale ? "M" : "F");
+				os << "IS A " << (value == RE::SEX::kMale ? "MALE" : "FEMALE");
 				return os;
 			}
 		};
@@ -717,21 +738,21 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				os << "U";
+				os << "IS UNIQUE";
 				return os;
 			}
 		};
 
 		struct SummonableFilter : Filter
 		{
-			Result evaluate(const NPCData& a_npcData) const override
+            [[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
 			{
 				return a_npcData.IsSummonable() ? Result::kPass : Result::kFail;
 			}
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				os << "S";
+				os << "IS A SUMMON";
 				return os;
 			}
 		};
@@ -745,7 +766,7 @@ namespace filters
 
 			std::ostringstream& describe(std::ostringstream& os) const override
 			{
-				os << "C";
+				os << "IS A CHILD";
 				return os;
 			}
 		};
