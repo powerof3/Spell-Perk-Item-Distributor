@@ -2,7 +2,8 @@
 
 #include "Expressions.h"
 #include "LookupNPC.h"
-// ------------------- Data --------------------
+
+// Data --------------------
 namespace filters
 {
 	using namespace Expressions;
@@ -79,6 +80,45 @@ namespace filters
 		}
 	};
 
+	using chance = std::uint32_t;
+	struct ChanceFilter : NPCValueFilter<chance>
+	{
+		inline static RNG staticRNG{};
+
+		using ValueFilter::ValueFilter;
+
+		[[nodiscard]] bool isSuperfluous() const override
+		{
+			return value >= MAX;
+		}
+
+		[[nodiscard]] Result evaluate([[maybe_unused]] const NPCData& a_npcData) const override
+		{
+			if (value >= MAX) {
+				return Result::kPass;
+			}
+			if (value <= 0) {
+				return Result::kDiscard;
+			}
+
+			const auto rng = staticRNG.Generate<chance>(0, MAX);
+			return rng > value ? Result::kPass : Result::kDiscard;
+		}
+
+		std::ostringstream& describe(std::ostringstream& os) const override
+		{
+			os << "WITH " << value << "% CHANCE";
+			return os;
+		}
+
+	private:
+		static constexpr chance MAX = 100;
+	};
+}
+
+// Forms -----------------------------------
+namespace filters
+{
 	struct FormFilter : NPCValueFilter<RE::TESForm*>
 	{
 		using ValueFilter::ValueFilter;
@@ -153,6 +193,24 @@ namespace filters
 		}
 	};
 
+	struct KeywordFilter : NPCValueFilter<RE::BGSKeyword*>
+	{
+		using ValueFilter::ValueFilter;
+
+		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
+		{
+			return a_npcData.HasKeyword(value) ? Result::kPass : Result::kFail;
+		}
+
+		std::ostringstream& describe(std::ostringstream& os) const override
+		{
+			if (value) {
+				os << "HAS \"" << value << "\"";
+			}
+			return os;
+		}
+	};
+
 	struct ModFilter : NPCValueFilter<const RE::TESFile*>
 	{
 		using ValueFilter::ValueFilter;
@@ -173,7 +231,13 @@ namespace filters
 			return os;
 		}
 	};
+	
 
+}
+
+// Names -----------------------------------
+namespace filters
+{
 	/// String value for a filter that represents a wildcard.
 	/// The value must be without asterisks (e.g. filter "*Vampire" should be trimmed to "Vampire")
 	struct WildcardFilter : NPCValueFilter<std::string>
@@ -222,25 +286,11 @@ namespace filters
 			return os;
 		}
 	};
+}	
 
-	struct KeywordFilter : NPCValueFilter<RE::BGSKeyword*>
-	{
-		using ValueFilter::ValueFilter;
-
-		[[nodiscard]] Result evaluate(const NPCData& a_npcData) const override
-		{
-			return a_npcData.HasKeyword(value) ? Result::kPass : Result::kFail;
-		}
-
-		std::ostringstream& describe(std::ostringstream& os) const override
-		{
-			if (value) {
-				os << "HAS \"" << value << "\"";
-			}
-			return os;
-		}
-	};
-
+// Levels ----------------------------------
+namespace filters
+{
 	using Level = std::uint8_t;
 	using LevelPair = std::pair<Level, Level>;
 	/// Value that represents a range of acceptable Actor levels.
@@ -441,7 +491,11 @@ namespace filters
 			return std::nullopt;
 		}
 	};
+}
 
+// Traits ----------------------------------
+namespace filters
+{
 	struct SexFilter : NPCValueFilter<RE::SEX>
 	{
 		using ValueFilter::ValueFilter;
@@ -498,40 +552,5 @@ namespace filters
 			os << "IS A CHILD";
 			return os;
 		}
-	};
-
-	using chance = std::uint32_t;
-	struct ChanceFilter : NPCValueFilter<chance>
-	{
-		inline static RNG staticRNG{};
-
-		using ValueFilter::ValueFilter;
-
-		[[nodiscard]] bool isSuperfluous() const override
-		{
-			return value >= MAX;
-		}
-
-		[[nodiscard]] Result evaluate([[maybe_unused]] const NPCData& a_npcData) const override
-		{
-			if (value >= MAX) {
-				return Result::kPass;
-			}
-			if (value <= 0) {
-				return Result::kDiscard;
-			}
-
-			const auto rng = staticRNG.Generate<chance>(0, MAX);
-			return rng > value ? Result::kPass : Result::kDiscard;
-		}
-
-		std::ostringstream& describe(std::ostringstream& os) const override
-		{
-			os << "WITH " << value << "% CHANCE";
-			return os;
-		}
-
-	private:
-		static constexpr chance MAX = 100;
 	};
 }
