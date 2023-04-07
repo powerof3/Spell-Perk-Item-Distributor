@@ -35,7 +35,7 @@ namespace Distribute
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
 			return;
 		}
-
+		const auto startTime = std::chrono::steady_clock::now();
 		const auto npc = a_npcData.GetNPC();
 		const auto actor = a_npcData.GetActor();
 
@@ -159,6 +159,9 @@ namespace Distribute
 			}
 			return false;
 		});
+		const auto endTime = std::chrono::steady_clock::now();
+		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+		logger::info("Distribution took {}μs / {}ms", duration, duration / 1000.0f);
 	}
 
 	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries)
