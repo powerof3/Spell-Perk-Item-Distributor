@@ -47,12 +47,12 @@ namespace NPC
 
 		void cache_keywords();
 
-		RE::TESNPC*   npc;
-		RE::Actor*    actor;
-		std::string   name;
-		RE::TESRace*  race;
-		ID            originalIDs;
-		ID            templateIDs{};
+		RE::TESNPC*  npc;
+		RE::Actor*   actor;
+		std::string  name;
+		RE::TESRace* race;
+		ID           originalIDs;
+		ID           templateIDs{};
 
 		std::uint16_t level;
 		RE::SEX       sex;

@@ -99,7 +99,7 @@ namespace Lookup
 							const std::string  filters = data.filters.filters->describe(ss).str();
 							logger::info("\t\t\t{}", filters);
 						}
-					}					
+					}
 				}
 			}
 		};
