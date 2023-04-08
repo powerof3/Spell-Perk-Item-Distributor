@@ -5,6 +5,7 @@ set(headers ${headers}
 	include/Distribute.h
 	include/DistributeManager.h
 	include/DistributePCLevelMult.h
+	include/Expressions.h
 	include/FormData.h
 	include/KeywordDependencies.h
 	include/LogBuffer.h

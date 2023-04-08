@@ -5,6 +5,8 @@
 
 namespace Forms
 {
+	using namespace filters;
+
 	namespace detail
 	{
 		inline void get_merged_IDs(std::optional<RE::FormID>& a_formID, std::optional<std::string>& a_modName)
@@ -27,57 +29,6 @@ namespace Forms
 			if (!conversion_log.empty()) {
 				buffered_logger::info("\t\tFound merged: {}", conversion_log);
 			}
-		}
-
-		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path)
-		{
-			if (a_rawFormVec.empty()) {
-				return true;
-			}
-			for (auto& formOrEditorID : a_rawFormVec) {
-				if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
-					auto& [formID, modName] = *formModPair;
-					if (g_mergeMapperInterface) {
-						get_merged_IDs(formID, modName);
-					}
-					if (modName && !formID) {
-						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
-							buffered_logger::info("\t\t[{}] Filter ({}) INFO - mod found", a_path, filterMod->fileName);
-							a_formVec.push_back(filterMod);
-						} else {
-							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
-						}
-					} else if (formID) {
-						auto filterForm = modName ?
-                                              a_dataHandler->LookupForm(*formID, *modName) :
-                                              RE::TESForm::LookupByID(*formID);
-						if (filterForm) {
-							const auto formType = filterForm->GetFormType();
-							if (Cache::FormType::GetWhitelisted(formType)) {
-								a_formVec.push_back(filterForm);
-							} else {
-								buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
-							}
-						} else {
-							buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
-						}
-					}
-				} else if (std::holds_alternative<std::string>(formOrEditorID)) {
-					if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
-						if (auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
-							const auto formType = filterForm->GetFormType();
-							if (Cache::FormType::GetWhitelisted(formType)) {
-								a_formVec.push_back(filterForm);
-							} else {
-								buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, editorID, formType);
-							}
-						} else {
-							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - form doesn't exist", a_path, editorID);
-						}
-					}
-				}
-			}
-			return !a_formVec.empty();
 		}
 	}
 
@@ -188,7 +139,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 	forms.reserve(a_INIDataVec.size());
 	std::uint32_t index = 0;
 
-	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
+	for (const auto& [formOrEditorID, strings, filterIDs, level, traits, chance, idxOrCount, path] : a_INIDataVec) {
 		Form* form = nullptr;
 
 		if (std::holds_alternative<FormModPair>(formOrEditorID)) {
@@ -278,22 +229,98 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		FormFilters filterForms{};
+		// ----------------- Map Form Filters expressions ----------------
+		if (filterIDs) {
+			filterIDs->map<UnknownFormIDFilter>([&](UnknownFormIDFilter* filter) -> NPCFilter* {
+				auto& formOrEditorID = filter->value;
+				if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
+					auto& [formID, modName] = *formModPair;
+					if (g_mergeMapperInterface) {
+						detail::get_merged_IDs(formID, modName);
+					}
+					if (modName && !formID) {
+						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
+							buffered_logger::info("\t\t[{}] Filter ({}) INFO - mod found", path, filterMod->fileName);
+							return new ModFilter(filterMod);
+						}
+						buffered_logger::error("\t\t[{}] Filter ({}) SKIP - mod cannot be found", path, *modName);
+					} else if (formID) {
+						if (const auto filterForm = modName ?
+                                                        a_dataHandler->LookupForm(*formID, *modName) :
+                                                        RE::TESForm::LookupByID(*formID)) {
+							const auto formType = filterForm->GetFormType();
+							if (Cache::FormType::GetWhitelisted(formType)) {
+								return new FormFilter(filterForm);
+							}
+							buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", path, *formID, modName.value_or(""), formType);
+						} else {
+							buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", path, *formID, modName.value_or(""));
+						}
+					}
+				} else if (std::holds_alternative<std::string>(formOrEditorID)) {
+					if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
+						if (const auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
+							const auto formType = filterForm->GetFormType();
+							if (Cache::FormType::GetWhitelisted(formType)) {
+								return new FormFilter(filterForm);
+							}
+							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", path, editorID, formType);
+						} else {
+							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - form doesn't exist", path, editorID);
+						}
+					}
+				}
 
-		bool validEntry = detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path);
-		if (validEntry) {
-			validEntry = detail::formID_to_form(a_dataHandler, filterIDs.NOT, filterForms.NOT, path);
-		}
-		if (validEntry) {
-			validEntry = detail::formID_to_form(a_dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
+				return nullptr;
+			});
 		}
 
-		if (!validEntry) {
-			continue;
+		if (strings) {
+			const auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
+
+			strings->map<MatchFilter>([&](const MatchFilter* filter) -> NPCFilter* {
+				auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
+					return keyword && keyword->formEditorID == filter->value.c_str();
+				});
+
+				if (result != keywordArray.end()) {
+					if (const auto keyword = *result; keyword) {
+						return new KeywordFilter(keyword);
+					}
+				}
+
+				return nullptr;
+			});
+
+			strings->map<WildcardFilter>([&](const WildcardFilter* filter) -> NPCFilter* {
+				const auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
+					return keyword && string::icontains(keyword->formEditorID, filter->value);
+				});
+
+				if (result != keywordArray.end()) {
+					if (const auto keyword = *result; keyword) {
+						return new KeywordFilter(keyword);
+					}
+				}
+
+				return nullptr;
+			});
 		}
 
-		forms.emplace_back(index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path);
-		index++;
+		// I couldn't make this work with initializer list with either constructor or for loop. :(
+		const auto result = new NPCAndExpression();
+
+		result->emplace_back(new ChanceFilter(chance));
+		result->emplace_back(traits);
+		result->emplace_back(level);
+		result->emplace_back(filterIDs);
+		result->emplace_back(strings);
+		result->reduce();
+
+		if (result->isValid()) {
+			forms.emplace_back(index, form, idxOrCount, FilterData(result), path);
+			index++;
+		}
 	}
 }
 

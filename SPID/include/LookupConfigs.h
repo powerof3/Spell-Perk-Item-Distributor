@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LookupFilters.h"
+
 namespace RECORD
 {
 	enum TYPE
@@ -42,12 +44,12 @@ namespace INI
 	struct Data
 	{
 		FormOrEditorID          rawForm{};
-		StringFilters           stringFilters{};
-		Filters<FormOrEditorID> rawFormFilters{};
-		LevelFilters            levelFilters{};
-		Traits                  traits{};
+		filters::NPCExpression* stringFilters;
+		filters::NPCExpression* idFilters;
+		filters::NPCExpression* levelFilters;
+		filters::NPCExpression* traitFilters;
+		filters::ChanceFilter   chanceFilters{ 100 };
 		IdxOrCount              idxOrCount{ 1 };
-		Chance                  chance{ 100 };
 		std::string             path{};
 	};
 	using DataVec = std::vector<Data>;

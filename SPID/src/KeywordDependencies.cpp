@@ -49,61 +49,19 @@ void Dependencies::ResolveKeywords()
 
 	auto& keywordForms = Forms::keywords.GetForms();
 
-	const auto dataHandler = RE::TESDataHandler::GetSingleton();
-	for (const auto& kwd : dataHandler->GetFormArray<RE::BGSKeyword>()) {
-		if (kwd) {
-			if (const auto edid = kwd->GetFormEditorID(); !string::is_empty(edid)) {
-				allKeywords[edid] = kwd;
-			} else {
-				if (const auto file = kwd->GetFile(0)) {
-					const auto  modname = file->GetFilename();
-					const auto  formID = kwd->GetLocalFormID();
-					std::string mergeDetails;
-					if (g_mergeMapperInterface && g_mergeMapperInterface->isMerge(modname.data())) {
-						const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetOriginalFormID(
-							modname.data(),
-							formID);
-						mergeDetails = std::format("->0x{:X}~{}", mergedFormID, mergedModName);
-					}
-					logger::error("\tWARN : [0x{:X}~{}{}] keyword has an empty editorID!", formID, modname, mergeDetails);
-				}
-			}
-		}
-	}
 
 	Resolver resolver;
 
 	/// A map that will be used to map back keywords to their data wrappers.
 	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;
 
-	for (const auto& formData : keywordForms) {
+	for (auto& formData : keywordForms) {
 		dataKeywords.emplace(formData.form, formData);
 		resolver.addIsolated(formData.form);
-
-		const auto findKeyword = [&](const std::string& name) -> RE::BGSKeyword* {
-			return allKeywords[name];
-		};
-
-		const auto addDependencies = [&](const StringVec& a_strings, const std::function<RE::BGSKeyword*(const std::string&)>& matchingKeyword) {
-			for (const auto& str : a_strings) {
-				if (const auto& kwd = matchingKeyword(str); kwd) {
-					AddDependency(resolver, formData.form, kwd);
-				}
+		formData.filters.filters->for_each_filter<filters::KeywordFilter>([&](const auto* entry) {
+			if (const auto& kwd = entry->value) {
+				AddDependency(resolver, formData.form, kwd);
 			}
-		};
-
-		const auto& stringFilters = formData.filters.strings;
-
-		addDependencies(stringFilters.ALL, findKeyword);
-		addDependencies(stringFilters.NOT, findKeyword);
-		addDependencies(stringFilters.MATCH, findKeyword);
-		addDependencies(stringFilters.ANY, [&](const std::string& name) -> RE::BGSKeyword* {
-			for (const auto& [keywordName, keyword] : allKeywords) {
-				if (string::icontains(keywordName, name)) {
-					return keyword;
-				}
-			}
-			return nullptr;
 		});
 	}
 

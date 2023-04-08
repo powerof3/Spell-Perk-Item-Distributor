@@ -26,8 +26,8 @@ namespace Distribute
 
 			auto result = a_formData.filters.PassedFilters(a_npcData);
 
-			if (result != Filter::Result::kPass) {
-				if (result == Filter::Result::kFailRNG && hasLevelFilters) {
+			if (result != filters::Result::kPass) {
+				if (result == filters::Result::kDiscard && hasLevelFilters) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, index);
 				}
 				return false;
@@ -153,14 +153,15 @@ namespace Distribute
 		collectedFormIDs.reserve(vec.size());
 		collectedLeveledFormIDs.reserve(vec.size());
 
-		for (auto& formData : vec) {
-			auto form = formData.form;
-			auto formID = form->GetFormID();
+		for (const auto& formData : vec) {
+			const auto form = formData.form;
+			const auto formID = form->GetFormID();
+
 			if (collectedFormIDs.contains(formID)) {
 				continue;
 			}
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				if (detail::passed_filters(a_npcData, a_input, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
+				if (detail::passed_filters(a_npcData, a_input, formData) && a_npcData.InsertKeyword(form)) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
 					if (formData.filters.HasLevelFilters()) {
