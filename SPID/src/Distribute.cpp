@@ -20,7 +20,7 @@ namespace Distribute
 							for (const auto& xList : *entryList->extraLists) {
 								const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 								if (outfitItem && outfitItem->id == formID) {
-									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true, true);
+									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
 								}
 							}
 						}
