@@ -10,7 +10,7 @@ struct keyword_less
 {
 	using RelativeOrderMap = Map<Keyword, int>;
 
-    const RelativeOrderMap relativeOrder;
+	const RelativeOrderMap relativeOrder;
 
 	bool operator()(const Keyword& a, const Keyword& b) const
 	{
@@ -24,13 +24,13 @@ struct keyword_less
 				return false;
 			}
 		}
-        return a->GetFormEditorID() < b->GetFormEditorID();
-    }
+		return a->GetFormEditorID() < b->GetFormEditorID();
+	}
 
-    [[nodiscard]] int getIndex(const Keyword& kwd) const
+	[[nodiscard]] int getIndex(const Keyword& kwd) const
 	{
 		if (relativeOrder.contains(kwd)) {
-		    return relativeOrder.at(kwd);
+			return relativeOrder.at(kwd);
 		}
 		return -1;
 	}
@@ -97,11 +97,11 @@ void Dependencies::ResolveKeywords()
 
 	keyword_less::RelativeOrderMap orderMap;
 
-    for (int index = 0; index < keywordForms.size(); ++index) {
+	for (int index = 0; index < keywordForms.size(); ++index) {
 		orderMap.emplace(keywordForms[index].form, index);
-    }
+	}
 
-	Resolver resolver { keyword_less(orderMap) };
+	Resolver resolver{ keyword_less(orderMap) };
 
 	/// A map that will be used to map back keywords to their data wrappers.
 	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;

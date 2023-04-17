@@ -141,8 +141,8 @@ public:
 	DependencyResolver(const Comparator comparator = Comparator()) :
 		comparator(std::move(comparator)) {}
 
-	DependencyResolver(const std::vector<Value>& values, 
-		               const Comparator comparator = Comparator()) :
+	DependencyResolver(const std::vector<Value>& values,
+		const Comparator                         comparator = Comparator()) :
 		DependencyResolver(comparator)
 	{
 		for (const auto& value : values) {
