@@ -4,11 +4,35 @@
 
 using Keyword = RE::BGSKeyword*;
 
+/// Comparator that preserves relative order at which Keywords appeared in config files.
+/// If that order is undefined it falls back to alphabetical order of EditorIDs.
 struct keyword_less
 {
+	using RelativeOrderMap = Map<Keyword, int>;
+
+    const RelativeOrderMap relativeOrder;
+
 	bool operator()(const Keyword& a, const Keyword& b) const
 	{
-		return a->GetFormEditorID() < b->GetFormEditorID();
+		const auto aIdx = getIndex(a);
+		const auto bIdx = getIndex(b);
+		if (aIdx > 0 && bIdx > 0) {
+			if (aIdx < bIdx) {
+				return true;
+			}
+			if (aIdx > bIdx) {
+				return false;
+			}
+		}
+        return a->GetFormEditorID() < b->GetFormEditorID();
+    }
+
+    [[nodiscard]] int getIndex(const Keyword& kwd) const
+	{
+		if (relativeOrder.contains(kwd)) {
+		    return relativeOrder.at(kwd);
+		}
+		return -1;
 	}
 };
 
@@ -71,7 +95,13 @@ void Dependencies::ResolveKeywords()
 		}
 	}
 
-	Resolver resolver;
+	keyword_less::RelativeOrderMap orderMap;
+
+    for (int index = 0; index < keywordForms.size(); ++index) {
+		orderMap.emplace(keywordForms[index].form, index);
+    }
+
+	Resolver resolver { keyword_less(orderMap) };
 
 	/// A map that will be used to map back keywords to their data wrappers.
 	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;
