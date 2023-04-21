@@ -18,6 +18,7 @@ struct string_hash
 
 template <class D>
 using StringMap = ankerl::unordered_dense::map<std::string, D, string_hash, std::equal_to<>>;
+using StringSet = ankerl::unordered_dense::set<std::string, string_hash, std::equal_to<>>;
 
 // Record = FormOrEditorID|StringFilters|RawFormFilters|LevelFilters|Traits|IdxOrCount|Chance
 
@@ -62,10 +63,48 @@ using LevelFilters = std::tuple<ActorLevel,
 struct Traits
 {
 	std::optional<RE::SEX> sex{};
-	std::optional<bool> unique{};
-	std::optional<bool> summonable{};
-	std::optional<bool> child{};
+	std::optional<bool>    unique{};
+	std::optional<bool>    summonable{};
+	std::optional<bool>    child{};
 };
 
 using IdxOrCount = std::int32_t;
 using Chance = std::uint32_t;
+
+/// A standardized way of converting any object to string.
+///
+///	<p>
+///	Overload `operator<<` to provide custom formatting for your value.
+///	Alternatively, specialize this method and provide your own implementation.
+///	</p>
+template <typename Value>
+std::string describe(Value value)
+{
+	std::ostringstream os;
+	os << value;
+	return os.str();
+}
+
+inline std::ostream& operator<<(std::ostream& os, RE::TESFile* file)
+{
+	os << file->fileName;
+	return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, RE::TESForm* form)
+{
+	if (const auto& edid = EditorID::GetEditorID(form); !edid.empty()) {
+		os << edid << " ";
+	}
+	os << "["
+	   << std::to_string(form->GetFormType())
+	   << ":"
+	   << std::setfill('0')
+	   << std::setw(sizeof(RE::FormID) * 2)
+	   << std::uppercase
+	   << std::hex
+	   << form->GetFormID()
+	   << "]";
+
+	return os;
+}

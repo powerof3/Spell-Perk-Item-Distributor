@@ -42,10 +42,10 @@ namespace Forms
 					}
 					if (modName && !formID) {
 						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
-							buffered_logger::info("\t\t\t[{}] Filter ({}) INFO - mod found", a_path, filterMod->fileName);
+							buffered_logger::info("\t\t[{}] Filter ({}) INFO - mod found", a_path, filterMod->fileName);
 							a_formVec.push_back(filterMod);
 						} else {
-							buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
+							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
 						}
 					} else if (formID) {
 						auto filterForm = modName ?
@@ -56,10 +56,10 @@ namespace Forms
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
 							} else {
-								buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
+								buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
 							}
 						} else {
-							buffered_logger::error("\t\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
+							buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
 						}
 					}
 				} else if (std::holds_alternative<std::string>(formOrEditorID)) {
@@ -69,10 +69,10 @@ namespace Forms
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
 							} else {
-								buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, editorID, formType);
+								buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, editorID, formType);
 							}
 						} else {
-							buffered_logger::error("\t\t\t[{}] Filter ({}) SKIP - form doesn't exist", a_path, editorID);
+							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - form doesn't exist", a_path, editorID);
 						}
 					}
 				}
@@ -81,36 +81,16 @@ namespace Forms
 		}
 	}
 
-	/// Custom ordering for keywords that ensures that dependent keywords are distributed after the keywords that they depend on.
-	struct KeywordDependencySorter
-	{
-		static bool sort(RE::BGSKeyword* a, RE::BGSKeyword* b);
-	};
-
 	template <class Form>
 	struct Data
 	{
-		Form* form{ nullptr };
-		IdxOrCount idxOrCount{ 1 };
-		FilterData filters{};
-		std::string path{};
+		std::uint32_t index{ 0 };
+		Form*         form{ nullptr };
+		IdxOrCount    idxOrCount{ 1 };
+		FilterData    filters{};
+		std::string   path{};
 
-		bool operator<(const Data& a_rhs) const
-		{
-			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				return KeywordDependencySorter::sort(form, a_rhs.form);
-			} else {
-				return true;
-			}
-		}
-
-		bool operator==(const Data& a_rhs) const
-		{
-			if (!form || !a_rhs.form) {
-				return false;
-			}
-			return form->GetFormID() == a_rhs.form->GetFormID();
-		}
+		bool operator==(const Data& a_rhs) const;
 	};
 
 	template <class Form>
@@ -124,8 +104,8 @@ namespace Forms
 		std::size_t GetSize();
 		std::size_t GetLeveledSize();
 
-		const DataVec<Form>& GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution);
-		DataVec<Form>& GetForms();
+		const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
+		DataVec<Form>&       GetForms();
 
 		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
 
@@ -135,24 +115,32 @@ namespace Forms
 	private:
 		DataVec<Form> forms{};
 		DataVec<Form> formsWithLevels{};
-		DataVec<Form> formsNoLevels{};
 	};
 
-	inline Distributables<RE::SpellItem> spells;
-	inline Distributables<RE::BGSPerk> perks;
+	inline Distributables<RE::SpellItem>      spells;
+	inline Distributables<RE::BGSPerk>        perks;
 	inline Distributables<RE::TESBoundObject> items;
-	inline Distributables<RE::TESShout> shouts;
-	inline Distributables<RE::TESLevSpell> levSpells;
-	inline Distributables<RE::TESForm> packages;
-	inline Distributables<RE::BGSOutfit> outfits;
-	inline Distributables<RE::BGSKeyword> keywords;
+	inline Distributables<RE::TESShout>       shouts;
+	inline Distributables<RE::TESLevSpell>    levSpells;
+	inline Distributables<RE::TESForm>        packages;
+	inline Distributables<RE::BGSOutfit>      outfits;
+	inline Distributables<RE::BGSKeyword>     keywords;
 	inline Distributables<RE::TESBoundObject> deathItems;
-	inline Distributables<RE::TESFaction> factions;
-	inline Distributables<RE::BGSOutfit> sleepOutfits;
-	inline Distributables<RE::TESObjectARMO> skins;
+	inline Distributables<RE::TESFaction>     factions;
+	inline Distributables<RE::BGSOutfit>      sleepOutfits;
+	inline Distributables<RE::TESObjectARMO>  skins;
 
 	std::size_t GetTotalEntries();
 	std::size_t GetTotalLeveledEntries();
+}
+
+template <class Form>
+bool Forms::Data<Form>::operator==(const Data& a_rhs) const
+{
+	if (!form || !a_rhs.form) {
+		return false;
+	}
+	return form->GetFormID() == a_rhs.form->GetFormID();
 }
 
 template <class Form>
@@ -180,13 +168,10 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms()
 }
 
 template <class Form>
-const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries, bool a_noLevelDistribution)
+const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries)
 {
 	if (a_onlyLevelEntries) {
 		return formsWithLevels;
-	}
-	if (a_noLevelDistribution) {
-		return formsNoLevels;
 	}
 	return forms;
 }
@@ -198,9 +183,10 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		return;
 	}
 
-	logger::info("\tStarting {} lookup", a_type);
+	logger::info("Starting {} lookup", a_type);
 
 	forms.reserve(a_INIDataVec.size());
+	std::uint32_t index = 0;
 
 	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 		Form* form = nullptr;
@@ -228,12 +214,12 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					}
 				}
 				if (!form) {
-					buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
+					buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
 				} else {
 					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 						if (string::is_empty(form->GetFormEditorID())) {
 							form = nullptr;
-							buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
+							buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
 						}
 					}
 				}
@@ -253,11 +239,11 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 				if (result != keywordArray.end()) {
 					if (const auto keyword = *result; keyword) {
 						if (!keyword->IsDynamicForm()) {
-							buffered_logger::info("\t\t[{}] {} [0x{:X}] INFO - using existing keyword", path, keywordName, keyword->GetFormID());
+							buffered_logger::info("\t[{}] {} [0x{:X}] INFO - using existing keyword", path, keywordName, keyword->GetFormID());
 						}
 						form = keyword;
 					} else {
-						buffered_logger::critical("\t\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
+						buffered_logger::critical("\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
 						continue;
 					}
 				} else {
@@ -265,11 +251,11 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
 						keyword->formEditorID = keywordName;
 						keywordArray.push_back(keyword);
-						buffered_logger::info("\t\t[{}] {} [0x{:X}] INFO - creating keyword", path, keywordName, keyword->GetFormID());
+						buffered_logger::info("\t[{}] {} [0x{:X}] INFO - creating keyword", path, keywordName, keyword->GetFormID());
 
 						form = keyword;
 					} else {
-						buffered_logger::critical("\t\t[{}] {} FAIL - couldn't create keyword", path, keywordName);
+						buffered_logger::critical("\t[{}] {} FAIL - couldn't create keyword", path, keywordName);
 					}
 				}
 			}
@@ -283,7 +269,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					}
 				}
 				if (!form) {
-					buffered_logger::error("\t\t[{}] {} FAIL - editorID doesn't exist", path, editorID);
+					buffered_logger::error("\t[{}] {} FAIL - editorID doesn't exist", path, editorID);
 				}
 			}
 		}
@@ -306,7 +292,8 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			continue;
 		}
 
-		forms.emplace_back(Data<Form>{ form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path });
+		forms.emplace_back(index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path);
+		index++;
 	}
 }
 
@@ -321,33 +308,14 @@ void Forms::Distributables<Form>::FinishLookupForms()
 	// entry order within config is preserved
 	// thanks, chatGPT!
 	if constexpr (std::is_same_v<RE::BGSOutfit, Form> || std::is_same_v<RE::TESObjectARMO, Form>) {
-		std::map<std::string, std::vector<std::uint32_t>> indices;
-		for (std::uint32_t i = 0; i < forms.size(); i++) {
-			if (!indices.contains(forms[i].path)) {
-				indices[forms[i].path] = { i };
-			} else {
-				indices[forms[i].path].push_back(i);
-			}
-		}
-		DataVec<Form> reversedVec;
-		reversedVec.reserve(forms.size());
-		for (auto& [path, idxVec] : indices | std::views::reverse) {
-			for (auto idx : idxVec) {
-				reversedVec.emplace_back(forms[idx]);
-			}
-		}
-		forms = reversedVec;
+		std::stable_sort(forms.begin(), forms.end(), [](const auto& a_form1, const auto& a_form2) {
+			return a_form1.path > a_form2.path;  // Compare paths in reverse order
+		});
 	}
 
 	formsWithLevels.reserve(forms.size());
 
 	std::copy_if(forms.begin(), forms.end(),
 		std::back_inserter(formsWithLevels),
-		[](const auto& formData) { return formData.filters.HasLevelFilters(); });
-
-	formsNoLevels.reserve(forms.size());
-
-	std::remove_copy_if(forms.begin(), forms.end(),
-		std::back_inserter(formsNoLevels),
 		[](const auto& formData) { return formData.filters.HasLevelFilters(); });
 }

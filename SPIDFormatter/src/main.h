@@ -11,12 +11,15 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <ranges>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <SimpleIni.h>
+#include <ClibUtil/distribution.hpp>
+#include <ClibUtil/simpleINI.hpp>
+#include <ClibUtil/string.hpp>
 #include <srell.hpp>
 
 namespace INI
@@ -30,36 +33,12 @@ namespace INI
 
 	struct detail
 	{
-		static void replace_all(std::string& a_str, std::string_view a_search, std::string_view a_replace)
-		{
-			if (a_search.empty()) {
-				return;
-			}
-
-			size_t pos = 0;
-			while ((pos = a_str.find(a_search, pos)) != std::string::npos) {
-				a_str.replace(pos, a_search.length(), a_replace);
-				pos += a_replace.length();
-			}
-		}
-
-		static void replace_first_instance(std::string& a_str, std::string_view a_search, std::string_view a_replace)
-		{
-			if (a_search.empty()) {
-				return;
-			}
-
-			if (auto pos = a_str.find(a_search); pos != std::string::npos) {
-				a_str.replace(pos, a_search.length(), a_replace);
-			}
-		}
-
 		static std::string downgrade(const std::string& a_value)
 		{
 			auto newValue = a_value;
 
-			replace_all(newValue, "|", " | ");
-			replace_all(newValue, ",", " , ");
+			clib_util::string::replace_all(newValue, "|", " | ");
+			clib_util::string::replace_all(newValue, ",", " , ");
 
 			//strip spaces between " | "
 			static const srell::regex re_bar(R"(\s*\|\s*)", srell::regex_constants::optimize);
@@ -69,6 +48,10 @@ namespace INI
 			static const srell::regex re_comma(R"(\s*,\s*)", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_comma, ",");
 
+			//convert 00012345 formIDs to 0x12345
+			static const srell::regex re_formID(R"(\b00+([0-9a-fA-F]{1,6})\b)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_formID, "0x$1");
+
 			//strip leading zeros
 			static const srell::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
@@ -77,7 +60,7 @@ namespace INI
 			static const srell::regex re_hypen(R"((, |\| )(-)(\w+|\d+))", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_hypen, "$1NOT $3");
 
-			replace_first_instance(newValue, "~", " - ");
+			clib_util::string::replace_first_instance(newValue, "~", " - ");
 
 			return newValue;
 		}
@@ -87,18 +70,22 @@ namespace INI
 			auto newValue = a_value;
 
 			if (newValue.find('~') == std::string::npos) {
-				replace_first_instance(newValue, " - ", "~");
+				clib_util::string::replace_first_instance(newValue, " - ", "~");
 			}
 
 			//strip spaces
 			static const srell::regex re_spaces(R"((\s+-\s+|\b\s+\b)|\s+)", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_spaces, "$1");
 
+			//convert 00012345 formIDs to 0x12345
+			static const srell::regex re_formID(R"(\b00+([0-9a-fA-F]{1,6})\b)", srell::regex_constants::optimize);
+			newValue = srell::regex_replace(newValue, re_formID, "0x$1");
+
 			//strip leading zeros
 			static const srell::regex re_zeros(R"((0x00+)([0-9a-fA-F]+))", srell::regex_constants::optimize);
 			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
 
-			replace_all(newValue, "NOT ", "-");
+			clib_util::string::replace_all(newValue, "NOT ", "-");
 
 			return newValue;
 		}

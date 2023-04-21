@@ -1,6 +1,6 @@
 #pragma once
 
-extern HMODULE tweaks;
+inline HMODULE tweaks;
 
 namespace Cache
 {
@@ -24,9 +24,11 @@ namespace Cache
 			RE::FormType::VoiceType,
 			RE::FormType::FormList,
 			RE::FormType::Spell,
-			RE::FormType::Armor
+			RE::FormType::Armor,
+			RE::FormType::Location
 		};
 
 		bool GetWhitelisted(RE::FormType a_type);
 	}
 }
+namespace EditorID = Cache::EditorID;

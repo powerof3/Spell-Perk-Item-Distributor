@@ -2,55 +2,66 @@
 
 namespace NPC
 {
+	Data::ID::ID(RE::TESActorBase* a_base) :
+		formID(a_base->GetFormID()),
+		editorID(EditorID::GetEditorID(a_base))
+	{}
+
+	bool Data::ID::contains(const std::string& a_str) const
+	{
+		return string::icontains(editorID, a_str);
+	}
+
+	bool Data::ID::operator==(const RE::TESFile* a_mod) const
+	{
+		return a_mod->IsFormInMod(formID);
+	}
+
+	bool Data::ID::operator==(const std::string& a_str) const
+	{
+		return string::iequals(editorID, a_str);
+	}
+
+	bool Data::ID::operator==(RE::FormID a_formID) const
+	{
+		return formID == a_formID;
+	}
+
 	void Data::cache_keywords()
 	{
 		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
 			keywords.emplace(a_keyword.GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
-		if (const auto race = npc->GetRace()) {
-			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-				keywords.emplace(a_keyword.GetFormEditorID());
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
-		}
-	}
-
-	Data::Data(RE::TESNPC* a_npc) :
-		npc(a_npc),
-		originalFormID(a_npc->GetFormID()),
-		name(a_npc->GetName()),
-		originalEDID(Cache::EditorID::GetEditorID(npc)),
-		level(a_npc->GetLevel()),
-		sex(a_npc->GetSex()),
-		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable()),
-		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
-	{
-		cache_keywords();
+		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
 	}
 
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
-		name(a_npc->GetName()),
-		level(a_npc->GetLevel()),
-		sex(a_npc->GetSex()),
-		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable()),
-		child(a_npc->GetRace() ? a_npc->GetRace()->IsChildRace() : false)
+		actor(a_actor),
+		name(actor->GetName()),
+		race(npc->GetRace()),
+		level(npc->GetLevel()),
+		sex(npc->GetSex()),
+		unique(npc->IsUnique()),
+		summonable(npc->IsSummonable()),
+		child(actor->IsChild() || race->formEditorID.contains("RaceChild"))
 	{
-		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
+		if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
-				originalFormID = originalBase->GetFormID();
-				originalEDID = Cache::EditorID::GetEditorID(originalBase);
+				originalIDs = ID(originalBase);
 			}
 			if (const auto templateBase = extraLvlCreature->templateBase) {
-				templateFormID = templateBase->GetFormID();
-				templateEDID = Cache::EditorID::GetEditorID(templateBase);
+				templateIDs = ID(templateBase);
+				if (const auto templateRace = templateBase->As<RE::TESNPC>()->GetRace()) {
+					race = templateRace;
+				}
 			}
 		} else {
-			originalFormID = a_npc->GetFormID();
-			originalEDID = Cache::EditorID::GetEditorID(npc);
+			originalIDs = ID(npc);
 		}
 		cache_keywords();
 	}
@@ -58,6 +69,11 @@ namespace NPC
 	RE::TESNPC* Data::GetNPC() const
 	{
 		return npc;
+	}
+
+	RE::Actor* Data::GetActor() const
+	{
+		return actor;
 	}
 
 	bool Data::has_keyword_string(const std::string& a_string) const
@@ -82,7 +98,7 @@ namespace NPC
 			});
 		} else {
 			return std::ranges::any_of(a_strings, [&](const auto& str) {
-				return has_keyword_string(str) || string::iequals(name, str) || string::iequals(originalEDID, str) || string::iequals(templateEDID, str);
+				return has_keyword_string(str) || string::iequals(name, str) || originalIDs == str || templateIDs == str;
 			});
 		}
 	}
@@ -90,7 +106,7 @@ namespace NPC
 	bool Data::ContainsStringFilter(const StringVec& a_strings) const
 	{
 		return std::ranges::any_of(a_strings, [&](const auto& str) {
-			return contains_keyword_string(str) || string::icontains(name, str) || string::icontains(originalEDID, str) || string::icontains(templateEDID, str);
+			return contains_keyword_string(str) || string::icontains(name, str) || originalIDs.contains(str) || templateIDs.contains(str);
 		});
 	}
 
@@ -112,13 +128,13 @@ namespace NPC
 				return npc->IsInFaction(faction);
 			}
 		case RE::FormType::Race:
-			return npc->GetRace() == a_form;
+			return GetRace() == a_form;
 		case RE::FormType::Outfit:
 			return npc->defaultOutfit == a_form;
 		case RE::FormType::NPC:
 			{
 				const auto filterFormID = a_form->GetFormID();
-				return npc == a_form || originalFormID == filterFormID || templateFormID == filterFormID;
+				return npc == a_form || originalIDs == filterFormID || templateIDs == filterFormID;
 			}
 		case RE::FormType::VoiceType:
 			return npc->voiceType == a_form;
@@ -129,6 +145,11 @@ namespace NPC
 			}
 		case RE::FormType::Armor:
 			return npc->skin == a_form;
+		case RE::FormType::Location:
+			{
+				const auto location = a_form->As<RE::BGSLocation>();
+				return actor->GetEditorLocation() == location;
+			}
 		case RE::FormType::FormList:
 			{
 				bool result = false;
@@ -157,7 +178,7 @@ namespace NPC
 			}
 			if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
 				const auto file = std::get<const RE::TESFile*>(a_formFile);
-				return file && (file->IsFormInMod(originalFormID) || file->IsFormInMod(templateFormID));
+				return file && (originalIDs == file || templateIDs == file);
 			}
 			return false;
 		};
@@ -192,5 +213,10 @@ namespace NPC
 	bool Data::IsChild() const
 	{
 		return child;
+	}
+
+	RE::TESRace* Data::GetRace() const
+	{
+		return race;
 	}
 }

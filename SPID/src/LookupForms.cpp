@@ -2,11 +2,11 @@
 #include "FormData.h"
 #include "KeywordDependencies.h"
 
-bool Lookup::GetForms()
+bool Lookup::LookupForms()
 {
 	using namespace Forms;
 
-	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+	if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
 		const auto lookup_forms = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
 			const auto& recordName = RECORD::add[a_recordType];
 
@@ -29,9 +29,6 @@ bool Lookup::GetForms()
 		lookup_forms(RECORD::kFaction, factions);
 		lookup_forms(RECORD::kSleepOutfit, sleepOutfits);
 		lookup_forms(RECORD::kSkin, skins);
-
-		// clear INI map once lookup is done
-		INI::configs.clear();
 	}
 
 	return spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions || sleepOutfits || skins;
@@ -51,7 +48,7 @@ void Lookup::LogFormLookup()
 
 		// Only log entries that are actually present in INIs.
 		if (all > 0) {
-			logger::info("\tAdding {}/{} {}s", added, all, recordName);
+			logger::info("Adding {}/{} {}s", added, all, recordName);
 		}
 	};
 
@@ -68,6 +65,27 @@ void Lookup::LogFormLookup()
 	list_lookup_result(RECORD::kSleepOutfit, sleepOutfits);
 	list_lookup_result(RECORD::kSkin, skins);
 
+	// Clear INI map once lookup is done
+	INI::configs.clear();
+
 	// Clear logger's buffer to free some memory :)
 	buffered_logger::clear();
+}
+
+bool Lookup::DoFormLookup()
+{
+	logger::info("{:*^50}", "LOOKUP");
+
+	const auto startTime = std::chrono::steady_clock::now();
+	const bool success = LookupForms();
+	const auto endTime = std::chrono::steady_clock::now();
+
+	if (success) {
+		LogFormLookup();
+
+		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+		logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
+	}
+
+	return success;
 }

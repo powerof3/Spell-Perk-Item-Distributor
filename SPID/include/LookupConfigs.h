@@ -41,14 +41,14 @@ namespace INI
 
 	struct Data
 	{
-		FormOrEditorID rawForm{};
-		StringFilters stringFilters{};
+		FormOrEditorID          rawForm{};
+		StringFilters           stringFilters{};
 		Filters<FormOrEditorID> rawFormFilters{};
-		LevelFilters levelFilters{};
-		Traits traits{};
-		IdxOrCount idxOrCount{ 1 };
-		Chance chance{ 100 };
-		std::string path{};
+		LevelFilters            levelFilters{};
+		Traits                  traits{};
+		IdxOrCount              idxOrCount{ 1 };
+		Chance                  chance{ 100 };
+		std::string             path{};
 	};
 	using DataVec = std::vector<Data>;
 

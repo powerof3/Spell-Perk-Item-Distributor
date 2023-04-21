@@ -1,6 +1,7 @@
 set(headers ${headers}
 	include/Cache.h
 	include/Defs.h
+	include/DependencyResolver.h
 	include/Distribute.h
 	include/DistributeManager.h
 	include/DistributePCLevelMult.h
