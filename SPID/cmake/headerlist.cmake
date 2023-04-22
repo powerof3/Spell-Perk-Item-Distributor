@@ -5,7 +5,6 @@ set(headers ${headers}
 	include/Distribute.h
 	include/DistributeManager.h
 	include/DistributePCLevelMult.h
-	include/Expressions.h
 	include/FormData.h
 	include/KeywordDependencies.h
 	include/LogBuffer.h
@@ -15,4 +14,12 @@ set(headers ${headers}
 	include/LookupNPC.h
 	include/PCH.h
 	include/PCLevelMultManager.h
+	include/Expressions.h
+	include/Bitmasks.h
+	include/Configs.h
+	include/ConfigsCoding.h
+	include/FixedDataINIConfigDecoder.h
+	include/FreeformDataINIConfigDecoder.h
+	include/SectionedDataINIConfigDecoder.h
+	include/OptionsINIConfigDecoder.h
 )
