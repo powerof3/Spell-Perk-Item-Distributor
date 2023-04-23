@@ -5,8 +5,8 @@
 
 namespace Configs
 {
-    struct FixedDataINIConfigDecoder : DataINIConfigDecoder
-    {
-        void decode(Config& config);
-    };
+	struct FixedDataINIConfigDecoder : DataINIConfigDecoder
+	{
+		void decode(Config& config);
+	};
 }

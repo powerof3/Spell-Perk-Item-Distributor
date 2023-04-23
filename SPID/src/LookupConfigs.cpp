@@ -4,7 +4,7 @@
 namespace Configs
 {
 	// to be moved to Clib util
-	inline std::vector<std::filesystem::path> get_configs(const std::filesystem::path& a_folder,const std::string_view& a_suffix, const std::string_view& a_extension = ".ini")
+	inline std::vector<std::filesystem::path> get_configs(const std::filesystem::path& a_folder, const std::string_view& a_suffix, const std::string_view& a_extension = ".ini")
 	{
 		std::vector<std::filesystem::path> configs{};
 		const auto                         iterator = std::filesystem::directory_iterator(a_folder);
@@ -28,15 +28,15 @@ namespace Configs
 		if (files.empty()) {
 			return { false, false };
 		}
-	    logger::info("{} matching config files found", files.size());
+		logger::info("{} matching config files found", files.size());
 		bool shouldLogErrors{ false };
 
 		for (const auto& file : files) {
 			const auto name = file.filename().string();
 			logger::info("\t\t Loading {}", name);
 			try {
-				OptionsINIConfigDecoder optionsDecoder;
-				auto                    config = optionsDecoder.decode(file);
+				OptionsINIConfigDecoder   optionsDecoder;
+				auto                      config = optionsDecoder.decode(file);
 				FixedDataINIConfigDecoder decoder;
 				decoder.decode(config);
 				configs.push_back(config);

@@ -10,7 +10,6 @@ namespace Configs
 	{
 		void decode(Config& config)
 		{
-
 		}
 	};
 }

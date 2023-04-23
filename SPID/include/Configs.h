@@ -4,7 +4,7 @@
 
 namespace Configs
 {
-	enum Type: std::uint8_t
+	enum Type : std::uint8_t
 	{
 		kSpell = 0,
 		kPerk,
@@ -23,7 +23,8 @@ namespace Configs
 		kInvalid = kTotal
 	};
 
-	constexpr Type operator++(Type& type) {
+	constexpr Type operator++(Type& type)
+	{
 		return type = static_cast<Type>(static_cast<std::uint8_t>(type) + 1);
 	}
 
@@ -33,7 +34,8 @@ namespace Configs
 
 	static constexpr std::string_view toRawType(const Type& t) { return rawTypes[t]; }
 
-	static constexpr Type fromRawType(const std::string_view& raw) {
+	static constexpr Type fromRawType(const std::string_view& raw)
+	{
 		for (Type t = kSpell; t < kTotal; ++t) {
 			if (rawTypes[t] == raw) {
 				return t;
@@ -167,7 +169,6 @@ struct enable_bitmask_operators<Configs::Sections>
 	static constexpr bool enable = true;
 };
 
-
 // Main data
 namespace Configs
 {
@@ -181,7 +182,7 @@ namespace Configs
 	///	This schema will be used to determine what
 	inline static constexpr Schema latestSchema = Schema::kFreeformFilters;
 
-    struct Data
+	struct Data
 	{
 		using TypeHint = Type;
 
@@ -225,8 +226,8 @@ namespace Configs
 		std::vector<Data> operator[](Type type) const
 		{
 			std::vector<Data> subset;
-			std::ranges::copy_if(data, std::back_inserter(subset),[type](const Data& data) {
-					return data.typeHint == type;
+			std::ranges::copy_if(data, std::back_inserter(subset), [type](const Data& data) {
+				return data.typeHint == type;
 			});
 			return subset;
 		}

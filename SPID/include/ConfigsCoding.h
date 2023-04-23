@@ -39,10 +39,9 @@ namespace Configs
 // INI
 namespace Configs
 {
-
 	// Input is a filename of the config.
 	// Specific INI config reader.
-	template <typename Output> 
+	template <typename Output>
 	struct INIConfigDecoder : ConfigDecoder<Output>
 	{
 		CSimpleIniA ini;

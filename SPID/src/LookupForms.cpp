@@ -10,10 +10,10 @@ namespace Lookup
 	{
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
 			const auto lookup_forms = [&]<class Form>(const Configs::Type type, Distributables<Form>& a_map) {
-				for (const auto & config : Configs::configs) {
-					a_map.LookupForms(dataHandler, type, config);    
+				for (const auto& config : Configs::configs) {
+					a_map.LookupForms(dataHandler, type, config);
 				}
-				
+
 				if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
 					Dependencies::ResolveKeywords();
 				}

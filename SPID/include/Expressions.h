@@ -105,10 +105,10 @@ namespace Expressions
 			});
 		}
 
-        /// Checks whether expression has no entries.
-        ///	Note that an expression containing nested empty expression is not considered <b>empty</b>.
-        ///	Use `reduce()` to remove all nested superfluous entries.
-        [[nodiscard]] bool isEmpty() const
+		/// Checks whether expression has no entries.
+		///	Note that an expression containing nested empty expression is not considered <b>empty</b>.
+		///	Use `reduce()` to remove all nested superfluous entries.
+		[[nodiscard]] bool isEmpty() const
 		{
 			return entries.empty();
 		}

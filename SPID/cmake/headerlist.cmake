@@ -1,25 +1,25 @@
 set(headers ${headers}
+	include/Bitmasks.h
 	include/Cache.h
+	include/Configs.h
+	include/ConfigsCoding.h
 	include/Defs.h
 	include/DependencyResolver.h
 	include/Distribute.h
 	include/DistributeManager.h
 	include/DistributePCLevelMult.h
+	include/Expressions.h
+	include/FixedDataINIConfigDecoder.h
 	include/FormData.h
+	include/FreeformDataINIConfigDecoder.h
 	include/KeywordDependencies.h
 	include/LogBuffer.h
 	include/LookupConfigs.h
 	include/LookupFilters.h
 	include/LookupForms.h
 	include/LookupNPC.h
+	include/OptionsINIConfigDecoder.h
 	include/PCH.h
 	include/PCLevelMultManager.h
-	include/Expressions.h
-	include/Bitmasks.h
-	include/Configs.h
-	include/ConfigsCoding.h
-	include/FixedDataINIConfigDecoder.h
-	include/FreeformDataINIConfigDecoder.h
 	include/SectionedDataINIConfigDecoder.h
-	include/OptionsINIConfigDecoder.h
 )

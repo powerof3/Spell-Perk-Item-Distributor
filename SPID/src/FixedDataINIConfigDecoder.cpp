@@ -72,8 +72,8 @@ namespace Configs
 
 		NPCAndExpression* parse_entries(const std::string& filter_str, const std::function<NPCFilter*(const std::string&)> parser)
 		{
-            const auto entries = new NPCAndExpression();
-			auto entries_str = distribution::split_entry(filter_str, "+");
+			const auto entries = new NPCAndExpression();
+			auto       entries_str = distribution::split_entry(filter_str, "+");
 			// TODO: Allow omitting "+" when there is already a "-" (e.g. instead of "A+-B" allow "A-B")
 
 			for (auto& entry_str : entries_str) {
@@ -107,15 +107,14 @@ namespace Configs
 
 		void parse_ini(const Data::TypeHint& type, const std::string& a_value, Config& config)
 		{
-            const auto       sanitized_value = sanitize(a_value);
+			const auto sanitized_value = sanitize(a_value);
 			const auto sections = string::split(sanitized_value, "|");
 
 			const auto size = sections.size();
 
 			FormOrEditorID rawForm;
-			IdxOrCount     idxOrCount = type == Type::kPackage ? 0 : 1; // reuse item count for package stack index
-            auto           filters = new NPCAndExpression();
-			
+			IdxOrCount     idxOrCount = type == Type::kPackage ? 0 : 1;  // reuse item count for package stack index
+			auto           filters = new NPCAndExpression();
 
 			//[FORMID/ESP] / EDITORID
 			if (kFormID < size) {
@@ -124,7 +123,7 @@ namespace Configs
 
 			//KEYWORDS
 			if (kStrings < size) {
-                const auto stringFilters = parse_filters(sections[kStrings], [](const std::string& entry_str) -> NPCFilter* {
+				const auto stringFilters = parse_filters(sections[kStrings], [](const std::string& entry_str) -> NPCFilter* {
 					if (entry_str.at(0) == '*') {
 						std::string wildcard = entry_str;
 						wildcard.erase(0, 1);
@@ -138,7 +137,7 @@ namespace Configs
 
 			//FILTER FORMS
 			if (kFilterIDs < size) {
-                const auto idFilters = parse_filters(sections[kFilterIDs], [](const std::string& entry_str) {
+				const auto idFilters = parse_filters(sections[kFilterIDs], [](const std::string& entry_str) {
 					return new UnknownFormIDFilter(distribution::get_record(entry_str));
 				});
 
@@ -173,7 +172,7 @@ namespace Configs
 							if (const auto skill = string::to_num<SkillFilter::Skill>(matches[kSkill].str()); skill < SkillFilter::Skills::kTotal) {
 								const auto min = matches[kSkillMin].length() > 0 ? string::to_num<Level>(matches[kSkillMin].str()) : LevelFilter::MinLevel;
 								const auto max = matches[kSkillMax].length() > 0 ? string::to_num<Level>(matches[kSkillMax].str()) : matches[kSkillRange].length() > 0 ? LevelFilter::MaxLevel :
-								                                                                                                                                         min;
+                                                                                                                                                                         min;
 								if (matches[kModifier].length() == 0) {
 									return new SkillFilter(skill, min, max);
 								}
@@ -189,7 +188,7 @@ namespace Configs
 						// levels
 						const auto min = matches[kLevelMin].length() > 0 ? string::to_num<Level>(matches[kLevelMin].str()) : LevelFilter::MinLevel;
 						const auto max = matches[kLevelMax].length() > 0 ? string::to_num<Level>(matches[kLevelMax].str()) : matches[kLevelRange].length() > 0 ? LevelFilter::MaxLevel :
-						                                                                                                                                         min;
+                                                                                                                                                                 min;
 
 						return new LevelFilter(min, max);
 					}
@@ -246,23 +245,26 @@ namespace Configs
 				delete filters;
 				filters = nullptr;
 			}
-			
+
 			config.data.emplace_back(idxOrCount, rawForm, type, filters);
 		}
 	}
 
-    void FixedDataINIConfigDecoder::decode(Config& config) {
-        ini.SetUnicode();
-        ini.SetMultiKey();
+	void FixedDataINIConfigDecoder::decode(Config& config)
+	{
+		ini.SetUnicode();
+		ini.SetMultiKey();
 
-        if (!load(config.path)) { throw InvalidINIException(); }
+		if (!load(config.path)) {
+			throw InvalidINIException();
+		}
 
-        if (auto values = ini.GetSection(""); values && !values->empty()) {
-            for (auto& [key, entry] : *values) {
-                if (const auto type = fromRawType(key.pItem); type != kInvalid) {
+		if (auto values = ini.GetSection(""); values && !values->empty()) {
+			for (auto& [key, entry] : *values) {
+				if (const auto type = fromRawType(key.pItem); type != kInvalid) {
 					detail::parse_ini(type, entry, config);
 				}
-            }
-        }
-    }
+			}
+		}
+	}
 }
