@@ -45,7 +45,7 @@ namespace Distribute
 			static inline constexpr std::size_t size{ 0x6D };
 		};
 
-		// Force outfit re-equip
+		// Force outfit equip
 		struct Load3D
 		{
 			static RE::NiAVObject* thunk(RE::Character* a_this, bool a_arg1)

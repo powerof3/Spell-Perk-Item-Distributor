@@ -267,9 +267,6 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 				if (result != keywordArray.end()) {
 					if (const auto keyword = *result; keyword) {
-						if (!keyword->IsDynamicForm()) {
-							buffered_logger::info("\t[{}] {} [0x{:X}] INFO - using existing keyword", path, keywordName, keyword->GetFormID());
-						}
 						form = keyword;
 					} else {
 						buffered_logger::critical("\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
@@ -280,7 +277,6 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
 						keyword->formEditorID = keywordName;
 						keywordArray.push_back(keyword);
-						buffered_logger::info("\t[{}] {} [0x{:X}] INFO - creating keyword", path, keywordName, keyword->GetFormID());
 
 						form = keyword;
 					} else {
