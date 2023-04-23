@@ -1,25 +1,46 @@
 #pragma once
 #include "Bitmasks.h"
-#include "LookupConfigs.h"
+#include "LookupFilters.h"
 
 namespace Configs
 {
-	using Type = RECORD::TYPE;
+	enum Type: std::uint8_t
+	{
+		kSpell = 0,
+		kPerk,
+		kItem,
+		kShout,
+		kLevSpell,
+		kPackage,
+		kOutfit,
+		kKeyword,
+		kDeathItem,
+		kFaction,
+		kSleepOutfit,
+		kSkin,
 
-	inline const std::unordered_map<std::string, Type> rawTypeHints {
-		{ "Spell", Type::kSpell },
-		{ "Perk", Type::kPerk },
-		{ "Item", Type::kItem },
-		{ "DeathItem", Type::kDeathItem },
-		{ "Shout", Type::kShout },
-		{ "LevSpell", Type::kLevSpell },
-		{ "Package", Type::kPackage },
-		{ "Outfit", Type::kOutfit },
-		{ "SleepOutfit", Type::kSleepOutfit },
-		{ "Keyword", Type::kKeyword },
-		{ "Faction", Type::kFaction },
-		{ "Skin", Type::kSkin }
+		kTotal,
+		kInvalid = kTotal
 	};
+
+	constexpr Type operator++(Type& type) {
+		return type = static_cast<Type>(static_cast<std::uint8_t>(type) + 1);
+	}
+
+	/// An ordered array of strings representing all supported distributable types.
+	/// This array must be ordered accordingly to Type enum, so that rawTypes[Type::kXXX] will always yield correct mapping.
+	inline constexpr std::array rawTypes{ "Spell"sv, "Perk"sv, "Item"sv, "Shout"sv, "LevSpell"sv, "Package"sv, "Outfit"sv, "Keyword"sv, "DeathItem"sv, "Faction"sv, "SleepOutfit"sv, "Skin"sv };
+
+	static constexpr std::string_view toRawType(const Type& t) { return rawTypes[t]; }
+
+	static constexpr Type fromRawType(const std::string_view& raw) {
+		for (Type t = kSpell; t < kTotal; ++t) {
+			if (rawTypes[t] == raw) {
+				return t;
+			}
+		}
+		return kInvalid;
+	}
 }
 
 namespace Configs
@@ -160,9 +181,9 @@ namespace Configs
 	///	This schema will be used to determine what
 	inline static constexpr Schema latestSchema = Schema::kFreeformFilters;
 
-	struct Data
+    struct Data
 	{
-		using TypeHint = RECORD::TYPE;
+		using TypeHint = Type;
 
 		IdxOrCount     idxOrCount{ 1 };
 		FormOrEditorID rawForm{};
@@ -171,8 +192,6 @@ namespace Configs
 		filters::NPCExpression* filters{ nullptr };
 	};
 
-	using DataVec = std::vector<Data>;
-	
 	struct Config
 	{
 		/// Schema version represents a set of rules by which given config is parsed.
@@ -201,6 +220,15 @@ namespace Configs
 		/// Name of the configuration file.
 		std::string name{};
 
-		DataVec data{};
+		std::vector<Data> data{};
+
+		std::vector<Data> operator[](Type type) const
+		{
+			std::vector<Data> subset;
+			std::ranges::copy_if(data, std::back_inserter(subset),[type](const Data& data) {
+					return data.typeHint == type;
+			});
+			return subset;
+		}
 	};
 }

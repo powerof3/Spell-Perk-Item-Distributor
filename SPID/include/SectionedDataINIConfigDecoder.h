@@ -8,7 +8,7 @@ namespace Configs
 {
 	struct SectionedDataINIConfigDecoder : DataINIConfigDecoder
 	{
-		void decode(Config& config) override
+		void decode(Config& config)
 		{
 
 		}

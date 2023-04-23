@@ -113,7 +113,7 @@ namespace Configs
 			const auto size = sections.size();
 
 			FormOrEditorID rawForm;
-			IdxOrCount     idxOrCount = type == RECORD::kPackage ? 0 : 1; // reuse item count for package stack index
+			IdxOrCount     idxOrCount = type == Type::kPackage ? 0 : 1; // reuse item count for package stack index
             auto           filters = new NPCAndExpression();
 			
 
@@ -241,6 +241,7 @@ namespace Configs
 				}
 			}
 
+			// If there were no filters we gonna reset them.
 			if (filters->isEmpty()) {
 				delete filters;
 				filters = nullptr;
@@ -258,17 +259,9 @@ namespace Configs
 
         if (auto values = ini.GetSection(""); values && !values->empty()) {
             for (auto& [key, entry] : *values) {
-                try {
-                    Data::TypeHint type;
-                    if (rawTypeHints.contains(key.pItem)) {
-                        type = rawTypeHints.at(key.pItem);
-                    }
-
-                    detail::parse_ini(type, entry, config);
-                }
-                catch (...) {
-                    logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
-                }
+                if (const auto type = fromRawType(key.pItem); type != kInvalid) {
+					detail::parse_ini(type, entry, config);
+				}
             }
         }
     }

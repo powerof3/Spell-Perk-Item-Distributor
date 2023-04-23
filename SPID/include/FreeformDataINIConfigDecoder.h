@@ -8,7 +8,7 @@ namespace Configs
 {
 	struct FreeformDataINIConfigDecoder : DataINIConfigDecoder
 	{
-		void decode(Config& config) override
+		void decode(Config& config)
 		{
 
 		}

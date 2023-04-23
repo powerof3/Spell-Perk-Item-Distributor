@@ -14,5 +14,6 @@ set(sources ${sources}
 	src/PCLevelMultManager.cpp
 	src/main.cpp
 	src/FixedDataINIConfigDecoder.cpp
+	src/OptionsINIConfigDecoder.cpp
 
 )

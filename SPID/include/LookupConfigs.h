@@ -1,60 +1,42 @@
 #pragma once
-
-#include "LookupFilters.h"
+#include "Configs.h"
+#include "ConfigsCoding.h"
+#include "FixedDataINIConfigDecoder.h"
+#include "FreeformDataINIConfigDecoder.h"
+#include "SectionedDataINIConfigDecoder.h"
 
 namespace RECORD
 {
-	enum TYPE
-	{
-		kSpell = 0,
-		kPerk,
-		kItem,
-		kShout,
-		kLevSpell,
-		kPackage,
-		kOutfit,
-		kKeyword,
-		kDeathItem,
-		kFaction,
-		kSleepOutfit,
-		kSkin,
-
-		kTotal
-	};
+	using TYPE = Configs::Type;
 
 	inline constexpr std::array add{ "Spell"sv, "Perk"sv, "Item"sv, "Shout"sv, "LevSpell"sv, "Package"sv, "Outfit"sv, "Keyword"sv, "DeathItem"sv, "Faction"sv, "SleepOutfit"sv, "Skin"sv };
 	inline constexpr std::array remove{ "-Spell"sv, "-Perk"sv, "-Item"sv, "-Shout"sv, "-LevSpell"sv, "-Package"sv, "-Outfit"sv, "-Keyword"sv, "-DeathItem"sv, "-Faction"sv, "-SleepOutfit"sv, "-Skin"sv };
 }
 
-namespace INI
+namespace Configs
 {
-	enum TYPE : std::uint32_t
+	inline std::vector<Config> configs{};
+
+	std::pair<bool, bool> LoadConfigs();
+}
+
+// Factories
+namespace Configs
+{
+	namespace Factory
 	{
-		kFormIDPair = 0,
-		kFormID = kFormIDPair,
-		kStrings,
-		kESP = kStrings,
-		kFilterIDs,
-		kLevel,
-		kTraits,
-		kIdxOrCount,
-		kChance
-	};
+		inline std::unique_ptr<DataConfigDecoder> makeDecoder(const Config& config)
+		{
+			switch (config.format) {
+			case Format::kFreeformINI:
+				return std::make_unique<FreeformDataINIConfigDecoder>();
+			case Format::kFixedINI:
+				return std::make_unique<FixedDataINIConfigDecoder>();
+			case Format::kSectionINI:
+				return std::make_unique<SectionedDataINIConfigDecoder>();
+			}
+			return std::unique_ptr<DataINIConfigDecoder>{};
+		}
+	}
 
-	struct Data
-	{
-		FormOrEditorID          rawForm{};
-		filters::NPCExpression* stringFilters;
-		filters::NPCExpression* idFilters;
-		filters::NPCExpression* levelFilters;
-		filters::NPCExpression* traitFilters;
-		filters::ChanceFilter   chanceFilters{ 100 };
-		IdxOrCount              idxOrCount{ 1 };
-		std::string             path{};
-	};
-	using DataVec = std::vector<Data>;
-
-	inline StringMap<DataVec> configs{};
-
-	std::pair<bool, bool> GetConfigs();
 }

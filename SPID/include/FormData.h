@@ -58,7 +58,7 @@ namespace Forms
 		const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
 		DataVec<Form>&       GetForms();
 
-		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
+		void LookupForms(RE::TESDataHandler* a_dataHandler, Configs::Type a_type, const Configs::Config& config);
 
 		// Init formsWithLevels and formsNoLevels
 		void FinishLookupForms();
@@ -128,18 +128,19 @@ const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLev
 }
 
 template <class Form>
-void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec)
+void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler, Configs::Type a_type, const Configs::Config& config)
 {
-	if (a_INIDataVec.empty()) {
+	const auto data = config[a_type];
+	if (data.empty()) {
 		return;
 	}
 
 	logger::info("Starting {} lookup", a_type);
 
-	forms.reserve(a_INIDataVec.size());
+	forms.reserve(data.size());
 	std::uint32_t index = 0;
-
-	for (const auto& [formOrEditorID, strings, filterIDs, level, traits, chance, idxOrCount, path] : a_INIDataVec) {
+	auto          path = config.name;
+	for (const auto& [idxOrCount, formOrEditorID, type, filters] : data) {
 		Form* form = nullptr;
 
 		if (std::holds_alternative<FormModPair>(formOrEditorID)) {
@@ -230,8 +231,8 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		}
 
 		// ----------------- Map Form Filters expressions ----------------
-		if (filterIDs) {
-			filterIDs->map<UnknownFormIDFilter>([&](UnknownFormIDFilter* filter) -> NPCFilter* {
+		if (filters) {
+			filters->map<UnknownFormIDFilter>([&](UnknownFormIDFilter* filter) -> NPCFilter* {
 				auto& formOrEditorID = filter->value;
 				if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
 					auto& [formID, modName] = *formModPair;
@@ -273,12 +274,10 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 				return nullptr;
 			});
-		}
 
-		if (strings) {
 			const auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
 
-			strings->map<MatchFilter>([&](const MatchFilter* filter) -> NPCFilter* {
+			filters->map<MatchFilter>([&](const MatchFilter* filter) -> NPCFilter* {
 				auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
 					return keyword && keyword->formEditorID == filter->value.c_str();
 				});
@@ -292,7 +291,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 				return nullptr;
 			});
 
-			strings->map<WildcardFilter>([&](const WildcardFilter* filter) -> NPCFilter* {
+			filters->map<WildcardFilter>([&](const WildcardFilter* filter) -> NPCFilter* {
 				const auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
 					return keyword && string::icontains(keyword->formEditorID, filter->value);
 				});
@@ -307,18 +306,10 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			});
 		}
 
-		// I couldn't make this work with initializer list with either constructor or for loop. :(
-		const auto result = new NPCAndExpression();
-
-		result->emplace_back(new ChanceFilter(chance));
-		result->emplace_back(traits);
-		result->emplace_back(level);
-		result->emplace_back(filterIDs);
-		result->emplace_back(strings);
-		result->reduce();
-
-		if (result->isValid()) {
-			forms.emplace_back(index, form, idxOrCount, FilterData(result), path);
+		if (filters && filters->isValid()) {
+			filters->reduce();
+			// TODO: Reformat filters if config is of fixed data type.
+			forms.emplace_back(index, form, idxOrCount, FilterData(filters), path);
 			index++;
 		}
 	}

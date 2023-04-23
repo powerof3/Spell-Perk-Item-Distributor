@@ -1,5 +1,6 @@
 #pragma once
 #include "Configs.h"
+#include "Expressions.h"
 
 namespace Configs
 {
@@ -49,7 +50,7 @@ namespace Configs
 		bool load(const std::filesystem::path& path)
 		{
 			// TODO: Throw decoding error here.
-			return ini.LoadFile(path.string().c_str()) > 0;
+			return ini.LoadFile(path.string().c_str()) >= 0;
 		}
 	};
 
@@ -60,51 +61,3 @@ namespace Configs
 	{};
 
 }
-
-// SPID Filters
-namespace Configs
-{
-	struct FormValueDecoder : ValueDecoder<FormOrEditorID>
-	{
-	};
-
-	struct IdxOrCountValueDecoder : ValueDecoder<IdxOrCount>
-	{
-	};
-
-	template <typename Filter>
-		requires Expressions::filtertype<Filter, NPCData>
-	struct FilterValueDecoder : ValueDecoder<Filter*>
-	{
-	};
-
-	struct FormFilterValueDecoder : FilterValueDecoder<filters::NPCValueFilter<FormOrEditorID>>
-	{
-	};
-
-	struct StringsFilterValueDecoder : FilterValueDecoder<filters::NPCValueFilter<std::string>>
-	{
-	};
-
-	struct LevelFilterValueDecoder : FilterValueDecoder<filters::NPCValueFilter<filters::LevelPair>>
-	{
-	};
-
-	struct TraitFilterValueDecoder : FilterValueDecoder<filters::NPCFilter>
-	{
-	};
-
-	struct SlashSeparatedTraitFilterValueDecoder : TraitFilterValueDecoder
-	{
-	};
-
-	struct ChanceFilterValueDecoder : FilterValueDecoder<filters::NPCValueFilter<filters::chance>>
-	{
-	};
-
-	template <typename Target>
-	struct ExpressionValueDecoder : ValueDecoder<filters::Expression<Target>*>
-	{
-	};
-}
-
