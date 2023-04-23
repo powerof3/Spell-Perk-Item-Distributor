@@ -49,8 +49,8 @@ namespace Forms
 						}
 					} else if (formID) {
 						if (auto filterForm = modName ?
-						                          a_dataHandler->LookupForm(*formID, *modName) :
-						                          RE::TESForm::LookupByID(*formID)) {
+                                                  a_dataHandler->LookupForm(*formID, *modName) :
+                                                  RE::TESForm::LookupByID(*formID)) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
@@ -109,7 +109,7 @@ namespace Forms
 
 		RECORD::TYPE GetType() const;
 
-	    const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
+		const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
 		DataVec<Form>&       GetForms();
 
 		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
