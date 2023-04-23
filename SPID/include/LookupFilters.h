@@ -7,8 +7,6 @@ namespace NPC
 
 namespace Filter
 {
-	inline RNG staticRNG{};
-
 	enum class Result
 	{
 		kFail = 0,
@@ -29,7 +27,7 @@ namespace Filter
 		bool hasLeveledFilters;
 
 		[[nodiscard]] bool   HasLevelFilters() const;
-		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData) const;
+		[[nodiscard]] Result PassedFilters(const NPC::Data& a_npcData, const RE::TESForm* a_distributeForm) const;
 
 	private:
 		[[nodiscard]] bool HasLevelFiltersImpl() const;

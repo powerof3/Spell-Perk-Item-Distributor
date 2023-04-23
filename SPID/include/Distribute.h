@@ -24,7 +24,7 @@ namespace Distribute
 				return false;
 			}
 
-			auto result = a_formData.filters.PassedFilters(a_npcData);
+			auto result = a_formData.filters.PassedFilters(a_npcData, a_formData.form);
 
 			if (result != Filter::Result::kPass) {
 				if (result == Filter::Result::kFailRNG && hasLevelFilters) {

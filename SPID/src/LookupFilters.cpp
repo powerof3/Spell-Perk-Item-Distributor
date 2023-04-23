@@ -211,11 +211,17 @@ namespace Filter
 		});
 	}
 
-	Result Data::PassedFilters(const NPCData& a_npcData) const
+	Result Data::PassedFilters(const NPCData& a_npcData, const RE::TESForm* a_distributeForm) const
 	{
 		// Fail chance first to avoid running unnecessary checks
 		if (chance < 100) {
-			const auto randNum = staticRNG.Generate<Chance>(0, 100);
+			// create unique seed based on actor formID and item formID/edid
+			const auto seed = hash::szudzik_pair(
+				a_npcData.GetActor()->GetFormID(), a_distributeForm->IsDynamicForm() ?
+													   hash::fnv1a_32<std::string_view>(a_distributeForm->GetFormEditorID()) :
+													   a_distributeForm->GetFormID());
+
+			const auto randNum = RNG(seed).Generate<Chance>(0, 100);
 			if (randNum > chance) {
 				return Result::kFailRNG;
 			}
