@@ -11,7 +11,7 @@ namespace Distribute
 	namespace detail
 	{
 		bool should_process_NPC(RE::TESNPC* a_npc);
-        void force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc);
+		void force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc);
 	}
 
 	namespace Actor

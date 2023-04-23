@@ -88,7 +88,7 @@ namespace Distribute
 					return false;
 				}
 
-			    actor->RemoveOutfitItems(npc->defaultOutfit);
+				actor->RemoveOutfitItems(npc->defaultOutfit);
 				npc->defaultOutfit = a_outfit;
 				actor->InitInventoryIfRequired();
 				actor->AddWornOutfit(npc->defaultOutfit, false);
