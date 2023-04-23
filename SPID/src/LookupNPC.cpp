@@ -94,7 +94,7 @@ namespace NPC
 	{
 		if (a_all) {
 			return std::ranges::all_of(a_strings, [&](const auto& str) {
-				return has_keyword_string(str);
+				return has_keyword_string(str) || string::iequals(name, str) || originalIDs == str || templateIDs == str;
 			});
 		} else {
 			return std::ranges::any_of(a_strings, [&](const auto& str) {
