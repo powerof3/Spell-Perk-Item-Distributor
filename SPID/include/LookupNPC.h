@@ -41,7 +41,6 @@ namespace NPC
 		void cache_keywords();
 
 		[[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
-		[[nodiscard]] bool contains_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool has_form(RE::TESForm* a_form) const;
 
 		RE::TESNPC*   npc;

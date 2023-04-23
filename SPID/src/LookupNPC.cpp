@@ -78,15 +78,8 @@ namespace NPC
 
 	bool Data::has_keyword_string(const std::string& a_string) const
 	{
-		return std::ranges::any_of(keywords, [&](const auto& keyword) {
+		return std::any_of(keywords.begin(), keywords.end(), [&](const auto& keyword) {
 			return string::iequals(keyword, a_string);
-		});
-	}
-
-	bool Data::contains_keyword_string(const std::string& a_string) const
-	{
-		return std::ranges::any_of(keywords, [&](const auto& keyword) {
-			return string::icontains(keyword, a_string);
 		});
 	}
 
@@ -106,7 +99,12 @@ namespace NPC
 	bool Data::ContainsStringFilter(const StringVec& a_strings) const
 	{
 		return std::ranges::any_of(a_strings, [&](const auto& str) {
-			return contains_keyword_string(str) || string::icontains(name, str) || originalIDs.contains(str) || templateIDs.contains(str);
+			return string::icontains(name, str) ||
+			       originalIDs.contains(str) ||
+			       templateIDs.contains(str) ||
+			       std::any_of(keywords.begin(), keywords.end(), [&](const auto& keyword) {
+					   return string::icontains(keyword, str);
+				   });
 		});
 	}
 
