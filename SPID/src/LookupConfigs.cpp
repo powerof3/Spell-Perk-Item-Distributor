@@ -104,9 +104,9 @@ namespace INI
 			}
 
 			//LEVEL
-			ActorLevel              actorLevelPair{ UINT16_MAX, UINT16_MAX };
-			std::vector<SkillLevel> skillLevelPairs;
-			std::vector<SkillLevel> skillWeightPairs;
+			Range<std::uint16_t>    actorLevel;
+			std::vector<SkillLevel> skillLevels;
+			std::vector<SkillLevel> skillWeights;
 			if (kLevel < size) {
 				auto split_levels = distribution::split_entry(sections[kLevel]);
 				for (auto& levels : split_levels) {
@@ -124,16 +124,16 @@ namespace INI
 								if (skills.size() > 2) {
 									auto maxLevel = string::to_num<std::uint8_t>(skills[2]);
 									if (isWeightFilter) {
-										skillWeightPairs.push_back({ type, { minLevel, maxLevel } });
+										skillWeights.push_back({ type, Range(minLevel, maxLevel) });
 									} else {
-										skillLevelPairs.push_back({ type, { minLevel, maxLevel } });
+										skillLevels.push_back({ type, Range(minLevel, maxLevel) });
 									}
 								} else {
 									if (isWeightFilter) {
 										// Single value is treated as exact match.
-										skillWeightPairs.push_back({ type, { minLevel, minLevel } });
+										skillWeights.push_back({ type, Range(minLevel) });
 									} else {
-										skillLevelPairs.push_back({ type, { minLevel, UINT8_MAX } });
+										skillLevels.push_back({ type, Range(minLevel) });
 									}
 								}
 							}
@@ -143,16 +143,16 @@ namespace INI
 							auto minLevel = string::to_num<std::uint16_t>(actor_level[0]);
 							auto maxLevel = string::to_num<std::uint16_t>(actor_level[1]);
 
-							actorLevelPair = { minLevel, maxLevel };
+							actorLevel = Range(minLevel, maxLevel);
 						} else {
 							auto level = string::to_num<std::uint16_t>(levels);
 
-							actorLevelPair = { level, UINT16_MAX };
+							actorLevel = Range(level);
 						}
 					}
 				}
 			}
-			data.levelFilters = LevelFilters{ actorLevelPair, skillLevelPairs, skillWeightPairs };
+			data.levelFilters = { actorLevel, skillLevels, skillWeights };
 
 			//TRAITS
 			if (kTraits < size) {

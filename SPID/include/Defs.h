@@ -52,13 +52,46 @@ using FormOrMod = std::variant<RE::TESForm*,  // form
 using FormVec = std::vector<FormOrMod>;
 using FormFilters = Filters<FormOrMod>;
 
-using ActorLevel = std::pair<std::uint16_t, std::uint16_t>;  // min/maxLevel
-using SkillLevel = std::pair<
-	std::uint32_t,                           // skill type
-	std::pair<std::uint8_t, std::uint8_t>>;  // skill Level
-using LevelFilters = std::tuple<ActorLevel,
-	std::vector<SkillLevel>,   // skill levels
-	std::vector<SkillLevel>>;  // skill weights (from Class)
+template <typename T>
+struct Range
+{
+	Range() = default;
+
+	explicit Range(T a_min) :
+		min(a_min)
+	{}
+	Range(T a_min, T a_max) :
+		min(a_min),
+		max(a_max)
+	{}
+
+	[[nodiscard]] bool IsValid() const
+	{
+		return min > std::numeric_limits<T>::min();	// min must always be valid, max is optional
+	}
+    [[nodiscard]] bool IsInRange(T value) const
+	{
+		return value >= min && value <= max;
+	}
+
+	// members
+	T min{ std::numeric_limits<T>::min() };
+	T max{ std::numeric_limits<T>::max() };
+};
+
+// skill type, skill Level
+struct SkillLevel
+{
+	std::uint32_t       type;
+	Range<std::uint8_t> range;
+};
+
+struct LevelFilters
+{
+	Range<std::uint16_t>    actorLevel;
+	std::vector<SkillLevel> skillLevels;   // skill levels
+	std::vector<SkillLevel> skillWeights;  // skill weights (from Class)
+};
 
 struct Traits
 {

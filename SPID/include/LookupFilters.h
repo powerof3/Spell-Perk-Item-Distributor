@@ -20,7 +20,7 @@ namespace Filter
 
 		StringFilters strings{};
 		FormFilters   forms{};
-		LevelFilters  level{};
+		LevelFilters  levels{};
 		Traits        traits{};
 		Chance        chance{ 100 };
 

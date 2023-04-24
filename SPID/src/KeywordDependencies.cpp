@@ -44,7 +44,7 @@ void AddDependency(Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
 	try {
 		resolver.addDependency(lhs, rhs);
 	} catch (Resolver::SelfReferenceDependencyException& e) {
-		buffered_logger::warn("\tINFO - {} is referencing itself.", describe(e.current));
+		buffered_logger::warn("\t\tINFO - {} is referencing itself.", describe(e.current));
 	} catch (Resolver::CyclicDependencyException& e) {
 		std::ostringstream os;
 		os << e.path.top();
@@ -107,7 +107,8 @@ void Dependencies::ResolveKeywords()
 	/// A map that will be used to map back keywords to their data wrappers.
 	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;
 
-	for (const auto& formData : keywordForms) {
+    logger::info("\tSorting keywords...");
+    for (const auto& formData : keywordForms) {
 		dataKeywords.emplace(formData.form, formData);
 		resolver.addIsolated(formData.form);
 
@@ -142,7 +143,7 @@ void Dependencies::ResolveKeywords()
 	const auto endTime = std::chrono::steady_clock::now();
 
 	keywordForms.clear();
-	logger::info("\tSorting keywords :");
+	logger::info("\tSorted keywords :");
 	for (const auto& keyword : result) {
 		const auto& [begin, end] = dataKeywords.equal_range(keyword);
 		if (begin != end) {
