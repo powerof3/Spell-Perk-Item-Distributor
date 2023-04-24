@@ -67,9 +67,9 @@ struct Range
 
 	[[nodiscard]] bool IsValid() const
 	{
-		return min > std::numeric_limits<T>::min();	// min must always be valid, max is optional
+		return min > std::numeric_limits<T>::min();  // min must always be valid, max is optional
 	}
-    [[nodiscard]] bool IsInRange(T value) const
+	[[nodiscard]] bool IsInRange(T value) const
 	{
 		return value >= min && value <= max;
 	}

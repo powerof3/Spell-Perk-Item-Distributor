@@ -194,8 +194,8 @@ namespace Filter
 			// create unique seed based on actor formID and item formID/edid
 			const auto seed = hash::szudzik_pair(
 				a_npcData.GetActor()->GetFormID(), a_distributeForm->IsDynamicForm() ?
-													   hash::fnv1a_32<std::string_view>(a_distributeForm->GetFormEditorID()) :
-													   a_distributeForm->GetFormID());
+                                                       hash::fnv1a_32<std::string_view>(a_distributeForm->GetFormEditorID()) :
+                                                       a_distributeForm->GetFormID());
 
 			const auto randNum = RNG(seed).Generate<Chance>(0, 100);
 			if (randNum > chance) {

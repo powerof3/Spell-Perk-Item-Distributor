@@ -46,7 +46,7 @@ namespace NPC
 			keywords.emplace(a_keyword.GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
-	    if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
+		if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
 				originalIDs = ID(originalBase);
 			}
@@ -212,17 +212,17 @@ namespace NPC
 		return child;
 	}
 
-    bool Data::IsLeveled() const
+	bool Data::IsLeveled() const
 	{
 		return templateIDs.formID != 0;
 	}
 
-    bool Data::IsTeammate() const
+	bool Data::IsTeammate() const
 	{
 		return teammate;
 	}
 
-    RE::TESRace* Data::GetRace() const
+	RE::TESRace* Data::GetRace() const
 	{
 		return race;
 	}

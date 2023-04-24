@@ -107,8 +107,8 @@ void Dependencies::ResolveKeywords()
 	/// A map that will be used to map back keywords to their data wrappers.
 	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;
 
-    logger::info("\tSorting keywords...");
-    for (const auto& formData : keywordForms) {
+	logger::info("\tSorting keywords...");
+	for (const auto& formData : keywordForms) {
 		dataKeywords.emplace(formData.form, formData);
 		resolver.addIsolated(formData.form);
 

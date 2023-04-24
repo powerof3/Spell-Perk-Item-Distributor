@@ -4,7 +4,7 @@ namespace NPC
 {
 	inline RE::TESFaction* potentialFollowerFaction;
 
-    struct Data
+	struct Data
 	{
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
