@@ -185,6 +185,18 @@ namespace INI
 					case "-C"_h:
 						data.traits.child = false;
 						break;
+					case "L"_h:
+						data.traits.leveled = true;
+						break;
+					case "-L"_h:
+						data.traits.leveled = false;
+						break;
+					case "T"_h:
+						data.traits.teammate = true;
+						break;
+					case "-T"_h:
+						data.traits.teammate = false;
+						break;
 					default:
 						break;
 					}

@@ -27,18 +27,6 @@ namespace NPC
 		return formID == a_formID;
 	}
 
-	void Data::cache_keywords()
-	{
-		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-	}
-
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
@@ -50,7 +38,15 @@ namespace NPC
 		summonable(npc->IsSummonable()),
 		child(actor->IsChild() || race->formEditorID.contains("RaceChild"))
 	{
-		if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
+		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+	    if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
 				originalIDs = ID(originalBase);
 			}
@@ -63,7 +59,10 @@ namespace NPC
 		} else {
 			originalIDs = ID(npc);
 		}
-		cache_keywords();
+		if (!potentialFollowerFaction) {
+			potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D);
+		}
+		teammate = actor->IsPlayerTeammate() || npc->IsInFaction(potentialFollowerFaction);
 	}
 
 	RE::TESNPC* Data::GetNPC() const
@@ -213,7 +212,17 @@ namespace NPC
 		return child;
 	}
 
-	RE::TESRace* Data::GetRace() const
+    bool Data::IsLeveled() const
+	{
+		return templateIDs.formID != 0;
+	}
+
+    bool Data::IsTeammate() const
+	{
+		return teammate;
+	}
+
+    RE::TESRace* Data::GetRace() const
 	{
 		return race;
 	}

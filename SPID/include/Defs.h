@@ -99,6 +99,8 @@ struct Traits
 	std::optional<bool>    unique{};
 	std::optional<bool>    summonable{};
 	std::optional<bool>    child{};
+	std::optional<bool>    leveled{};
+	std::optional<bool>    teammate{};
 };
 
 using IdxOrCount = std::int32_t;

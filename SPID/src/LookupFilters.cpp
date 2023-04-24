@@ -158,6 +158,12 @@ namespace Filter
 		if (traits.child && a_npcData.IsChild() != *traits.child) {
 			return Result::kFail;
 		}
+		if (traits.leveled && a_npcData.IsLeveled() != *traits.leveled) {
+			return Result::kFail;
+		}
+		if (traits.teammate && a_npcData.IsTeammate() != *traits.teammate) {
+			return Result::kFail;
+		}
 
 		return Result::kPass;
 	}
