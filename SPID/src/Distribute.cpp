@@ -21,7 +21,6 @@ namespace Distribute
 								const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 								if (outfitItem && outfitItem->id == formID) {
 									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
-									break;
 								}
 							}
 						}
@@ -91,7 +90,7 @@ namespace Distribute
 				actor->RemoveOutfitItems(npc->defaultOutfit);
 				npc->defaultOutfit = a_outfit;
 				actor->InitInventoryIfRequired();
-				actor->AddWornOutfit(npc->defaultOutfit, false);
+				detail::equip_worn_outfit(actor, a_outfit);
 
 				npc->AddKeyword(processedOutfit);
 

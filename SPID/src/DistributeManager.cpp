@@ -22,7 +22,7 @@ namespace Distribute
 				invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
 			}
 		}
-		a_actor->AddWornOutfit(a_npc->defaultOutfit, false);
+		equip_worn_outfit(a_actor, a_npc->defaultOutfit);
 	}
 
 	namespace Actor
