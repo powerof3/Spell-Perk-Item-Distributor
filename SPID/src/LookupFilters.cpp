@@ -6,7 +6,7 @@ namespace Filter
 	Data::Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, Chance a_chance) :
 		strings(std::move(a_strings)),
 		forms(std::move(a_formFilters)),
-		level(std::move(a_level)),
+		levels(std::move(a_level)),
 		traits(a_traits),
 		chance(a_chance)
 	{
@@ -54,34 +54,15 @@ namespace Filter
 	Result Data::passed_level_filters(const NPC::Data& a_npcData) const
 	{
 		// Actor Level
-		auto& [actorMin, actorMax] = std::get<0>(level);
-		const auto actorLevel = a_npcData.GetLevel();
-
-		if (actorMin < UINT16_MAX && actorMax < UINT16_MAX) {
-			if (actorLevel < actorMin || actorLevel > actorMax) {
-				return Result::kFail;
-			}
-		} else if (actorMin < UINT16_MAX && actorLevel < actorMin) {
-			return Result::kFail;
-		} else if (actorMax < UINT16_MAX && actorLevel > actorMax) {
+		if (!levels.actorLevel.IsInRange(a_npcData.GetLevel())) {
 			return Result::kFail;
 		}
 
 		const auto npc = a_npcData.GetNPC();
 
 		// Skill Level
-		for (auto& [skillType, skill] : std::get<1>(level)) {
-			auto& [skillMin, skillMax] = skill;
-
-			const auto skillLevel = npc->playerSkills.values[skillType];
-
-			if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-				if (skillLevel < skillMin || skillLevel > skillMax) {
-					return Result::kFail;
-				}
-			} else if (skillMin < UINT8_MAX && skillLevel < skillMin) {
-				return Result::kFail;
-			} else if (skillMax < UINT8_MAX && skillLevel > skillMax) {
+		for (auto& [skillType, skillRange] : levels.skillLevels) {
+			if (!skillRange.IsInRange(npc->playerSkills.values[skillType])) {
 				return Result::kFail;
 			}
 		}
@@ -90,9 +71,7 @@ namespace Filter
 			const auto& skillWeights = npcClass->data.skillWeights;
 
 			// Skill Weight
-			for (auto& [skillType, skill] : std::get<2>(level)) {
-				auto& [skillMin, skillMax] = skill;
-
+			for (auto& [skillType, skillRange] : levels.skillWeights) {
 				std::uint8_t skillWeight;
 
 				using Skill = RE::TESNPC::Skills;
@@ -130,7 +109,7 @@ namespace Filter
 				case Skill::kAlchemy:
 					skillWeight = skillWeights.alchemy;
 					break;
-				case Skill::kSpecchcraft:
+				case Skill::kSpeechcraft:
 					skillWeight = skillWeights.speech;
 					break;
 				case Skill::kAlteration:
@@ -155,13 +134,7 @@ namespace Filter
 					continue;
 				}
 
-				if (skillMin < UINT8_MAX && skillMax < UINT8_MAX) {
-					if (skillWeight < skillMin || skillWeight > skillMax) {
-						return Result::kFail;
-					}
-				} else if (skillMin < UINT8_MAX && skillWeight < skillMin) {
-					return Result::kFail;
-				} else if (skillMax < UINT8_MAX && skillWeight > skillMax) {
+				if (!skillRange.IsInRange(skillWeight)) {
 					return Result::kFail;
 				}
 			}
@@ -185,6 +158,12 @@ namespace Filter
 		if (traits.child && a_npcData.IsChild() != *traits.child) {
 			return Result::kFail;
 		}
+		if (traits.leveled && a_npcData.IsLeveled() != *traits.leveled) {
+			return Result::kFail;
+		}
+		if (traits.teammate && a_npcData.IsTeammate() != *traits.teammate) {
+			return Result::kFail;
+		}
 
 		return Result::kPass;
 	}
@@ -196,26 +175,29 @@ namespace Filter
 
 	bool Data::HasLevelFiltersImpl() const
 	{
-		const auto& [actorLevelPair, skillLevelPairs, _] = level;
+		const auto& [actorLevel, skillLevels, _] = levels;
 
-		auto& [actorMin, actorMax] = actorLevelPair;
-		if (actorMin < UINT16_MAX || actorMax < UINT16_MAX) {
+		if (actorLevel.IsValid()) {
 			return true;
 		}
 
-		return std::ranges::any_of(skillLevelPairs, [](const auto& skillPair) {
-			auto& [skillType, skill] = skillPair;
-			auto& [skillMin, skillMax] = skill;
-
-			return skillMin < UINT8_MAX || skillMax < UINT8_MAX;
+		return std::ranges::any_of(skillLevels, [](const auto& skillPair) {
+			auto& [skillType, skillRange] = skillPair;
+			return skillRange.IsValid();
 		});
 	}
 
-	Result Data::PassedFilters(const NPCData& a_npcData) const
+	Result Data::PassedFilters(const NPCData& a_npcData, const RE::TESForm* a_distributeForm) const
 	{
 		// Fail chance first to avoid running unnecessary checks
 		if (chance < 100) {
-			const auto randNum = staticRNG.Generate<Chance>(0, 100);
+			// create unique seed based on actor formID and item formID/edid
+			const auto seed = hash::szudzik_pair(
+				a_npcData.GetActor()->GetFormID(), a_distributeForm->IsDynamicForm() ?
+                                                       hash::fnv1a_32<std::string_view>(a_distributeForm->GetFormEditorID()) :
+                                                       a_distributeForm->GetFormID());
+
+			const auto randNum = RNG(seed).Generate<Chance>(0, 100);
 			if (randNum > chance) {
 				return Result::kFailRNG;
 			}

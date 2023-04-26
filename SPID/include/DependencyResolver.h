@@ -27,7 +27,7 @@ class DependencyResolver
 		/// <p>
 		///	<b>Use dependsOn() method to determine whether current node depends on another</b>.
 		///	</p>
-		Set<Node*> dependencies{};
+		std::set<Node*> dependencies{};
 
 		/// Flag that is used by DependencyResolver during resolution process
 		///	to detect whether given Node was already resolved.
@@ -138,10 +138,12 @@ class DependencyResolver
 	}
 
 public:
-	DependencyResolver() = default;
+	DependencyResolver(const Comparator comparator = Comparator()) :
+		comparator(std::move(comparator)) {}
 
-	DependencyResolver(const std::vector<Value>& values) :
-		comparator(std::move(Comparator()))
+	DependencyResolver(const std::vector<Value>& values,
+		const Comparator                         comparator = Comparator()) :
+		DependencyResolver(comparator)
 	{
 		for (const auto& value : values) {
 			nodes.try_emplace(value, new Node(value, comparator));
@@ -210,7 +212,7 @@ public:
 		///	by reducing number of lookups for all nodes to resolved the graph.
 		std::vector<Node*> orderedNodes;
 
-		std::ranges::transform(nodes, std::back_inserter(orderedNodes), [](const auto& pair) {
+		std::transform(nodes.begin(), nodes.end(), std::back_inserter(orderedNodes), [](const auto& pair) {
 			return pair.second;
 		});
 		// Sort nodes in correct order of processing.

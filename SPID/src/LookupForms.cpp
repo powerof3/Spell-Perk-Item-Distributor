@@ -7,28 +7,15 @@ bool Lookup::LookupForms()
 	using namespace Forms;
 
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-		const auto lookup_forms = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
-			const auto& recordName = RECORD::add[a_recordType];
+		ForEachDistributable([dataHandler]<typename Form>(Distributables<Form>& a_distributable) {
+			const auto& recordName = RECORD::add[a_distributable.GetType()];
 
-			a_map.LookupForms(dataHandler, recordName, INI::configs[recordName]);
+			a_distributable.LookupForms(dataHandler, recordName, INI::configs[recordName]);
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
 				Dependencies::ResolveKeywords();
 			}
-			a_map.FinishLookupForms();
-		};
-
-		lookup_forms(RECORD::kKeyword, keywords);
-		lookup_forms(RECORD::kSpell, spells);
-		lookup_forms(RECORD::kPerk, perks);
-		lookup_forms(RECORD::kItem, items);
-		lookup_forms(RECORD::kShout, shouts);
-		lookup_forms(RECORD::kLevSpell, levSpells);
-		lookup_forms(RECORD::kPackage, packages);
-		lookup_forms(RECORD::kOutfit, outfits);
-		lookup_forms(RECORD::kDeathItem, deathItems);
-		lookup_forms(RECORD::kFaction, factions);
-		lookup_forms(RECORD::kSleepOutfit, sleepOutfits);
-		lookup_forms(RECORD::kSkin, skins);
+			a_distributable.FinishLookupForms();
+		});
 	}
 
 	return spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions || sleepOutfits || skins;
@@ -40,30 +27,17 @@ void Lookup::LogFormLookup()
 
 	logger::info("{:*^50}", "PROCESSING");
 
-	const auto list_lookup_result = [&]<class Form>(const RECORD::TYPE a_recordType, Distributables<Form>& a_map) {
-		const auto& recordName = RECORD::add[a_recordType];
+	ForEachDistributable([]<typename Form>(const Distributables<Form>& a_distributable) {
+		const auto& recordName = RECORD::add[a_distributable.GetType()];
 
 		const auto all = INI::configs[recordName].size();
-		const auto added = a_map.GetSize();
+		const auto added = a_distributable.GetSize();
 
 		// Only log entries that are actually present in INIs.
 		if (all > 0) {
 			logger::info("Adding {}/{} {}s", added, all, recordName);
 		}
-	};
-
-	list_lookup_result(RECORD::kKeyword, keywords);
-	list_lookup_result(RECORD::kSpell, spells);
-	list_lookup_result(RECORD::kPerk, perks);
-	list_lookup_result(RECORD::kItem, items);
-	list_lookup_result(RECORD::kShout, shouts);
-	list_lookup_result(RECORD::kLevSpell, levSpells);
-	list_lookup_result(RECORD::kPackage, packages);
-	list_lookup_result(RECORD::kOutfit, outfits);
-	list_lookup_result(RECORD::kDeathItem, deathItems);
-	list_lookup_result(RECORD::kFaction, factions);
-	list_lookup_result(RECORD::kSleepOutfit, sleepOutfits);
-	list_lookup_result(RECORD::kSkin, skins);
+	});
 
 	// Clear INI map once lookup is done
 	INI::configs.clear();

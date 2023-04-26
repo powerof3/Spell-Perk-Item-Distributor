@@ -2,6 +2,8 @@
 
 namespace NPC
 {
+	inline RE::TESFaction* potentialFollowerFaction;
+
 	struct Data
 	{
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
@@ -19,6 +21,8 @@ namespace NPC
 		[[nodiscard]] bool          IsUnique() const;
 		[[nodiscard]] bool          IsSummonable() const;
 		[[nodiscard]] bool          IsChild() const;
+		[[nodiscard]] bool          IsLeveled() const;
+		[[nodiscard]] bool          IsTeammate() const;
 
 		[[nodiscard]] RE::TESRace* GetRace() const;
 
@@ -38,10 +42,7 @@ namespace NPC
 			std::string editorID{};
 		};
 
-		void cache_keywords();
-
 		[[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
-		[[nodiscard]] bool contains_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool has_form(RE::TESForm* a_form) const;
 
 		RE::TESNPC*   npc;
@@ -56,6 +57,7 @@ namespace NPC
 		bool          unique;
 		bool          summonable;
 		bool          child;
+		bool          teammate;
 	};
 }
 

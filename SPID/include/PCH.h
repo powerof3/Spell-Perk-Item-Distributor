@@ -28,6 +28,7 @@ namespace buffered_logger = LogBuffer;
 
 namespace string = clib_util::string;
 namespace distribution = clib_util::distribution;
+namespace hash = clib_util::hash;
 
 using namespace std::literals;
 using namespace string::literals;

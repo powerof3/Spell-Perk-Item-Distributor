@@ -4,11 +4,35 @@
 
 using Keyword = RE::BGSKeyword*;
 
+/// Comparator that preserves relative order at which Keywords appeared in config files.
+/// If that order is undefined it falls back to alphabetical order of EditorIDs.
 struct keyword_less
 {
+	using RelativeOrderMap = Map<Keyword, std::int32_t>;
+
+	const RelativeOrderMap relativeOrder;
+
 	bool operator()(const Keyword& a, const Keyword& b) const
 	{
+		const auto aIdx = getIndex(a);
+		const auto bIdx = getIndex(b);
+		if (aIdx > 0 && bIdx > 0) {
+			if (aIdx < bIdx) {
+				return true;
+			}
+			if (aIdx > bIdx) {
+				return false;
+			}
+		}
 		return a->GetFormEditorID() < b->GetFormEditorID();
+	}
+
+	[[nodiscard]] int getIndex(const Keyword& kwd) const
+	{
+		if (relativeOrder.contains(kwd)) {
+			return relativeOrder.at(kwd);
+		}
+		return -1;
 	}
 };
 
@@ -20,7 +44,7 @@ void AddDependency(Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
 	try {
 		resolver.addDependency(lhs, rhs);
 	} catch (Resolver::SelfReferenceDependencyException& e) {
-		buffered_logger::warn("\tINFO - {} is referencing itself", describe(e.current));
+		buffered_logger::warn("\t\tINFO - {} is referencing itself.", describe(e.current));
 	} catch (Resolver::CyclicDependencyException& e) {
 		std::ostringstream os;
 		os << e.path.top();
@@ -30,7 +54,8 @@ void AddDependency(Resolver& resolver, const Keyword& lhs, const Keyword& rhs)
 			os << " -> " << path.top();
 			path.pop();
 		}
-		buffered_logger::warn("\tINFO - {} and {} depend on each other. Distribution might not work as expected.\n\t\t\t\t\tFull path: {}", describe(e.first), describe(e.second), os.str());
+		buffered_logger::warn("\t\tINFO - {} and {} may depend on each other. Distribution might not work as expected.", describe(e.first), describe(e.second));
+		buffered_logger::warn("\t\t\tFull path: {}", os.str());
 	} catch (...) {
 		// we'll ignore other exceptions
 	}
@@ -71,11 +96,18 @@ void Dependencies::ResolveKeywords()
 		}
 	}
 
-	Resolver resolver;
+	keyword_less::RelativeOrderMap orderMap;
+
+	for (std::int32_t index = 0; index < keywordForms.size(); ++index) {
+		orderMap.emplace(keywordForms[index].form, index);
+	}
+
+	Resolver resolver{ keyword_less(orderMap) };
 
 	/// A map that will be used to map back keywords to their data wrappers.
 	std::unordered_multimap<RE::BGSKeyword*, Forms::Data<RE::BGSKeyword>> dataKeywords;
 
+	logger::info("\tSorting keywords...");
 	for (const auto& formData : keywordForms) {
 		dataKeywords.emplace(formData.form, formData);
 		resolver.addIsolated(formData.form);
@@ -111,7 +143,7 @@ void Dependencies::ResolveKeywords()
 	const auto endTime = std::chrono::steady_clock::now();
 
 	keywordForms.clear();
-	logger::info("\tSorting keywords :");
+	logger::info("\tSorted keywords :");
 	for (const auto& keyword : result) {
 		const auto& [begin, end] = dataKeywords.equal_range(keyword);
 		if (begin != end) {

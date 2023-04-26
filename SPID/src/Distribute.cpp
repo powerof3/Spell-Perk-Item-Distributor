@@ -20,13 +20,20 @@ namespace Distribute
 							for (const auto& xList : *entryList->extraLists) {
 								const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 								if (outfitItem && outfitItem->id == formID) {
-									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true, true);
+									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
 								}
 							}
 						}
 					}
 				}
 			}
+		}
+
+		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount)
+		{
+			using func_t = void (*)(RE::Actor*, RE::TESBoundObject*, std::uint32_t, bool, std::uint32_t, RE::BSScript::Internal::VirtualMachine*);
+			REL::Relocation<func_t> func{ RELOCATION_ID(55945, 56489) };
+			return func(a_actor, a_item, a_itemCount, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 		}
 	}
 
@@ -50,24 +57,28 @@ namespace Distribute
 			}
 		});
 
-		for_each_form<RE::BGSPerk>(a_npcData, Forms::perks, a_input, [&](const std::vector<RE::BGSPerk*>& a_perks) {
-			npc->AddPerks(a_perks, 1);
-		});
-
 		for_each_form<RE::SpellItem>(a_npcData, Forms::spells, a_input, [&](const std::vector<RE::SpellItem*>& a_spells) {
 			npc->GetSpellList()->AddSpells(a_spells);
-		});
-
-		for_each_form<RE::TESShout>(a_npcData, Forms::shouts, a_input, [&](const std::vector<RE::TESShout*>& a_shouts) {
-			npc->GetSpellList()->AddShouts(a_shouts);
 		});
 
 		for_each_form<RE::TESLevSpell>(a_npcData, Forms::levSpells, a_input, [&](const std::vector<RE::TESLevSpell*>& a_levSpells) {
 			npc->GetSpellList()->AddLevSpells(a_levSpells);
 		});
 
+		for_each_form<RE::BGSPerk>(a_npcData, Forms::perks, a_input, [&](const std::vector<RE::BGSPerk*>& a_perks) {
+			npc->AddPerks(a_perks, 1);
+		});
+
+		for_each_form<RE::TESShout>(a_npcData, Forms::shouts, a_input, [&](const std::vector<RE::TESShout*>& a_shouts) {
+			npc->GetSpellList()->AddShouts(a_shouts);
+		});
+
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects) {
-			return npc->AddObjectsToContainer(a_objects, npc);
+			if (npc->AddObjectsToContainer(a_objects, npc)) {
+				actor->InitInventoryIfRequired();
+				return true;
+			}
+			return false;
 		});
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
@@ -75,6 +86,7 @@ namespace Distribute
 				if (npc->defaultOutfit == a_outfit) {
 					return false;
 				}
+
 				actor->RemoveOutfitItems(npc->defaultOutfit);
 				npc->defaultOutfit = a_outfit;
 				actor->InitInventoryIfRequired();
