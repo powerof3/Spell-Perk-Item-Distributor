@@ -61,6 +61,7 @@ namespace Distribute
 
 		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit);
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount);
+		void init_leveled_items(RE::Actor* a_actor);
 	}
 
 	// old method (distributing one by one)
@@ -105,10 +106,10 @@ namespace Distribute
 	// items
 	template <class Form>
 	void for_each_form(
-		const NPCData&                                    a_npcData,
-		Forms::Distributables<Form>&                      a_distributables,
-		const PCLevelMult::Input&                         a_input,
-		std::function<bool(std::map<Form*, IdxOrCount>&)> a_callback)
+		const NPCData&                                          a_npcData,
+		Forms::Distributables<Form>&                            a_distributables,
+		const PCLevelMult::Input&                               a_input,
+		std::function<bool(std::map<Form*, IdxOrCount>&, bool)> a_callback)
 	{
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
@@ -117,15 +118,19 @@ namespace Distribute
 		}
 
 		std::map<Form*, IdxOrCount> collectedForms{};
+		bool                        hasLeveledItems = false;
 
 		for (auto& formData : vec) {
 			if (detail::passed_filters(a_npcData, a_input, formData)) {
-				collectedForms.emplace(formData.form, formData.idxOrCount);
+				if (formData.form->Is(RE::FormType::LeveledItem)) {
+					hasLeveledItems = true;
+				}
+			    collectedForms.emplace(formData.form, formData.idxOrCount);
 			}
 		}
 
 		if (!collectedForms.empty()) {
-			a_callback(collectedForms);
+			a_callback(collectedForms, hasLeveledItems);
 		}
 	}
 
