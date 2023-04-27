@@ -35,7 +35,14 @@ namespace Distribute
 			REL::Relocation<func_t> func{ RELOCATION_ID(55945, 56489) };
 			return func(a_actor, a_item, a_itemCount, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 		}
-	}
+
+        void init_leveled_items(RE::Actor* a_actor)
+		{
+			if (const auto invChanges = a_actor->GetInventoryChanges()) {
+				invChanges->InitLeveledItems();
+			}
+		}
+    }
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
@@ -73,9 +80,11 @@ namespace Distribute
 			npc->GetSpellList()->AddShouts(a_shouts);
 		});
 
-		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects) {
+		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
 			if (npc->AddObjectsToContainer(a_objects, npc)) {
-				actor->InitInventoryIfRequired();
+				if (a_hasLvlItem) {
+					detail::init_leveled_items(actor);
+				}
 				return true;
 			}
 			return false;
