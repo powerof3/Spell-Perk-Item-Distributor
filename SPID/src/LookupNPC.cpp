@@ -27,18 +27,6 @@ namespace NPC
 		return formID == a_formID;
 	}
 
-	void Data::cache_keywords()
-	{
-		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-	}
-
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
@@ -50,6 +38,14 @@ namespace NPC
 		summonable(npc->IsSummonable()),
 		child(actor->IsChild() || race->formEditorID.contains("RaceChild"))
 	{
+		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
 		if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
 				originalIDs = ID(originalBase);
@@ -63,7 +59,10 @@ namespace NPC
 		} else {
 			originalIDs = ID(npc);
 		}
-		cache_keywords();
+		if (!potentialFollowerFaction) {
+			potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D);
+		}
+		teammate = actor->IsPlayerTeammate() || npc->IsInFaction(potentialFollowerFaction);
 	}
 
 	RE::TESNPC* Data::GetNPC() const
@@ -78,15 +77,8 @@ namespace NPC
 
 	bool Data::has_keyword_string(const std::string& a_string) const
 	{
-		return std::ranges::any_of(keywords, [&](const auto& keyword) {
+		return std::any_of(keywords.begin(), keywords.end(), [&](const auto& keyword) {
 			return string::iequals(keyword, a_string);
-		});
-	}
-
-	bool Data::contains_keyword_string(const std::string& a_string) const
-	{
-		return std::ranges::any_of(keywords, [&](const auto& keyword) {
-			return string::icontains(keyword, a_string);
 		});
 	}
 
@@ -94,7 +86,7 @@ namespace NPC
 	{
 		if (a_all) {
 			return std::ranges::all_of(a_strings, [&](const auto& str) {
-				return has_keyword_string(str);
+				return has_keyword_string(str) || string::iequals(name, str) || originalIDs == str || templateIDs == str;
 			});
 		} else {
 			return std::ranges::any_of(a_strings, [&](const auto& str) {
@@ -106,7 +98,12 @@ namespace NPC
 	bool Data::ContainsStringFilter(const StringVec& a_strings) const
 	{
 		return std::ranges::any_of(a_strings, [&](const auto& str) {
-			return contains_keyword_string(str) || string::icontains(name, str) || originalIDs.contains(str) || templateIDs.contains(str);
+			return string::icontains(name, str) ||
+			       originalIDs.contains(str) ||
+			       templateIDs.contains(str) ||
+			       std::any_of(keywords.begin(), keywords.end(), [&](const auto& keyword) {
+					   return string::icontains(keyword, str);
+				   });
 		});
 	}
 
@@ -213,6 +210,16 @@ namespace NPC
 	bool Data::IsChild() const
 	{
 		return child;
+	}
+
+	bool Data::IsLeveled() const
+	{
+		return templateIDs.formID != 0;
+	}
+
+	bool Data::IsTeammate() const
+	{
+		return teammate;
 	}
 
 	RE::TESRace* Data::GetRace() const

@@ -42,16 +42,14 @@ namespace Forms
 					}
 					if (modName && !formID) {
 						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
-							buffered_logger::info("\t\t[{}] Filter ({}) INFO - mod found", a_path, filterMod->fileName);
 							a_formVec.push_back(filterMod);
 						} else {
 							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
 						}
 					} else if (formID) {
-						auto filterForm = modName ?
-                                              a_dataHandler->LookupForm(*formID, *modName) :
-                                              RE::TESForm::LookupByID(*formID);
-						if (filterForm) {
+						if (auto filterForm = modName ?
+                                                  a_dataHandler->LookupForm(*formID, *modName) :
+                                                  RE::TESForm::LookupByID(*formID)) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.push_back(filterForm);
@@ -99,10 +97,16 @@ namespace Forms
 	template <class Form>
 	struct Distributables
 	{
+		Distributables(RECORD::TYPE a_type) :
+			type(a_type)
+		{}
+
 		explicit operator bool();
 
-		std::size_t GetSize();
-		std::size_t GetLeveledSize();
+		std::size_t GetSize() const;
+		std::size_t GetLeveledSize() const;
+
+		RECORD::TYPE GetType() const;
 
 		const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
 		DataVec<Form>&       GetForms();
@@ -113,25 +117,43 @@ namespace Forms
 		void FinishLookupForms();
 
 	private:
+		RECORD::TYPE  type;
 		DataVec<Form> forms{};
 		DataVec<Form> formsWithLevels{};
 	};
 
-	inline Distributables<RE::SpellItem>      spells;
-	inline Distributables<RE::BGSPerk>        perks;
-	inline Distributables<RE::TESBoundObject> items;
-	inline Distributables<RE::TESShout>       shouts;
-	inline Distributables<RE::TESLevSpell>    levSpells;
-	inline Distributables<RE::TESForm>        packages;
-	inline Distributables<RE::BGSOutfit>      outfits;
-	inline Distributables<RE::BGSKeyword>     keywords;
-	inline Distributables<RE::TESBoundObject> deathItems;
-	inline Distributables<RE::TESFaction>     factions;
-	inline Distributables<RE::BGSOutfit>      sleepOutfits;
-	inline Distributables<RE::TESObjectARMO>  skins;
+	inline Distributables<RE::SpellItem>      spells{ RECORD::kSpell };
+	inline Distributables<RE::BGSPerk>        perks{ RECORD::kPerk };
+	inline Distributables<RE::TESBoundObject> items{ RECORD::kItem };
+	inline Distributables<RE::TESShout>       shouts{ RECORD::kShout };
+	inline Distributables<RE::TESLevSpell>    levSpells{ RECORD::kLevSpell };
+	inline Distributables<RE::TESForm>        packages{ RECORD::kPackage };
+	inline Distributables<RE::BGSOutfit>      outfits{ RECORD::kOutfit };
+	inline Distributables<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
+	inline Distributables<RE::TESBoundObject> deathItems{ RECORD::kDeathItem };
+	inline Distributables<RE::TESFaction>     factions{ RECORD::kFaction };
+	inline Distributables<RE::BGSOutfit>      sleepOutfits{ RECORD::kSleepOutfit };
+	inline Distributables<RE::TESObjectARMO>  skins{ RECORD::kSkin };
 
 	std::size_t GetTotalEntries();
 	std::size_t GetTotalLeveledEntries();
+
+	template <typename Func, typename... Args>
+	void ForEachDistributable(Func&& a_func, Args&&... args)
+	{
+		a_func(keywords, std::forward<Args>(args)...);
+		a_func(spells, std::forward<Args>(args)...);
+		a_func(levSpells, std::forward<Args>(args)...);
+		a_func(perks, std::forward<Args>(args)...);
+		a_func(shouts, std::forward<Args>(args)...);
+		a_func(items, std::forward<Args>(args)...);
+		a_func(deathItems, std::forward<Args>(args)...);
+		a_func(outfits, std::forward<Args>(args)...);
+		a_func(sleepOutfits, std::forward<Args>(args)...);
+		a_func(factions, std::forward<Args>(args)...);
+		a_func(packages, std::forward<Args>(args)...);
+		a_func(skins, std::forward<Args>(args)...);
+	}
 }
 
 template <class Form>
@@ -150,15 +172,21 @@ Forms::Distributables<Form>::operator bool()
 }
 
 template <class Form>
-std::size_t Forms::Distributables<Form>::GetSize()
+std::size_t Forms::Distributables<Form>::GetSize() const
 {
 	return forms.size();
 }
 
 template <class Form>
-std::size_t Forms::Distributables<Form>::GetLeveledSize()
+std::size_t Forms::Distributables<Form>::GetLeveledSize() const
 {
 	return formsWithLevels.size();
+}
+
+template <class Form>
+RECORD::TYPE Forms::Distributables<Form>::GetType() const
+{
+	return type;
 }
 
 template <class Form>
@@ -238,9 +266,6 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 				if (result != keywordArray.end()) {
 					if (const auto keyword = *result; keyword) {
-						if (!keyword->IsDynamicForm()) {
-							buffered_logger::info("\t[{}] {} [0x{:X}] INFO - using existing keyword", path, keywordName, keyword->GetFormID());
-						}
 						form = keyword;
 					} else {
 						buffered_logger::critical("\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
@@ -251,7 +276,6 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
 						keyword->formEditorID = keywordName;
 						keywordArray.push_back(keyword);
-						buffered_logger::info("\t[{}] {} [0x{:X}] INFO - creating keyword", path, keywordName, keyword->GetFormID());
 
 						form = keyword;
 					} else {

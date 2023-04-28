@@ -212,7 +212,7 @@ public:
 		///	by reducing number of lookups for all nodes to resolved the graph.
 		std::vector<Node*> orderedNodes;
 
-		std::ranges::transform(nodes, std::back_inserter(orderedNodes), [](const auto& pair) {
+		std::transform(nodes.begin(), nodes.end(), std::back_inserter(orderedNodes), [](const auto& pair) {
 			return pair.second;
 		});
 		// Sort nodes in correct order of processing.

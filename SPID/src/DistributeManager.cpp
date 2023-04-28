@@ -15,6 +15,16 @@ namespace Distribute
 		return true;
 	}
 
+	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc)
+	{
+		if (!a_actor->HasOutfitItems(a_npc->defaultOutfit)) {
+			if (const auto invChanges = a_actor->GetInventoryChanges(false)) {
+				invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
+			}
+		}
+		equip_worn_outfit(a_actor, a_npc->defaultOutfit);
+	}
+
 	namespace Actor
 	{
 		// Initial distribution
@@ -35,6 +45,28 @@ namespace Distribute
 			static inline constexpr std::size_t size{ 0x6D };
 		};
 
+		// Force outfit equip
+		struct Load3D
+		{
+			static RE::NiAVObject* thunk(RE::Character* a_this, bool a_arg1)
+			{
+				const auto root = func(a_this, a_arg1);
+
+				if (const auto npc = a_this->GetActorBase()) {
+					if (npc->HasKeyword(processedOutfit)) {
+						detail::force_equip_outfit(a_this, npc);
+					}
+				}
+
+				return root;
+			}
+
+			static inline REL::Relocation<decltype(thunk)> func;
+
+			static inline constexpr std::size_t index{ 0 };
+			static inline constexpr std::size_t size{ 0x6A };
+		};
+
 		// Post distribution
 		struct InitLoadGame
 		{
@@ -48,9 +80,8 @@ namespace Distribute
 						auto npcData = NPCData(a_this, npc);
 						Distribute(npcData, false);
 					}
-					if (npc->HasKeyword(processedOutfit) && !a_this->HasOutfitItems(npc->defaultOutfit)) {
-						a_this->InitInventoryIfRequired();
-						detail::equip_worn_outfit(a_this, npc->defaultOutfit);
+					if (npc->HasKeyword(processedOutfit)) {
+						detail::force_equip_outfit(a_this, npc);
 					}
 				}
 			}
@@ -63,6 +94,7 @@ namespace Distribute
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
+			stl::write_vfunc<RE::Character, Load3D>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
 
 			logger::info("Installed actor load hooks");
@@ -96,16 +128,6 @@ namespace Distribute
 
 namespace Distribute::Event
 {
-	struct detail  //AddObjectToContainer doesn't work with leveled items :s
-	{
-		static void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount, bool a_silent, std::uint32_t a_stackID, RE::BSScript::Internal::VirtualMachine* a_vm)
-		{
-			using func_t = decltype(&detail::add_item);
-			REL::Relocation<func_t> func{ RELOCATION_ID(55945, 56489) };
-			return func(a_actor, a_item, a_itemCount, a_silent, a_stackID, a_vm);
-		}
-	};
-
 	void Manager::Register()
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
@@ -129,11 +151,11 @@ namespace Distribute::Event
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				auto       npcData = NPCData(actor, npc);
+				const auto npcData = NPCData(actor, npc);
 				const auto input = PCLevelMult::Input{ actor, npc, false };
 
 				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
-					detail::add_item(actor, a_deathItem, a_count, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
+					detail::add_item(actor, a_deathItem, a_count);
 					return true;
 				});
 			}
