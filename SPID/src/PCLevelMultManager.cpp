@@ -73,11 +73,11 @@ namespace PCLevelMult
 		for (auto& [playerID, npcFormIDs] : _cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("\tNPC : {} [{:X}]", EditorID::GetEditorID(npcFormID), npcFormID);
+				logger::info("\tNPC : {} [{:X}]", edid::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
 					logger::info("\t\tLevel : {}", level);
 					for (auto& [distFormID, idxSet] : distFormMap.rejectedEntries) {
-						logger::info("\t\t\tDist FormID : {} [{:X}]", EditorID::GetEditorID(distFormID), distFormID);
+						logger::info("\t\t\tDist FormID : {} [{:X}]", edid::get_editorID(RE::TESForm::LookupByID(distFormID)), distFormID);
 						for (auto& idx : idxSet) {
 							logger::info("\t\t\t\tIDX : {}", idx);
 						}
@@ -110,13 +110,13 @@ namespace PCLevelMult
 		for (auto& [playerID, npcFormIDs] : _cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("\tNPC : {} [{:X}]", EditorID::GetEditorID(npcFormID), npcFormID);
+				logger::info("\tNPC : {} [{:X}]", edid::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
 					logger::info("\t\tLevel : {}", level);
 					for (auto& [formType, formIDSet] : distFormMap.distributedEntries) {
 						logger::info("\t\t\tDist FormType : {}", formType);
 						for (auto& formID : formIDSet) {
-							logger::info("\t\t\t\tDist FormID : {} [{:X}]", EditorID::GetEditorID(formID), formID);
+							logger::info("\t\t\t\tDist FormID : {} [{:X}]", edid::get_editorID(RE::TESForm::LookupByID(formID)), formID);
 						}
 					}
 				}
