@@ -36,13 +36,13 @@ namespace Distribute
 			return func(a_actor, a_item, a_itemCount, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 		}
 
-        void init_leveled_items(RE::Actor* a_actor)
+		void init_leveled_items(RE::Actor* a_actor)
 		{
 			if (const auto invChanges = a_actor->GetInventoryChanges()) {
 				invChanges->InitLeveledItems();
 			}
 		}
-    }
+	}
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
