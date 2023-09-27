@@ -4,7 +4,7 @@ namespace NPC
 {
 	Data::ID::ID(RE::TESActorBase* a_base) :
 		formID(a_base->GetFormID()),
-		editorID(EditorID::GetEditorID(a_base))
+		editorID(edid::get_editorID(a_base))
 	{}
 
 	bool Data::ID::contains(const std::string& a_str) const

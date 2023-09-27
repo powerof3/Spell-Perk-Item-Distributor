@@ -128,7 +128,7 @@ inline std::ostream& operator<<(std::ostream& os, RE::TESFile* file)
 
 inline std::ostream& operator<<(std::ostream& os, RE::TESForm* form)
 {
-	if (const auto& edid = EditorID::GetEditorID(form); !edid.empty()) {
+	if (const auto& edid = edid::get_editorID(form); !edid.empty()) {
 		os << edid << " ";
 	}
 	os << "["

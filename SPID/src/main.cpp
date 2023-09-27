@@ -14,7 +14,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		{
 			logger::info("{:*^50}", "DEPENDENCIES");
 
-			tweaks = GetModuleHandle(L"po3_Tweaks");
+            const auto tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
 			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::GetConfigs(); shouldLookupForms) {
