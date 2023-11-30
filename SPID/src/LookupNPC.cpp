@@ -75,13 +75,6 @@ namespace NPC
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
 
-		if (race) {
-			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-				keywords.emplace(a_keyword.GetFormEditorID());
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
-		}
-
 		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
 				IDs.emplace_back(originalBase);
@@ -95,6 +88,13 @@ namespace NPC
 			}
 		} else {
 			IDs.emplace_back(npc);
+		}
+
+		if (race) {
+			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+				keywords.emplace(a_keyword.GetFormEditorID());
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
 		}
 
 		std::call_once(init, [&] { potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D); });

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_SpellPerkItemDistributor" CACHE STRING "")
-set(VERSION 6.7.1 CACHE STRING "")
+set(VERSION 6.7.2 CACHE STRING "")
 set(AE_VERSION 1)
 set(VR_VERSION 1)
 

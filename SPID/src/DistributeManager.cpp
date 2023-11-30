@@ -7,7 +7,7 @@ namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc)
 	{
-		if (a_npc->HasKeyword(processed)) {
+		if (a_npc->IsDeleted() || a_npc->HasKeyword(processed)) {
 			return false;
 		}
 
@@ -114,23 +114,25 @@ namespace Distribute
 					return;
 				}
 
+				const auto npc = stl::adjust_pointer<RE::TESNPC>(a_this, -0x30);
+				if (!npc || npc->IsDeleted()) {
+					return;
+				}
+
 				std::call_once(distributeInit, []() {
 					if (shouldDistribute = Lookup::DoFormLookup(); shouldDistribute) {
 						SetupDistribution();
 					}
 				});
 
-				if (const auto npc = stl::adjust_pointer<RE::TESNPC>(a_this, -0x30); npc) {
-					const auto npcData = NPCData(npc);
-
-					for_each_form<RE::BGSOutfit>(npcData, Forms::outfits, [&](auto* a_outfit) {
-						if (detail::can_equip_outfit(npc, a_outfit)) {
-							npc->defaultOutfit = a_outfit;
-							return true;
-						}
-						return false;
-					});
-				}
+				const auto npcData = NPCData(npc);
+				for_each_form<RE::BGSOutfit>(npcData, Forms::outfits, [&](auto* a_outfit) {
+					if (detail::can_equip_outfit(npc, a_outfit)) {
+						npc->defaultOutfit = a_outfit;
+						return true;
+					}
+					return false;
+				});
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 
