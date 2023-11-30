@@ -100,7 +100,7 @@ namespace Distribute
 		const PCLevelMult::Input&    a_input,
 		std::function<bool(Form*)>   a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(false);
+		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
 			if (detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
