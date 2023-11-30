@@ -12,8 +12,8 @@ bool INI::Format(TYPE a_type)
 	const auto size = configs.size();
 
 	a_type == INI::kUpgrade ?
-        std ::cout << "\nUpgrading " << size << " INI files...\n\n" :
-        std ::cout << "\nDowngrading " << size << " INI files...\n\n";
+		std ::cout << "\nUpgrading " << size << " INI files...\n\n" :
+		std ::cout << "\nDowngrading " << size << " INI files...\n\n";
 
 	for (auto& path : configs) {
 		clib_util::string::replace_first_instance(path, "./", "");

@@ -48,8 +48,8 @@ namespace Forms
 						}
 					} else if (formID) {
 						if (auto filterForm = modName ?
-                                                  a_dataHandler->LookupForm(*formID, *modName) :
-                                                  RE::TESForm::LookupByID(*formID)) {
+						                          a_dataHandler->LookupForm(*formID, *modName) :
+						                          RE::TESForm::LookupByID(*formID)) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
 								a_formVec.emplace_back(filterForm);

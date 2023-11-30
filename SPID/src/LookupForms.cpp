@@ -8,7 +8,7 @@ bool Lookup::LookupForms()
 
 	bool valid = false;
 
-    if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
+	if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
 			const auto& recordName = RECORD::add[a_distributable.GetType()];
 
@@ -58,7 +58,7 @@ bool Lookup::DoFormLookup()
 
 	Timer timer;
 
-    timer.start();
+	timer.start();
 	const bool success = LookupForms();
 	timer.end();
 
