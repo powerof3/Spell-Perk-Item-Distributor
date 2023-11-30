@@ -31,50 +31,58 @@ namespace NPC
 		npc(a_npc),
 		actor(nullptr),
 		name(a_npc->GetName()),
-		race(npc->GetRace()),
-		level(npc->GetLevel()),
-		sex(npc->GetSex()),
-		unique(npc->IsUnique()),
-		summonable(npc->IsSummonable()),
-		child(race->IsChildRace() || race->formEditorID.contains("RaceChild")),
+		race(a_npc->GetRace()),
+		level(a_npc->GetLevel()),
+		sex(a_npc->GetSex()),
+		unique(a_npc->IsUnique()),
+		summonable(a_npc->IsSummonable()),
+		child(race && (race->IsChildRace() || race->formEditorID.contains("RaceChild"))),
 		leveled(a_npc->UsesTemplate())
 	{
-		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+		a_npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
 			keywords.emplace(a_keyword.GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
-		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-		IDs.emplace_back(npc);
+
+	    if (race) {
+			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+				keywords.emplace(a_keyword.GetFormEditorID());
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
+		}
+
+		IDs.emplace_back(a_npc);
 
 		std::call_once(init, [&] { potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D); });
 		if (potentialFollowerFaction) {
-			teammate = npc->IsInFaction(potentialFollowerFaction);
+			teammate = a_npc->IsInFaction(potentialFollowerFaction);
 		}
 	}
 
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
-		name(actor->GetName()),
-		race(npc->GetRace()),
-		level(npc->GetLevel()),
-		sex(npc->GetSex()),
-		unique(npc->IsUnique()),
-		summonable(npc->IsSummonable()),
-		child(actor->IsChild() || race->formEditorID.contains("RaceChild"))
+		name(a_actor->GetName()),
+		race(a_npc->GetRace()),
+		level(a_npc->GetLevel()),
+		sex(a_npc->GetSex()),
+		unique(a_npc->IsUnique()),
+		summonable(a_npc->IsSummonable()),
+		child(a_actor->IsChild() || race && race->formEditorID.contains("RaceChild"))
 	{
 		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
 			keywords.emplace(a_keyword.GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
-		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-		if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
+
+	    if (race) {
+			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+				keywords.emplace(a_keyword.GetFormEditorID());
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
+		}
+
+		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
 				IDs.emplace_back(originalBase);
 			}

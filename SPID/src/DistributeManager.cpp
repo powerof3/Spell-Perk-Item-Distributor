@@ -110,6 +110,10 @@ namespace Distribute
 			{
 				func(a_this, a_templateForms);
 
+				if (!a_this) {
+					return;
+				}
+
 				std::call_once(distributeInit, []() {
 					if (shouldDistribute = Lookup::DoFormLookup(); shouldDistribute) {
 						SetupDistribution();
