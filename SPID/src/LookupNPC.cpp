@@ -44,7 +44,7 @@ namespace NPC
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
 
-	    if (race) {
+		if (race) {
 			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
 				keywords.emplace(a_keyword.GetFormEditorID());
 				return RE::BSContainer::ForEachResult::kContinue;
@@ -75,7 +75,7 @@ namespace NPC
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
 
-	    if (race) {
+		if (race) {
 			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
 				keywords.emplace(a_keyword.GetFormEditorID());
 				return RE::BSContainer::ForEachResult::kContinue;
