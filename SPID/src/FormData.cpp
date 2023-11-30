@@ -2,32 +2,22 @@
 
 std::size_t Forms::GetTotalEntries()
 {
-	return keywords.GetSize() +
-	       spells.GetSize() +
-	       perks.GetSize() +
-	       items.GetSize() +
-	       shouts.GetSize() +
-	       levSpells.GetSize() +
-	       packages.GetSize() +
-	       outfits.GetSize() +
-	       deathItems.GetSize() +
-	       factions.GetSize() +
-	       sleepOutfits.GetSize() +
-	       skins.GetSize();
+	std::size_t size = 0;
+
+	ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
+		size += a_distributable.GetSize();
+	});
+
+	return size;
 }
 
 std::size_t Forms::GetTotalLeveledEntries()
 {
-	return keywords.GetLeveledSize() +
-	       spells.GetLeveledSize() +
-	       perks.GetLeveledSize() +
-	       items.GetLeveledSize() +
-	       shouts.GetLeveledSize() +
-	       levSpells.GetLeveledSize() +
-	       packages.GetLeveledSize() +
-	       outfits.GetLeveledSize() +
-	       deathItems.GetLeveledSize() +
-	       factions.GetLeveledSize() +
-	       sleepOutfits.GetLeveledSize() +
-	       skins.GetLeveledSize();
+	std::size_t size = 0;
+
+	ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
+		size += a_distributable.GetLeveledSize();
+	});
+
+	return size;
 }

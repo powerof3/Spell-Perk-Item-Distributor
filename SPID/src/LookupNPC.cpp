@@ -27,6 +27,34 @@ namespace NPC
 		return formID == a_formID;
 	}
 
+	Data::Data(RE::TESNPC* a_npc) :
+		npc(a_npc),
+		actor(nullptr),
+		name(a_npc->GetName()),
+		race(npc->GetRace()),
+		level(npc->GetLevel()),
+		sex(npc->GetSex()),
+		unique(npc->IsUnique()),
+		summonable(npc->IsSummonable()),
+		child(race->IsChildRace() || race->formEditorID.contains("RaceChild")),
+		leveled(a_npc->UsesTemplate())
+	{
+		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+		race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
+			keywords.emplace(a_keyword.GetFormEditorID());
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+		IDs.emplace_back(npc);
+
+		std::call_once(init, [&] { potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D); });
+		if (potentialFollowerFaction) {
+			teammate = npc->IsInFaction(potentialFollowerFaction);
+		}
+	}
+
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
@@ -48,21 +76,21 @@ namespace NPC
 		});
 		if (const auto extraLvlCreature = actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
-				originalIDs = ID(originalBase);
+				IDs.emplace_back(originalBase);
 			}
 			if (const auto templateBase = extraLvlCreature->templateBase) {
-				templateIDs = ID(templateBase);
+				leveled = true;
+				IDs.emplace_back(templateBase);
 				if (const auto templateRace = templateBase->As<RE::TESNPC>()->GetRace()) {
 					race = templateRace;
 				}
 			}
 		} else {
-			originalIDs = ID(npc);
+			IDs.emplace_back(npc);
 		}
-		if (!potentialFollowerFaction) {
-			potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D);
-		}
-		teammate = actor->IsPlayerTeammate() || npc->IsInFaction(potentialFollowerFaction);
+
+		std::call_once(init, [&] { potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D); });
+		teammate = actor->IsPlayerTeammate() || potentialFollowerFaction && npc->IsInFaction(potentialFollowerFaction);
 	}
 
 	RE::TESNPC* Data::GetNPC() const
@@ -86,11 +114,11 @@ namespace NPC
 	{
 		if (a_all) {
 			return std::ranges::all_of(a_strings, [&](const auto& str) {
-				return has_keyword_string(str) || string::iequals(name, str) || originalIDs == str || templateIDs == str;
+				return has_keyword_string(str) || string::iequals(name, str) || std::ranges::any_of(IDs, [&](const auto& ID) { return ID == str; });
 			});
 		} else {
 			return std::ranges::any_of(a_strings, [&](const auto& str) {
-				return has_keyword_string(str) || string::iequals(name, str) || originalIDs == str || templateIDs == str;
+				return has_keyword_string(str) || string::iequals(name, str) || std::ranges::any_of(IDs, [&](const auto& ID) { return ID == str; });
 			});
 		}
 	}
@@ -99,8 +127,7 @@ namespace NPC
 	{
 		return std::ranges::any_of(a_strings, [&](const auto& str) {
 			return string::icontains(name, str) ||
-			       originalIDs.contains(str) ||
-			       templateIDs.contains(str) ||
+			       std::ranges::any_of(IDs, [&](const auto& ID) { return ID.contains(str); }) ||
 			       std::any_of(keywords.begin(), keywords.end(), [&](const auto& keyword) {
 					   return string::icontains(keyword, str);
 				   });
@@ -129,10 +156,7 @@ namespace NPC
 		case RE::FormType::Outfit:
 			return npc->defaultOutfit == a_form;
 		case RE::FormType::NPC:
-			{
-				const auto filterFormID = a_form->GetFormID();
-				return npc == a_form || originalIDs == filterFormID || templateIDs == filterFormID;
-			}
+			return npc == a_form || std::ranges::any_of(IDs, [&](const auto& ID) { return ID == a_form->GetFormID(); });
 		case RE::FormType::VoiceType:
 			return npc->voiceType == a_form;
 		case RE::FormType::Spell:
@@ -145,7 +169,7 @@ namespace NPC
 		case RE::FormType::Location:
 			{
 				const auto location = a_form->As<RE::BGSLocation>();
-				return actor->GetEditorLocation() == location;
+				return actor ? actor->GetEditorLocation() == location : false;
 			}
 		case RE::FormType::FormList:
 			{
@@ -175,7 +199,7 @@ namespace NPC
 			}
 			if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
 				const auto file = std::get<const RE::TESFile*>(a_formFile);
-				return file && (originalIDs == file || templateIDs == file);
+				return file && std::ranges::any_of(IDs, [&](const auto& ID) { return ID == file; });
 			}
 			return false;
 		};
@@ -214,7 +238,7 @@ namespace NPC
 
 	bool Data::IsLeveled() const
 	{
-		return templateIDs.formID != 0;
+		return leveled;
 	}
 
 	bool Data::IsTeammate() const

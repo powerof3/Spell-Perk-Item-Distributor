@@ -211,7 +211,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		return;
 	}
 
-	logger::info("Starting {} lookup", a_type);
+	logger::info("{}", a_type);
 
 	forms.reserve(a_INIDataVec.size());
 	std::uint32_t index = 0;

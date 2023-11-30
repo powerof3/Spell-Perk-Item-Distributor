@@ -2,10 +2,12 @@
 
 namespace NPC
 {
+	inline std::once_flag  init;
 	inline RE::TESFaction* potentialFollowerFaction;
 
 	struct Data
 	{
+		Data(RE::TESNPC* a_npc);
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
@@ -45,19 +47,19 @@ namespace NPC
 		[[nodiscard]] bool has_keyword_string(const std::string& a_string) const;
 		[[nodiscard]] bool has_form(RE::TESForm* a_form) const;
 
-		RE::TESNPC*   npc;
-		RE::Actor*    actor;
-		std::string   name;
-		RE::TESRace*  race;
-		ID            originalIDs;
-		ID            templateIDs{};
-		StringSet     keywords{};
-		std::uint16_t level;
-		RE::SEX       sex;
-		bool          unique;
-		bool          summonable;
-		bool          child;
-		bool          teammate;
+		RE::TESNPC*     npc;
+		RE::Actor*      actor;
+		std::string     name;
+		RE::TESRace*    race;
+		std::vector<ID> IDs;
+		StringSet       keywords{};
+		std::uint16_t   level;
+		RE::SEX         sex;
+		bool            unique;
+		bool            summonable;
+		bool            child;
+		bool            teammate;
+		bool            leveled;
 	};
 }
 

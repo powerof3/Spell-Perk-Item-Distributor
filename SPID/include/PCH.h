@@ -20,6 +20,7 @@
 #include <ClibUtil/rng.hpp>
 #include <ClibUtil/simpleINI.hpp>
 #include <ClibUtil/string.hpp>
+#include <ClibUtil/timer.hpp>
 
 #include "LogBuffer.h"
 
@@ -37,6 +38,7 @@ using namespace std::literals;
 using namespace string::literals;
 
 using RNG = clib_util::RNG;
+using Timer = clib_util::Timer;
 
 namespace stl
 {
