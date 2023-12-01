@@ -1,17 +1,7 @@
 #pragma once
 
-inline HMODULE tweaks;
-
 namespace Cache
 {
-	using _GetFormEditorID = const char* (*)(std::uint32_t);
-
-	namespace EditorID
-	{
-		std::string GetEditorID(RE::FormID a_formID);
-		std::string GetEditorID(RE::TESForm* a_form);
-	}
-
 	namespace FormType
 	{
 		inline constexpr std::array whitelist{
@@ -31,4 +21,3 @@ namespace Cache
 		bool GetWhitelisted(RE::FormType a_type);
 	}
 }
-namespace EditorID = Cache::EditorID;

@@ -2,8 +2,8 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO powerof3/CLibUtil
-    REF bf52162882f92d0ceccccd3a75305ed31b3efafa
-    SHA512 37ced7ee80b63663a7ddaf0c50d74ec32b7459b0e4e3f3f6db3afbd69faebe727ccad7a97ad48bf02686f345a5fbf7da960ff9ea0f24a52afeceb8078b608ad7
+    REF bccb84d54fbb96af1aa3e393df07677eabacf391
+    SHA512 1d2ec54529751356f2d71096b7fa3268d06f0edfc0579c6225356717f7a8d77da5a467b2baf2090403b1a93e9d8bbf396b8df43e5e2619d76a7cd08f96c06eba
     HEAD_REF master
 )
 

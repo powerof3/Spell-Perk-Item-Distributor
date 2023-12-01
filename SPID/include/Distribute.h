@@ -37,6 +37,14 @@ namespace Distribute
 		}
 
 		template <class Form>
+		bool passed_filters(
+			const NPCData&           a_npcData,
+			const Forms::Data<Form>& a_formData)
+		{
+			return a_formData.filters.PassedFilters(a_npcData, a_formData.form) == Filter::Result::kPass;
+		}
+
+		template <class Form>
 		bool has_form(RE::TESNPC* a_npc, Form* a_form)
 		{
 			if constexpr (std::is_same_v<RE::TESFaction, Form>) {
@@ -62,6 +70,7 @@ namespace Distribute
 		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit);
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount);
 		void init_leveled_items(RE::Actor* a_actor);
+		bool can_equip_outfit(const RE::TESNPC* a_npc, RE::BGSOutfit* a_outfit);
 	}
 
 	// old method (distributing one by one)
@@ -83,7 +92,7 @@ namespace Distribute
 	}
 
 	// outfits/sleep outfits
-	// overridable forms
+	// skins
 	template <class Form>
 	void for_each_form(
 		const NPCData&               a_npcData,
@@ -94,11 +103,24 @@ namespace Distribute
 		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
-			if (detail::passed_filters(a_npcData, a_input, formData)) {
-				auto form = formData.form;
-				if (a_callback(form)) {
-					break;
-				}
+			if (detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
+				break;
+			}
+		}
+	}
+
+	// outfits/sleep outfits
+	template <class Form>
+	void for_each_form(
+		const NPCData&               a_npcData,
+		Forms::Distributables<Form>& a_distributables,
+		std::function<bool(Form*)>   a_callback)
+	{
+		const auto& vec = a_distributables.GetForms(false);
+
+		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
+			if (detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
+				break;
 			}
 		}
 	}

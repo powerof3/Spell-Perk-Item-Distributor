@@ -6,8 +6,10 @@ bool Lookup::LookupForms()
 {
 	using namespace Forms;
 
+	bool valid = false;
+
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-		ForEachDistributable([dataHandler]<typename Form>(Distributables<Form>& a_distributable) {
+		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
 			const auto& recordName = RECORD::add[a_distributable.GetType()];
 
 			a_distributable.LookupForms(dataHandler, recordName, INI::configs[recordName]);
@@ -15,10 +17,14 @@ bool Lookup::LookupForms()
 				Dependencies::ResolveKeywords();
 			}
 			a_distributable.FinishLookupForms();
+
+			if (a_distributable) {
+				valid = true;
+			}
 		});
 	}
 
-	return spells || perks || items || shouts || levSpells || packages || outfits || keywords || deathItems || factions || sleepOutfits || skins;
+	return valid;
 }
 
 void Lookup::LogFormLookup()
@@ -50,15 +56,15 @@ bool Lookup::DoFormLookup()
 {
 	logger::info("{:*^50}", "LOOKUP");
 
-	const auto startTime = std::chrono::steady_clock::now();
+	Timer timer;
+
+	timer.start();
 	const bool success = LookupForms();
-	const auto endTime = std::chrono::steady_clock::now();
+	timer.end();
 
 	if (success) {
 		LogFormLookup();
-
-		const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-		logger::info("Lookup took {}μs / {}ms", duration, duration / 1000.0f);
+		logger::info("Lookup took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
 	}
 
 	return success;

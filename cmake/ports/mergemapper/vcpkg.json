@@ -1,6 +1,6 @@
 {
   "name": "mergemapper",
-  "version-string": "1.4.0",
+  "version-string": "1.5.0",
   "port-version": 1,
   "description": "A SKSE plugin to dynamically map zmerges.",
   "homepage": "https://github.com/alandtse/MergeMapper"

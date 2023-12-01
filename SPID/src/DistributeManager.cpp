@@ -1,12 +1,13 @@
 #include "DistributeManager.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
+#include "LookupForms.h"
 
 namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc)
 	{
-		if (a_npc->HasKeyword(processed)) {
+		if (a_npc->IsDeleted() || a_npc->HasKeyword(processed)) {
 			return false;
 		}
 
@@ -80,9 +81,9 @@ namespace Distribute
 						auto npcData = NPCData(a_this, npc);
 						Distribute(npcData, false);
 					}
-					if (npc->HasKeyword(processedOutfit)) {
+					/*if (npc->HasKeyword(processedOutfit)) {
 						detail::force_equip_outfit(a_this, npc);
-					}
+					}*/
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -94,10 +95,55 @@ namespace Distribute
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			stl::write_vfunc<RE::Character, Load3D>();
+			// stl::write_vfunc<RE::Character, Load3D>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
 
 			logger::info("Installed actor load hooks");
+		}
+	}
+
+	namespace NPC
+	{
+		struct CopyFromTemplateForms
+		{
+			static void thunk(RE::TESActorBaseData* a_this, RE::TESActorBase** a_templateForms)
+			{
+				func(a_this, a_templateForms);
+
+				if (!a_this) {
+					return;
+				}
+
+				const auto npc = stl::adjust_pointer<RE::TESNPC>(a_this, -0x30);
+				if (!npc || npc->IsDeleted()) {
+					return;
+				}
+
+				std::call_once(distributeInit, []() {
+					if (shouldDistribute = Lookup::DoFormLookup(); shouldDistribute) {
+						SetupDistribution();
+					}
+				});
+
+				const auto npcData = NPCData(npc);
+				for_each_form<RE::BGSOutfit>(npcData, Forms::outfits, [&](auto* a_outfit) {
+					if (detail::can_equip_outfit(npc, a_outfit)) {
+						npc->defaultOutfit = a_outfit;
+						return true;
+					}
+					return false;
+				});
+			}
+			static inline REL::Relocation<decltype(thunk)> func;
+
+			static inline size_t index{ 1 };
+			static inline size_t size{ 0x4 };
+		};
+
+		void Install()
+		{
+			stl::write_vfunc<RE::TESNPC, CopyFromTemplateForms>();
+			logger::info("Installed npc init hooks");
 		}
 	}
 

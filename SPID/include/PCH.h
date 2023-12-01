@@ -9,15 +9,18 @@
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
-#include <ClibUtil/distribution.hpp>
-#include <ClibUtil/rng.hpp>
-#include <ClibUtil/simpleINI.hpp>
-#include <ClibUtil/string.hpp>
 #include <MergeMapperPluginAPI.h>
 #include <ankerl/unordered_dense.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
 #include <xbyak/xbyak.h>
+
+#include <ClibUtil/distribution.hpp>
+#include <ClibUtil/editorID.hpp>
+#include <ClibUtil/rng.hpp>
+#include <ClibUtil/simpleINI.hpp>
+#include <ClibUtil/string.hpp>
+#include <ClibUtil/timer.hpp>
 
 #include "LogBuffer.h"
 
@@ -29,11 +32,13 @@ namespace buffered_logger = LogBuffer;
 namespace string = clib_util::string;
 namespace distribution = clib_util::distribution;
 namespace hash = clib_util::hash;
+namespace edid = clib_util::editorID;
 
 using namespace std::literals;
 using namespace string::literals;
 
 using RNG = clib_util::RNG;
+using Timer = clib_util::Timer;
 
 namespace stl
 {

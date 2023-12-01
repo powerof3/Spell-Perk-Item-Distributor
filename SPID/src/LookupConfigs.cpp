@@ -41,7 +41,7 @@ namespace INI
 			newValue = srell::regex_replace(newValue, re_zeros, "0x$2");
 
 			//NOT to hyphen
-			string::replace_all(newValue, "NOT ", "-");
+			//string::replace_all(newValue, "NOT ", "-");
 
 			return newValue;
 		}

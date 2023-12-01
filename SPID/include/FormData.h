@@ -29,7 +29,7 @@ namespace Forms
 			}
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path)
+		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false)
 		{
 			if (a_rawFormVec.empty()) {
 				return true;
@@ -42,17 +42,17 @@ namespace Forms
 					}
 					if (modName && !formID) {
 						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
-							a_formVec.push_back(filterMod);
+							a_formVec.emplace_back(filterMod);
 						} else {
 							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
 						}
 					} else if (formID) {
 						if (auto filterForm = modName ?
-                                                  a_dataHandler->LookupForm(*formID, *modName) :
-                                                  RE::TESForm::LookupByID(*formID)) {
+						                          a_dataHandler->LookupForm(*formID, *modName) :
+						                          RE::TESForm::LookupByID(*formID)) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
-								a_formVec.push_back(filterForm);
+								a_formVec.emplace_back(filterForm);
 							} else {
 								buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
 							}
@@ -65,7 +65,7 @@ namespace Forms
 						if (auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
 							const auto formType = filterForm->GetFormType();
 							if (Cache::FormType::GetWhitelisted(formType)) {
-								a_formVec.push_back(filterForm);
+								a_formVec.emplace_back(filterForm);
 							} else {
 								buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, editorID, formType);
 							}
@@ -75,7 +75,7 @@ namespace Forms
 					}
 				}
 			}
-			return !a_formVec.empty();
+			return !a_all && !a_formVec.empty() || a_formVec.size() == a_rawFormVec.size();
 		}
 	}
 
@@ -211,7 +211,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 		return;
 	}
 
-	logger::info("Starting {} lookup", a_type);
+	logger::info("{}", a_type);
 
 	forms.reserve(a_INIDataVec.size());
 	std::uint32_t index = 0;
@@ -304,7 +304,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 		FormFilters filterForms{};
 
-		bool validEntry = detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path);
+		bool validEntry = detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path, true);
 		if (validEntry) {
 			validEntry = detail::formID_to_form(a_dataHandler, filterIDs.NOT, filterForms.NOT, path);
 		}
