@@ -24,7 +24,7 @@ namespace Distribute
 				return false;
 			}
 
-			auto result = a_formData.filters.PassedFilters(a_npcData, a_formData.form);
+			auto result = a_formData.filters.PassedFilters(a_npcData);
 
 			if (result != Filter::Result::kPass) {
 				if (result == Filter::Result::kFailRNG && hasLevelFilters) {
@@ -41,7 +41,7 @@ namespace Distribute
 			const NPCData&           a_npcData,
 			const Forms::Data<Form>& a_formData)
 		{
-			return a_formData.filters.PassedFilters(a_npcData, a_formData.form) == Filter::Result::kPass;
+			return a_formData.filters.PassedFilters(a_npcData) == Filter::Result::kPass;
 		}
 
 		template <class Form>
@@ -210,6 +210,49 @@ namespace Distribute
 			if (!collectedLeveledFormIDs.empty()) {
 				PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedLeveledFormIDs);
 			}
+		}
+	}
+
+	template <class Form>
+	void for_each_form(
+		NPCData&                                       a_npcData,
+		Forms::Distributables<Form>&                   a_distributables,
+		std::function<void(const std::vector<Form*>&)> a_callback)
+	{
+		const auto& vec = a_distributables.GetForms(false);
+
+		if (vec.empty()) {
+			return;
+		}
+
+		const auto npc = a_npcData.GetNPC();
+
+		std::vector<Form*> collectedForms{};
+		Set<RE::FormID>    collectedFormIDs{};
+
+		collectedForms.reserve(vec.size());
+		collectedFormIDs.reserve(vec.size());
+
+		for (auto& formData : vec) {
+			auto form = formData.form;
+			auto formID = form->GetFormID();
+			if (collectedFormIDs.contains(formID)) {
+				continue;
+			}
+			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
+				if (detail::passed_filters(a_npcData, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
+					collectedForms.emplace_back(form);
+					collectedFormIDs.emplace(formID);
+				}
+			} else {
+				if (detail::passed_filters(a_npcData, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+					collectedForms.emplace_back(form);
+				}
+			}
+		}
+
+		if (!collectedForms.empty()) {
+			a_callback(collectedForms);
 		}
 	}
 

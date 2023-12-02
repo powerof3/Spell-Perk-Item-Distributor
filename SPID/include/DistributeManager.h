@@ -2,9 +2,6 @@
 
 namespace Distribute
 {
-	inline std::once_flag distributeInit;
-	inline bool           shouldDistribute{ false };
-
 	inline constexpr std::string_view processed_EDID{ "SPID_Processed" };
 	inline RE::BGSKeyword*            processed{ nullptr };
 
@@ -22,10 +19,10 @@ namespace Distribute
 		void Install();
 	}
 
-	namespace NPC
+	/*namespace NPC
 	{
 		void Install();
-	}
+	}*/
 
 	namespace Event
 	{
