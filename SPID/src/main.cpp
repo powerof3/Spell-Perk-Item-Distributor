@@ -1,7 +1,7 @@
 #include "DistributeManager.h"
 #include "LookupConfigs.h"
-#include "PCLevelMultManager.h"
 #include "LookupForms.h"
+#include "PCLevelMultManager.h"
 
 bool shouldLookupForms{ false };
 bool shouldLogErrors{ false };
@@ -41,7 +41,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 				Distribute::SetupDistribution();
 			}
 
-	        if (shouldLogErrors) {
+			if (shouldLogErrors) {
 				const auto error = fmt::format("[SPID] Errors found when reading configs. Check {}.log in {} for more info\n", Version::PROJECT, SKSE::log::log_directory()->string());
 				RE::ConsoleLog::GetSingleton()->Print(error.c_str());
 			}
