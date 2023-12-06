@@ -112,7 +112,8 @@ namespace Distribute
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
 			if (detail::can_equip_outfit(npc, a_outfit)) {
-				npc->defaultOutfit = a_outfit;
+				actor->RemoveOutfitItems(npc->defaultOutfit);
+			    npc->defaultOutfit = a_outfit;
 				npc->AddKeyword(processedOutfit);
 				return true;
 			}
