@@ -177,7 +177,7 @@ namespace NPC
 		case RE::FormType::Location:
 			{
 				const auto location = a_form->As<RE::BGSLocation>();
-				return actor ? actor->GetEditorLocation() == location : false;
+				return actor ? actor->GetEditorLocation() == location : true;  // Location filter cannot be used for outfit distr
 			}
 		case RE::FormType::FormList:
 			{

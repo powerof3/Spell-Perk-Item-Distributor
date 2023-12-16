@@ -1,5 +1,7 @@
 #include "Distribute.h"
 
+#include "DistributeManager.h"
+
 namespace Distribute
 {
 	namespace detail
@@ -44,7 +46,7 @@ namespace Distribute
 
 		bool can_equip_outfit(const RE::TESNPC* a_npc, RE::BGSOutfit* a_outfit)
 		{
-			if (a_npc->defaultOutfit == a_outfit) {
+			if (a_npc->HasKeyword(processedOutfit) || a_npc->defaultOutfit == a_outfit) {
 				return false;
 			}
 
@@ -108,19 +110,11 @@ namespace Distribute
 			return false;
 		});
 
-		/*for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (!npc->HasKeyword(processedOutfit)) {
-				if (npc->defaultOutfit == a_outfit) {
-					return false;
-				}
-
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
+			if (detail::can_equip_outfit(npc, a_outfit)) {
 				actor->RemoveOutfitItems(npc->defaultOutfit);
 				npc->defaultOutfit = a_outfit;
-				actor->InitInventoryIfRequired();
-				detail::equip_worn_outfit(actor, a_outfit);
-
 				npc->AddKeyword(processedOutfit);
-
 				return true;
 			}
 			return false;
@@ -132,7 +126,7 @@ namespace Distribute
 				return true;
 			}
 			return false;
-		});*/
+		});
 
 		for_each_form<RE::TESForm>(a_npcData, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
 			auto packageIdx = a_idx;

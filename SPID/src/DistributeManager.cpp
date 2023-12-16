@@ -81,9 +81,9 @@ namespace Distribute
 						auto npcData = NPCData(a_this, npc);
 						Distribute(npcData, false);
 					}
-					/*if (npc->HasKeyword(processedOutfit)) {
+					if (npc->HasKeyword(processedOutfit)) {
 						detail::force_equip_outfit(a_this, npc);
-					}*/
+					}
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -95,14 +95,14 @@ namespace Distribute
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			// stl::write_vfunc<RE::Character, Load3D>();
+			stl::write_vfunc<RE::Character, Load3D>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
 
 			logger::info("Installed actor load hooks");
 		}
 	}
 
-	namespace NPC
+	/*namespace NPC
 	{
 		struct CopyFromTemplateForms
 		{
@@ -125,7 +125,12 @@ namespace Distribute
 					}
 				});
 
-				const auto npcData = NPCData(npc);
+				auto npcData = NPCData(npc);
+
+			    for_each_form<RE::BGSKeyword>(npcData, Forms::keywords, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
+			        npc->AddKeywords(a_keywords);
+		        });
+
 				for_each_form<RE::BGSOutfit>(npcData, Forms::outfits, [&](auto* a_outfit) {
 					if (detail::can_equip_outfit(npc, a_outfit)) {
 						npc->defaultOutfit = a_outfit;
@@ -145,7 +150,7 @@ namespace Distribute
 			stl::write_vfunc<RE::TESNPC, CopyFromTemplateForms>();
 			logger::info("Installed npc init hooks");
 		}
-	}
+	}*/
 
 	void SetupDistribution()
 	{

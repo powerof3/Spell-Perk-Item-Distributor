@@ -187,7 +187,7 @@ namespace Filter
 		});
 	}
 
-	Result Data::PassedFilters(const NPCData& a_npcData, const RE::TESForm* a_distributeForm) const
+	Result Data::PassedFilters(const NPCData& a_npcData) const
 	{
 		// Fail chance first to avoid running unnecessary checks
 		if (chance < 100) {
