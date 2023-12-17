@@ -14,15 +14,11 @@ namespace PCLevelMult
 		bool          onlyPlayerLevelEntries;
 	};
 
-	class Manager : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+	class Manager :
+		public ISingleton<Manager>,
+		public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 	{
 	public:
-		static Manager* GetSingleton()
-		{
-			static Manager singleton;
-			return &singleton;
-		}
-
 		static void Register();
 
 		[[nodiscard]] bool FindRejectedEntry(const Input& a_input, RE::FormID a_distributedFormID, std::uint32_t a_formDataIndex) const;
@@ -43,15 +39,6 @@ namespace PCLevelMult
 		void          SetNewGameStarted();
 
 	private:
-		Manager() = default;
-		Manager(const Manager&) = delete;
-		Manager(Manager&&) = delete;
-
-		~Manager() override = default;
-
-		Manager& operator=(const Manager&) = delete;
-		Manager& operator=(Manager&&) = delete;
-
 		using Lock = std::shared_mutex;
 		using ReadLocker = std::shared_lock<Lock>;
 		using WriteLocker = std::unique_lock<Lock>;

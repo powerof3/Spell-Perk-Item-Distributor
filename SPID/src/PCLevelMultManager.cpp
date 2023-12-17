@@ -195,7 +195,7 @@ namespace PCLevelMult
 		// 2A73F01A is player ID
 
 		oldPlayerID = currentPlayerID;
-		if (const auto save = string::split(a_saveName, "_"); save.size() > 1 && !string::is_only_letter(save[1])) {
+		if (const auto save = string::split(a_saveName, "_"); save.size() == 9) {
 			currentPlayerID = string::to_num<std::uint64_t>(save[1], true);
 		} else {
 			currentPlayerID = 0;  // non standard save name, use game playerID instead

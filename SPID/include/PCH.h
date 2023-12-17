@@ -21,6 +21,7 @@
 #include <ClibUtil/simpleINI.hpp>
 #include <ClibUtil/string.hpp>
 #include <ClibUtil/timer.hpp>
+#include <ClibUtil/singleton.hpp>
 
 #include "LogBuffer.h"
 
@@ -36,6 +37,7 @@ namespace edid = clib_util::editorID;
 
 using namespace std::literals;
 using namespace string::literals;
+using namespace clib_util::singleton;
 
 using RNG = clib_util::RNG;
 using Timer = clib_util::Timer;

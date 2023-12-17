@@ -50,17 +50,7 @@ namespace Distribute
 				return false;
 			}
 
-			for (const auto& item : a_outfit->outfitItems) {
-				if (const auto armor = item->As<RE::TESObjectARMO>()) {
-					for (const auto& arma : armor->armorAddons) {
-						if (arma && !arma->IsValidRace(a_npc->race)) {
-							return false;
-						}
-					}
-				}
-			}
-
-			return true;
+		    return true;
 		}
 	}
 

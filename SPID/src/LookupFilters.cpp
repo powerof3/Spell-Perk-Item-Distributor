@@ -191,7 +191,7 @@ namespace Filter
 	{
 		// Fail chance first to avoid running unnecessary checks
 		if (chance < 100) {
-			const auto randNum = RNG().Generate<Chance>(0, 100);
+			const auto randNum = RNG().generate<Chance>(0, 100);
 			if (randNum > chance) {
 				return Result::kFailRNG;
 			}
