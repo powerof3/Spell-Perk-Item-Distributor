@@ -19,9 +19,9 @@
 #include <ClibUtil/editorID.hpp>
 #include <ClibUtil/rng.hpp>
 #include <ClibUtil/simpleINI.hpp>
+#include <ClibUtil/singleton.hpp>
 #include <ClibUtil/string.hpp>
 #include <ClibUtil/timer.hpp>
-#include <ClibUtil/singleton.hpp>
 
 #include "LogBuffer.h"
 
