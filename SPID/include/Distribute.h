@@ -106,7 +106,7 @@ namespace Distribute
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
 			if (detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
 				++formData.npcCount;
-			    break;
+				break;
 			}
 		}
 	}
@@ -123,7 +123,7 @@ namespace Distribute
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
 			if (detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
 				++formData.npcCount;
-			    break;
+				break;
 			}
 		}
 	}
@@ -151,7 +151,7 @@ namespace Distribute
 					hasLeveledItems = true;
 				}
 				collectedForms.emplace(formData.form, formData.idxOrCount);
-			    ++formData.npcCount;
+				++formData.npcCount;
 			}
 		}
 
@@ -198,7 +198,7 @@ namespace Distribute
 					if (formData.filters.HasLevelFilters()) {
 						collectedLeveledFormIDs.emplace(formID);
 					}
-				    ++formData.npcCount;
+					++formData.npcCount;
 				}
 			} else {
 				if (detail::passed_filters(a_npcData, a_input, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
@@ -254,7 +254,7 @@ namespace Distribute
 			} else {
 				if (detail::passed_filters(a_npcData, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
-				    ++formData.npcCount;
+					++formData.npcCount;
 				}
 			}
 		}

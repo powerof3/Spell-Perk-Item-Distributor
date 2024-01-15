@@ -163,7 +163,7 @@ namespace Distribute
 		});
 	}
 
-    void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input)
+	void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
 			return;
@@ -182,7 +182,7 @@ namespace Distribute
 			return false;
 		});
 
-	    for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
 			if (detail::can_equip_outfit(npc, a_outfit)) {
 				actor->RemoveOutfitItems(npc->defaultOutfit);
 				npc->defaultOutfit = a_outfit;
@@ -193,11 +193,11 @@ namespace Distribute
 		});
 	}
 
-    void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits)
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits)
 	{
-        const auto input = PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries };
+		const auto input = PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries };
 
-	    Distribute(a_npcData, input);
+		Distribute(a_npcData, input);
 		if (!a_noItemOutfits) {
 			DistributeItemOutfits(a_npcData, input);
 		}

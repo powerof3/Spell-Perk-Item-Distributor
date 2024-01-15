@@ -33,8 +33,8 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (auto npc = a_this->GetActorBase()) {
-                    const auto process = detail::should_process_NPC(npc);
-                    const auto processOnLoad = detail::should_process_NPC(npc, processedOnLoad);
+					const auto process = detail::should_process_NPC(npc);
+					const auto processOnLoad = detail::should_process_NPC(npc, processedOnLoad);
 					if (process || processOnLoad) {
 						auto npcData = NPCData(a_this, npc);
 						if (process) {
@@ -147,9 +147,9 @@ namespace Distribute
 		Timer         timer;
 		std::uint32_t actorCount = 0;
 
-	    if (const auto processLists = RE::ProcessLists::GetSingleton()) {
+		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
 			timer.start();
-	        processLists->ForAllActors([&](RE::Actor* a_actor) {
+			processLists->ForAllActors([&](RE::Actor* a_actor) {
 				if (const auto npc = a_actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
 					auto npcData = NPCData(a_actor, npc);
 					Distribute(npcData, false, true);
