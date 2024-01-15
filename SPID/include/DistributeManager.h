@@ -2,15 +2,13 @@
 
 namespace Distribute
 {
-	inline constexpr std::string_view processed_EDID{ "SPID_Processed" };
-	inline RE::BGSKeyword*            processed{ nullptr };
-
-	inline constexpr std::string_view processedOutfit_EDID{ "SPID_ProcessedOutfit" };
-	inline RE::BGSKeyword*            processedOutfit{ nullptr };
+	inline RE::BGSKeyword* processed{ nullptr };
+	inline RE::BGSKeyword* processedOnLoad{ nullptr };
+	inline RE::BGSKeyword* processedOutfit{ nullptr };
 
 	namespace detail
 	{
-		bool should_process_NPC(RE::TESNPC* a_npc);
+		bool should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword = processed);
 		void force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc);
 	}
 
@@ -35,5 +33,7 @@ namespace Distribute
 		};
 	}
 
-	void SetupDistribution();
+	void Setup();
+	void DoInitialDistribution();
+	void LogResults(std::uint32_t a_actorCount);
 }

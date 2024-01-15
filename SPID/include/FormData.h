@@ -86,13 +86,14 @@ namespace Forms
 	template <class Form>
 	struct Data
 	{
-	    std::uint32_t index{ 0 };
+		std::uint32_t index{ 0 };
 
 		Form*      form{ nullptr };
 		IdxOrCount idxOrCount{ 1 };
 		FilterData filters{};
 
 		std::string   path{};
+		std::uint32_t npcCount{ 0 };
 
 		bool operator==(const Data& a_rhs) const;
 	};
@@ -114,8 +115,8 @@ namespace Forms
 
 		RECORD::TYPE GetType() const;
 
-		const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
-		DataVec<Form>&       GetForms();
+		DataVec<Form>& GetForms(bool a_onlyLevelEntries);
+		DataVec<Form>& GetForms();
 
 		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
 
@@ -202,7 +203,7 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms()
 }
 
 template <class Form>
-const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries)
+Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries)
 {
 	if (a_onlyLevelEntries) {
 		return formsWithLevels;

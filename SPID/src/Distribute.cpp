@@ -39,7 +39,7 @@ namespace Distribute
 
 		void init_leveled_items(RE::Actor* a_actor)
 		{
-			if (const auto invChanges = a_actor->GetInventoryChanges()) {
+			if (const auto invChanges = a_actor->GetInventoryChanges(true)) {
 				invChanges->InitLeveledItems();
 			}
 		}
@@ -61,7 +61,6 @@ namespace Distribute
 		}
 
 		const auto npc = a_npcData.GetNPC();
-		const auto actor = a_npcData.GetActor();
 
 		for_each_form<RE::BGSKeyword>(a_npcData, Forms::keywords, a_input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
 			npc->AddKeywords(a_keywords);
@@ -88,34 +87,6 @@ namespace Distribute
 
 		for_each_form<RE::TESShout>(a_npcData, Forms::shouts, a_input, [&](const std::vector<RE::TESShout*>& a_shouts) {
 			npc->GetSpellList()->AddShouts(a_shouts);
-		});
-
-		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
-			if (npc->AddObjectsToContainer(a_objects, npc)) {
-				if (a_hasLvlItem) {
-					detail::init_leveled_items(actor);
-				}
-				return true;
-			}
-			return false;
-		});
-
-		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (detail::can_equip_outfit(npc, a_outfit)) {
-				actor->RemoveOutfitItems(npc->defaultOutfit);
-				npc->defaultOutfit = a_outfit;
-				npc->AddKeyword(processedOutfit);
-				return true;
-			}
-			return false;
-		});
-
-		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {
-			if (npc->sleepOutfit != a_outfit) {
-				npc->sleepOutfit = a_outfit;
-				return true;
-			}
-			return false;
 		});
 
 		for_each_form<RE::TESForm>(a_npcData, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
@@ -182,10 +153,53 @@ namespace Distribute
 			}
 			return false;
 		});
+
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {
+			if (npc->sleepOutfit != a_outfit) {
+				npc->sleepOutfit = a_outfit;
+				return true;
+			}
+			return false;
+		});
 	}
 
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries)
+    void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
-		Distribute(a_npcData, PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries });
+		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
+			return;
+		}
+
+		const auto npc = a_npcData.GetNPC();
+		const auto actor = a_npcData.GetActor();
+
+		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
+			if (npc->AddObjectsToContainer(a_objects, npc)) {
+				if (a_hasLvlItem) {
+					detail::init_leveled_items(actor);
+				}
+				return true;
+			}
+			return false;
+		});
+
+	    for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
+			if (detail::can_equip_outfit(npc, a_outfit)) {
+				actor->RemoveOutfitItems(npc->defaultOutfit);
+				npc->defaultOutfit = a_outfit;
+				npc->AddKeyword(processedOutfit);
+				return true;
+			}
+			return false;
+		});
+	}
+
+    void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits)
+	{
+        const auto input = PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries };
+
+	    Distribute(a_npcData, input);
+		if (!a_noItemOutfits) {
+			DistributeItemOutfits(a_npcData, input);
+		}
 	}
 }

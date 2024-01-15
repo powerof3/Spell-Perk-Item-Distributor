@@ -38,11 +38,11 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
 			if (shouldDistribute = Lookup::DoFormLookup(); shouldDistribute) {
-				Distribute::SetupDistribution();
+				Distribute::Setup();
 			}
 
 			if (shouldLogErrors) {
-				const auto error = fmt::format("[SPID] Errors found when reading configs. Check {}.log in {} for more info\n", Version::PROJECT, SKSE::log::log_directory()->string());
+				const auto error = std::format("[SPID] Errors found when reading configs. Check {}.log in {} for more info\n", Version::PROJECT, SKSE::log::log_directory()->string());
 				RE::ConsoleLog::GetSingleton()->Print(error.c_str());
 			}
 		}

@@ -1,17 +1,16 @@
 #include "DistributeManager.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
-#include "LookupForms.h"
 
 namespace Distribute
 {
-	bool detail::should_process_NPC(RE::TESNPC* a_npc)
+	bool detail::should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword)
 	{
-		if (a_npc->IsDeleted() || a_npc->HasKeyword(processed)) {
+		if (a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
 			return false;
 		}
 
-		a_npc->AddKeyword(processed);
+		a_npc->AddKeyword(a_keyword);
 
 		return true;
 	}
@@ -19,7 +18,7 @@ namespace Distribute
 	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc)
 	{
 		if (!a_actor->HasOutfitItems(a_npc->defaultOutfit)) {
-			if (const auto invChanges = a_actor->GetInventoryChanges(false)) {
+			if (const auto invChanges = a_actor->GetInventoryChanges()) {
 				invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
 			}
 		}
@@ -28,14 +27,23 @@ namespace Distribute
 
 	namespace Actor
 	{
-		// Initial distribution
+		// FF actor/outfit distribution
 		struct ShouldBackgroundClone
 		{
 			static bool thunk(RE::Character* a_this)
 			{
-				if (auto npc = a_this->GetActorBase(); npc && detail::should_process_NPC(npc)) {
-					auto npcData = NPCData(a_this, npc);
-					Distribute(npcData, false);
+				if (auto npc = a_this->GetActorBase()) {
+                    const auto process = detail::should_process_NPC(npc);
+                    const auto processOnLoad = detail::should_process_NPC(npc, processedOnLoad);
+					if (process || processOnLoad) {
+						auto npcData = NPCData(a_this, npc);
+						if (process) {
+							Distribute(npcData, false, true);
+						}
+						if (processOnLoad) {
+							DistributeItemOutfits(npcData, { a_this, npc, false });
+						}
+					}
 				}
 
 				return func(a_this);
@@ -102,65 +110,24 @@ namespace Distribute
 		}
 	}
 
-	/*namespace NPC
-	{
-		struct CopyFromTemplateForms
-		{
-			static void thunk(RE::TESActorBaseData* a_this, RE::TESActorBase** a_templateForms)
-			{
-				func(a_this, a_templateForms);
-
-				if (!a_this) {
-					return;
-				}
-
-				const auto npc = stl::adjust_pointer<RE::TESNPC>(a_this, -0x30);
-				if (!npc || npc->IsDeleted()) {
-					return;
-				}
-
-				std::call_once(distributeInit, []() {
-					if (shouldDistribute = Lookup::DoFormLookup(); shouldDistribute) {
-						SetupDistribution();
-					}
-				});
-
-				auto npcData = NPCData(npc);
-
-			    for_each_form<RE::BGSKeyword>(npcData, Forms::keywords, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
-			        npc->AddKeywords(a_keywords);
-		        });
-
-				for_each_form<RE::BGSOutfit>(npcData, Forms::outfits, [&](auto* a_outfit) {
-					if (detail::can_equip_outfit(npc, a_outfit)) {
-						npc->defaultOutfit = a_outfit;
-						return true;
-					}
-					return false;
-				});
-			}
-			static inline REL::Relocation<decltype(thunk)> func;
-
-			static inline size_t index{ 1 };
-			static inline size_t size{ 0x4 };
-		};
-
-		void Install()
-		{
-			stl::write_vfunc<RE::TESNPC, CopyFromTemplateForms>();
-			logger::info("Installed npc init hooks");
-		}
-	}*/
-
 	void SetupDistribution()
+	{
+		// Clear logger's buffer to free some memory :)
+		buffered_logger::clear();
+	}
+
+	void Setup()
 	{
 		// Create tag keywords
 		if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
 			if (processed = factory->Create(); processed) {
-				processed->formEditorID = processed_EDID;
+				processed->formEditorID = "SPID_Processed";
 			}
 			if (processedOutfit = factory->Create(); processedOutfit) {
-				processedOutfit->formEditorID = processedOutfit_EDID;
+				processedOutfit->formEditorID = "SPID_ProcessedOutfit";
+			}
+			if (processedOnLoad = factory->Create(); processedOnLoad) {
+				processedOnLoad->formEditorID = "SPID_ProcessedOnLoad";
 			}
 		}
 
@@ -172,8 +139,69 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
-		// Clear logger's buffer to free some memory :)
-		buffered_logger::clear();
+		DoInitialDistribution();
+	}
+
+	void DoInitialDistribution()
+	{
+		Timer         timer;
+		std::uint32_t actorCount = 0;
+
+	    if (const auto processLists = RE::ProcessLists::GetSingleton()) {
+			timer.start();
+	        processLists->ForAllActors([&](RE::Actor* a_actor) {
+				if (const auto npc = a_actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
+					auto npcData = NPCData(a_actor, npc);
+					Distribute(npcData, false, true);
+					++actorCount;
+				}
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
+			timer.end();
+		}
+
+		LogResults(actorCount);
+
+		logger::info("Distribution took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
+	}
+
+	void LogResults(std::uint32_t a_actorCount)
+	{
+		using namespace Forms;
+
+		logger::info("{:*^50}", "RESULTS");
+
+		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
+			if (a_distributable && a_distributable.GetType() != RECORD::kItem && a_distributable.GetType() != RECORD::kOutfit && a_distributable.GetType() != RECORD::kDeathItem) {
+				logger::info("{}", RECORD::add[a_distributable.GetType()]);
+
+				auto& forms = a_distributable.GetForms();
+
+				// Group the same entries together to avoid duplicates in the log.
+				std::map<RE::FormID, Data<Form>> sums{};
+				for (auto& formData : forms) {
+					if (const auto& form = formData.form) {
+						auto it = sums.find(form->GetFormID());
+						if (it != sums.end()) {
+							it->second.npcCount += formData.npcCount;
+						} else {
+							sums.insert({ form->GetFormID(), formData });
+						}
+					}
+				}
+
+				for (auto& entry : sums) {
+					auto& formData = entry.second;
+					if (const auto& form = formData.form) {
+						if (auto file = form->GetFile(0)) {
+							logger::info("\t\t{} [0x{:X}~{}] added to {}/{} NPCs", editorID::get_editorID(form), form->GetLocalFormID(), file->GetFilename(), formData.npcCount, a_actorCount);
+						} else {
+							logger::info("\t\t{} [0x{:X}] added to {}/{} NPCs", editorID::get_editorID(form), form->GetFormID(), formData.npcCount, a_actorCount);
+						}
+					}
+				}
+			}
+		});
 	}
 }
 
