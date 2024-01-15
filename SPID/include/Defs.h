@@ -1,25 +1,5 @@
 #pragma once
 
-template <class K, class D>
-using Map = ankerl::unordered_dense::segmented_map<K, D>;
-template <class K>
-using Set = ankerl::unordered_dense::segmented_set<K>;
-
-struct string_hash
-{
-	using is_transparent = void;  // enable heterogeneous overloads
-	using is_avalanching = void;  // mark class as high quality avalanching hash
-
-	[[nodiscard]] std::uint64_t operator()(std::string_view str) const noexcept
-	{
-		return ankerl::unordered_dense::hash<std::string_view>{}(str);
-	}
-};
-
-template <class D>
-using StringMap = ankerl::unordered_dense::segmented_map<std::string, D, string_hash, std::equal_to<>>;
-using StringSet = ankerl::unordered_dense::segmented_set<std::string, string_hash, std::equal_to<>>;
-
 // Record = FormOrEditorID|StringFilters|RawFormFilters|LevelFilters|Traits|IdxOrCount|Chance
 
 using FormModPair = std::pair<
@@ -128,7 +108,7 @@ inline std::ostream& operator<<(std::ostream& os, RE::TESFile* file)
 
 inline std::ostream& operator<<(std::ostream& os, RE::TESForm* form)
 {
-	if (const auto& edid = edid::get_editorID(form); !edid.empty()) {
+	if (const auto& edid = editorID::get_editorID(form); !edid.empty()) {
 		os << edid << " ";
 	}
 	os << "["

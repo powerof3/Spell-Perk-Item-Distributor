@@ -30,17 +30,38 @@
 namespace logger = SKSE::log;
 namespace buffered_logger = LogBuffer;
 
-namespace string = clib_util::string;
-namespace distribution = clib_util::distribution;
-namespace hash = clib_util::hash;
-namespace edid = clib_util::editorID;
+using namespace clib_util;
 
 using namespace std::literals;
 using namespace string::literals;
-using namespace clib_util::singleton;
+using namespace singleton;
 
-using RNG = clib_util::RNG;
-using Timer = clib_util::Timer;
+// for visting variants
+template <class... Ts>
+struct overload : Ts...
+{
+	using Ts::operator()...;
+};
+
+template <class K, class D>
+using Map = ankerl::unordered_dense::segmented_map<K, D>;
+template <class K>
+using Set = ankerl::unordered_dense::segmented_set<K>;
+
+struct string_hash
+{
+	using is_transparent = void;  // enable heterogeneous overloads
+	using is_avalanching = void;  // mark class as high quality avalanching hash
+
+	[[nodiscard]] std::uint64_t operator()(std::string_view str) const noexcept
+	{
+		return ankerl::unordered_dense::hash<std::string_view>{}(str);
+	}
+};
+
+template <class D>
+using StringMap = ankerl::unordered_dense::segmented_map<std::string, D, string_hash, std::equal_to<>>;
+using StringSet = ankerl::unordered_dense::segmented_set<std::string, string_hash, std::equal_to<>>;
 
 namespace stl
 {

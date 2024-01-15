@@ -19,11 +19,6 @@ namespace Distribute
 		void Install();
 	}
 
-	/*namespace NPC
-	{
-		void Install();
-	}*/
-
 	namespace Event
 	{
 		class Manager :
