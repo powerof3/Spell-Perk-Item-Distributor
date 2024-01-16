@@ -32,17 +32,10 @@ namespace Distribute
 		{
 			static bool thunk(RE::Character* a_this)
 			{
-				if (auto npc = a_this->GetActorBase()) {
-					const auto process = detail::should_process_NPC(npc);
-					const auto processOnLoad = detail::should_process_NPC(npc, processedOnLoad);
-					if (process || processOnLoad) {
+				if (const auto npc = a_this->GetActorBase()) {
+					if (detail::should_process_NPC(npc)) {
 						auto npcData = NPCData(a_this, npc);
-						if (process) {
-							Distribute(npcData, false, true);
-						}
-						if (processOnLoad) {
-							DistributeItemOutfits(npcData, { a_this, npc, false });
-						}
+						Distribute(npcData, false);
 					}
 				}
 
@@ -120,9 +113,6 @@ namespace Distribute
 			if (processedOutfit = factory->Create(); processedOutfit) {
 				processedOutfit->formEditorID = "SPID_ProcessedOutfit";
 			}
-			if (processedOnLoad = factory->Create(); processedOnLoad) {
-				processedOnLoad->formEditorID = "SPID_ProcessedOnLoad";
-			}
 		}
 
 		if (Forms::GetTotalLeveledEntries() > 0) {
@@ -133,7 +123,7 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
-		DoInitialDistribution();
+		//DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();
