@@ -69,7 +69,7 @@ namespace NPC
 		teammate = actor->IsPlayerTeammate() || potentialFollowerFaction && npc->IsInFaction(potentialFollowerFaction);
 	}
 
-    RE::TESNPC* Data::GetNPC() const
+	RE::TESNPC* Data::GetNPC() const
 	{
 		return npc;
 	}
