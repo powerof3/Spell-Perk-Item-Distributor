@@ -176,7 +176,7 @@ namespace NPC
 						   },
 						   [&](const RE::TESFile* a_file) {
 							   result = std::ranges::any_of(IDs, [&](const auto& ID) { return ID == a_file; });
-						   }},
+						   } },
 				a_formFile);
 			return result;
 		};
