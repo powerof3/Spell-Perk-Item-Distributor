@@ -27,38 +27,6 @@ namespace NPC
 		return formID == a_formID;
 	}
 
-	Data::Data(RE::TESNPC* a_npc) :
-		npc(a_npc),
-		actor(nullptr),
-		name(a_npc->GetName()),
-		race(a_npc->GetRace()),
-		level(a_npc->GetLevel()),
-		sex(a_npc->GetSex()),
-		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable()),
-		child(race && (race->IsChildRace() || race->formEditorID.contains("RaceChild"))),
-		leveled(a_npc->UsesTemplate())
-	{
-		a_npc->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
-			keywords.emplace(a_keyword->GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-
-		if (race) {
-			race->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
-				keywords.emplace(a_keyword->GetFormEditorID());
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
-		}
-
-		IDs.emplace_back(a_npc);
-
-		std::call_once(init, [&] { potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D); });
-		if (potentialFollowerFaction) {
-			teammate = a_npc->IsInFaction(potentialFollowerFaction);
-		}
-	}
-
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
@@ -101,7 +69,7 @@ namespace NPC
 		teammate = actor->IsPlayerTeammate() || potentialFollowerFaction && npc->IsInFaction(potentialFollowerFaction);
 	}
 
-	RE::TESNPC* Data::GetNPC() const
+    RE::TESNPC* Data::GetNPC() const
 	{
 		return npc;
 	}

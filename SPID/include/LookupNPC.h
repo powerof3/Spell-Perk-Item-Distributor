@@ -7,8 +7,8 @@ namespace NPC
 
 	struct Data
 	{
-		Data(RE::TESNPC* a_npc);
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
+		~Data() = default;
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
 		[[nodiscard]] RE::Actor*  GetActor() const;

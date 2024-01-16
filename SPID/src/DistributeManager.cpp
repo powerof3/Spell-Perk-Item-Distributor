@@ -110,12 +110,6 @@ namespace Distribute
 		}
 	}
 
-	void SetupDistribution()
-	{
-		// Clear logger's buffer to free some memory :)
-		buffered_logger::clear();
-	}
-
 	void Setup()
 	{
 		// Create tag keywords
@@ -140,6 +134,9 @@ namespace Distribute
 		PCLevelMult::Manager::Register();
 
 		DoInitialDistribution();
+
+		// Clear logger's buffer to free some memory :)
+		buffered_logger::clear();
 	}
 
 	void DoInitialDistribution()
@@ -200,6 +197,8 @@ namespace Distribute
 						}
 					}
 				}
+
+				sums.clear();
 			}
 		});
 	}
