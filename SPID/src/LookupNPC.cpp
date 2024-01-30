@@ -2,9 +2,9 @@
 
 namespace NPC
 {
-	Data::ID::ID(RE::TESActorBase* a_base) :
+	Data::ID::ID(const RE::TESActorBase* a_base) :
 		formID(a_base->GetFormID()),
-		editorID(edid::get_editorID(a_base))
+		editorID(editorID::get_editorID(a_base))
 	{}
 
 	bool Data::ID::contains(const std::string& a_str) const
@@ -27,38 +27,6 @@ namespace NPC
 		return formID == a_formID;
 	}
 
-	Data::Data(RE::TESNPC* a_npc) :
-		npc(a_npc),
-		actor(nullptr),
-		name(a_npc->GetName()),
-		race(a_npc->GetRace()),
-		level(a_npc->GetLevel()),
-		sex(a_npc->GetSex()),
-		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable()),
-		child(race && (race->IsChildRace() || race->formEditorID.contains("RaceChild"))),
-		leveled(a_npc->UsesTemplate())
-	{
-		a_npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
-			return RE::BSContainer::ForEachResult::kContinue;
-		});
-
-		if (race) {
-			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-				keywords.emplace(a_keyword.GetFormEditorID());
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
-		}
-
-		IDs.emplace_back(a_npc);
-
-		std::call_once(init, [&] { potentialFollowerFaction = RE::TESForm::LookupByID<RE::TESFaction>(0x0005C84D); });
-		if (potentialFollowerFaction) {
-			teammate = a_npc->IsInFaction(potentialFollowerFaction);
-		}
-	}
-
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
@@ -70,8 +38,8 @@ namespace NPC
 		summonable(a_npc->IsSummonable()),
 		child(a_actor->IsChild() || race && race->formEditorID.contains("RaceChild"))
 	{
-		npc->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-			keywords.emplace(a_keyword.GetFormEditorID());
+		npc->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
+			keywords.emplace(a_keyword->GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
 
@@ -91,8 +59,8 @@ namespace NPC
 		}
 
 		if (race) {
-			race->ForEachKeyword([&](const RE::BGSKeyword& a_keyword) {
-				keywords.emplace(a_keyword.GetFormEditorID());
+			race->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
+				keywords.emplace(a_keyword->GetFormEditorID());
 				return RE::BSContainer::ForEachResult::kContinue;
 			});
 		}
@@ -177,15 +145,15 @@ namespace NPC
 		case RE::FormType::Location:
 			{
 				const auto location = a_form->As<RE::BGSLocation>();
-				return actor ? actor->GetEditorLocation() == location : true;  // Location filter cannot be used for outfit distr
+				return actor->GetEditorLocation() == location;
 			}
 		case RE::FormType::FormList:
 			{
 				bool result = false;
 
 				const auto list = a_form->As<RE::BGSListForm>();
-				list->ForEachForm([&](RE::TESForm& a_formInList) {
-					if (result = has_form(&a_formInList); result) {
+				list->ForEachForm([&](RE::TESForm* a_formInList) {
+					if (result = has_form(a_formInList); result) {
 						return RE::BSContainer::ForEachResult::kStop;
 					}
 					return RE::BSContainer::ForEachResult::kContinue;
@@ -201,15 +169,16 @@ namespace NPC
 	bool Data::HasFormFilter(const FormVec& a_forms, bool all) const
 	{
 		const auto has_form_or_file = [&](const std::variant<RE::TESForm*, const RE::TESFile*>& a_formFile) {
-			if (std::holds_alternative<RE::TESForm*>(a_formFile)) {
-				const auto form = std::get<RE::TESForm*>(a_formFile);
-				return form && has_form(form);
-			}
-			if (std::holds_alternative<const RE::TESFile*>(a_formFile)) {
-				const auto file = std::get<const RE::TESFile*>(a_formFile);
-				return file && std::ranges::any_of(IDs, [&](const auto& ID) { return ID == file; });
-			}
-			return false;
+			bool result = false;
+			std::visit(overload{
+						   [&](RE::TESForm* a_form) {
+							   result = has_form(a_form);
+						   },
+						   [&](const RE::TESFile* a_file) {
+							   result = std::ranges::any_of(IDs, [&](const auto& ID) { return ID == a_file; });
+						   } },
+				a_formFile);
+			return result;
 		};
 
 		if (all) {

@@ -7,8 +7,8 @@ namespace NPC
 
 	struct Data
 	{
-		Data(RE::TESNPC* a_npc);
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc);
+		~Data() = default;
 
 		[[nodiscard]] RE::TESNPC* GetNPC() const;
 		[[nodiscard]] RE::Actor*  GetActor() const;
@@ -32,7 +32,7 @@ namespace NPC
 		struct ID
 		{
 			ID() = default;
-			explicit ID(RE::TESActorBase* a_base);
+			explicit ID(const RE::TESActorBase* a_base);
 
 			[[nodiscard]] bool contains(const std::string& a_str) const;
 

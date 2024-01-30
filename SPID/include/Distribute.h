@@ -82,11 +82,12 @@ namespace Distribute
 		const PCLevelMult::Input&              a_input,
 		std::function<bool(Form*, IdxOrCount)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
+		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		for (auto& formData : vec) {
 			if (detail::passed_filters(a_npcData, a_input, formData)) {
 				a_callback(formData.form, formData.idxOrCount);
+				++formData.npcCount;
 			}
 		}
 	}
@@ -100,10 +101,11 @@ namespace Distribute
 		const PCLevelMult::Input&    a_input,
 		std::function<bool(Form*)>   a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
+		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
 			if (detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
+				++formData.npcCount;
 				break;
 			}
 		}
@@ -116,10 +118,11 @@ namespace Distribute
 		Forms::Distributables<Form>& a_distributables,
 		std::function<bool(Form*)>   a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(false);
+		auto& vec = a_distributables.GetForms(false);
 
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
 			if (detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
+				++formData.npcCount;
 				break;
 			}
 		}
@@ -133,7 +136,7 @@ namespace Distribute
 		const PCLevelMult::Input&                               a_input,
 		std::function<bool(std::map<Form*, IdxOrCount>&, bool)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
+		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		if (vec.empty()) {
 			return;
@@ -148,6 +151,7 @@ namespace Distribute
 					hasLeveledItems = true;
 				}
 				collectedForms.emplace(formData.form, formData.idxOrCount);
+				++formData.npcCount;
 			}
 		}
 
@@ -165,7 +169,7 @@ namespace Distribute
 		const PCLevelMult::Input&                      a_input,
 		std::function<void(const std::vector<Form*>&)> a_callback)
 	{
-		const auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
+		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		if (vec.empty()) {
 			return;
@@ -194,6 +198,7 @@ namespace Distribute
 					if (formData.filters.HasLevelFilters()) {
 						collectedLeveledFormIDs.emplace(formID);
 					}
+					++formData.npcCount;
 				}
 			} else {
 				if (detail::passed_filters(a_npcData, a_input, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
@@ -201,6 +206,7 @@ namespace Distribute
 					if (formData.filters.HasLevelFilters()) {
 						collectedLeveledFormIDs.emplace(formID);
 					}
+					++formData.npcCount;
 				}
 			}
 		}
@@ -243,10 +249,12 @@ namespace Distribute
 				if (detail::passed_filters(a_npcData, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
+					++formData.npcCount;
 				}
 			} else {
 				if (detail::passed_filters(a_npcData, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
+					++formData.npcCount;
 				}
 			}
 		}
@@ -257,5 +265,7 @@ namespace Distribute
 	}
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input);
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries);
+	void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input);
+
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits = false);
 }

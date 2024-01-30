@@ -73,11 +73,11 @@ namespace PCLevelMult
 		for (auto& [playerID, npcFormIDs] : _cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("\tNPC : {} [{:X}]", edid::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
+				logger::info("\tNPC : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
 					logger::info("\t\tLevel : {}", level);
 					for (auto& [distFormID, idxSet] : distFormMap.rejectedEntries) {
-						logger::info("\t\t\tDist FormID : {} [{:X}]", edid::get_editorID(RE::TESForm::LookupByID(distFormID)), distFormID);
+						logger::info("\t\t\tDist FormID : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(distFormID)), distFormID);
 						for (auto& idx : idxSet) {
 							logger::info("\t\t\t\tIDX : {}", idx);
 						}
@@ -110,13 +110,13 @@ namespace PCLevelMult
 		for (auto& [playerID, npcFormIDs] : _cache) {
 			logger::info("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("\tNPC : {} [{:X}]", edid::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
+				logger::info("\tNPC : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
 					logger::info("\t\tLevel : {}", level);
 					for (auto& [formType, formIDSet] : distFormMap.distributedEntries) {
 						logger::info("\t\t\tDist FormType : {}", formType);
 						for (auto& formID : formIDSet) {
-							logger::info("\t\t\t\tDist FormID : {} [{:X}]", edid::get_editorID(RE::TESForm::LookupByID(formID)), formID);
+							logger::info("\t\t\t\tDist FormID : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(formID)), formID);
 						}
 					}
 				}
@@ -195,7 +195,7 @@ namespace PCLevelMult
 		// 2A73F01A is player ID
 
 		oldPlayerID = currentPlayerID;
-		if (const auto save = string::split(a_saveName, "_"); save.size() > 1 && !string::is_only_letter(save[1])) {
+		if (const auto save = string::split(a_saveName, "_"); save.size() == 9) {
 			currentPlayerID = string::to_num<std::uint64_t>(save[1], true);
 		} else {
 			currentPlayerID = 0;  // non standard save name, use game playerID instead

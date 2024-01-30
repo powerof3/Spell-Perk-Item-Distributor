@@ -35,46 +35,50 @@ namespace Forms
 				return true;
 			}
 			for (auto& formOrEditorID : a_rawFormVec) {
-				if (const auto formModPair(std::get_if<FormModPair>(&formOrEditorID)); formModPair) {
-					auto& [formID, modName] = *formModPair;
-					if (g_mergeMapperInterface) {
-						get_merged_IDs(formID, modName);
-					}
-					if (modName && !formID) {
-						if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
-							a_formVec.emplace_back(filterMod);
-						} else {
-							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
-						}
-					} else if (formID) {
-						if (auto filterForm = modName ?
-						                          a_dataHandler->LookupForm(*formID, *modName) :
-						                          RE::TESForm::LookupByID(*formID)) {
-							const auto formType = filterForm->GetFormType();
-							if (Cache::FormType::GetWhitelisted(formType)) {
-								a_formVec.emplace_back(filterForm);
-							} else {
-								buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
-							}
-						} else {
-							buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
-						}
-					}
-				} else if (std::holds_alternative<std::string>(formOrEditorID)) {
-					if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
-						if (auto filterForm = RE::TESForm::LookupByEditorID(editorID); filterForm) {
-							const auto formType = filterForm->GetFormType();
-							if (Cache::FormType::GetWhitelisted(formType)) {
-								a_formVec.emplace_back(filterForm);
-							} else {
-								buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, editorID, formType);
-							}
-						} else {
-							buffered_logger::error("\t\t[{}] Filter ({}) SKIP - form doesn't exist", a_path, editorID);
-						}
-					}
-				}
+				std::visit(overload{
+							   [&](FormModPair& a_formMod) {
+								   auto& [formID, modName] = a_formMod;
+								   if (g_mergeMapperInterface) {
+									   get_merged_IDs(formID, modName);
+								   }
+								   if (modName && !formID) {
+									   if (const RE::TESFile* filterMod = a_dataHandler->LookupModByName(*modName); filterMod) {
+										   a_formVec.emplace_back(filterMod);
+									   } else {
+										   buffered_logger::error("\t\t[{}] Filter ({}) SKIP - mod cannot be found", a_path, *modName);
+									   }
+								   } else if (formID) {
+									   if (auto filterForm = modName ?
+						                                         a_dataHandler->LookupForm(*formID, *modName) :
+						                                         RE::TESForm::LookupByID(*formID)) {
+										   const auto formType = filterForm->GetFormType();
+										   if (Cache::FormType::GetWhitelisted(formType)) {
+											   a_formVec.emplace_back(filterForm);
+										   } else {
+											   buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
+										   }
+									   } else {
+										   buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - form doesn't exist", a_path, *formID, modName.value_or(""));
+									   }
+								   }
+							   },
+							   [&](std::string& a_editorID) {
+								   if (!a_editorID.empty()) {
+									   if (auto filterForm = RE::TESForm::LookupByEditorID(a_editorID); filterForm) {
+										   const auto formType = filterForm->GetFormType();
+										   if (Cache::FormType::GetWhitelisted(formType)) {
+											   a_formVec.emplace_back(filterForm);
+										   } else {
+											   buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, a_editorID, formType);
+										   }
+									   } else {
+										   buffered_logger::error("\t\t[{}] Filter ({}) SKIP - form doesn't exist", a_path, a_editorID);
+									   }
+								   }
+							   } },
+					formOrEditorID);
 			}
+
 			return !a_all && !a_formVec.empty() || a_formVec.size() == a_rawFormVec.size();
 		}
 	}
@@ -83,10 +87,13 @@ namespace Forms
 	struct Data
 	{
 		std::uint32_t index{ 0 };
-		Form*         form{ nullptr };
-		IdxOrCount    idxOrCount{ 1 };
-		FilterData    filters{};
+
+		Form*      form{ nullptr };
+		IdxOrCount idxOrCount{ 1 };
+		FilterData filters{};
+
 		std::string   path{};
+		std::uint32_t npcCount{ 0 };
 
 		bool operator==(const Data& a_rhs) const;
 	};
@@ -108,8 +115,8 @@ namespace Forms
 
 		RECORD::TYPE GetType() const;
 
-		const DataVec<Form>& GetForms(bool a_onlyLevelEntries);
-		DataVec<Form>&       GetForms();
+		DataVec<Form>& GetForms(bool a_onlyLevelEntries);
+		DataVec<Form>& GetForms();
 
 		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
 
@@ -196,7 +203,7 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms()
 }
 
 template <class Form>
-const Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries)
+Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntries)
 {
 	if (a_onlyLevelEntries) {
 		return formsWithLevels;
@@ -219,84 +226,77 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 		Form* form = nullptr;
 
-		if (std::holds_alternative<FormModPair>(formOrEditorID)) {
-			if (auto [formID, modName] = std::get<FormModPair>(formOrEditorID); formID) {
-				if (g_mergeMapperInterface) {
-					detail::get_merged_IDs(formID, modName);
-				}
-				if (modName) {
-					form = a_dataHandler->LookupForm<Form>(*formID, *modName);
-					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
-						if (!form) {
-							const auto base = a_dataHandler->LookupForm(*formID, *modName);
-							form = base ? static_cast<Form*>(base) : nullptr;
-						}
-					}
-				} else {
-					form = RE::TESForm::LookupByID<Form>(*formID);
-					if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
-						if (!form) {
-							const auto base = RE::TESForm::LookupByID(*formID);
-							form = base ? static_cast<Form*>(base) : nullptr;
-						}
-					}
-				}
-				if (!form) {
-					buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
-				} else {
-					if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-						if (string::is_empty(form->GetFormEditorID())) {
-							form = nullptr;
-							buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
-						}
-					}
-				}
+		constexpr auto as_form = [](RE::TESForm* a_form) -> Form* {
+			if (!a_form) {
+				return nullptr;
 			}
-		} else if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-			if (!std::holds_alternative<std::string>(formOrEditorID)) {
-				continue;
+			if constexpr (std::is_same_v<Form, RE::TESForm>) {
+				return a_form;
+			} else if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
+				return static_cast<Form*>(a_form);
+			} else {
+				return a_form->As<Form>();
 			}
+		};
 
-			if (auto keywordName = std::get<std::string>(formOrEditorID); !keywordName.empty()) {
-				auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
+		std::visit(overload{
+					   [&](const FormModPair& a_formMod) {
+						   if (auto [formID, modName] = a_formMod; formID) {
+							   if (g_mergeMapperInterface) {
+								   detail::get_merged_IDs(formID, modName);
+							   }
+							   if (modName) {
+								   form = as_form(a_dataHandler->LookupForm(*formID, *modName));
+							   } else {
+								   form = as_form(RE::TESForm::LookupByID(*formID));
+							   }
+							   if (!form) {
+								   buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", path, *formID, modName.value_or(""));
+							   } else {
+								   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
+									   if (string::is_empty(form->GetFormEditorID())) {
+										   form = nullptr;
+										   buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", path, *formID, modName.value_or(""));
+									   }
+								   }
+							   }
+						   }
+					   },
+					   [&](const std::string& a_editorID) {
+						   if (!a_editorID.empty()) {
+							   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
+								   auto& keywordArray = a_dataHandler->GetFormArray<RE::BGSKeyword>();
 
-				auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
-					return keyword && keyword->formEditorID == keywordName.c_str();
-				});
+								   auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
+									   return keyword && keyword->formEditorID == a_editorID.c_str();
+								   });
 
-				if (result != keywordArray.end()) {
-					if (const auto keyword = *result; keyword) {
-						form = keyword;
-					} else {
-						buffered_logger::critical("\t[{}] {} FAIL - couldn't get existing keyword", path, keywordName);
-						continue;
-					}
-				} else {
-					const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-					if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
-						keyword->formEditorID = keywordName;
-						keywordArray.push_back(keyword);
+								   if (result != keywordArray.end()) {
+									   if (const auto keyword = *result; keyword) {
+										   form = keyword;
+									   } else {
+										   buffered_logger::critical("\t[{}] {} FAIL - couldn't get existing keyword", path, a_editorID);
+									   }
+								   } else {
+									   const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
+									   if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
+										   keyword->formEditorID = a_editorID;
+										   keywordArray.push_back(keyword);
 
-						form = keyword;
-					} else {
-						buffered_logger::critical("\t[{}] {} FAIL - couldn't create keyword", path, keywordName);
-					}
-				}
-			}
-		} else if (std::holds_alternative<std::string>(formOrEditorID)) {
-			if (auto editorID = std::get<std::string>(formOrEditorID); !editorID.empty()) {
-				form = RE::TESForm::LookupByEditorID<Form>(editorID);
-				if constexpr (std::is_same_v<Form, RE::TESBoundObject>) {
-					if (!form) {
-						const auto base = RE::TESForm::LookupByEditorID(editorID);
-						form = base ? static_cast<Form*>(base) : nullptr;
-					}
-				}
-				if (!form) {
-					buffered_logger::error("\t[{}] {} FAIL - editorID doesn't exist", path, editorID);
-				}
-			}
-		}
+										   form = keyword;
+									   } else {
+										   buffered_logger::critical("\t[{}] {} FAIL - couldn't create keyword", path, a_editorID);
+									   }
+								   }
+							   } else {
+								   form = as_form(RE::TESForm::LookupByEditorID(a_editorID));
+								   if (!form) {
+									   buffered_logger::error("\t[{}] {} FAIL - editorID doesn't exist", path, a_editorID);
+								   }
+							   }
+						   }
+					   } },
+			formOrEditorID);
 
 		if (!form) {
 			continue;
