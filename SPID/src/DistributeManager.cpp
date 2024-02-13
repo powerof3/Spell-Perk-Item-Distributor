@@ -17,7 +17,7 @@ namespace Distribute
 
 	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc)
 	{
-		if (!a_actor->HasOutfitItems(a_npc->defaultOutfit)) {
+		if (!a_actor->HasOutfitItems(a_npc->defaultOutfit) && !a_actor->IsDead()) {
 			if (const auto invChanges = a_actor->GetInventoryChanges()) {
 				invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
 			}
