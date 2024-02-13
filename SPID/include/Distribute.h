@@ -150,7 +150,7 @@ namespace Distribute
 				if (formData.form->Is(RE::FormType::LeveledItem)) {
 					hasLeveledItems = true;
 				}
-				collectedForms.emplace(formData.form, formData.idxOrCount);
+				collectedForms[formData.form] += formData.idxOrCount;
 				++formData.npcCount;
 			}
 		}

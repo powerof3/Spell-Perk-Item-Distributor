@@ -52,7 +52,7 @@ namespace Forms
 						                                         a_dataHandler->LookupForm(*formID, *modName) :
 						                                         RE::TESForm::LookupByID(*formID)) {
 										   const auto formType = filterForm->GetFormType();
-										   if (Cache::FormType::GetWhitelisted(formType)) {
+										   if (FormType::GetWhitelisted(formType)) {
 											   a_formVec.emplace_back(filterForm);
 										   } else {
 											   buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", a_path, *formID, modName.value_or(""), formType);
@@ -66,7 +66,7 @@ namespace Forms
 								   if (!a_editorID.empty()) {
 									   if (auto filterForm = RE::TESForm::LookupByEditorID(a_editorID); filterForm) {
 										   const auto formType = filterForm->GetFormType();
-										   if (Cache::FormType::GetWhitelisted(formType)) {
+										   if (FormType::GetWhitelisted(formType)) {
 											   a_formVec.emplace_back(filterForm);
 										   } else {
 											   buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", a_path, a_editorID, formType);
