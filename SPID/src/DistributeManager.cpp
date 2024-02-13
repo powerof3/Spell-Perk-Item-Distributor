@@ -123,7 +123,7 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
-		//DoInitialDistribution();
+		DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();

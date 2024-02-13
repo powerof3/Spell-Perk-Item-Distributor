@@ -44,9 +44,9 @@ struct overload : Ts...
 };
 
 template <class K, class D>
-using Map = ankerl::unordered_dense::segmented_map<K, D>;
+using Map = ankerl::unordered_dense::map<K, D>;
 template <class K>
-using Set = ankerl::unordered_dense::segmented_set<K>;
+using Set = ankerl::unordered_dense::set<K>;
 
 struct string_hash
 {

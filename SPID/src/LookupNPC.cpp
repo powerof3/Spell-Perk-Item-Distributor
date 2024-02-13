@@ -30,8 +30,8 @@ namespace NPC
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
-		name(a_actor->GetName()),
 		race(a_npc->GetRace()),
+		name(a_actor->GetName()),
 		level(a_npc->GetLevel()),
 		sex(a_npc->GetSex()),
 		unique(a_npc->IsUnique()),
