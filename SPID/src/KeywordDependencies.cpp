@@ -141,7 +141,7 @@ void Dependencies::ResolveKeywords()
 	}
 
 	const auto result = resolver.resolve();
-	
+
 	timer.end();
 
 	keywordForms.clear();
