@@ -33,9 +33,16 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (const auto npc = a_this->GetActorBase()) {
-					if (detail::should_process_NPC(npc)) {
+					const auto process = detail::should_process_NPC(npc);
+					const auto processOnLoad = detail::should_process_NPC(npc, processedOnLoad);
+					if (process || processOnLoad) {
 						auto npcData = NPCData(a_this, npc);
-						Distribute(npcData, false);
+						if (process) {
+							Distribute(npcData, false, true);
+						}
+						if (processOnLoad) {
+							DistributeItemOutfits(npcData, { a_this, npc, false });
+						}
 					}
 				}
 
@@ -112,6 +119,9 @@ namespace Distribute
 			}
 			if (processedOutfit = factory->Create(); processedOutfit) {
 				processedOutfit->formEditorID = "SPID_ProcessedOutfit";
+			}
+			if (processedOnLoad = factory->Create(); processedOnLoad) {
+				processedOnLoad->formEditorID = "SPID_ProcessedOnLoad";
 			}
 		}
 
