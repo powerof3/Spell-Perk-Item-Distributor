@@ -146,7 +146,7 @@ namespace Filter
 	Result Data::passed_trait_filters(const NPCData& a_npcData) const
 	{
 		auto npc = a_npcData.GetNPC();
-		
+
 		// Traits
 		if (traits.sex && npc->GetSex() != *traits.sex) {
 			return Result::kFail;
