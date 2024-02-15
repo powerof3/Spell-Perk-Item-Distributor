@@ -19,9 +19,6 @@ namespace NPC
 		[[nodiscard]] bool HasFormFilter(const FormVec& a_forms, bool all = false) const;
 
 		[[nodiscard]] std::uint16_t GetLevel() const;
-		[[nodiscard]] RE::SEX       GetSex() const;
-		[[nodiscard]] bool          IsUnique() const;
-		[[nodiscard]] bool          IsSummonable() const;
 		[[nodiscard]] bool          IsChild() const;
 		[[nodiscard]] bool          IsLeveled() const;
 		[[nodiscard]] bool          IsTeammate() const;
@@ -55,9 +52,6 @@ namespace NPC
 		std::string     name;
 		StringSet       keywords{};
 		std::uint16_t   level;
-		RE::SEX         sex;
-		bool            unique;
-		bool            summonable;
 		bool            child;
 		bool            teammate;
 		bool            leveled;

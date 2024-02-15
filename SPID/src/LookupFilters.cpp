@@ -145,14 +145,16 @@ namespace Filter
 
 	Result Data::passed_trait_filters(const NPCData& a_npcData) const
 	{
+		auto npc = a_npcData.GetNPC();
+		
 		// Traits
-		if (traits.sex && a_npcData.GetSex() != *traits.sex) {
+		if (traits.sex && npc->GetSex() != *traits.sex) {
 			return Result::kFail;
 		}
-		if (traits.unique && a_npcData.IsUnique() != *traits.unique) {
+		if (traits.unique && npc->IsUnique() != *traits.unique) {
 			return Result::kFail;
 		}
-		if (traits.summonable && a_npcData.IsSummonable() != *traits.summonable) {
+		if (traits.summonable && npc->IsSummonable() != *traits.summonable) {
 			return Result::kFail;
 		}
 		if (traits.child && a_npcData.IsChild() != *traits.child) {
