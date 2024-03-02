@@ -50,9 +50,22 @@ namespace INI
 		Chance                  chance{ 100 };
 		std::string             path{};
 	};
+
+	struct Exclusion
+	{
+		std::string             name{};
+		Filters<FormOrEditorID> rawFormFilters{};
+		std::string             path{};
+	};
+
 	using DataVec = std::vector<Data>;
 
 	inline StringMap<DataVec> configs{};
+
+	/// <summary>
+	/// A raw list of ExclusionGroups that will be processed along with configs.
+	/// </summary>
+	inline std::vector<Exclusion> exclusions{};
 
 	std::pair<bool, bool> GetConfigs();
 }
