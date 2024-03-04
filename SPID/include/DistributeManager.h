@@ -9,7 +9,7 @@ namespace Distribute
 	namespace detail
 	{
 		bool should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword = processed);
-		
+
 		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit);
 		void force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc);
 	}

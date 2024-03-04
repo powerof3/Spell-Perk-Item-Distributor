@@ -151,9 +151,9 @@ namespace Distribute
 		if (!actor->IsDead()) {
 			actor->ResetInventory(false);
 		}
-		
+
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (detail::can_equip_outfit(npc, a_outfit)) {			
+			if (detail::can_equip_outfit(npc, a_outfit)) {
 				actor->RemoveOutfitItems(npc->defaultOutfit);
 				npc->defaultOutfit = a_outfit;
 				npc->AddKeyword(processedOutfit);
@@ -161,7 +161,7 @@ namespace Distribute
 			}
 			return false;
 		});
-		
+
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
 			if (npc->AddObjectsToContainer(a_objects, npc)) {
 				if (a_hasLvlItem) {

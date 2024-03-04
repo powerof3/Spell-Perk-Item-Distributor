@@ -172,7 +172,7 @@ namespace Distribute
 
 		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
 			timer.start();
-			
+
 			for (auto& actorHandle : processLists->lowActorHandles) {
 				if (const auto& actor = actorHandle.get()) {
 					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
@@ -182,7 +182,7 @@ namespace Distribute
 					}
 				}
 			}
-						timer.end();
+			timer.end();
 		}
 
 		LogResults(actorCount);
