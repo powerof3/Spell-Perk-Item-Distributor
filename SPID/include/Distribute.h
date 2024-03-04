@@ -67,7 +67,6 @@ namespace Distribute
 			}
 		}
 
-		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit);
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount);
 		void init_leveled_items(RE::Actor* a_actor);
 		bool can_equip_outfit(const RE::TESNPC* a_npc, RE::BGSOutfit* a_outfit);

@@ -6,7 +6,7 @@ namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword)
 	{
-		if (a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
+		if (a_npc->IsPlayer() || a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
 			return false;
 		}
 
@@ -15,13 +15,42 @@ namespace Distribute
 		return true;
 	}
 
+	void detail::equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
+	{
+		if (!actor || !a_outfit) {
+			return;
+		}
+
+		if (const auto invChanges = actor->GetInventoryChanges()) {
+			if (const auto entryLists = invChanges->entryList) {
+				const auto formID = a_outfit->GetFormID();
+
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->extraLists) {
+						for (const auto& xList : *entryList->extraLists) {
+							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+							if (outfitItem && outfitItem->id == formID) {
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc)
 	{
+		if (!a_npc->defaultOutfit) {
+			return;
+		}
+
 		if (!a_actor->HasOutfitItems(a_npc->defaultOutfit) && !a_actor->IsDead()) {
 			if (const auto invChanges = a_actor->GetInventoryChanges()) {
 				invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
 			}
 		}
+
 		equip_worn_outfit(a_actor, a_npc->defaultOutfit);
 	}
 
@@ -62,9 +91,7 @@ namespace Distribute
 				const auto root = func(a_this, a_arg1);
 
 				if (const auto npc = a_this->GetActorBase()) {
-					if (npc->HasKeyword(processedOutfit)) {
-						detail::force_equip_outfit(a_this, npc);
-					}
+					detail::force_equip_outfit(a_this, npc);
 				}
 
 				return root;
@@ -89,9 +116,8 @@ namespace Distribute
 						auto npcData = NPCData(a_this, npc);
 						Distribute(npcData, false);
 					}
-					if (npc->HasKeyword(processedOutfit)) {
-						detail::force_equip_outfit(a_this, npc);
-					}
+
+					detail::force_equip_outfit(a_this, npc);
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -146,15 +172,17 @@ namespace Distribute
 
 		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
 			timer.start();
-			processLists->ForAllActors([&](RE::Actor* a_actor) {
-				if (const auto npc = a_actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
-					auto npcData = NPCData(a_actor, npc);
-					Distribute(npcData, false, true);
-					++actorCount;
+			
+			for (auto& actorHandle : processLists->lowActorHandles) {
+				if (const auto& actor = actorHandle.get()) {
+					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
+						auto npcData = NPCData(actor.get(), npc);
+						Distribute(npcData, false, true);
+						++actorCount;
+					}
 				}
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
-			timer.end();
+			}
+						timer.end();
 		}
 
 		LogResults(actorCount);

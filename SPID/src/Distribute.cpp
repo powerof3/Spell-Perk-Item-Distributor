@@ -6,30 +6,6 @@ namespace Distribute
 {
 	namespace detail
 	{
-		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
-		{
-			if (!actor || !a_outfit) {
-				return;
-			}
-
-			if (const auto invChanges = actor->GetInventoryChanges()) {
-				if (const auto entryLists = invChanges->entryList) {
-					const auto formID = a_outfit->GetFormID();
-
-					for (const auto& entryList : *entryLists) {
-						if (entryList && entryList->object && entryList->extraLists) {
-							for (const auto& xList : *entryList->extraLists) {
-								const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
-								if (outfitItem && outfitItem->id == formID) {
-									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount)
 		{
 			using func_t = void (*)(RE::Actor*, RE::TESBoundObject*, std::uint32_t, bool, std::uint32_t, RE::BSScript::Internal::VirtualMachine*);
@@ -73,16 +49,16 @@ namespace Distribute
 			}
 		});
 
+		for_each_form<RE::BGSPerk>(a_npcData, Forms::perks, a_input, [&](const std::vector<RE::BGSPerk*>& a_perks) {
+			npc->AddPerks(a_perks, 1);
+		});
+
 		for_each_form<RE::SpellItem>(a_npcData, Forms::spells, a_input, [&](const std::vector<RE::SpellItem*>& a_spells) {
 			npc->GetSpellList()->AddSpells(a_spells);
 		});
 
 		for_each_form<RE::TESLevSpell>(a_npcData, Forms::levSpells, a_input, [&](const std::vector<RE::TESLevSpell*>& a_levSpells) {
 			npc->GetSpellList()->AddLevSpells(a_levSpells);
-		});
-
-		for_each_form<RE::BGSPerk>(a_npcData, Forms::perks, a_input, [&](const std::vector<RE::BGSPerk*>& a_perks) {
-			npc->AddPerks(a_perks, 1);
 		});
 
 		for_each_form<RE::TESShout>(a_npcData, Forms::shouts, a_input, [&](const std::vector<RE::TESShout*>& a_shouts) {
@@ -172,21 +148,30 @@ namespace Distribute
 		const auto npc = a_npcData.GetNPC();
 		const auto actor = a_npcData.GetActor();
 
+		if (!actor->IsDead()) {
+			actor->ResetInventory(false);
+		}
+		
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
+			if (detail::can_equip_outfit(npc, a_outfit)) {			
+				actor->RemoveOutfitItems(npc->defaultOutfit);
+				npc->defaultOutfit = a_outfit;
+				npc->AddKeyword(processedOutfit);
+				return true;
+			}
+			return false;
+		});
+		
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
 			if (npc->AddObjectsToContainer(a_objects, npc)) {
 				if (a_hasLvlItem) {
 					detail::init_leveled_items(actor);
 				}
-				return true;
-			}
-			return false;
-		});
-
-		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (detail::can_equip_outfit(npc, a_outfit)) {
-				actor->RemoveOutfitItems(npc->defaultOutfit);
-				npc->defaultOutfit = a_outfit;
-				npc->AddKeyword(processedOutfit);
+				for (auto& [item, count] : a_objects) {
+					if (item->Is(RE::FormType::Weapon, RE::FormType::Armor)) {
+						RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
+					}
+				}
 				return true;
 			}
 			return false;
