@@ -147,15 +147,10 @@ namespace Distribute
 
 		const auto npc = a_npcData.GetNPC();
 		const auto actor = a_npcData.GetActor();
-
-		if (!actor->IsDead()) {
-			actor->ResetInventory(false);
-		}
-
+	
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
 			if (detail::can_equip_outfit(npc, a_outfit)) {
-				actor->RemoveOutfitItems(npc->defaultOutfit);
-				npc->defaultOutfit = a_outfit;
+				npc->defaultOutfit = a_outfit;			
 				npc->AddKeyword(processedOutfit);
 				return true;
 			}

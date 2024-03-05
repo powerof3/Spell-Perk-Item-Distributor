@@ -30,7 +30,7 @@ namespace Distribute
 						for (const auto& xList : *entryList->extraLists) {
 							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 							if (outfitItem && outfitItem->id == formID) {
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true, !actor->IsDead());
 							}
 						}
 					}
@@ -70,6 +70,7 @@ namespace Distribute
 							Distribute(npcData, false, true);
 						}
 						if (processOnLoad) {
+							a_this->RemoveOutfitItems(nullptr);
 							DistributeItemOutfits(npcData, { a_this, npc, false });
 						}
 					}
@@ -111,13 +112,14 @@ namespace Distribute
 				func(a_this, a_buf);
 
 				if (const auto npc = a_this->GetActorBase()) {
-					// some npcs are completely reset upon loading
-					if (a_this->Is3DLoaded() && detail::should_process_NPC(npc)) {
-						auto npcData = NPCData(a_this, npc);
-						Distribute(npcData, false);
+					// some leveled npcs are completely reset upon loading
+					if (a_this->Is3DLoaded()) {
+						if (detail::should_process_NPC(npc)) {
+							auto npcData = NPCData(a_this, npc);
+							Distribute(npcData, false);
+						}
+						detail::force_equip_outfit(a_this, npc);
 					}
-
-					detail::force_equip_outfit(a_this, npc);
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
