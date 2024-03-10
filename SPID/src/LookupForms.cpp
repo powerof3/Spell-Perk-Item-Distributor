@@ -1,5 +1,6 @@
 #include "LookupForms.h"
 #include "FormData.h"
+#include "ExclusionGroups.h"
 #include "KeywordDependencies.h"
 
 bool Lookup::LookupForms()
@@ -22,6 +23,11 @@ bool Lookup::LookupForms()
 				valid = true;
 			}
 		});
+
+		// Lookup exclusion forms too.
+		// P.S. Lookup process probably should build some sort of cache and reuse already discovered forms
+		//      instead of quering data handler for the same raw FormOrEditorID.
+		Exclusion::Manager::GetSingleton()->LookupExclusions(dataHandler, INI::exclusions);
 	}
 
 	return valid;

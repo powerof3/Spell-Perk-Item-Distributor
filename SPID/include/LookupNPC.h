@@ -18,6 +18,14 @@ namespace NPC
 		bool               InsertKeyword(const char* a_keyword);
 		[[nodiscard]] bool HasFormFilter(const FormVec& a_forms, bool all = false) const;
 
+		/// <summary>
+		/// Checks whether given NPC already has another form that is mutually exclusive with the given form,
+		/// according to the exclusion groups configuration.
+		/// </summary>
+		/// <param name="otherForm">A Form that needs to be checked.</param>
+		/// <returns></returns>
+		[[nodiscard]] bool HasMutuallyExclusiveForm(RE::TESForm* otherForm) const;
+
 		[[nodiscard]] std::uint16_t GetLevel() const;
 		[[nodiscard]] RE::SEX       GetSex() const;
 		[[nodiscard]] bool          IsUnique() const;

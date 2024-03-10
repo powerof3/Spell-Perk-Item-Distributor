@@ -307,7 +307,7 @@ namespace INI
 					try {						
 						if (const auto exclusionOpt = detail::parse_exclusion(key.pItem, entry, truncatedPath); exclusionOpt) {
 							const auto& exclusion = *exclusionOpt;
-							exclusions[exclusion.name] = exclusion;
+							exclusions.emplace_back(exclusion);
 							continue;
 						}
 

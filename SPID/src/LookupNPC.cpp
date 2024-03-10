@@ -1,4 +1,5 @@
 #include "LookupNPC.h"
+#include <ExclusionGroups.h>
 
 namespace NPC
 {
@@ -187,6 +188,18 @@ namespace NPC
 			return std::ranges::any_of(a_forms, has_form_or_file);
 		}
 	}
+
+	bool Data::HasMutuallyExclusiveForm(RE::TESForm* a_form) const
+	{
+		auto excludedForms = Exclusion::Manager::GetSingleton()->MutuallyExclusiveFormsForForm(a_form);
+		if (excludedForms.empty()) {
+			return false;
+		}
+		return std::ranges::any_of(excludedForms, [&](auto form) {
+			return has_form(form);
+		});
+	}
+
 
 	std::uint16_t Data::GetLevel() const
 	{
