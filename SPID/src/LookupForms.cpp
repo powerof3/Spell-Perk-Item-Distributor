@@ -1,6 +1,6 @@
 #include "LookupForms.h"
-#include "FormData.h"
 #include "ExclusionGroups.h"
+#include "FormData.h"
 #include "KeywordDependencies.h"
 
 bool Lookup::LookupForms()

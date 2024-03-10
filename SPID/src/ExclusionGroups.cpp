@@ -7,7 +7,7 @@ void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* dataHandler, INI::
 	linkedGroups.clear();
 
 	for (auto& [name, filterIDs, path] : exclusions) {
-		auto& forms = groups[name];
+		auto&   forms = groups[name];
 		FormVec match{};
 		FormVec formsNot{};
 
@@ -33,7 +33,7 @@ void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* dataHandler, INI::
 			groups.erase(name);
 		}
 	}
-	
+
 	for (auto& [name, forms] : groups) {
 		for (auto& form : forms) {
 			linkedGroups[form].insert(name);
@@ -53,6 +53,3 @@ std::unordered_set<RE::TESForm*> Exclusion::Manager::MutuallyExclusiveFormsForFo
 
 	return forms;
 }
-
-
-
