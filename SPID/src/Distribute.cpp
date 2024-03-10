@@ -179,7 +179,8 @@ namespace Distribute
 				return item.Is(RE::FormType::Weapon, RE::FormType::Armor);
 			});
 			for (auto& [item, data] : inv_after) {
-				if (!inv_before.contains(item) && item->Is(RE::FormType::Weapon, RE::FormType::Armor)) {
+				auto& [count, extra] = data;
+				if (!inv_before.contains(item) && count > 0 && !extra->IsWorn()) {
 					RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
 				}
 			}
