@@ -22,11 +22,7 @@ namespace Distribute
 
 		bool can_equip_outfit(const RE::TESNPC* a_npc, RE::BGSOutfit* a_outfit)
 		{
-			if (a_npc->HasKeyword(processedOutfit) || a_npc->defaultOutfit == a_outfit) {
-				return false;
-			}
-
-			return true;
+			return a_npc->defaultOutfit != a_outfit;
 		}
 	}
 
@@ -139,7 +135,7 @@ namespace Distribute
 		});
 	}
 
-	void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input)
+	void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input, bool a_applyNow)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
 			return;
@@ -148,14 +144,23 @@ namespace Distribute
 		const auto npc = a_npcData.GetNPC();
 		const auto actor = a_npcData.GetActor();
 
+		std::set<RE::BGSBipedObjectForm::BipedObjectSlot> slots;
+		if (a_applyNow) {
+			slots = detail::get_equipped_item_slots(actor);
+			actor->RemoveOutfitItems(nullptr);
+		}
+
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
 			if (detail::can_equip_outfit(npc, a_outfit)) {
 				npc->defaultOutfit = a_outfit;
-				npc->AddKeyword(processedOutfit);
 				return true;
 			}
 			return false;
 		});
+
+		if (a_applyNow) {
+			detail::force_equip_outfit(actor, npc, slots);
+		}
 
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
 			if (npc->AddObjectsToContainer(a_objects, npc)) {
@@ -163,7 +168,7 @@ namespace Distribute
 					detail::init_leveled_items(actor);
 				}
 				for (auto& [item, count] : a_objects) {
-					if (item->Is(RE::FormType::Weapon, RE::FormType::Armor)) {
+					if (item->Is(RE::FormType::Weapon, RE::FormType::Armor, RE::FormType::LeveledItem)) {
 						RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
 					}
 				}

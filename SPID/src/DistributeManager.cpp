@@ -15,43 +15,88 @@ namespace Distribute
 		return true;
 	}
 
-	void detail::equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
+	std::set<RE::BIPED_MODEL::BipedObjectSlot> detail::get_equipped_item_slots(RE::Actor* a_actor)
 	{
-		if (!actor || !a_outfit) {
+		if (!a_actor) {
+			return {};
+		}
+
+		std::set<RE::BIPED_MODEL::BipedObjectSlot> slots;
+
+		if (const auto invChanges = a_actor->GetInventoryChanges()) {
+			if (const auto entryLists = invChanges->entryList) {
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->object->IsArmor() && entryList->IsWorn()) {
+						slots.insert(entryList->object->As<RE::TESObjectARMO>()->GetSlotMask());
+					}
+				}
+			}
+		}
+
+		return slots;
+	}
+
+	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc, const std::set<RE::BIPED_MODEL::BipedObjectSlot>& a_slots)
+	{
+		if (!a_npc->defaultOutfit) {
 			return;
 		}
 
-		if (const auto invChanges = actor->GetInventoryChanges()) {
+		if (const auto invChanges = a_actor->GetInventoryChanges()) {
+			invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
+		}
+
+		std::vector<RE::TESObjectARMO*> armorToRemove;
+
+		if (const auto invChanges = a_actor->GetInventoryChanges()) {
 			if (const auto entryLists = invChanges->entryList) {
-				const auto formID = a_outfit->GetFormID();
+				const auto formID = a_npc->defaultOutfit->GetFormID();
+
+				bool startsDead = a_actor->IsDead() || (a_actor->formFlags & RE::Actor::RecordFlags::kStartsDead) != 0;
 
 				for (const auto& entryList : *entryLists) {
 					if (entryList && entryList->object && entryList->extraLists) {
 						for (const auto& xList : *entryList->extraLists) {
 							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 							if (outfitItem && outfitItem->id == formID) {
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true, !actor->IsDead());
+								if (auto armor = entryList->object->As<RE::TESObjectARMO>(); armor && startsDead) {
+									if (a_slots.empty() || std::ranges::none_of(a_slots, [&](auto slot) { return armor->bipedModelData.bipedObjectSlots.any(slot); })) {
+										armorToRemove.push_back(armor);
+										continue;
+									}
+								}
+								RE::ActorEquipManager::GetSingleton()->EquipObject(a_actor, entryList->object, xList, 1, nullptr, true, true, false);
 							}
 						}
 					}
 				}
 			}
 		}
+
+		if (!armorToRemove.empty()) {
+			SKSE::GetTaskInterface()->AddTask([a_actor, armorToRemove]() {
+				for (auto& armor : armorToRemove) {
+					if (armor) {
+						a_actor->RemoveItem(armor, 1, RE::ITEM_REMOVE_REASON::kRemove, nullptr, nullptr);
+					}
+				}
+			});
+		}
 	}
 
-	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc)
+	void detail::distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc)
 	{
-		if (!a_npc->defaultOutfit) {
-			return;
-		}
-
-		if (!a_actor->HasOutfitItems(a_npc->defaultOutfit) && !a_actor->IsDead()) {
-			if (const auto invChanges = a_actor->GetInventoryChanges()) {
-				invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
+		const auto process = should_process_NPC(a_npc);
+		const auto processOnLoad = detail::should_process_NPC(a_npc, processedOnLoad);
+		if (process || processOnLoad) {
+			auto npcData = NPCData(a_actor, a_npc);
+			if (process) {
+				Distribute(npcData, false, true);
+			}
+			if (processOnLoad) {
+				DistributeItemOutfits(npcData, { a_actor, a_npc, false }, true);
 			}
 		}
-
-		equip_worn_outfit(a_actor, a_npc->defaultOutfit);
 	}
 
 	namespace Actor
@@ -62,18 +107,7 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (const auto npc = a_this->GetActorBase()) {
-					const auto process = detail::should_process_NPC(npc);
-					const auto processOnLoad = detail::should_process_NPC(npc, processedOnLoad);
-					if (process || processOnLoad) {
-						auto npcData = NPCData(a_this, npc);
-						if (process) {
-							Distribute(npcData, false, true);
-						}
-						if (processOnLoad) {
-							a_this->RemoveOutfitItems(nullptr);
-							DistributeItemOutfits(npcData, { a_this, npc, false });
-						}
-					}
+					detail::distribute_on_load(a_this, npc);
 				}
 
 				return func(a_this);
@@ -82,26 +116,6 @@ namespace Distribute
 
 			static inline constexpr std::size_t index{ 0 };
 			static inline constexpr std::size_t size{ 0x6D };
-		};
-
-		// Force outfit equip
-		struct Load3D
-		{
-			static RE::NiAVObject* thunk(RE::Character* a_this, bool a_arg1)
-			{
-				const auto root = func(a_this, a_arg1);
-
-				if (const auto npc = a_this->GetActorBase()) {
-					detail::force_equip_outfit(a_this, npc);
-				}
-
-				return root;
-			}
-
-			static inline REL::Relocation<decltype(thunk)> func;
-
-			static inline constexpr std::size_t index{ 0 };
-			static inline constexpr std::size_t size{ 0x6A };
 		};
 
 		// Post distribution
@@ -114,11 +128,7 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
-						if (detail::should_process_NPC(npc)) {
-							auto npcData = NPCData(a_this, npc);
-							Distribute(npcData, false);
-						}
-						detail::force_equip_outfit(a_this, npc);
+						detail::distribute_on_load(a_this, npc);
 					}
 				}
 			}
@@ -131,7 +141,6 @@ namespace Distribute
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			stl::write_vfunc<RE::Character, Load3D>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
 
 			logger::info("Installed actor load hooks");
@@ -144,9 +153,6 @@ namespace Distribute
 		if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
 			if (processed = factory->Create(); processed) {
 				processed->formEditorID = "SPID_Processed";
-			}
-			if (processedOutfit = factory->Create(); processedOutfit) {
-				processedOutfit->formEditorID = "SPID_ProcessedOutfit";
 			}
 			if (processedOnLoad = factory->Create(); processedOnLoad) {
 				processedOnLoad->formEditorID = "SPID_ProcessedOnLoad";
