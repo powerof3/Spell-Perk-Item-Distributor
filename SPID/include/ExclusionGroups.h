@@ -10,10 +10,9 @@ namespace Exclusion
 	class Manager : public ISingleton<Manager>
 	{
 	public:
-
 		/// <summary>
 		/// Does a forms lookup similar to what Filters do.
-		/// 
+		///
 		/// As a result this method configures Manager with discovered valid exclusion groups.
 		/// </summary>
 		/// <param name=""></param>
@@ -29,7 +28,6 @@ namespace Exclusion
 		std::unordered_set<RE::TESForm*> MutuallyExclusiveFormsForForm(RE::TESForm* form) const;
 
 	private:
-
 		/// <summary>
 		/// A map of exclusion group names related to each form in the exclusion groups.
 		/// Provides a quick and easy way to get all indices that needs to be checked.

@@ -46,7 +46,7 @@ namespace INI
 			return newValue;
 		}
 
-		std::optional<Exclusion> parse_exclusion(const std::string& a_key, const std::string& a_value, const std::string& a_path) 
+		std::optional<Exclusion> parse_exclusion(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 		{
 			if (a_key != "ExclusionGroup") {
 				return std::nullopt;
@@ -75,7 +75,7 @@ namespace INI
 			Exclusion group{};
 			group.name = sections[0];
 			group.path = a_path;
-				
+
 			for (auto& IDs : split_IDs) {
 				if (IDs.at(0) == '-') {
 					IDs.erase(0, 1);
@@ -304,7 +304,7 @@ namespace INI
 				auto truncatedPath = path.substr(5);  //strip "Data\\"
 
 				for (auto& [key, entry] : *values) {
-					try {						
+					try {
 						if (const auto exclusionOpt = detail::parse_exclusion(key.pItem, entry, truncatedPath); exclusionOpt) {
 							const auto& exclusion = *exclusionOpt;
 							exclusions.emplace_back(exclusion);

@@ -200,7 +200,6 @@ namespace NPC
 		});
 	}
 
-
 	std::uint16_t Data::GetLevel() const
 	{
 		return level;

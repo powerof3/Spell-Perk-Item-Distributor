@@ -467,8 +467,8 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			buffered_logger::error("\t[{}] ({}) FAIL - editorID doesn't exist", e.path, e.editorID);
 		} catch (const MalformedEditorIDException& e) {
 			buffered_logger::error("\t[{}] FAIL - editorID can't be empty", e.path);
-		} catch (const InvalidFormTypeException& e) { 
-			// Whitelisting is disabled, so this should not occur 
+		} catch (const InvalidFormTypeException& e) {
+			// Whitelisting is disabled, so this should not occur
 		} catch (const UnknownPluginException& e) {
 			// Likewise, we don't expect plugin names in distributable forms.
 		}

@@ -53,7 +53,7 @@ namespace INI
 
 	struct Exclusion
 	{
-		std::string             name{};
+		std::string name{};
 
 		/// Raw filters in Exclusion only use NOT and MATCH, there is no meaning for ALL, so it's ignored.
 		Filters<FormOrEditorID> rawFormFilters{};
