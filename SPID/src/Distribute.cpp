@@ -8,21 +8,9 @@ namespace Distribute
 	{
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount)
 		{
-			using func_t = void (*)(RE::Actor*, RE::TESBoundObject*, std::uint32_t, bool, std::uint32_t, RE::BSScript::Internal::VirtualMachine*);
+			using func_t = void     (*)(RE::Actor*, RE::TESBoundObject*, std::uint32_t, bool, std::uint32_t, RE::BSScript::Internal::VirtualMachine*);
 			REL::Relocation<func_t> func{ RELOCATION_ID(55945, 56489) };
 			return func(a_actor, a_item, a_itemCount, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
-		}
-
-		void init_leveled_items(RE::Actor* a_actor)
-		{
-			if (const auto invChanges = a_actor->GetInventoryChanges(true)) {
-				invChanges->InitLeveledItems();
-			}
-		}
-
-		bool can_equip_outfit(const RE::TESNPC* a_npc, RE::BGSOutfit* a_outfit)
-		{
-			return a_npc->defaultOutfit != a_outfit;
 		}
 	}
 
@@ -151,7 +139,7 @@ namespace Distribute
 		}
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (detail::can_equip_outfit(npc, a_outfit)) {
+			if (npc->defaultOutfit != a_outfit) {
 				npc->defaultOutfit = a_outfit;
 				return true;
 			}
@@ -162,20 +150,40 @@ namespace Distribute
 			detail::force_equip_outfit(actor, npc, slots);
 		}
 
+		auto inv_before = actor->GetInventory([](auto& item) {
+			return item.Is(RE::FormType::Weapon, RE::FormType::Armor);
+		});
+
+		bool recalcInventory = false;
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
 			if (npc->AddObjectsToContainer(a_objects, npc)) {
 				if (a_hasLvlItem) {
-					detail::init_leveled_items(actor);
-				}
-				for (auto& [item, count] : a_objects) {
-					if (item->Is(RE::FormType::Weapon, RE::FormType::Armor, RE::FormType::LeveledItem)) {
-						RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
+					recalcInventory = true;
+					if (const auto invChanges = actor->GetInventoryChanges(true)) {
+						invChanges->InitLeveledItems();
+					}
+				} else {
+					for (auto& [item, count] : a_objects) {
+						if (item->Is(RE::FormType::Weapon, RE::FormType::Armor)) {
+							RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
+						}
 					}
 				}
 				return true;
 			}
 			return false;
 		});
+
+		if (recalcInventory) {
+			auto inv_after = actor->GetInventory([](auto& item) {
+				return item.Is(RE::FormType::Weapon, RE::FormType::Armor);
+			});
+			for (auto& [item, data] : inv_after) {
+				if (!inv_before.contains(item) && item->Is(RE::FormType::Weapon, RE::FormType::Armor)) {
+					RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
+				}
+			}
+		}
 	}
 
 	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits)
