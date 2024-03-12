@@ -85,7 +85,7 @@ namespace Distribute
 		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		for (auto& formData : vec) {
-			if (detail::passed_filters(a_npcData, a_input, formData)) {
+			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
 				a_callback(formData.form, formData.idxOrCount);
 				++formData.npcCount;
 			}
@@ -104,7 +104,7 @@ namespace Distribute
 		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
-			if (detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
+			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
 				++formData.npcCount;
 				break;
 			}
@@ -121,7 +121,7 @@ namespace Distribute
 		auto& vec = a_distributables.GetForms(false);
 
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
-			if (detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
+			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
 				++formData.npcCount;
 				break;
 			}
@@ -146,7 +146,7 @@ namespace Distribute
 		bool                        hasLeveledItems = false;
 
 		for (auto& formData : vec) {
-			if (detail::passed_filters(a_npcData, a_input, formData)) {
+			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
 				if (formData.form->Is(RE::FormType::LeveledItem)) {
 					hasLeveledItems = true;
 				}
@@ -192,7 +192,7 @@ namespace Distribute
 				continue;
 			}
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				if (detail::passed_filters(a_npcData, a_input, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
+				if (!a_npcData.HasMutuallyExclusiveForm(form) && detail::passed_filters(a_npcData, a_input, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
 					if (formData.filters.HasLevelFilters()) {
@@ -201,7 +201,7 @@ namespace Distribute
 					++formData.npcCount;
 				}
 			} else {
-				if (detail::passed_filters(a_npcData, a_input, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+				if (!a_npcData.HasMutuallyExclusiveForm(form) && detail::passed_filters(a_npcData, a_input, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
 					if (formData.filters.HasLevelFilters()) {
 						collectedLeveledFormIDs.emplace(formID);
@@ -246,13 +246,13 @@ namespace Distribute
 				continue;
 			}
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				if (detail::passed_filters(a_npcData, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
+				if (!a_npcData.HasMutuallyExclusiveForm(form) && detail::passed_filters(a_npcData, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
 					++formData.npcCount;
 				}
 			} else {
-				if (detail::passed_filters(a_npcData, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+				if (!a_npcData.HasMutuallyExclusiveForm(form) && detail::passed_filters(a_npcData, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
 					++formData.npcCount;
 				}

@@ -3,6 +3,7 @@ set(sources ${sources}
 	src/Distribute.cpp
 	src/DistributeManager.cpp
 	src/DistributePCLevelMult.cpp
+	src/ExclusiveGroups.cpp
 	src/FormData.cpp
 	src/KeywordDependencies.cpp
 	src/LogBuffer.cpp
