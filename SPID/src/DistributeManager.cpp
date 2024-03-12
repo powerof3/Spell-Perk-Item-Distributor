@@ -94,7 +94,7 @@ namespace Distribute
 				Distribute(npcData, false, true);
 			}
 			if (processOnLoad) {
-				DistributeItemOutfits(npcData, { a_actor, a_npc, false }, true);
+				DistributeItems(npcData, { a_actor, a_npc, false });
 			}
 		}
 	}
@@ -107,7 +107,12 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (const auto npc = a_this->GetActorBase()) {
+					auto slots = detail::get_equipped_item_slots(a_this);
+					a_this->RemoveOutfitItems(nullptr);
+
 					detail::distribute_on_load(a_this, npc);
+
+					detail::force_equip_outfit(a_this, npc, slots);
 				}
 
 				return func(a_this);
@@ -126,10 +131,15 @@ namespace Distribute
 				func(a_this, a_buf);
 
 				if (const auto npc = a_this->GetActorBase()) {
+					auto slots = detail::get_equipped_item_slots(a_this);
+					a_this->RemoveOutfitItems(nullptr);
+					
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
 						detail::distribute_on_load(a_this, npc);
 					}
+
+					detail::force_equip_outfit(a_this, npc, slots);
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;

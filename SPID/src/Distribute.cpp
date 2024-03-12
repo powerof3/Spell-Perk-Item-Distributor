@@ -114,6 +114,14 @@ namespace Distribute
 			return false;
 		});
 
+		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
+			if (npc->defaultOutfit != a_outfit) {
+				npc->defaultOutfit = a_outfit;
+				return true;
+			}
+			return false;
+		});
+
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::sleepOutfits, a_input, [&](auto* a_outfit) {
 			if (npc->sleepOutfit != a_outfit) {
 				npc->sleepOutfit = a_outfit;
@@ -123,7 +131,7 @@ namespace Distribute
 		});
 	}
 
-	void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input, bool a_applyNow)
+	void DistributeItems(NPCData& a_npcData, const PCLevelMult::Input& a_input)
 	{
 		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
 			return;
@@ -131,24 +139,6 @@ namespace Distribute
 
 		const auto npc = a_npcData.GetNPC();
 		const auto actor = a_npcData.GetActor();
-
-		std::set<RE::BGSBipedObjectForm::BipedObjectSlot> slots;
-		if (a_applyNow) {
-			slots = detail::get_equipped_item_slots(actor);
-			actor->RemoveOutfitItems(nullptr);
-		}
-
-		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (npc->defaultOutfit != a_outfit) {
-				npc->defaultOutfit = a_outfit;
-				return true;
-			}
-			return false;
-		});
-
-		if (a_applyNow) {
-			detail::force_equip_outfit(actor, npc, slots);
-		}
 
 		auto inv_before = actor->GetInventory([](auto& item) {
 			return item.Is(RE::FormType::Weapon, RE::FormType::Armor);
@@ -187,13 +177,13 @@ namespace Distribute
 		}
 	}
 
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits)
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItems)
 	{
 		const auto input = PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries };
 
 		Distribute(a_npcData, input);
-		if (!a_noItemOutfits) {
-			DistributeItemOutfits(a_npcData, input);
+		if (!a_noItems) {
+			DistributeItems(a_npcData, input);
 		}
 	}
 }

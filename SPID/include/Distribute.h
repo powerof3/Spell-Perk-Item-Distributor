@@ -262,7 +262,7 @@ namespace Distribute
 	}
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input);
-	void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input, bool a_applyNow = false);
+	void DistributeItems(NPCData& a_npcData, const PCLevelMult::Input& a_input);
 
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits = false);
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItems = false);
 }
