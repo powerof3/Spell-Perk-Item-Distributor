@@ -8,7 +8,7 @@ namespace Distribute
 	{
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount)
 		{
-			using func_t = void (*)(RE::Actor*, RE::TESBoundObject*, std::uint32_t, bool, std::uint32_t, RE::BSScript::Internal::VirtualMachine*);
+			using func_t = void     (*)(RE::Actor*, RE::TESBoundObject*, std::uint32_t, bool, std::uint32_t, RE::BSScript::Internal::VirtualMachine*);
 			REL::Relocation<func_t> func{ RELOCATION_ID(55945, 56489) };
 			return func(a_actor, a_item, a_itemCount, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
 		}
@@ -145,6 +145,8 @@ namespace Distribute
 		});
 
 		bool recalcInventory = false;
+		bool startsDead = actor->IsDead() || (actor->formFlags & RE::Actor::RecordFlags::kStartsDead) != 0;
+
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
 			if (npc->AddObjectsToContainer(a_objects, npc)) {
 				if (a_hasLvlItem) {
@@ -152,7 +154,7 @@ namespace Distribute
 					if (const auto invChanges = actor->GetInventoryChanges(true)) {
 						invChanges->InitLeveledItems();
 					}
-				} else {
+				} else if (!startsDead) {
 					for (auto& [item, count] : a_objects) {
 						if (item->Is(RE::FormType::Weapon, RE::FormType::Armor)) {
 							RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
@@ -164,7 +166,7 @@ namespace Distribute
 			return false;
 		});
 
-		if (recalcInventory) {
+		if (recalcInventory && !startsDead) {
 			auto inv_after = actor->GetInventory([](auto& item) {
 				return item.Is(RE::FormType::Weapon, RE::FormType::Armor);
 			});
