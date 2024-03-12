@@ -36,7 +36,7 @@ namespace Exclusion
 	private:
 		/// <summary>
 		/// A map of exclusion group names related to each form in the exclusion groups.
-		/// Provides a quick and easy way to get all indices that needs to be checked.
+		/// Provides a quick and easy way to get names of all groups that need to be checked.
 		/// </summary>
 		LinkedGroups linkedGroups{};
 
