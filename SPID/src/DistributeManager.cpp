@@ -6,7 +6,7 @@ namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword)
 	{
-		if (a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
+		if (a_npc->IsPlayer() || a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
 			return false;
 		}
 
@@ -15,14 +15,88 @@ namespace Distribute
 		return true;
 	}
 
-	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc)
+	std::set<RE::BIPED_MODEL::BipedObjectSlot> detail::get_equipped_item_slots(RE::Actor* a_actor)
 	{
-		if (!a_actor->HasOutfitItems(a_npc->defaultOutfit) && !a_actor->IsDead()) {
-			if (const auto invChanges = a_actor->GetInventoryChanges()) {
-				invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
+		if (!a_actor) {
+			return {};
+		}
+
+		std::set<RE::BIPED_MODEL::BipedObjectSlot> slots;
+
+		if (const auto invChanges = a_actor->GetInventoryChanges()) {
+			if (const auto entryLists = invChanges->entryList) {
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->object->IsArmor() && entryList->IsWorn()) {
+						slots.insert(entryList->object->As<RE::TESObjectARMO>()->GetSlotMask());
+					}
+				}
 			}
 		}
-		equip_worn_outfit(a_actor, a_npc->defaultOutfit);
+
+		return slots;
+	}
+
+	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc, const std::set<RE::BIPED_MODEL::BipedObjectSlot>& a_slots)
+	{
+		if (!a_npc->defaultOutfit) {
+			return;
+		}
+
+		if (const auto invChanges = a_actor->GetInventoryChanges()) {
+			invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
+		}
+
+		std::vector<RE::TESObjectARMO*> armorToRemove;
+
+		if (const auto invChanges = a_actor->GetInventoryChanges()) {
+			if (const auto entryLists = invChanges->entryList) {
+				const auto formID = a_npc->defaultOutfit->GetFormID();
+
+				bool startsDead = a_actor->IsDead() || (a_actor->formFlags & RE::Actor::RecordFlags::kStartsDead) != 0;
+
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->extraLists) {
+						for (const auto& xList : *entryList->extraLists) {
+							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+							if (outfitItem && outfitItem->id == formID) {
+								if (auto armor = entryList->object->As<RE::TESObjectARMO>(); armor && startsDead) {
+									if (a_slots.empty() || std::ranges::none_of(a_slots, [&](auto slot) { return armor->bipedModelData.bipedObjectSlots.any(slot); })) {
+										armorToRemove.push_back(armor);
+										continue;
+									}
+								}
+								RE::ActorEquipManager::GetSingleton()->EquipObject(a_actor, entryList->object, xList, 1, nullptr, true, true, false);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (!armorToRemove.empty()) {
+			SKSE::GetTaskInterface()->AddTask([a_actor, armorToRemove]() {
+				for (auto& armor : armorToRemove) {
+					if (armor) {
+						a_actor->RemoveItem(armor, 1, RE::ITEM_REMOVE_REASON::kRemove, nullptr, nullptr);
+					}
+				}
+			});
+		}
+	}
+
+	void detail::distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc)
+	{
+		const auto process = should_process_NPC(a_npc);
+		const auto processOnLoad = detail::should_process_NPC(a_npc, processedOnLoad);
+		if (process || processOnLoad) {
+			auto npcData = NPCData(a_actor, a_npc);
+			if (process) {
+				Distribute(npcData, false, true);
+			}
+			if (processOnLoad) {
+				DistributeItems(npcData, { a_actor, a_npc, false });
+			}
+		}
 	}
 
 	namespace Actor
@@ -33,17 +107,12 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (const auto npc = a_this->GetActorBase()) {
-					const auto process = detail::should_process_NPC(npc);
-					const auto processOnLoad = detail::should_process_NPC(npc, processedOnLoad);
-					if (process || processOnLoad) {
-						auto npcData = NPCData(a_this, npc);
-						if (process) {
-							Distribute(npcData, false, true);
-						}
-						if (processOnLoad) {
-							DistributeItemOutfits(npcData, { a_this, npc, false });
-						}
-					}
+					auto slots = detail::get_equipped_item_slots(a_this);
+					a_this->RemoveOutfitItems(nullptr);
+
+					detail::distribute_on_load(a_this, npc);
+
+					detail::force_equip_outfit(a_this, npc, slots);
 				}
 
 				return func(a_this);
@@ -54,28 +123,6 @@ namespace Distribute
 			static inline constexpr std::size_t size{ 0x6D };
 		};
 
-		// Force outfit equip
-		struct Load3D
-		{
-			static RE::NiAVObject* thunk(RE::Character* a_this, bool a_arg1)
-			{
-				const auto root = func(a_this, a_arg1);
-
-				if (const auto npc = a_this->GetActorBase()) {
-					if (npc->HasKeyword(processedOutfit)) {
-						detail::force_equip_outfit(a_this, npc);
-					}
-				}
-
-				return root;
-			}
-
-			static inline REL::Relocation<decltype(thunk)> func;
-
-			static inline constexpr std::size_t index{ 0 };
-			static inline constexpr std::size_t size{ 0x6A };
-		};
-
 		// Post distribution
 		struct InitLoadGame
 		{
@@ -84,14 +131,15 @@ namespace Distribute
 				func(a_this, a_buf);
 
 				if (const auto npc = a_this->GetActorBase()) {
-					// some npcs are completely reset upon loading
-					if (a_this->Is3DLoaded() && detail::should_process_NPC(npc)) {
-						auto npcData = NPCData(a_this, npc);
-						Distribute(npcData, false);
+					auto slots = detail::get_equipped_item_slots(a_this);
+					a_this->RemoveOutfitItems(nullptr);
+
+					// some leveled npcs are completely reset upon loading
+					if (a_this->Is3DLoaded()) {
+						detail::distribute_on_load(a_this, npc);
 					}
-					if (npc->HasKeyword(processedOutfit)) {
-						detail::force_equip_outfit(a_this, npc);
-					}
+
+					detail::force_equip_outfit(a_this, npc, slots);
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -103,7 +151,6 @@ namespace Distribute
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			stl::write_vfunc<RE::Character, Load3D>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
 
 			logger::info("Installed actor load hooks");
@@ -116,9 +163,6 @@ namespace Distribute
 		if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
 			if (processed = factory->Create(); processed) {
 				processed->formEditorID = "SPID_Processed";
-			}
-			if (processedOutfit = factory->Create(); processedOutfit) {
-				processedOutfit->formEditorID = "SPID_ProcessedOutfit";
 			}
 			if (processedOnLoad = factory->Create(); processedOnLoad) {
 				processedOnLoad->formEditorID = "SPID_ProcessedOnLoad";
@@ -146,14 +190,16 @@ namespace Distribute
 
 		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
 			timer.start();
-			processLists->ForAllActors([&](RE::Actor* a_actor) {
-				if (const auto npc = a_actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
-					auto npcData = NPCData(a_actor, npc);
-					Distribute(npcData, false, true);
-					++actorCount;
+
+			for (auto& actorHandle : processLists->lowActorHandles) {
+				if (const auto& actor = actorHandle.get()) {
+					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
+						auto npcData = NPCData(actor.get(), npc);
+						Distribute(npcData, false, true);
+						++actorCount;
+					}
 				}
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
+			}
 			timer.end();
 		}
 

@@ -368,15 +368,15 @@ namespace Forms
 	void ForEachDistributable(Func&& a_func, Args&&... args)
 	{
 		a_func(keywords, std::forward<Args>(args)...);
+		a_func(factions, std::forward<Args>(args)...);
+		a_func(perks, std::forward<Args>(args)...);
 		a_func(spells, std::forward<Args>(args)...);
 		a_func(levSpells, std::forward<Args>(args)...);
-		a_func(perks, std::forward<Args>(args)...);
 		a_func(shouts, std::forward<Args>(args)...);
 		a_func(items, std::forward<Args>(args)...);
 		a_func(deathItems, std::forward<Args>(args)...);
 		a_func(outfits, std::forward<Args>(args)...);
 		a_func(sleepOutfits, std::forward<Args>(args)...);
-		a_func(factions, std::forward<Args>(args)...);
 		a_func(packages, std::forward<Args>(args)...);
 		a_func(skins, std::forward<Args>(args)...);
 	}
