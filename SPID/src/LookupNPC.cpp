@@ -190,6 +190,9 @@ namespace NPC
 			return false;
 		}
 		return std::ranges::any_of(excludedForms, [&](auto form) {
+			if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
+				return has_keyword_string(keyword->GetFormEditorID());
+			}
 			return has_form(form);
 		});
 	}
