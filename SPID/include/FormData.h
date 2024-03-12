@@ -13,7 +13,6 @@ namespace Forms
 			const std::string path;
 
 			UnknownPluginException(const std::string& modName, const std::string& path) :
-
 				modName(modName),
 				path(path)
 			{}
@@ -25,11 +24,10 @@ namespace Forms
 			const std::optional<std::string> modName;
 			const std::string                path;
 
-			UnknownFormIDException(RE::FormID a_formID, std::optional<std::string> a_modName = std::nullopt, const std::string& a_path) :
-
-				formID(a_formID),
-				modName(a_modName),
-				path(a_path)
+			UnknownFormIDException(RE::FormID formID, const std::string& path, std::optional<std::string> modName = std::nullopt) :
+				formID(formID),
+				path(path),
+				modName(modName)
 			{}
 		};
 
@@ -39,7 +37,7 @@ namespace Forms
 			const std::optional<std::string> modName;
 			const std::string                path;
 
-			InvalidKeywordException(RE::FormID formID, std::optional<std::string> modName = std::nullopt, const std::string& path) :
+			InvalidKeywordException(RE::FormID formID, const std::string& path, std::optional<std::string> modName = std::nullopt) :
 				formID(formID),
 				modName(modName),
 				path(path)
@@ -120,10 +118,10 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		std::variant<Form*, RE::TESFile*> get_form_or_mod(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
 		{
-			Form*        form = nullptr;
-			RE::TESFile* mod = nullptr;
+			Form*              form = nullptr;
+			const RE::TESFile* mod = nullptr;
 
 			constexpr auto as_form = [](RE::TESForm* anyForm) -> Form* {
 				if (!anyForm) {
@@ -135,6 +133,32 @@ namespace Forms
 					return static_cast<Form*>(anyForm);
 				} else {
 					return anyForm->As<Form>();
+				}
+			};
+
+			auto find_or_create_keyword = [&](const std::string& editorID) -> RE::BGSKeyword* {
+				auto& keywordArray = dataHandler->GetFormArray<RE::BGSKeyword>();
+
+				auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
+					return keyword && keyword->formEditorID == editorID.c_str();
+				});
+
+				if (result != keywordArray.end()) {
+					if (const auto keyword = *result; keyword) {
+						return keyword;
+					} else {
+						throw KeywordNotFoundException(editorID, false, path);
+					}
+				} else {
+					const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
+					if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
+						keyword->formEditorID = editorID;
+						keywordArray.push_back(keyword);
+
+						return keyword;
+					} else {
+						throw KeywordNotFoundException(editorID, true, path);
+					}
 				}
 			};
 
@@ -164,49 +188,32 @@ namespace Forms
 									   form = as_form(RE::TESForm::LookupByID(*formID));
 								   }
 								   if (!form) {
-									   throw UnknownFormIDException(formID, modName, path);
+									   throw UnknownFormIDException(*formID, path, modName);
 								   }
 
 								   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 									   if (string::is_empty(form->GetFormEditorID())) {
 										   // Keywords with empty EditorIDs cause game to crash.
-										   throw InvalidKeywordException(formID, modName, path);
+										   throw InvalidKeywordException(*formID, path, modName);
 									   }
 								   }
 							   }
 						   },
-						   [&](std::string& editorID) {
+						   [&](const std::string& editorID) {
 							   if (editorID.empty()) {
 								   throw MalformedEditorIDException(path);
 							   }
+							   //
 							   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
-								   auto& keywordArray = dataHandler->GetFormArray<RE::BGSKeyword>();
-
-								   auto result = std::find_if(keywordArray.begin(), keywordArray.end(), [&](const auto& keyword) {
-									   return keyword && keyword->formEditorID == editorID.c_str();
-								   });
-
-								   if (result != keywordArray.end()) {
-									   if (const auto keyword = *result; keyword) {
-										   form = keyword;
-									   } else {
-										   throw KeywordNotFoundException(editorID, false, path);
-									   }
-								   } else {
-									   const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
-									   if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
-										   keyword->formEditorID = editorID;
-										   keywordArray.push_back(keyword);
-
-										   form = keyword;
-									   } else {
-										   throw KeywordNotFoundException(editorID, true, path);
-									   }
-								   }
+								   form = find_or_create_keyword(editorID);
 							   } else {
 								   form = as_form(RE::TESForm::LookupByEditorID(editorID));
 								   if (!form) {
-									   throw UnknownEditorIDException(editorID, path);
+									   if constexpr (std::is_same_v<Form, RE::TESForm>) {
+										   form = find_or_create_keyword(editorID);
+									   } else {
+										   throw UnknownEditorIDException(editorID, path);
+									   }
 								   }
 							   }
 						   } },
@@ -221,19 +228,19 @@ namespace Forms
 				if (Cache::FormType::GetWhitelisted(formType)) {
 					return form;
 				} else {
-					throw InvalidFormTypeException(formType, *formID, *modName.value_or(""), path);
+					throw InvalidFormTypeException(formType, formOrEditorID, path);
 				}
 			}
 
 			return form;
 		}
 
-		inline RE::TESFile* get_file(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path)
+		inline const RE::TESFile* get_file(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path)
 		{
 			auto formOrMod = get_form_or_mod(dataHandler, formOrEditorID, path);
 
-			if (std::holds_alternative<RE::TESFile*>(formOrMod)) {
-				return std::get<RE::TESFile*>(formOrMod);
+			if (std::holds_alternative<const RE::TESFile*>(formOrMod)) {
+				return std::get<const RE::TESFile*>(formOrMod);
 			}
 
 			return nullptr;
@@ -245,13 +252,13 @@ namespace Forms
 			auto formOrMod = get_form_or_mod<Form>(dataHandler, formOrEditorID, path, whitelistedOnly);
 
 			if (std::holds_alternative<Form*>(formOrMod)) {
-				return *std::get<Form*>(formOrMod);
+				return std::get<Form*>(formOrMod);
 			}
 
 			return nullptr;
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false)
+		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false, bool whitelistedOnly = true)
 		{
 			if (a_rawFormVec.empty()) {
 				return true;
@@ -259,7 +266,7 @@ namespace Forms
 
 			for (auto& formOrEditorID : a_rawFormVec) {
 				try {
-					auto form = get_form_or_mod(a_dataHandler, formOrEditorID, a_path, true);
+					auto form = get_form_or_mod(a_dataHandler, formOrEditorID, a_path, whitelistedOnly);
 					a_formVec.emplace_back(form);
 				} catch (const UnknownFormIDException& e) {
 					buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
@@ -437,7 +444,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 
 	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 		try {
-			if (auto form = get_form(a_dataHandler, formOrEditorID, a_path); form) {
+			if (auto form = detail::get_form<Form>(a_dataHandler, formOrEditorID, path); form) {
 				FormFilters filterForms{};
 
 				bool validEntry = detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path, true);
@@ -453,23 +460,23 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 					index++;
 				}
 			}
-		} catch (const UnknownFormIDException& e) {
+		} catch (const Lookup::UnknownFormIDException& e) {
 			buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
-		} catch (const InvalidKeywordException& e) {
+		} catch (const Lookup::InvalidKeywordException& e) {
 			buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", e.path, e.formID, e.modName.value_or(""));
-		} catch (const KeywordNotFoundException& e) {
+		} catch (const Lookup::KeywordNotFoundException& e) {
 			if (e.isDynamic) {
 				buffered_logger::critical("\t[{}] {} FAIL - couldn't create keyword", e.path, e.editorID);
 			} else {
 				buffered_logger::critical("\t[{}] {} FAIL - couldn't get existing keyword", e.path, e.editorID);
 			}
-		} catch (const UnknownEditorIDException& e) {
+		} catch (const Lookup::UnknownEditorIDException& e) {
 			buffered_logger::error("\t[{}] ({}) FAIL - editorID doesn't exist", e.path, e.editorID);
-		} catch (const MalformedEditorIDException& e) {
+		} catch (const Lookup::MalformedEditorIDException& e) {
 			buffered_logger::error("\t[{}] FAIL - editorID can't be empty", e.path);
-		} catch (const InvalidFormTypeException& e) {
+		} catch (const Lookup::InvalidFormTypeException& e) {
 			// Whitelisting is disabled, so this should not occur
-		} catch (const UnknownPluginException& e) {
+		} catch (const Lookup::UnknownPluginException& e) {
 			// Likewise, we don't expect plugin names in distributable forms.
 		}
 	}

@@ -1,7 +1,7 @@
 #include "ExclusionGroups.h"
 #include "FormData.h"
 
-void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* dataHandler, INI::ExclusionsVec& exclusions)
+void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* const dataHandler, INI::ExclusionsVec& exclusions)
 {
 	groups.clear();
 	linkedGroups.clear();
@@ -11,8 +11,8 @@ void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* dataHandler, INI::
 		FormVec match{};
 		FormVec formsNot{};
 
-		if (Forms::detail::formID_to_form(dataHandler, filterIDs.MATCH, match, path, false) &&
-			Forms::detail::formID_to_form(dataHandler, filterIDs.NOT, formsNot, path, false)) {
+		if (Forms::detail::formID_to_form(dataHandler, filterIDs.MATCH, match, path, false, false) &&
+			Forms::detail::formID_to_form(dataHandler, filterIDs.NOT, formsNot, path, false, false)) {
 			for (const auto& form : match) {
 				if (std::holds_alternative<RE::TESForm*>(form)) {
 					forms.insert(std::get<RE::TESForm*>(form));
@@ -39,6 +39,8 @@ void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* dataHandler, INI::
 			linkedGroups[form].insert(name);
 		}
 	}
+
+
 }
 
 std::unordered_set<RE::TESForm*> Exclusion::Manager::MutuallyExclusiveFormsForForm(RE::TESForm* form) const
@@ -51,5 +53,16 @@ std::unordered_set<RE::TESForm*> Exclusion::Manager::MutuallyExclusiveFormsForFo
 		});
 	}
 
+	// Remove self from the list.
+	forms.erase(form);
+
 	return forms;
 }
+
+const Exclusion::Groups& Exclusion::Manager::GetGroups() const
+{
+	return groups;
+}
+
+
+

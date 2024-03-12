@@ -3,37 +3,30 @@
 #include "FormData.h"
 #include "KeywordDependencies.h"
 
-bool Lookup::LookupForms()
+bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 {
 	using namespace Forms;
 
 	bool valid = false;
 
-	if (const auto dataHandler = RE::TESDataHandler::GetSingleton()) {
-		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
-			const auto& recordName = RECORD::add[a_distributable.GetType()];
+	ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
+		const auto& recordName = RECORD::add[a_distributable.GetType()];
 
-			a_distributable.LookupForms(dataHandler, recordName, INI::configs[recordName]);
-			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				Dependencies::ResolveKeywords();
-			}
-			a_distributable.FinishLookupForms();
+		a_distributable.LookupForms(dataHandler, recordName, INI::configs[recordName]);
+		if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
+			Dependencies::ResolveKeywords();
+		}
+		a_distributable.FinishLookupForms();
 
-			if (a_distributable) {
-				valid = true;
-			}
-		});
-
-		// Lookup exclusion forms too.
-		// P.S. Lookup process probably should build some sort of cache and reuse already discovered forms
-		//      instead of quering data handler for the same raw FormOrEditorID.
-		Exclusion::Manager::GetSingleton()->LookupExclusions(dataHandler, INI::exclusions);
-	}
+		if (a_distributable) {
+			valid = true;
+		}
+	});
 
 	return valid;
 }
 
-void Lookup::LogFormLookup()
+void LogDistributablesLookup()
 {
 	using namespace Forms;
 
@@ -58,20 +51,53 @@ void Lookup::LogFormLookup()
 	buffered_logger::clear();
 }
 
-bool Lookup::DoFormLookup()
+// Lookup exclusion forms too.
+// P.S. Lookup process probably should build some sort of cache and reuse already discovered forms
+//      instead of quering data handler for the same raw FormOrEditorID.
+void LookupExclusionGroups(RE::TESDataHandler* const dataHandler)
 {
-	logger::info("{:*^50}", "LOOKUP");
+	Exclusion::Manager::GetSingleton()->LookupExclusions(dataHandler, INI::exclusions);
+}
 
-	Timer timer;
+void LogExclusionGroupsLookup()
+{
+	if (const auto manager = Exclusion::Manager::GetSingleton(); manager) {
+		const auto& groups = manager->GetGroups();
 
-	timer.start();
-	const bool success = LookupForms();
-	timer.end();
+		if (!groups.empty()) {
+			logger::info("{:*^50}", "EXCLUSIONS");
 
-	if (success) {
-		LogFormLookup();
-		logger::info("Lookup took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
+			for (const auto& [group, forms] : groups) {
+				logger::info("Adding '{}' exclusion group", group);
+				for (const auto& form : forms) {
+					logger::info("  {}", describe(form));
+				}
+			}
+		}
+	}
+}
+
+bool Lookup::LookupForms()
+{
+	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+		logger::info("{:*^50}", "LOOKUP");
+
+		Timer timer;
+
+		timer.start();
+		const bool success = LookupDistributables(dataHandler);
+		timer.end();
+
+		if (success) {
+			LogDistributablesLookup();
+			logger::info("Lookup took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
+		}
+
+		LookupExclusionGroups(dataHandler);
+		LogExclusionGroupsLookup();
+
+		return success;
 	}
 
-	return success;
+	return false;
 }
