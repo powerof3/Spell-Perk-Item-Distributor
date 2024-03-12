@@ -39,8 +39,6 @@ void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* const dataHandler,
 			linkedGroups[form].insert(name);
 		}
 	}
-
-
 }
 
 std::unordered_set<RE::TESForm*> Exclusion::Manager::MutuallyExclusiveFormsForForm(RE::TESForm* form) const
@@ -63,6 +61,3 @@ const Exclusion::Groups& Exclusion::Manager::GetGroups() const
 {
 	return groups;
 }
-
-
-
