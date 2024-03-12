@@ -46,9 +46,9 @@ namespace INI
 			return newValue;
 		}
 
-		std::optional<Exclusion> parse_exclusion(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+		std::optional<RawExclusiveGroup> parse_exclusive_group(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 		{
-			if (a_key != "ExclusionGroup") {
+			if (a_key != "ExclusiveGroup") {
 				return std::nullopt;
 			}
 
@@ -56,23 +56,23 @@ namespace INI
 			const auto size = sections.size();
 
 			if (size == 0) {
-				logger::warn("IGNORED: ExclusionGroup must have a name: {} = {}"sv, a_key, a_value);
+				logger::warn("IGNORED: ExclusiveGroup must have a name: {} = {}"sv, a_key, a_value);
 				return std::nullopt;
 			}
 
 			if (size == 1) {
-				logger::warn("IGNORED: ExclusionGroup must have at least one filter name: {} = {}"sv, a_key, a_value);
+				logger::warn("IGNORED: ExclusiveGroup must have at least one filter name: {} = {}"sv, a_key, a_value);
 				return std::nullopt;
 			}
 
 			auto split_IDs = distribution::split_entry(sections[1]);
 
 			if (split_IDs.empty()) {
-				logger::warn("ExclusionGroup must have at least one Form Filter : {} = {}"sv, a_key, a_value);
+				logger::warn("ExclusiveGroup must have at least one Form Filter : {} = {}"sv, a_key, a_value);
 				return std::nullopt;
 			}
 
-			Exclusion group{};
+			RawExclusiveGroup group{};
 			group.name = sections[0];
 			group.path = a_path;
 
@@ -305,9 +305,8 @@ namespace INI
 
 				for (auto& [key, entry] : *values) {
 					try {
-						if (const auto exclusionOpt = detail::parse_exclusion(key.pItem, entry, truncatedPath); exclusionOpt) {
-							const auto& exclusion = *exclusionOpt;
-							exclusions.emplace_back(exclusion);
+						if (const auto group = detail::parse_exclusive_group(key.pItem, entry, truncatedPath); group) {
+							exclusiveGroups.emplace_back(*group);
 							continue;
 						}
 
