@@ -1,12 +1,12 @@
-#include "ExclusionGroups.h"
+#include "ExclusiveGroups.h"
 #include "FormData.h"
 
-void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* const dataHandler, INI::ExclusionsVec& exclusions)
+void ExclusiveGroups::Manager::LookupExclusiveGroups(RE::TESDataHandler* const dataHandler, INI::ExclusiveGroupsVec& exclusiveGroups)
 {
 	groups.clear();
 	linkedGroups.clear();
 
-	for (auto& [name, filterIDs, path] : exclusions) {
+	for (auto& [name, filterIDs, path] : exclusiveGroups) {
 		auto&   forms = groups[name];
 		FormVec match{};
 		FormVec formsNot{};
@@ -41,7 +41,7 @@ void Exclusion::Manager::LookupExclusions(RE::TESDataHandler* const dataHandler,
 	}
 }
 
-std::unordered_set<RE::TESForm*> Exclusion::Manager::MutuallyExclusiveFormsForForm(RE::TESForm* form) const
+std::unordered_set<RE::TESForm*> ExclusiveGroups::Manager::MutuallyExclusiveFormsForForm(RE::TESForm* form) const
 {
 	std::unordered_set<RE::TESForm*> forms{};
 	if (auto it = linkedGroups.find(form); it != linkedGroups.end()) {
@@ -57,7 +57,7 @@ std::unordered_set<RE::TESForm*> Exclusion::Manager::MutuallyExclusiveFormsForFo
 	return forms;
 }
 
-const Exclusion::Groups& Exclusion::Manager::GetGroups() const
+const ExclusiveGroups::Groups& ExclusiveGroups::Manager::GetGroups() const
 {
 	return groups;
 }

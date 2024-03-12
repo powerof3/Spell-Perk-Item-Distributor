@@ -1,5 +1,5 @@
 #include "LookupForms.h"
-#include "ExclusionGroups.h"
+#include "ExclusiveGroups.h"
 #include "FormData.h"
 #include "KeywordDependencies.h"
 
@@ -51,24 +51,24 @@ void LogDistributablesLookup()
 	buffered_logger::clear();
 }
 
-// Lookup exclusion forms too.
+// Lookup forms in exclusvie groups too.
 // P.S. Lookup process probably should build some sort of cache and reuse already discovered forms
 //      instead of quering data handler for the same raw FormOrEditorID.
-void LookupExclusionGroups(RE::TESDataHandler* const dataHandler)
+void LookupExclusiveGroups(RE::TESDataHandler* const dataHandler)
 {
-	Exclusion::Manager::GetSingleton()->LookupExclusions(dataHandler, INI::exclusions);
+	ExclusiveGroups::Manager::GetSingleton()->LookupExclusiveGroups(dataHandler, INI::exclusiveGroups);
 }
 
-void LogExclusionGroupsLookup()
+void LogExclusiveGroupsLookup()
 {
-	if (const auto manager = Exclusion::Manager::GetSingleton(); manager) {
+	if (const auto manager = ExclusiveGroups::Manager::GetSingleton(); manager) {
 		const auto& groups = manager->GetGroups();
 
 		if (!groups.empty()) {
-			logger::info("{:*^50}", "EXCLUSIONS");
+			logger::info("{:*^50}", "EXCLUSIVE GROUPS");
 
 			for (const auto& [group, forms] : groups) {
-				logger::info("Adding '{}' exclusion group", group);
+				logger::info("Adding '{}' exclusive group", group);
 				for (const auto& form : forms) {
 					logger::info("  {}", describe(form));
 				}
@@ -93,8 +93,8 @@ bool Lookup::LookupForms()
 			logger::info("Lookup took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
 		}
 
-		LookupExclusionGroups(dataHandler);
-		LogExclusionGroupsLookup();
+		LookupExclusiveGroups(dataHandler);
+		LogExclusiveGroupsLookup();
 
 		return success;
 	}

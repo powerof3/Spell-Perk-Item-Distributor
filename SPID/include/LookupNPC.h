@@ -20,7 +20,7 @@ namespace NPC
 
 		/// <summary>
 		/// Checks whether given NPC already has another form that is mutually exclusive with the given form,
-		/// according to the exclusion groups configuration.
+		/// according to the exclusive groups configuration.
 		/// </summary>
 		/// <param name="otherForm">A Form that needs to be checked.</param>
 		/// <returns></returns>

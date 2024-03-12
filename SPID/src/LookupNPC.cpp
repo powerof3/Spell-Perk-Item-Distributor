@@ -1,5 +1,5 @@
 #include "LookupNPC.h"
-#include <ExclusionGroups.h>
+#include <ExclusiveGroups.h>
 
 namespace NPC
 {
@@ -191,7 +191,7 @@ namespace NPC
 
 	bool Data::HasMutuallyExclusiveForm(RE::TESForm* a_form) const
 	{
-		auto excludedForms = Exclusion::Manager::GetSingleton()->MutuallyExclusiveFormsForForm(a_form);
+		auto excludedForms = ExclusiveGroups::Manager::GetSingleton()->MutuallyExclusiveFormsForForm(a_form);
 		if (excludedForms.empty()) {
 			return false;
 		}
