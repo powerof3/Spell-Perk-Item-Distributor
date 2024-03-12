@@ -77,7 +77,7 @@ namespace Distribute
 	// for now, only packages/death items use this
 	template <class Form>
 	void for_each_form(
-		NPCData&                               a_npcData,
+		const NPCData&                         a_npcData,
 		Forms::Distributables<Form>&           a_distributables,
 		const PCLevelMult::Input&              a_input,
 		std::function<bool(Form*, IdxOrCount)> a_callback)
@@ -96,7 +96,7 @@ namespace Distribute
 	// skins
 	template <class Form>
 	void for_each_form(
-		NPCData&                     a_npcData,
+		const NPCData&               a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		const PCLevelMult::Input&    a_input,
 		std::function<bool(Form*)>   a_callback)
@@ -114,7 +114,7 @@ namespace Distribute
 	// outfits/sleep outfits
 	template <class Form>
 	void for_each_form(
-		NPCData&                     a_npcData,
+		const NPCData&               a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		std::function<bool(Form*)>   a_callback)
 	{
@@ -131,7 +131,7 @@ namespace Distribute
 	// items
 	template <class Form>
 	void for_each_form(
-		NPCData&                                                a_npcData,
+		const NPCData&                                          a_npcData,
 		Forms::Distributables<Form>&                            a_distributables,
 		const PCLevelMult::Input&                               a_input,
 		std::function<bool(std::map<Form*, IdxOrCount>&, bool)> a_callback)
