@@ -133,7 +133,7 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					auto slots = detail::get_equipped_item_slots(a_this);
 					a_this->RemoveOutfitItems(nullptr);
-					
+
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
 						detail::distribute_on_load(a_this, npc);
