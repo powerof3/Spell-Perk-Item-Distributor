@@ -46,7 +46,8 @@ namespace INI
 		Filters<FormOrEditorID> rawFormFilters{};
 		LevelFilters            levelFilters{};
 		Traits                  traits{};
-		IdxOrCount              idxOrCount{ 1 };
+		Index                   index{ 0 };
+		RandomCount             count{ 1, 1 };
 		Chance                  chance{ 100 };
 		std::string             path{};
 	};

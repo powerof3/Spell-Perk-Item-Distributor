@@ -307,9 +307,10 @@ namespace Forms
 	{
 		std::uint32_t index{ 0 };
 
-		Form*      form{ nullptr };
-		IdxOrCount idxOrCount{ 1 };
-		FilterData filters{};
+		Form*       form{ nullptr };
+		Index       packageIndex{ 0 };
+		RandomCount count{ 1, 1 };
+		FilterData  filters{};
 
 		std::string   path{};
 		std::uint32_t npcCount{ 0 };
@@ -442,7 +443,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 	forms.reserve(a_INIDataVec.size());
 	std::uint32_t index = 0;
 
-	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
+	for (auto& [formOrEditorID, strings, filterIDs, level, traits, packageIndex, itemsCount, chance, path] : a_INIDataVec) {
 		try {
 			if (auto form = detail::get_form<Form>(a_dataHandler, formOrEditorID, path); form) {
 				FormFilters filterForms{};
@@ -456,7 +457,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 				}
 
 				if (validEntry) {
-					forms.emplace_back(index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path);
+					forms.emplace_back(index, form, packageIndex, itemsCount, FilterData(strings, filterForms, level, traits, chance), path);
 					index++;
 				}
 			}

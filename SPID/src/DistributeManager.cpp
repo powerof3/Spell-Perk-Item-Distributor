@@ -222,8 +222,14 @@ namespace Distribute::Event
 				const auto npcData = NPCData(actor, npc);
 				const auto input = PCLevelMult::Input{ actor, npc, false };
 
-				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems, input, [&](auto* a_deathItem, IdxOrCount a_count) {
-					detail::add_item(actor, a_deathItem, a_count);
+				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems, input, [&](auto* deathItem, IndexOrCount idxOrCount) {
+					if (!std::holds_alternative<RandomCount>(idxOrCount)) {
+						return false;
+					}
+
+					auto count = std::get<RandomCount>(idxOrCount);
+
+					detail::add_item(actor, deathItem, count.GetRandom());
 					return true;
 				});
 			}

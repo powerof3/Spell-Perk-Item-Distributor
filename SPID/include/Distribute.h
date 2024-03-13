@@ -80,14 +80,21 @@ namespace Distribute
 		const NPCData&                         a_npcData,
 		Forms::Distributables<Form>&           a_distributables,
 		const PCLevelMult::Input&              a_input,
-		std::function<bool(Form*, IdxOrCount)> a_callback)
+		std::function<bool(Form*, IndexOrCount)> a_callback)
 	{
 		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
 		for (auto& formData : vec) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
-				a_callback(formData.form, formData.idxOrCount);
-				++formData.npcCount;
+				if constexpr (std::is_same_v<RE::TESBoundObject, Form>) {
+					if (a_callback(formData.form, formData.count.GetRandom())) {
+						++formData.npcCount;
+					}
+				} else {
+					if (a_callback(formData.form, formData.packageIndex)) {
+						++formData.npcCount;
+					}
+				}
 			}
 		}
 	}
@@ -134,7 +141,7 @@ namespace Distribute
 		const NPCData&                                          a_npcData,
 		Forms::Distributables<Form>&                            a_distributables,
 		const PCLevelMult::Input&                               a_input,
-		std::function<bool(std::map<Form*, IdxOrCount>&, bool)> a_callback)
+		std::function<bool(std::map<Form*, Count>&, bool)> a_callback)
 	{
 		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
@@ -142,15 +149,15 @@ namespace Distribute
 			return;
 		}
 
-		std::map<Form*, IdxOrCount> collectedForms{};
-		bool                        hasLeveledItems = false;
+		std::map<Form*, Count> collectedForms{};
+		bool                          hasLeveledItems = false;
 
 		for (auto& formData : vec) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
 				if (formData.form->Is(RE::FormType::LeveledItem)) {
 					hasLeveledItems = true;
 				}
-				collectedForms.emplace(formData.form, formData.idxOrCount);
+				collectedForms.emplace(formData.form, formData.count.GetRandom());
 				++formData.npcCount;
 			}
 		}

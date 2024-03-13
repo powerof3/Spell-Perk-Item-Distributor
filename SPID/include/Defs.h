@@ -54,6 +54,16 @@ struct Range
 		return value >= min && value <= max;
 	}
 
+	[[nodiscard]] bool IsExact() const 
+	{
+		return min == max;
+	}
+
+	[[nodiscard]] T GetRandom() const
+	{
+		return IsExact() ? min : RNG().generate<T>(min, max);
+	}
+
 	// members
 	T min{ std::numeric_limits<T>::min() };
 	T max{ std::numeric_limits<T>::max() };
@@ -83,7 +93,10 @@ struct Traits
 	std::optional<bool>    teammate{};
 };
 
-using IdxOrCount = std::int32_t;
+using Index = std::int32_t;
+using Count = std::int32_t;
+using RandomCount = Range<Count>;
+using IndexOrCount = std::variant<Index, RandomCount>;
 using Chance = std::uint32_t;
 
 /// A standardized way of converting any object to string.
