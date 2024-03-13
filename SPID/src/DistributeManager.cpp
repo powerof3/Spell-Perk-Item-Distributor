@@ -46,7 +46,8 @@ namespace Distribute
 			invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
 		}
 
-		std::vector<RE::TESObjectARMO*> armorToRemove;
+		std::vector<RE::TESObjectARMO*>  armorToRemove;
+		std::vector<RE::TESBoundObject*> armorToEquip;
 
 		if (const auto invChanges = a_actor->GetInventoryChanges()) {
 			if (const auto entryLists = invChanges->entryList) {
@@ -65,7 +66,7 @@ namespace Distribute
 										continue;
 									}
 								}
-								RE::ActorEquipManager::GetSingleton()->EquipObject(a_actor, entryList->object, xList, 1, nullptr, true, true, false);
+								armorToEquip.push_back(entryList->object);
 							}
 						}
 					}
@@ -73,30 +74,29 @@ namespace Distribute
 			}
 		}
 
-		if (!armorToRemove.empty()) {
-			SKSE::GetTaskInterface()->AddTask([a_actor, armorToRemove]() {
-				for (auto& armor : armorToRemove) {
-					if (armor) {
-						a_actor->RemoveItem(armor, 1, RE::ITEM_REMOVE_REASON::kRemove, nullptr, nullptr);
-					}
+		SKSE::GetTaskInterface()->AddTask([a_actor, armorToRemove, armorToEquip]() {
+			for (auto& armor : armorToRemove) {
+				if (armor) {
+					a_actor->RemoveItem(armor, 1, RE::ITEM_REMOVE_REASON::kRemove, nullptr, nullptr);
 				}
-			});
-		}
+			}
+			for (auto& armor : armorToEquip) {
+				RE::ActorEquipManager::GetSingleton()->EquipObject(a_actor, armor, nullptr, 1, nullptr, true, true, false, false);
+			}
+		});
 	}
 
 	void detail::distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc)
 	{
-		const auto process = should_process_NPC(a_npc);
-		const auto processOnLoad = detail::should_process_NPC(a_npc, processedOnLoad);
-		if (process || processOnLoad) {
+		auto slots = detail::get_equipped_item_slots(a_actor);
+		a_actor->RemoveOutfitItems(nullptr);
+
+		if (should_process_NPC(a_npc)) {
 			auto npcData = NPCData(a_actor, a_npc);
-			if (process) {
-				Distribute(npcData, false, true);
-			}
-			if (processOnLoad) {
-				DistributeItems(npcData, { a_actor, a_npc, false });
-			}
+			Distribute(npcData, false);
 		}
+
+		detail::force_equip_outfit(a_actor, a_npc, slots);
 	}
 
 	namespace Actor
@@ -107,12 +107,7 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (const auto npc = a_this->GetActorBase()) {
-					auto slots = detail::get_equipped_item_slots(a_this);
-					a_this->RemoveOutfitItems(nullptr);
-
 					detail::distribute_on_load(a_this, npc);
-
-					detail::force_equip_outfit(a_this, npc, slots);
 				}
 
 				return func(a_this);
@@ -131,15 +126,10 @@ namespace Distribute
 				func(a_this, a_buf);
 
 				if (const auto npc = a_this->GetActorBase()) {
-					auto slots = detail::get_equipped_item_slots(a_this);
-					a_this->RemoveOutfitItems(nullptr);
-
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
 						detail::distribute_on_load(a_this, npc);
 					}
-
-					detail::force_equip_outfit(a_this, npc, slots);
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -164,8 +154,8 @@ namespace Distribute
 			if (processed = factory->Create(); processed) {
 				processed->formEditorID = "SPID_Processed";
 			}
-			if (processedOnLoad = factory->Create(); processedOnLoad) {
-				processedOnLoad->formEditorID = "SPID_ProcessedOnLoad";
+			if (processedOutfit = factory->Create(); processedOutfit) {
+				processedOutfit->formEditorID = "SPID_ProcessedOutfit";
 			}
 		}
 
@@ -195,7 +185,7 @@ namespace Distribute
 				if (const auto& actor = actorHandle.get()) {
 					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
 						auto npcData = NPCData(actor.get(), npc);
-						Distribute(npcData, false, true);
+						Distribute(npcData, false);
 						++actorCount;
 					}
 				}
@@ -215,7 +205,7 @@ namespace Distribute
 		logger::info("{:*^50}", "RESULTS");
 
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
-			if (a_distributable && a_distributable.GetType() != RECORD::kItem && a_distributable.GetType() != RECORD::kOutfit && a_distributable.GetType() != RECORD::kDeathItem) {
+			if (a_distributable && a_distributable.GetType() != RECORD::kDeathItem) {
 				logger::info("{}", RECORD::add[a_distributable.GetType()]);
 
 				auto& forms = a_distributable.GetForms();

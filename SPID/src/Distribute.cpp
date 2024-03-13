@@ -106,16 +106,9 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::TESObjectARMO>(a_npcData, Forms::skins, a_input, [&](auto* a_skin) {
-			if (npc->skin != a_skin) {
-				npc->skin = a_skin;
-				return true;
-			}
-			return false;
-		});
-
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits, a_input, [&](auto* a_outfit) {
-			if (npc->defaultOutfit != a_outfit) {
+			if (npc->defaultOutfit != a_outfit && !npc->HasKeyword(processedOutfit)) {
+				npc->AddKeyword(processedOutfit);
 				npc->defaultOutfit = a_outfit;
 				return true;
 			}
@@ -129,63 +122,23 @@ namespace Distribute
 			}
 			return false;
 		});
-	}
-
-	void DistributeItems(NPCData& a_npcData, const PCLevelMult::Input& a_input)
-	{
-		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
-			return;
-		}
-
-		const auto npc = a_npcData.GetNPC();
-		const auto actor = a_npcData.GetActor();
-
-		auto inv_before = actor->GetInventory([](auto& item) {
-			return item.Is(RE::FormType::Weapon, RE::FormType::Armor);
-		});
-
-		bool recalcInventory = false;
-		bool startsDead = actor->IsDead() || (actor->formFlags & RE::Actor::RecordFlags::kStartsDead) != 0;
 
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
-			if (npc->AddObjectsToContainer(a_objects, npc)) {
-				if (a_hasLvlItem) {
-					recalcInventory = true;
-					if (const auto invChanges = actor->GetInventoryChanges(true)) {
-						invChanges->InitLeveledItems();
-					}
-				} else if (!startsDead) {
-					for (auto& [item, count] : a_objects) {
-						if (item->Is(RE::FormType::Weapon, RE::FormType::Armor)) {
-							RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
-						}
-					}
-				}
+			return npc->AddObjectsToContainer(a_objects, npc);
+		});
+
+		for_each_form<RE::TESObjectARMO>(a_npcData, Forms::skins, a_input, [&](auto* a_skin) {
+			if (npc->skin != a_skin) {
+				npc->skin = a_skin;
 				return true;
 			}
 			return false;
 		});
-
-		if (recalcInventory && !startsDead) {
-			auto inv_after = actor->GetInventory([](auto& item) {
-				return item.Is(RE::FormType::Weapon, RE::FormType::Armor);
-			});
-			for (auto& [item, data] : inv_after) {
-				auto& [count, extra] = data;
-				if (!inv_before.contains(item) && count > 0 && !extra->IsWorn()) {
-					RE::ActorEquipManager::GetSingleton()->EquipObject(actor, item);
-				}
-			}
-		}
 	}
 
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItems)
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries)
 	{
 		const auto input = PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries };
-
 		Distribute(a_npcData, input);
-		if (!a_noItems) {
-			DistributeItems(a_npcData, input);
-		}
 	}
 }
