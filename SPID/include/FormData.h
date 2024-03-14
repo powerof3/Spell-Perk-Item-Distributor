@@ -315,12 +315,6 @@ namespace Forms
 		std::uint32_t npcCount{ 0 };
 
 		bool operator==(const Data& a_rhs) const;
-
-		/// <summary>
-		/// Unsafely gets a RandomCount from idxOrCount.
-		/// Onlly call this method when you're sure that idxOrCount is a RandomCount.
-		/// </summary>
-		const RandomCount& GetCount() const;
 	};
 
 	template <class Form>
@@ -395,12 +389,6 @@ bool Forms::Data<Form>::operator==(const Data& a_rhs) const
 		return false;
 	}
 	return form->GetFormID() == a_rhs.form->GetFormID();
-}
-
-template <class Form>
-const RandomCount& Forms::Data<Form>::GetCount() const
-{
-	return std::get<RandomCount>(idxOrCount);
 }
 
 template <class Form>

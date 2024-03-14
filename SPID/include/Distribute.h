@@ -150,7 +150,7 @@ namespace Distribute
 				if (formData.form->Is(RE::FormType::LeveledItem)) {
 					hasLeveledItems = true;
 				}
-				collectedForms.emplace(formData.form, formData.GetCount().GetRandom());
+				collectedForms.emplace(formData.form, std::get<RandomCount>(formData.idxOrCount).GetRandom());
 				++formData.npcCount;
 			}
 		}

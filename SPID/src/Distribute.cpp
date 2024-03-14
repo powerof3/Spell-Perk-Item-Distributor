@@ -90,9 +90,6 @@ namespace Distribute
 		});
 
 		for_each_form<RE::TESForm>(a_npcData, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IndexOrCount a_idx) {
-			if (!std::holds_alternative<Index>(a_idx)) {
-				return false;
-			}
 			auto packageIdx = std::get<Index>(a_idx);
 
 			if (a_packageOrList->Is(RE::FormType::Package)) {
