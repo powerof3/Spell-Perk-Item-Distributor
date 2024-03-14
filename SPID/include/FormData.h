@@ -307,9 +307,9 @@ namespace Forms
 	{
 		std::uint32_t index{ 0 };
 
-		Form*      form{ nullptr };
-		IdxOrCount idxOrCount{ 1 };
-		FilterData filters{};
+		Form*        form{ nullptr };
+		IndexOrCount idxOrCount{ RandomCount(1, 1) };
+		FilterData   filters{};
 
 		std::string   path{};
 		std::uint32_t npcCount{ 0 };

@@ -249,9 +249,25 @@ namespace INI
 			if (a_key == "Package") {  // reuse item count for package stack index
 				data.idxOrCount = 0;
 			}
+
 			if (kIdxOrCount < size) {
-				if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
-					data.idxOrCount = string::to_num<std::int32_t>(str);
+				if (a_key == "Package") {  // If it's a package, then we only expect a single number.
+					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+						data.idxOrCount = string::to_num<Index>(str);
+					}
+				} else {
+					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+						if (auto countPair = string::split(str, "-"); countPair.size() > 1) {
+							auto minCount = string::to_num<Count>(countPair[0]);
+							auto maxCount = string::to_num<Count>(countPair[1]);
+
+							data.idxOrCount = RandomCount(minCount, maxCount);
+						} else {
+							auto count = string::to_num<Count>(str);
+
+							data.idxOrCount = RandomCount(count, count);  // create the exact match range.
+						}
+					}
 				}
 			}
 

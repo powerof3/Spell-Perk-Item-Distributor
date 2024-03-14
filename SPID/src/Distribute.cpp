@@ -89,8 +89,8 @@ namespace Distribute
 			npc->GetSpellList()->AddShouts(a_shouts);
 		});
 
-		for_each_form<RE::TESForm>(a_npcData, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IdxOrCount a_idx) {
-			auto packageIdx = a_idx;
+		for_each_form<RE::TESForm>(a_npcData, Forms::packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IndexOrCount a_idx) {
+			auto packageIdx = std::get<Index>(a_idx);
 
 			if (a_packageOrList->Is(RE::FormType::Package)) {
 				auto package = a_packageOrList->As<RE::TESPackage>();
@@ -172,7 +172,7 @@ namespace Distribute
 		const auto npc = a_npcData.GetNPC();
 		const auto actor = a_npcData.GetActor();
 
-		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
+		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, Count>& a_objects, const bool a_hasLvlItem) {
 			if (npc->AddObjectsToContainer(a_objects, npc)) {
 				if (a_hasLvlItem) {
 					detail::init_leveled_items(actor);
