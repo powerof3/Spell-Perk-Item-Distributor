@@ -123,7 +123,7 @@ namespace Distribute
 			return false;
 		});
 
-		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects, const bool a_hasLvlItem) {
+		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items, a_input, [&](std::map<RE::TESBoundObject*, IdxOrCount>& a_objects) {
 			return npc->AddObjectsToContainer(a_objects, npc);
 		});
 

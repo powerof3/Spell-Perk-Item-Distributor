@@ -128,10 +128,10 @@ namespace Distribute
 	// items
 	template <class Form>
 	void for_each_form(
-		const NPCData&                                          a_npcData,
-		Forms::Distributables<Form>&                            a_distributables,
-		const PCLevelMult::Input&                               a_input,
-		std::function<bool(std::map<Form*, IdxOrCount>&, bool)> a_callback)
+		const NPCData&                                    a_npcData,
+		Forms::Distributables<Form>&                      a_distributables,
+		const PCLevelMult::Input&                         a_input,
+		std::function<bool(std::map<Form*, IdxOrCount>&)> a_callback)
 	{
 		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
 
@@ -140,20 +140,26 @@ namespace Distribute
 		}
 
 		std::map<Form*, IdxOrCount> collectedForms{};
-		bool                        hasLeveledItems = false;
 
 		for (auto& formData : vec) {
 			if (detail::passed_filters(a_npcData, a_input, formData)) {
-				if (formData.form->Is(RE::FormType::LeveledItem)) {
-					hasLeveledItems = true;
+				if (auto leveledItem = formData.form->As<RE::TESLevItem>()) {
+					auto                                level = a_npcData.GetLevel();
+					RE::BSScrapArray<RE::CALCED_OBJECT> calcedObjects{};
+
+					leveledItem->CalculateCurrentFormList(level, formData.idxOrCount, calcedObjects, 0, true);
+					for (auto& calcObj : calcedObjects) {
+						collectedForms[static_cast<RE::TESBoundObject*>(calcObj.form)] += calcObj.count;
+					}
+				} else {
+					collectedForms[formData.form] += formData.idxOrCount;
 				}
-				collectedForms[formData.form] += formData.idxOrCount;
 				++formData.npcCount;
 			}
 		}
 
 		if (!collectedForms.empty()) {
-			a_callback(collectedForms, hasLeveledItems);
+			a_callback(collectedForms);
 		}
 	}
 
