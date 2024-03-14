@@ -8,10 +8,6 @@ namespace Distribute
 	namespace detail
 	{
 		bool should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword = processed);
-
-		std::set<RE::BIPED_MODEL::BipedObjectSlot> get_equipped_item_slots(RE::Actor* a_actor);
-		void                                       force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc, const std::set<RE::BGSBipedObjectForm::BipedObjectSlot>& a_slots);
-
 		void distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc);
 	}
 

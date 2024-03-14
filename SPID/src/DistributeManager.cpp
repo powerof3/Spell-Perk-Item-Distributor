@@ -15,88 +15,12 @@ namespace Distribute
 		return true;
 	}
 
-	std::set<RE::BIPED_MODEL::BipedObjectSlot> detail::get_equipped_item_slots(RE::Actor* a_actor)
-	{
-		if (!a_actor) {
-			return {};
-		}
-
-		std::set<RE::BIPED_MODEL::BipedObjectSlot> slots;
-
-		if (const auto invChanges = a_actor->GetInventoryChanges()) {
-			if (const auto entryLists = invChanges->entryList) {
-				for (const auto& entryList : *entryLists) {
-					if (entryList && entryList->object && entryList->object->IsArmor() && entryList->IsWorn()) {
-						slots.insert(entryList->object->As<RE::TESObjectARMO>()->GetSlotMask());
-					}
-				}
-			}
-		}
-
-		return slots;
-	}
-
-	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc, const std::set<RE::BIPED_MODEL::BipedObjectSlot>& a_slots)
-	{
-		if (!a_npc->defaultOutfit) {
-			return;
-		}
-
-		if (const auto invChanges = a_actor->GetInventoryChanges()) {
-			invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
-		}
-
-		std::vector<RE::TESObjectARMO*>  armorToRemove;
-		std::vector<RE::TESBoundObject*> armorToEquip;
-
-		if (const auto invChanges = a_actor->GetInventoryChanges()) {
-			if (const auto entryLists = invChanges->entryList) {
-				const auto formID = a_npc->defaultOutfit->GetFormID();
-
-				bool startsDead = a_actor->IsDead() || (a_actor->formFlags & RE::Actor::RecordFlags::kStartsDead) != 0;
-
-				for (const auto& entryList : *entryLists) {
-					if (entryList && entryList->object && entryList->extraLists) {
-						for (const auto& xList : *entryList->extraLists) {
-							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
-							if (outfitItem && outfitItem->id == formID) {
-								if (auto armor = entryList->object->As<RE::TESObjectARMO>(); armor && startsDead) {
-									if (a_slots.empty() || std::ranges::none_of(a_slots, [&](auto slot) { return armor->bipedModelData.bipedObjectSlots.any(slot); })) {
-										armorToRemove.push_back(armor);
-										continue;
-									}
-								}
-								armorToEquip.push_back(entryList->object);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		SKSE::GetTaskInterface()->AddTask([a_actor, armorToRemove, armorToEquip]() {
-			for (auto& armor : armorToRemove) {
-				if (armor) {
-					a_actor->RemoveItem(armor, 1, RE::ITEM_REMOVE_REASON::kRemove, nullptr, nullptr);
-				}
-			}
-			for (auto& armor : armorToEquip) {
-				RE::ActorEquipManager::GetSingleton()->EquipObject(a_actor, armor, nullptr, 1, nullptr, true, true, false, false);
-			}
-		});
-	}
-
 	void detail::distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc)
 	{
-		auto slots = detail::get_equipped_item_slots(a_actor);
-		a_actor->RemoveOutfitItems(nullptr);
-
 		if (should_process_NPC(a_npc)) {
 			auto npcData = NPCData(a_actor, a_npc);
 			Distribute(npcData, false);
 		}
-
-		detail::force_equip_outfit(a_actor, a_npc, slots);
 	}
 
 	namespace Actor
