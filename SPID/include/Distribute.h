@@ -86,15 +86,8 @@ namespace Distribute
 
 		for (auto& formData : vec) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
-				if constexpr (std::is_same_v<RE::TESBoundObject, Form>) {
-					if (a_callback(formData.form, formData.count.GetRandom())) {
-						++formData.npcCount;
-					}
-				} else {
-					if (a_callback(formData.form, formData.packageIndex)) {
-						++formData.npcCount;
-					}
-				}
+				a_callback(formData.form, formData.idxOrCount);
+				++formData.npcCount;
 			}
 		}
 	}
@@ -157,7 +150,7 @@ namespace Distribute
 				if (formData.form->Is(RE::FormType::LeveledItem)) {
 					hasLeveledItems = true;
 				}
-				collectedForms.emplace(formData.form, formData.count.GetRandom());
+				collectedForms.emplace(formData.form, formData.GetCount().GetRandom());
 				++formData.npcCount;
 			}
 		}

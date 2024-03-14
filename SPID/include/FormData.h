@@ -307,15 +307,20 @@ namespace Forms
 	{
 		std::uint32_t index{ 0 };
 
-		Form*       form{ nullptr };
-		Index       packageIndex{ 0 };
-		RandomCount count{ 1, 1 };
-		FilterData  filters{};
+		Form*        form{ nullptr };
+		IndexOrCount idxOrCount{ RandomCount(1, 1) };
+		FilterData   filters{};
 
 		std::string   path{};
 		std::uint32_t npcCount{ 0 };
 
 		bool operator==(const Data& a_rhs) const;
+
+		/// <summary>
+		/// Unsafely gets a RandomCount from idxOrCount.
+		/// Onlly call this method when you're sure that idxOrCount is a RandomCount.
+		/// </summary>
+		const RandomCount& GetCount() const;
 	};
 
 	template <class Form>
@@ -393,6 +398,12 @@ bool Forms::Data<Form>::operator==(const Data& a_rhs) const
 }
 
 template <class Form>
+const RandomCount& Forms::Data<Form>::GetCount() const
+{
+	return std::get<RandomCount>(idxOrCount);
+}
+
+template <class Form>
 Forms::Distributables<Form>::operator bool()
 {
 	return !forms.empty();
@@ -443,7 +454,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 	forms.reserve(a_INIDataVec.size());
 	std::uint32_t index = 0;
 
-	for (auto& [formOrEditorID, strings, filterIDs, level, traits, packageIndex, itemsCount, chance, path] : a_INIDataVec) {
+	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
 		try {
 			if (auto form = detail::get_form<Form>(a_dataHandler, formOrEditorID, path); form) {
 				FormFilters filterForms{};
@@ -457,7 +468,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 				}
 
 				if (validEntry) {
-					forms.emplace_back(index, form, packageIndex, itemsCount, FilterData(strings, filterForms, level, traits, chance), path);
+					forms.emplace_back(index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path);
 					index++;
 				}
 			}
