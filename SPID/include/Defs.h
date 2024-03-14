@@ -54,7 +54,7 @@ struct Range
 		return value >= min && value <= max;
 	}
 
-	[[nodiscard]] bool IsExact() const 
+	[[nodiscard]] bool IsExact() const
 	{
 		return min == max;
 	}

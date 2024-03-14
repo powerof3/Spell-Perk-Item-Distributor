@@ -246,7 +246,7 @@ namespace INI
 			}
 
 			//ITEMCOUNT/INDEX
-			
+
 			if (kIdxOrCount < size) {
 				if (a_key == "Package") {  // reuse item count for package stack index
 					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
@@ -267,7 +267,7 @@ namespace INI
 					}
 				}
 			}
-		
+
 			//CHANCE
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {

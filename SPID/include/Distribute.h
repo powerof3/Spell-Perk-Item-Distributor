@@ -77,9 +77,9 @@ namespace Distribute
 	// for now, only packages/death items use this
 	template <class Form>
 	void for_each_form(
-		const NPCData&                         a_npcData,
-		Forms::Distributables<Form>&           a_distributables,
-		const PCLevelMult::Input&              a_input,
+		const NPCData&                           a_npcData,
+		Forms::Distributables<Form>&             a_distributables,
+		const PCLevelMult::Input&                a_input,
 		std::function<bool(Form*, IndexOrCount)> a_callback)
 	{
 		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
@@ -138,9 +138,9 @@ namespace Distribute
 	// items
 	template <class Form>
 	void for_each_form(
-		const NPCData&                                          a_npcData,
-		Forms::Distributables<Form>&                            a_distributables,
-		const PCLevelMult::Input&                               a_input,
+		const NPCData&                                     a_npcData,
+		Forms::Distributables<Form>&                       a_distributables,
+		const PCLevelMult::Input&                          a_input,
 		std::function<bool(std::map<Form*, Count>&, bool)> a_callback)
 	{
 		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
@@ -150,7 +150,7 @@ namespace Distribute
 		}
 
 		std::map<Form*, Count> collectedForms{};
-		bool                          hasLeveledItems = false;
+		bool                   hasLeveledItems = false;
 
 		for (auto& formData : vec) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
