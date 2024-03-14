@@ -251,7 +251,7 @@ namespace INI
 			}
 
 			if (kIdxOrCount < size) {
-				if (a_key == "Package") { // If it's a package, then we only expect a single number.
+				if (a_key == "Package") {  // If it's a package, then we only expect a single number.
 					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
 						data.idxOrCount = string::to_num<Index>(str);
 					}
