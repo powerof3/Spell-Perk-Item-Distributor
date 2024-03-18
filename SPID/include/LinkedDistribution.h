@@ -3,7 +3,8 @@
 
 namespace LinkedDistribution
 {
-	namespace INI {
+	namespace INI
+	{
 
 		struct RawLinkedItem
 		{
@@ -28,10 +29,10 @@ namespace LinkedDistribution
 		}
 	}
 
-	template<class Form>
+	template <class Form>
 	using DataSet = std::set<Forms::Data<Form>>;
 
-	template<class T>
+	template <class T>
 	using LinkedForms = std::unordered_map<RE::TESForm*, DataSet<T>>;
 
 	class Manager : public ISingleton<Manager>
@@ -58,10 +59,7 @@ namespace LinkedDistribution
 		/// <param name="rawLinkedDistribution">A raw linked item entries that should be processed.</param>
 		void LookupLinkedItems(RE::TESDataHandler* const dataHandler, INI::LinkedItemsVec& rawLinkedItems);
 
-
-
 	private:
-
 		LinkedForms<RE::SpellItem>      spells{ RECORD::kSpell };
 		LinkedForms<RE::BGSPerk>        perks{ RECORD::kPerk };
 		LinkedForms<RE::TESBoundObject> items{ RECORD::kItem };
@@ -74,6 +72,5 @@ namespace LinkedDistribution
 		LinkedForms<RE::TESFaction>     factions{ RECORD::kFaction };
 		LinkedForms<RE::BGSOutfit>      sleepOutfits{ RECORD::kSleepOutfit };
 		LinkedForms<RE::TESObjectARMO>  skins{ RECORD::kSkin };
-
 	};
 }

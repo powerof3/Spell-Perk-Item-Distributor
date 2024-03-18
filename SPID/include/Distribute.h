@@ -79,7 +79,7 @@ namespace Distribute
 	template <class Form>
 	void for_each_form(
 		const NPCData&                           a_npcData,
-		Forms::DataVec<Form>&              forms,
+		Forms::DataVec<Form>&                    forms,
 		const PCLevelMult::Input&                a_input,
 		std::function<bool(Form*, IndexOrCount)> a_callback,
 		std::set<RE::TESForm*>*                  accumulatedForms = nullptr)

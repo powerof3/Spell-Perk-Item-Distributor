@@ -202,13 +202,13 @@ namespace Distribute
 		Forms::DistributionSet entries{
 			Forms::spells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::perks.GetForms(a_input.onlyPlayerLevelEntries),
-			{}, // items are processed separately 
+			{},  // items are processed separately
 			Forms::shouts.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::levSpells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::packages.GetForms(a_input.onlyPlayerLevelEntries),
-			{}, // outfits are processed along with items.
+			{},  // outfits are processed along with items.
 			Forms::keywords.GetForms(a_input.onlyPlayerLevelEntries),
-			{}, // deathItems are only processed on... well, death.
+			{},  // deathItems are only processed on... well, death.
 			Forms::factions.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::sleepOutfits.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::skins.GetForms(a_input.onlyPlayerLevelEntries)

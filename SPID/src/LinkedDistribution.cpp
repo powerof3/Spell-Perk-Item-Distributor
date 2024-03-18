@@ -2,7 +2,7 @@
 #include "FormData.h"
 
 #pragma region Parsing
-bool LinkedDistribution::INI::Parser::TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+bool           LinkedDistribution::INI::Parser::TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 {
 	if (a_key != "LinkedItem") {
 		return false;
@@ -34,12 +34,11 @@ bool LinkedDistribution::INI::Parser::TryParse(const std::string& a_key, const s
 #pragma endregion
 
 #pragma region Lookup
-void LinkedDistribution::Manager::LookupLinkedItems(RE::TESDataHandler* const dataHandler, INI::LinkedItemsVec& rawLinkedItems)
+void           LinkedDistribution::Manager::LookupLinkedItems(RE::TESDataHandler* const dataHandler, INI::LinkedItemsVec& rawLinkedItems)
 {
 	using namespace Forms;
 
 	// TODO: Figure out templates here.
-	
 
 	for (auto& [rawForm, filterIDs, count, chance, path] : rawLinkedItems) {
 		try {

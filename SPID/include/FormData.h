@@ -320,7 +320,6 @@ namespace Forms
 	template <class Form>
 	using DataVec = std::vector<Data<Form>>;
 
-	
 	/// <summary>
 	/// A set of distributable forms that should be processed.
 	///
@@ -344,7 +343,7 @@ namespace Forms
 
 	/// <summary>
 	/// A container that holds distributable entries for a single form type.
-	/// 
+	///
 	/// Note that this container tracks separately leveled (those using level in their filters) entries.
 	/// </summary>
 	/// <typeparam name="Form">Type of the forms to store.</typeparam>
