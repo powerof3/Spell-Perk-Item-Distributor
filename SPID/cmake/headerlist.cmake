@@ -8,6 +8,7 @@ set(headers ${headers}
 	include/ExclusiveGroups.h
 	include/FormData.h
 	include/KeywordDependencies.h
+	include/LinkedDistribution.h
 	include/LogBuffer.h
 	include/LookupConfigs.h
 	include/LookupFilters.h

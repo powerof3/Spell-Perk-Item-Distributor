@@ -15,15 +15,15 @@ namespace ExclusiveGroups
 		///
 		/// As a result this method configures Manager with discovered valid exclusive groups.
 		/// </summary>
-		/// <param name=""></param>
-		/// <param name="rawExclusiveGroups">A raw exclusive group entries that should be processed/</param>
+		/// <param name="dataHandler">A DataHandler that will perform the actual lookup.</param>
+		/// <param name="rawExclusiveGroups">A raw exclusive group entries that should be processed.</param>
 		void LookupExclusiveGroups(RE::TESDataHandler* const dataHandler, INI::ExclusiveGroupsVec& rawExclusiveGroups);
 
 		/// <summary>
 		/// Gets a set of all forms that are in the same exclusive group as the given form.
 		/// Note that a form can appear in multiple exclusive groups, all of those groups are returned.
 		/// </summary>
-		/// <param name="form"></param>
+		/// <param name="form">A form for which mutually exclusive forms will be returned.</param>
 		/// <returns>A union of all groups that contain a given form.</returns>
 		std::unordered_set<RE::TESForm*> MutuallyExclusiveFormsForForm(RE::TESForm* form) const;
 
