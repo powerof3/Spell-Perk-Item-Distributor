@@ -320,6 +320,34 @@ namespace Forms
 	template <class Form>
 	using DataVec = std::vector<Data<Form>>;
 
+	
+	/// <summary>
+	/// A set of distributable forms that should be processed.
+	///
+	/// DistributionSet is used to conveniently pack all distributable forms into one structure.
+	/// </summary>
+	struct DistributionSet
+	{
+		DataVec<RE::SpellItem>      spells{};
+		DataVec<RE::BGSPerk>        perks{};
+		DataVec<RE::TESBoundObject> items{};
+		DataVec<RE::TESShout>       shouts{};
+		DataVec<RE::TESLevSpell>    levSpells{};
+		DataVec<RE::TESForm>        packages{};
+		DataVec<RE::BGSOutfit>      outfits{};
+		DataVec<RE::BGSKeyword>     keywords{};
+		DataVec<RE::TESBoundObject> deathItems{};
+		DataVec<RE::TESFaction>     factions{};
+		DataVec<RE::BGSOutfit>      sleepOutfits{};
+		DataVec<RE::TESObjectARMO>  skins{};
+	};
+
+	/// <summary>
+	/// A container that holds distributable entries for a single form type.
+	/// 
+	/// Note that this container tracks separately leveled (those using level in their filters) entries.
+	/// </summary>
+	/// <typeparam name="Form">Type of the forms to store.</typeparam>
 	template <class Form>
 	struct Distributables
 	{
