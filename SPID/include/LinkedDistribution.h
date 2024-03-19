@@ -1,5 +1,7 @@
 #pragma once
 #include "FormData.h"
+#include "LookupNPC.h"
+#include "PCLevelMultManager.h"
 
 namespace LinkedDistribution
 {
@@ -29,25 +31,13 @@ namespace LinkedDistribution
 		}
 	}
 
-	template <class Form>
-	using DataSet = std::set<Forms::Data<Form>>;
+	using namespace Forms;
 
-	template <class T>
-	using LinkedForms = std::unordered_map<RE::TESForm*, DataSet<T>>;
+	template<class T>
+	using LinkedForms = std::unordered_map<RE::TESForm*, DataVec<T>>;
 
 	class Manager : public ISingleton<Manager>
 	{
-	private:
-		template <class Form>
-		const DataSet<Form>& LinkedFormsForForm(const RE::TESForm* form, const LinkedForms<Form>& linkedForms) const
-		{
-			if (const auto it = linkedForms.find(form); it != linkedForms.end()) {
-				return it->second;
-			} else {
-				static std::set<RE::TESForm*> empty{};
-				return empty;
-			}
-		}
 
 	public:
 		/// <summary>
@@ -59,7 +49,28 @@ namespace LinkedDistribution
 		/// <param name="rawLinkedDistribution">A raw linked item entries that should be processed.</param>
 		void LookupLinkedItems(RE::TESDataHandler* const dataHandler, INI::LinkedItemsVec& rawLinkedItems);
 
+
+		/// <summary>
+		/// Calculates DistributionSet for each linked form and calls a callback for each of them.
+		/// </summary>
+		/// <param name="linkedForms">A set of forms for which distribution sets should be calculated.
+		///							  This is typically distributed forms accumulated during first distribution pass.</param>
+		/// <param name="callback">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
+		void ForEachLinkedDistributionSet(const std::set<RE::TESForm*>& linkedForms, std::function<void(DistributionSet&)> callback);
+
 	private:
+
+		template <class Form>
+		DataVec<Form>& LinkedFormsForForm(RE::TESForm* form, LinkedForms<Form>& linkedForms) const
+		{
+			if (auto it = linkedForms.find(form); it != linkedForms.end()) {
+				return it->second;
+			} else {
+				static DataVec<Form> empty{};
+				return empty;
+			}
+		}
+
 		LinkedForms<RE::SpellItem>      spells{ RECORD::kSpell };
 		LinkedForms<RE::BGSPerk>        perks{ RECORD::kPerk };
 		LinkedForms<RE::TESBoundObject> items{ RECORD::kItem };

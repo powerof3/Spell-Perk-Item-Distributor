@@ -1,6 +1,7 @@
 #include "Distribute.h"
 
 #include "DistributeManager.h"
+#include "LinkedDistribution.h"
 
 namespace Distribute
 {
@@ -54,24 +55,24 @@ namespace Distribute
 		}
 
 		/// <summary>
-		/// Performs distribution of all configured forms to NPC described with a_npcData and a_input.
+		/// Performs distribution of all configured forms to NPC described with npcData and input.
 		/// </summary>
-		/// <param name="a_npcData">General information about NPC that is being processed.</param>
-		/// <param name="a_input">Leveling information about NPC that is being processed.</param>
+		/// <param name="npcData">General information about NPC that is being processed.</param>
+		/// <param name="input">Leveling information about NPC that is being processed.</param>
 		/// <param name="forms">A set of forms that should be distributed to NPC.</param>
 		/// <param name="accumulatedForms">An optional pointer to a set that will accumulate all distributed forms.</param>
-		void distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input, Forms::DistributionSet& forms, std::set<RE::TESForm*>* accumulatedForms)
+		void distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, std::set<RE::TESForm*>* accumulatedForms)
 		{
-			const auto npc = a_npcData.GetNPC();
+			const auto npc = npcData.GetNPC();
 
 			for_each_form<RE::BGSKeyword>(
-				a_npcData, forms.keywords, a_input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
+				npcData, forms.keywords, input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
 					npc->AddKeywords(a_keywords);
 				},
 				accumulatedForms);
 
 			for_each_form<RE::TESFaction>(
-				a_npcData, forms.factions, a_input, [&](const std::vector<RE::TESFaction*>& a_factions) {
+				npcData, forms.factions, input, [&](const std::vector<RE::TESFaction*>& a_factions) {
 					npc->factions.reserve(static_cast<std::uint32_t>(a_factions.size()));
 					for (auto& faction : a_factions) {
 						npc->factions.emplace_back(RE::FACTION_RANK{ faction, 1 });
@@ -80,31 +81,31 @@ namespace Distribute
 				accumulatedForms);
 
 			for_each_form<RE::SpellItem>(
-				a_npcData, forms.spells, a_input, [&](const std::vector<RE::SpellItem*>& a_spells) {
+				npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& a_spells) {
 					npc->GetSpellList()->AddSpells(a_spells);
 				},
 				accumulatedForms);
 
 			for_each_form<RE::TESLevSpell>(
-				a_npcData, forms.levSpells, a_input, [&](const std::vector<RE::TESLevSpell*>& a_levSpells) {
+				npcData, forms.levSpells, input, [&](const std::vector<RE::TESLevSpell*>& a_levSpells) {
 					npc->GetSpellList()->AddLevSpells(a_levSpells);
 				},
 				accumulatedForms);
 
 			for_each_form<RE::BGSPerk>(
-				a_npcData, forms.perks, a_input, [&](const std::vector<RE::BGSPerk*>& a_perks) {
+				npcData, forms.perks, input, [&](const std::vector<RE::BGSPerk*>& a_perks) {
 					npc->AddPerks(a_perks, 1);
 				},
 				accumulatedForms);
 
 			for_each_form<RE::TESShout>(
-				a_npcData, forms.shouts, a_input, [&](const std::vector<RE::TESShout*>& a_shouts) {
+				npcData, forms.shouts, input, [&](const std::vector<RE::TESShout*>& a_shouts) {
 					npc->GetSpellList()->AddShouts(a_shouts);
 				},
 				accumulatedForms);
 
 			for_each_form<RE::TESForm>(
-				a_npcData, forms.packages, a_input, [&](auto* a_packageOrList, [[maybe_unused]] IndexOrCount a_idx) {
+				npcData, forms.packages, input, [&](auto* a_packageOrList, [[maybe_unused]] IndexOrCount a_idx) {
 					auto packageIdx = std::get<Index>(a_idx);
 
 					if (a_packageOrList->Is(RE::FormType::Package)) {
@@ -162,7 +163,7 @@ namespace Distribute
 				accumulatedForms);
 
 			for_each_form<RE::TESObjectARMO>(
-				a_npcData, forms.skins, a_input, [&](auto* a_skin) {
+				npcData, forms.skins, input, [&](auto* a_skin) {
 					if (npc->skin != a_skin) {
 						npc->skin = a_skin;
 						return true;
@@ -172,7 +173,7 @@ namespace Distribute
 				accumulatedForms);
 
 			for_each_form<RE::BGSOutfit>(
-				a_npcData, forms.sleepOutfits, a_input, [&](auto* a_outfit) {
+				npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
 					if (npc->sleepOutfit != a_outfit) {
 						npc->sleepOutfit = a_outfit;
 						return true;
@@ -181,16 +182,14 @@ namespace Distribute
 				},
 				accumulatedForms);
 		}
-
 	}
 
 	// This only does one-level linking. So that linked entries won't trigger another level of distribution.
-	void DistributeLinkedEntries(NPCData& npcData, const PCLevelMult::Input& a_input, const std::set<RE::TESForm*>& forms)
+	void DistributeLinkedEntries(NPCData& npcData, const PCLevelMult::Input& input, const std::set<RE::TESForm*>& forms)
 	{
-		// TODO: Get linked entries and repeat distribution for them.
-
-		Forms::DistributionSet entries{};
-		detail::distribute(npcData, a_input, entries, nullptr);
+		LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(forms, [&](Forms::DistributionSet& set) {
+			detail::distribute(npcData, input, set, nullptr);
+		});
 	}
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
@@ -202,13 +201,13 @@ namespace Distribute
 		Forms::DistributionSet entries{
 			Forms::spells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::perks.GetForms(a_input.onlyPlayerLevelEntries),
-			{},  // items are processed separately
+			Forms::DistributionSet::empty<RE::TESBoundObject>(),  // items are processed separately 
 			Forms::shouts.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::levSpells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::packages.GetForms(a_input.onlyPlayerLevelEntries),
-			{},  // outfits are processed along with items.
+			Forms::DistributionSet::empty<RE::BGSOutfit>(),  // outfits are processed along with items.
 			Forms::keywords.GetForms(a_input.onlyPlayerLevelEntries),
-			{},  // deathItems are only processed on... well, death.
+			Forms::DistributionSet::empty<RE::TESBoundObject>(),  // deathItems are only processed on... well, death.
 			Forms::factions.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::sleepOutfits.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::skins.GetForms(a_input.onlyPlayerLevelEntries)
@@ -233,6 +232,8 @@ namespace Distribute
 		const auto npc = a_npcData.GetNPC();
 		const auto actor = a_npcData.GetActor();
 
+		std::set<RE::TESForm*> distributedForms{};
+
 		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items.GetForms(a_input.onlyPlayerLevelEntries), a_input, [&](std::map<RE::TESBoundObject*, Count>& a_objects, const bool a_hasLvlItem) {
 			if (npc->AddObjectsToContainer(a_objects, npc)) {
 				if (a_hasLvlItem) {
@@ -241,7 +242,8 @@ namespace Distribute
 				return true;
 			}
 			return false;
-		});
+			},
+			&distributedForms);
 
 		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits.GetForms(a_input.onlyPlayerLevelEntries), a_input, [&](auto* a_outfit) {
 			if (detail::can_equip_outfit(npc, a_outfit)) {
@@ -251,7 +253,14 @@ namespace Distribute
 				return true;
 			}
 			return false;
-		});
+			},
+			&distributedForms);
+
+		// TODO: We can now log per-NPC distributed forms.
+
+		if (!distributedForms.empty()) {
+			DistributeLinkedEntries(a_npcData, a_input, distributedForms);
+		}
 	}
 
 	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits)
