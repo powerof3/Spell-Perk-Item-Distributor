@@ -145,6 +145,50 @@ namespace LinkedDistribution
 		ForEachLinkedForms([&]<typename Form>(LinkedForms<Form>& forms) {
 			std::erase_if(forms.forms, [](const auto& pair) { return pair.second.empty(); });
 		});
+
+		// Clear INI once lookup is done
+		rawLinkedItems.clear();
+
+		// Clear logger's buffer to free some memory :)
+		buffered_logger::clear();
+	}
+
+	void Manager::LogLinkedItemsLookup()
+	{
+		logger::info("{:*^50}", "LINKED ITEMS");
+
+		ForEachLinkedForms([]<typename Form>(const LinkedForms<Form>& linkedForms) {
+			if (linkedForms.GetForms().empty()) {
+				return;
+			}
+
+			 std::unordered_map<RE::TESForm*, std::vector<RE::TESForm*>> map{};
+
+			// Iterate through the original map
+			 for (const auto& pair : linkedForms.GetForms()) {
+				const auto           key = pair.first;
+				const DataVec<Form>& values = pair.second;
+
+				for (const auto& value : values) {
+					map[value.form].push_back(key);
+				}
+			}
+
+			const auto& recordName = RECORD::add[linkedForms.GetType()];
+			logger::info("Linked {}s: ", recordName);
+
+			for (const auto& [form, linkedItems] : map) {
+				logger::info("\t{}", describe(form));
+
+				const auto lastItemIndex = linkedItems.size() - 1;
+				for (int i = 0; i < lastItemIndex; ++i) {
+					const auto& linkedItem = linkedItems[i];
+					logger::info("\t├─── {}", describe(linkedItem));
+				}
+				const auto& lastLinkedItem = linkedItems[lastItemIndex];
+				logger::info("\t└─── {}", describe(lastLinkedItem));
+			}
+		});
 	}
 
 	void Manager::ForEachLinkedDistributionSet(const std::set<RE::TESForm*>& targetForms, std::function<void(DistributionSet&)> performDistribution)

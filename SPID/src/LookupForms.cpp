@@ -85,35 +85,7 @@ void LookupLinkedItems(RE::TESDataHandler* const dataHandler)
 
 void LogLinkedItemsLookup()
 {
-	using namespace LinkedDistribution;
-
-	logger::info("{:*^50}", "LINKED ITEMS");
-
-	Manager::GetSingleton()->ForEachLinkedForms([]<typename Form>(const LinkedForms<Form>& linkedForms) {
-		if (linkedForms.GetForms().empty()) {
-			return;
-		}
-		const auto& recordName = RECORD::add[linkedForms.GetType()];
-		logger::info("Linked {}s: ", recordName);
-
-		for (const auto& [form, linkedItems] : linkedForms.GetForms()) {
-			logger::info("\t{}", describe(form));
-
-			const auto lastItemIndex = linkedItems.size() - 1;
-			for (int i = 0; i < lastItemIndex; ++i) {
-				const auto& linkedItem = linkedItems[i];
-				logger::info("\t├─── {}", describe(linkedItem.form));
-			}
-			const auto& lastLinkedItem = linkedItems[lastItemIndex];
-			logger::info("\t└─── {}", describe(lastLinkedItem.form));
-		}
-	});
-
-	// Clear INI once lookup is done
-	LinkedDistribution::INI::linkedItems.clear();
-
-	// Clear logger's buffer to free some memory :)
-	buffered_logger::clear();
+	LinkedDistribution::Manager::GetSingleton()->LogLinkedItemsLookup();
 }
 
 bool Lookup::LookupForms()

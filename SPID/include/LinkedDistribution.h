@@ -64,6 +64,8 @@ namespace LinkedDistribution
 		/// <param name="rawLinkedDistribution">A raw linked item entries that should be processed.</param>
 		void LookupLinkedItems(RE::TESDataHandler* const dataHandler, INI::LinkedItemsVec& rawLinkedItems = INI::linkedItems);
 
+		void LogLinkedItemsLookup();
+
 		/// <summary>
 		/// Calculates DistributionSet for each linked form and calls a callback for each of them.
 		/// </summary>
@@ -71,12 +73,6 @@ namespace LinkedDistribution
 		///							  This is typically distributed forms accumulated during first distribution pass.</param>
 		/// <param name="callback">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
 		void ForEachLinkedDistributionSet(const std::set<RE::TESForm*>& linkedForms, std::function<void(DistributionSet&)> callback);
-
-		/// <summary>
-		/// Iterates over each type of LinkedForms and calls a callback with each of them.
-		/// </summary>
-		template <typename Func, typename... Args>
-		void ForEachLinkedForms(Func&& func, const Args&&... args);
 
 	private:
 		template <class Form>
@@ -92,6 +88,13 @@ namespace LinkedDistribution
 		LinkedForms<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
 		LinkedForms<RE::TESFaction>     factions{ RECORD::kFaction };
 		LinkedForms<RE::TESObjectARMO>  skins{ RECORD::kSkin };
+
+		/// <summary>
+		/// Iterates over each type of LinkedForms and calls a callback with each of them.
+		/// </summary>
+		template <typename Func, typename... Args>
+		void ForEachLinkedForms(Func&& func, const Args&&... args);
+
 	};
 
 #pragma region Implementation
