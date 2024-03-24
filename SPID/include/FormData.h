@@ -324,7 +324,7 @@ namespace Forms
 	/// A set of distributable forms that should be processed.
 	///
 	/// DistributionSet is used to conveniently pack all distributable forms into one structure.
-	/// Note that all entries store references so they are not owned by this structure. 
+	/// Note that all entries store references so they are not owned by this structure.
 	/// If you want to omit certain type of entries, you can use static empty() method to get a reference to an empty container.
 	/// </summary>
 	struct DistributionSet
@@ -344,7 +344,7 @@ namespace Forms
 
 		bool IsEmpty() const;
 
-		template<typename Form>
+		template <typename Form>
 		static DataVec<Form>& empty()
 		{
 			static DataVec<Form> empty{};

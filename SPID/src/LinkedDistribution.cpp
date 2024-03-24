@@ -40,7 +40,7 @@ namespace LinkedDistribution
 				logger::warn("IGNORED: LinkedItem must have at least one Form Filter : {} = {}"sv, a_key, a_value);
 				return false;
 			}
-			
+
 			INI::RawLinkedItem item{};
 			item.rawForm = distribution::get_record(sections[kForm]);
 			item.path = a_path;
@@ -162,10 +162,10 @@ namespace LinkedDistribution
 				return;
 			}
 
-			 std::unordered_map<RE::TESForm*, std::vector<RE::TESForm*>> map{};
+			std::unordered_map<RE::TESForm*, std::vector<RE::TESForm*>> map{};
 
 			// Iterate through the original map
-			 for (const auto& pair : linkedForms.GetForms()) {
+			for (const auto& pair : linkedForms.GetForms()) {
 				const auto           key = pair.first;
 				const DataVec<Form>& values = pair.second;
 
@@ -214,9 +214,9 @@ namespace LinkedDistribution
 				linkedPackages,
 				linkedOutfits,
 				linkedKeywords,
-				DistributionSet::empty<RE::TESBoundObject>(), // deathItems can't be linked at the moment (only makes sense on death)
+				DistributionSet::empty<RE::TESBoundObject>(),  // deathItems can't be linked at the moment (only makes sense on death)
 				linkedFactions,
-				DistributionSet::empty<RE::BGSOutfit>(), // sleeping outfits are not supported for now due to lack of support in config's syntax.
+				DistributionSet::empty<RE::BGSOutfit>(),  // sleeping outfits are not supported for now due to lack of support in config's syntax.
 				linkedSkins
 			};
 

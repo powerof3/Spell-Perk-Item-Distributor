@@ -1,8 +1,8 @@
 #include "LookupForms.h"
 #include "ExclusiveGroups.h"
-#include "LinkedDistribution.h"
 #include "FormData.h"
 #include "KeywordDependencies.h"
+#include "LinkedDistribution.h"
 
 bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 {

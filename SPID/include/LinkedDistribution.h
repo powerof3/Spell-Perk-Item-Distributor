@@ -34,7 +34,7 @@ namespace LinkedDistribution
 	template <class Form>
 	struct LinkedForms
 	{
-		friend Manager; // allow Manager to later modify forms directly.
+		friend Manager;  // allow Manager to later modify forms directly.
 
 		using Map = std::unordered_map<RE::TESForm*, DataVec<Form>>;
 
@@ -47,7 +47,7 @@ namespace LinkedDistribution
 
 	private:
 		RECORD::TYPE type;
-		Map          forms{};		
+		Map          forms{};
 
 		void Link(Form* form, const FormVec& linkedForms, const RandomCount& count, const Chance& chance, const std::string& path);
 	};
@@ -94,7 +94,6 @@ namespace LinkedDistribution
 		/// </summary>
 		template <typename Func, typename... Args>
 		void ForEachLinkedForms(Func&& func, const Args&&... args);
-
 	};
 
 #pragma region Implementation

@@ -188,7 +188,7 @@ namespace Distribute
 	void DistributeLinkedEntries(NPCData& npcData, const PCLevelMult::Input& input, const std::set<RE::TESForm*>& forms)
 	{
 		LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(forms, [&](Forms::DistributionSet& set) {
-			detail::distribute(npcData, input, set, nullptr); // TODO: Accumulate forms here?
+			detail::distribute(npcData, input, set, nullptr);  // TODO: Accumulate forms here?
 		});
 	}
 
@@ -202,7 +202,7 @@ namespace Distribute
 		Forms::DistributionSet entries{
 			Forms::spells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::perks.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::DistributionSet::empty<RE::TESBoundObject>(),  // items are processed separately 
+			Forms::DistributionSet::empty<RE::TESBoundObject>(),  // items are processed separately
 			Forms::shouts.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::levSpells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::packages.GetForms(a_input.onlyPlayerLevelEntries),
@@ -235,25 +235,27 @@ namespace Distribute
 
 		std::set<RE::TESForm*> distributedForms{};
 
-		for_each_form<RE::TESBoundObject>(a_npcData, Forms::items.GetForms(a_input.onlyPlayerLevelEntries), a_input, [&](std::map<RE::TESBoundObject*, Count>& a_objects, const bool a_hasLvlItem) {
-			if (npc->AddObjectsToContainer(a_objects, npc)) {
-				if (a_hasLvlItem) {
-					detail::init_leveled_items(actor);
+		for_each_form<RE::TESBoundObject>(
+			a_npcData, Forms::items.GetForms(a_input.onlyPlayerLevelEntries), a_input, [&](std::map<RE::TESBoundObject*, Count>& a_objects, const bool a_hasLvlItem) {
+				if (npc->AddObjectsToContainer(a_objects, npc)) {
+					if (a_hasLvlItem) {
+						detail::init_leveled_items(actor);
+					}
+					return true;
 				}
-				return true;
-			}
-			return false;
+				return false;
 			},
 			&distributedForms);
 
-		for_each_form<RE::BGSOutfit>(a_npcData, Forms::outfits.GetForms(a_input.onlyPlayerLevelEntries), a_input, [&](auto* a_outfit) {
-			if (detail::can_equip_outfit(npc, a_outfit)) {
-				actor->RemoveOutfitItems(npc->defaultOutfit);
-				npc->defaultOutfit = a_outfit;
-				npc->AddKeyword(processedOutfit);
-				return true;
-			}
-			return false;
+		for_each_form<RE::BGSOutfit>(
+			a_npcData, Forms::outfits.GetForms(a_input.onlyPlayerLevelEntries), a_input, [&](auto* a_outfit) {
+				if (detail::can_equip_outfit(npc, a_outfit)) {
+					actor->RemoveOutfitItems(npc->defaultOutfit);
+					npc->defaultOutfit = a_outfit;
+					npc->AddKeyword(processedOutfit);
+					return true;
+				}
+				return false;
 			},
 			&distributedForms);
 
