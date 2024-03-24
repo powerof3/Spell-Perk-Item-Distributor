@@ -118,7 +118,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
 		{
 			Form*              form = nullptr;
 			const RE::TESFile* mod = nullptr;
@@ -235,7 +235,7 @@ namespace Forms
 			return form;
 		}
 
-		inline const RE::TESFile* get_file(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path)
+		inline const RE::TESFile* get_file(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path)
 		{
 			auto formOrMod = get_form_or_mod(dataHandler, formOrEditorID, path);
 
@@ -247,7 +247,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		Form* get_form(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		Form* get_form(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
 		{
 			auto formOrMod = get_form_or_mod<Form>(dataHandler, formOrEditorID, path, whitelistedOnly);
 
@@ -258,7 +258,7 @@ namespace Forms
 			return nullptr;
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false, bool whitelistedOnly = true)
+		inline bool formID_to_form(RE::TESDataHandler* const a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false, bool whitelistedOnly = true)
 		{
 			if (a_rawFormVec.empty()) {
 				return true;

@@ -322,7 +322,7 @@ namespace INI
 							continue;
 						}
 
-						if (LinkedDistribution::INI::Parser::TryParse(key.pItem, entry, truncatedPath)) {
+						if (LinkedDistribution::INI::TryParse(key.pItem, entry, truncatedPath)) {
 							continue;
 						}
 

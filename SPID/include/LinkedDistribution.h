@@ -7,7 +7,6 @@ namespace LinkedDistribution
 {
 	namespace INI
 	{
-
 		struct RawLinkedItem
 		{
 			FormOrEditorID rawForm{};
@@ -25,20 +24,36 @@ namespace LinkedDistribution
 
 		inline LinkedItemsVec linkedItems{};
 
-		namespace Parser
-		{
-			bool TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path);
-		}
+		bool TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path);
 	}
 
 	using namespace Forms;
 
-	template<class T>
-	using LinkedForms = std::unordered_map<RE::TESForm*, DataVec<T>>;
+	class Manager;
+
+	template <class Form>
+	struct LinkedForms
+	{
+		friend Manager; // allow Manager to later modify forms directly.
+
+		using Map = std::unordered_map<RE::TESForm*, DataVec<Form>>;
+
+		LinkedForms(RECORD::TYPE type) :
+			type(type)
+		{}
+
+		RECORD::TYPE GetType() const { return type; }
+		const Map&   GetForms() const { return forms; }
+
+	private:
+		RECORD::TYPE type;
+		Map          forms{};		
+
+		void Link(Form* form, const FormVec& linkedForms, const RandomCount& count, const Chance& chance, const std::string& path);
+	};
 
 	class Manager : public ISingleton<Manager>
 	{
-
 	public:
 		/// <summary>
 		/// Does a forms lookup similar to what Filters do.
@@ -47,8 +62,7 @@ namespace LinkedDistribution
 		/// </summary>
 		/// <param name="dataHandler">A DataHandler that will perform the actual lookup.</param>
 		/// <param name="rawLinkedDistribution">A raw linked item entries that should be processed.</param>
-		void LookupLinkedItems(RE::TESDataHandler* const dataHandler, INI::LinkedItemsVec& rawLinkedItems);
-
+		void LookupLinkedItems(RE::TESDataHandler* const dataHandler, INI::LinkedItemsVec& rawLinkedItems = INI::linkedItems);
 
 		/// <summary>
 		/// Calculates DistributionSet for each linked form and calls a callback for each of them.
@@ -58,18 +72,15 @@ namespace LinkedDistribution
 		/// <param name="callback">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
 		void ForEachLinkedDistributionSet(const std::set<RE::TESForm*>& linkedForms, std::function<void(DistributionSet&)> callback);
 
-	private:
+		/// <summary>
+		/// Iterates over each type of LinkedForms and calls a callback with each of them.
+		/// </summary>
+		template <typename Func, typename... Args>
+		void ForEachLinkedForms(Func&& func, const Args&&... args);
 
+	private:
 		template <class Form>
-		DataVec<Form>& LinkedFormsForForm(RE::TESForm* form, LinkedForms<Form>& linkedForms) const
-		{
-			if (auto it = linkedForms.find(form); it != linkedForms.end()) {
-				return it->second;
-			} else {
-				static DataVec<Form> empty{};
-				return empty;
-			}
-		}
+		DataVec<Form>& LinkedFormsForForm(RE::TESForm* form, LinkedForms<Form>& linkedForms) const;
 
 		LinkedForms<RE::SpellItem>      spells{ RECORD::kSpell };
 		LinkedForms<RE::BGSPerk>        perks{ RECORD::kPerk };
@@ -79,9 +90,48 @@ namespace LinkedDistribution
 		LinkedForms<RE::TESForm>        packages{ RECORD::kPackage };
 		LinkedForms<RE::BGSOutfit>      outfits{ RECORD::kOutfit };
 		LinkedForms<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
-		LinkedForms<RE::TESBoundObject> deathItems{ RECORD::kDeathItem };
 		LinkedForms<RE::TESFaction>     factions{ RECORD::kFaction };
-		LinkedForms<RE::BGSOutfit>      sleepOutfits{ RECORD::kSleepOutfit };
 		LinkedForms<RE::TESObjectARMO>  skins{ RECORD::kSkin };
 	};
+
+#pragma region Implementation
+	template <class Form>
+	DataVec<Form>& Manager::LinkedFormsForForm(RE::TESForm* form, LinkedForms<Form>& linkedForms) const
+	{
+		if (auto it = linkedForms.forms.find(form); it != linkedForms.forms.end()) {
+			return it->second;
+		} else {
+			static DataVec<Form> empty{};
+			return empty;
+		}
+	}
+
+	template <typename Func, typename... Args>
+	void Manager::ForEachLinkedForms(Func&& func, const Args&&... args)
+	{
+		func(keywords, std::forward<Args>(args)...);
+		func(spells, std::forward<Args>(args)...);
+		func(levSpells, std::forward<Args>(args)...);
+		func(perks, std::forward<Args>(args)...);
+		func(shouts, std::forward<Args>(args)...);
+		func(items, std::forward<Args>(args)...);
+		func(outfits, std::forward<Args>(args)...);
+		func(factions, std::forward<Args>(args)...);
+		func(packages, std::forward<Args>(args)...);
+		func(skins, std::forward<Args>(args)...);
+	}
+
+	template <class Form>
+	void LinkedForms<Form>::Link(Form* form, const FormVec& linkedForms, const RandomCount& count, const Chance& chance, const std::string& path)
+	{
+		for (const auto& linkedForm : linkedForms) {
+			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
+				auto& distributableForms = forms[std::get<RE::TESForm*>(linkedForm)];
+				// Note that we don't use Data.index here, as these linked items doesn't have any leveled filters
+				// and as such do not to track their index.
+				distributableForms.emplace_back(0, form, count, FilterData({}, {}, {}, {}, chance), path);
+			}
+		}
+	}
+#pragma endregion
 }

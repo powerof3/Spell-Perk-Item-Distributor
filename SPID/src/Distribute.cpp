@@ -188,7 +188,7 @@ namespace Distribute
 	void DistributeLinkedEntries(NPCData& npcData, const PCLevelMult::Input& input, const std::set<RE::TESForm*>& forms)
 	{
 		LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(forms, [&](Forms::DistributionSet& set) {
-			detail::distribute(npcData, input, set, nullptr);
+			detail::distribute(npcData, input, set, nullptr); // TODO: Accumulate forms here?
 		});
 	}
 
@@ -198,6 +198,7 @@ namespace Distribute
 			return;
 		}
 
+		// TODO: Figure out how to distribute only death items perhaps?
 		Forms::DistributionSet entries{
 			Forms::spells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::perks.GetForms(a_input.onlyPlayerLevelEntries),
