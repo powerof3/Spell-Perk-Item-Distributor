@@ -121,15 +121,15 @@ namespace Distribute
 					return false;
 				},
 				accumulatedForms);
-			
+
 			for_each_form<RE::BGSOutfit>(
 				npcData, forms.outfits, input, [&](auto* a_outfit) {
-				if (npc->defaultOutfit != a_outfit && !npc->HasKeyword(processedOutfit)) {
-					npc->AddKeyword(processedOutfit);
-					npc->defaultOutfit = a_outfit;
-					return true;
-				}
-				return false;
+					if (npc->defaultOutfit != a_outfit && !npc->HasKeyword(processedOutfit)) {
+						npc->AddKeyword(processedOutfit);
+						npc->defaultOutfit = a_outfit;
+						return true;
+					}
+					return false;
 				},
 				accumulatedForms);
 
@@ -145,7 +145,7 @@ namespace Distribute
 
 			for_each_form<RE::TESBoundObject>(
 				npcData, forms.items, input, [&](std::map<RE::TESBoundObject*, Count>& a_objects) {
-				return npc->AddObjectsToContainer(a_objects, npc);
+					return npc->AddObjectsToContainer(a_objects, npc);
 				},
 				accumulatedForms);
 

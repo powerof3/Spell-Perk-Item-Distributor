@@ -151,9 +151,8 @@ namespace Distribute
 		for (auto& formData : forms) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
 				// TODO: Safe guard getting RandomCount and if for any reason there is a PackageIndex, default it to count = 1
-				auto count = std::get<RandomCount>(formData.idxOrCount).GetRandom(); 
-				if (auto leveledItem = formData.form->As<RE::TESLevItem>())
-				{
+				auto count = std::get<RandomCount>(formData.idxOrCount).GetRandom();
+				if (auto leveledItem = formData.form->As<RE::TESLevItem>()) {
 					auto                                level = a_npcData.GetLevel();
 					RE::BSScrapArray<RE::CALCED_OBJECT> calcedObjects{};
 
@@ -161,9 +160,7 @@ namespace Distribute
 					for (auto& calcObj : calcedObjects) {
 						collectedForms[static_cast<RE::TESBoundObject*>(calcObj.form)] += calcObj.count;
 					}
-				}
-				else
-				{
+				} else {
 					collectedForms[formData.form] += count;
 				}
 				++formData.npcCount;
