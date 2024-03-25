@@ -28,11 +28,7 @@ void ExclusiveGroups::Manager::LookupExclusiveGroups(RE::TESDataHandler* const d
 	}
 
 	// Remove empty groups
-	for (auto& [name, forms] : groups) {
-		if (forms.empty()) {
-			groups.erase(name);
-		}
-	}
+	std::erase_if(groups, [](const auto& pair) { return pair.second.empty(); });
 
 	for (auto& [name, forms] : groups) {
 		for (auto& form : forms) {

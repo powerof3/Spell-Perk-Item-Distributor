@@ -1,4 +1,5 @@
 #include "LookupConfigs.h"
+#include "LinkedDistribution.h"
 
 namespace INI
 {
@@ -55,13 +56,8 @@ namespace INI
 			const auto sections = string::split(a_value, "|");
 			const auto size = sections.size();
 
-			if (size == 0) {
-				logger::warn("IGNORED: ExclusiveGroup must have a name: {} = {}"sv, a_key, a_value);
-				return std::nullopt;
-			}
-
-			if (size == 1) {
-				logger::warn("IGNORED: ExclusiveGroup must have at least one filter name: {} = {}"sv, a_key, a_value);
+			if (size < 2) {
+				logger::warn("IGNORED: ExclusiveGroup must have a name and at least one Form Filter: {} = {}"sv, a_key, a_value);
 				return std::nullopt;
 			}
 
@@ -323,6 +319,10 @@ namespace INI
 					try {
 						if (const auto group = detail::parse_exclusive_group(key.pItem, entry, truncatedPath); group) {
 							exclusiveGroups.emplace_back(*group);
+							continue;
+						}
+
+						if (LinkedDistribution::INI::TryParse(key.pItem, entry, truncatedPath)) {
 							continue;
 						}
 

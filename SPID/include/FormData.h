@@ -118,7 +118,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
 		{
 			Form*              form = nullptr;
 			const RE::TESFile* mod = nullptr;
@@ -235,7 +235,7 @@ namespace Forms
 			return form;
 		}
 
-		inline const RE::TESFile* get_file(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path)
+		inline const RE::TESFile* get_file(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path)
 		{
 			auto formOrMod = get_form_or_mod(dataHandler, formOrEditorID, path);
 
@@ -247,7 +247,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		Form* get_form(RE::TESDataHandler* dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		Form* get_form(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
 		{
 			auto formOrMod = get_form_or_mod<Form>(dataHandler, formOrEditorID, path, whitelistedOnly);
 
@@ -258,7 +258,7 @@ namespace Forms
 			return nullptr;
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false, bool whitelistedOnly = true)
+		inline bool formID_to_form(RE::TESDataHandler* const a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false, bool whitelistedOnly = true)
 		{
 			if (a_rawFormVec.empty()) {
 				return true;
@@ -320,6 +320,44 @@ namespace Forms
 	template <class Form>
 	using DataVec = std::vector<Data<Form>>;
 
+	/// <summary>
+	/// A set of distributable forms that should be processed.
+	///
+	/// DistributionSet is used to conveniently pack all distributable forms into one structure.
+	/// Note that all entries store references so they are not owned by this structure.
+	/// If you want to omit certain type of entries, you can use static empty() method to get a reference to an empty container.
+	/// </summary>
+	struct DistributionSet
+	{
+		DataVec<RE::SpellItem>&      spells;
+		DataVec<RE::BGSPerk>&        perks;
+		DataVec<RE::TESBoundObject>& items;
+		DataVec<RE::TESShout>&       shouts;
+		DataVec<RE::TESLevSpell>&    levSpells;
+		DataVec<RE::TESForm>&        packages;
+		DataVec<RE::BGSOutfit>&      outfits;
+		DataVec<RE::BGSKeyword>&     keywords;
+		DataVec<RE::TESBoundObject>& deathItems;
+		DataVec<RE::TESFaction>&     factions;
+		DataVec<RE::BGSOutfit>&      sleepOutfits;
+		DataVec<RE::TESObjectARMO>&  skins;
+
+		bool IsEmpty() const;
+
+		template <typename Form>
+		static DataVec<Form>& empty()
+		{
+			static DataVec<Form> empty{};
+			return empty;
+		}
+	};
+
+	/// <summary>
+	/// A container that holds distributable entries for a single form type.
+	///
+	/// Note that this container tracks separately leveled (those using level in their filters) entries.
+	/// </summary>
+	/// <typeparam name="Form">Type of the forms to store.</typeparam>
 	template <class Form>
 	struct Distributables
 	{

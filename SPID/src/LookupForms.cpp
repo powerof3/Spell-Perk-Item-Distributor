@@ -2,6 +2,7 @@
 #include "ExclusiveGroups.h"
 #include "FormData.h"
 #include "KeywordDependencies.h"
+#include "LinkedDistribution.h"
 
 bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 {
@@ -77,6 +78,16 @@ void LogExclusiveGroupsLookup()
 	}
 }
 
+void LookupLinkedItems(RE::TESDataHandler* const dataHandler)
+{
+	LinkedDistribution::Manager::GetSingleton()->LookupLinkedItems(dataHandler);
+}
+
+void LogLinkedItemsLookup()
+{
+	LinkedDistribution::Manager::GetSingleton()->LogLinkedItemsLookup();
+}
+
 bool Lookup::LookupForms()
 {
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
@@ -92,6 +103,9 @@ bool Lookup::LookupForms()
 			LogDistributablesLookup();
 			logger::info("Lookup took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
 		}
+
+		LookupLinkedItems(dataHandler);
+		LogLinkedItemsLookup();
 
 		LookupExclusiveGroups(dataHandler);
 		LogExclusiveGroupsLookup();
