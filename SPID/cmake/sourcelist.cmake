@@ -3,8 +3,10 @@ set(sources ${sources}
 	src/Distribute.cpp
 	src/DistributeManager.cpp
 	src/DistributePCLevelMult.cpp
+	src/ExclusiveGroups.cpp
 	src/FormData.cpp
 	src/KeywordDependencies.cpp
+	src/LinkedDistribution.cpp
 	src/LogBuffer.cpp
 	src/LookupConfigs.cpp
 	src/LookupFilters.cpp

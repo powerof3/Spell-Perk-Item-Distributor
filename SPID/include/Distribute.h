@@ -27,7 +27,7 @@ namespace Distribute
 			auto result = a_formData.filters.PassedFilters(a_npcData);
 
 			if (result != Filter::Result::kPass) {
-				if (result == Filter::Result::kFailRNG && hasLevelFilters) {
+				if (hasLevelFilters && result == Filter::Result::kFailRNG) {
 					pcLevelMultManager->InsertRejectedEntry(a_input, distributedFormID, index);
 				}
 				return false;
@@ -70,132 +70,141 @@ namespace Distribute
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount);
 	}
 
+#pragma region Packages, Death Items
 	// old method (distributing one by one)
 	// for now, only packages/death items use this
 	template <class Form>
 	void for_each_form(
-		const NPCData&                         a_npcData,
-		Forms::Distributables<Form>&           a_distributables,
-		const PCLevelMult::Input&              a_input,
-		std::function<bool(Form*, IdxOrCount)> a_callback)
+		const NPCData&                           a_npcData,
+		Forms::DataVec<Form>&                    forms,
+		const PCLevelMult::Input&                a_input,
+		std::function<bool(Form*, IndexOrCount)> a_callback,
+		std::set<RE::TESForm*>*                  accumulatedForms = nullptr)
 	{
-		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
-
-		for (auto& formData : vec) {
-			if (detail::passed_filters(a_npcData, a_input, formData)) {
+		for (auto& formData : forms) {
+			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
+				if (accumulatedForms) {
+					accumulatedForms->insert(formData.form);
+				}
 				a_callback(formData.form, formData.idxOrCount);
 				++formData.npcCount;
 			}
 		}
 	}
+#pragma endregion
 
-	// outfits/sleep outfits
-	// skins
+#pragma region Outfits, Sleep Outfits, Skins
 	template <class Form>
 	void for_each_form(
-		const NPCData&               a_npcData,
-		Forms::Distributables<Form>& a_distributables,
-		const PCLevelMult::Input&    a_input,
-		std::function<bool(Form*)>   a_callback)
+		const NPCData&             a_npcData,
+		Forms::DataVec<Form>&      forms,
+		const PCLevelMult::Input&  a_input,
+		std::function<bool(Form*)> a_callback,
+		std::set<RE::TESForm*>*    accumulatedForms = nullptr)
 	{
-		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
-
-		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
-			if (detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
+		for (auto& formData : forms) {  // Vector is reversed in FinishLookupForms
+			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
+				if (accumulatedForms) {
+					accumulatedForms->insert(formData.form);
+				}
 				++formData.npcCount;
 				break;
 			}
 		}
 	}
+#pragma endregion
 
+	// TODO: Is this unused?
 	// outfits/sleep outfits
 	template <class Form>
 	void for_each_form(
 		const NPCData&               a_npcData,
 		Forms::Distributables<Form>& a_distributables,
-		std::function<bool(Form*)>   a_callback)
+		std::function<bool(Form*)>   a_callback,
+		std::set<RE::TESForm*>*      accumulatedForms = nullptr)
 	{
 		auto& vec = a_distributables.GetForms(false);
 
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
-			if (detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
+			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
+				if (accumulatedForms) {
+					accumulatedForms->insert(formData.form);
+				}
 				++formData.npcCount;
 				break;
 			}
 		}
 	}
 
-	// items
+#pragma region Items
+	// countable items
 	template <class Form>
 	void for_each_form(
-		const NPCData&                                    a_npcData,
-		Forms::Distributables<Form>&                      a_distributables,
-		const PCLevelMult::Input&                         a_input,
-		std::function<bool(std::map<Form*, IdxOrCount>&)> a_callback)
+		const NPCData&                               a_npcData,
+		Forms::DataVec<Form>&                        forms,
+		const PCLevelMult::Input&                    a_input,
+		std::function<bool(std::map<Form*, Count>&)> a_callback,
+		std::set<RE::TESForm*>*                      accumulatedForms = nullptr)
 	{
-		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
+		std::map<Form*, Count> collectedForms{};
 
-		if (vec.empty()) {
-			return;
-		}
-
-		std::map<Form*, IdxOrCount> collectedForms{};
-
-		for (auto& formData : vec) {
-			if (detail::passed_filters(a_npcData, a_input, formData)) {
+		for (auto& formData : forms) {
+			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
+				// TODO: Safe guard getting RandomCount and if for any reason there is a PackageIndex, default it to count = 1
+				auto count = std::get<RandomCount>(formData.idxOrCount).GetRandom();
 				if (auto leveledItem = formData.form->As<RE::TESLevItem>()) {
 					auto                                level = a_npcData.GetLevel();
 					RE::BSScrapArray<RE::CALCED_OBJECT> calcedObjects{};
 
-					leveledItem->CalculateCurrentFormList(level, formData.idxOrCount, calcedObjects, 0, true);
+					leveledItem->CalculateCurrentFormList(level, count, calcedObjects, 0, true);
 					for (auto& calcObj : calcedObjects) {
 						collectedForms[static_cast<RE::TESBoundObject*>(calcObj.form)] += calcObj.count;
 					}
 				} else {
-					collectedForms[formData.form] += formData.idxOrCount;
+					collectedForms[formData.form] += count;
 				}
 				++formData.npcCount;
 			}
 		}
 
 		if (!collectedForms.empty()) {
+			if (accumulatedForms) {
+				std::ranges::copy(collectedForms | std::views::keys, std::inserter(*accumulatedForms, accumulatedForms->end()));
+			}
 			a_callback(collectedForms);
 		}
 	}
+#pragma endregion
 
+#pragma region Spells, Perks, Shouts, Keywords
 	// spells, perks, shouts, keywords
 	// forms that can be added to
 	template <class Form>
 	void for_each_form(
 		NPCData&                                       a_npcData,
-		Forms::Distributables<Form>&                   a_distributables,
+		Forms::DataVec<Form>&                          forms,
 		const PCLevelMult::Input&                      a_input,
-		std::function<void(const std::vector<Form*>&)> a_callback)
+		std::function<void(const std::vector<Form*>&)> a_callback,
+		std::set<RE::TESForm*>*                        accumulatedForms = nullptr)
 	{
-		auto& vec = a_distributables.GetForms(a_input.onlyPlayerLevelEntries);
-
-		if (vec.empty()) {
-			return;
-		}
-
 		const auto npc = a_npcData.GetNPC();
 
 		std::vector<Form*> collectedForms{};
 		Set<RE::FormID>    collectedFormIDs{};
 		Set<RE::FormID>    collectedLeveledFormIDs{};
 
-		collectedForms.reserve(vec.size());
-		collectedFormIDs.reserve(vec.size());
-		collectedLeveledFormIDs.reserve(vec.size());
+		collectedForms.reserve(forms.size());
+		collectedFormIDs.reserve(forms.size());
+		collectedLeveledFormIDs.reserve(forms.size());
 
-		for (auto& formData : vec) {
+		for (auto& formData : forms) {
 			auto form = formData.form;
 			auto formID = form->GetFormID();
 			if (collectedFormIDs.contains(formID)) {
 				continue;
 			}
 			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				if (detail::passed_filters(a_npcData, a_input, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
+				if (!a_npcData.HasMutuallyExclusiveForm(form) && detail::passed_filters(a_npcData, a_input, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
 					collectedForms.emplace_back(form);
 					collectedFormIDs.emplace(formID);
 					if (formData.filters.HasLevelFilters()) {
@@ -204,7 +213,7 @@ namespace Distribute
 					++formData.npcCount;
 				}
 			} else {
-				if (detail::passed_filters(a_npcData, a_input, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
+				if (!a_npcData.HasMutuallyExclusiveForm(form) && detail::passed_filters(a_npcData, a_input, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
 					collectedForms.emplace_back(form);
 					if (formData.filters.HasLevelFilters()) {
 						collectedLeveledFormIDs.emplace(formID);
@@ -215,57 +224,16 @@ namespace Distribute
 		}
 
 		if (!collectedForms.empty()) {
+			if (accumulatedForms) {
+				accumulatedForms->insert(collectedForms.begin(), collectedForms.end());
+			}
 			a_callback(collectedForms);
 			if (!collectedLeveledFormIDs.empty()) {
 				PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedLeveledFormIDs);
 			}
 		}
 	}
-
-	template <class Form>
-	void for_each_form(
-		NPCData&                                       a_npcData,
-		Forms::Distributables<Form>&                   a_distributables,
-		std::function<void(const std::vector<Form*>&)> a_callback)
-	{
-		const auto& vec = a_distributables.GetForms(false);
-
-		if (vec.empty()) {
-			return;
-		}
-
-		const auto npc = a_npcData.GetNPC();
-
-		std::vector<Form*> collectedForms{};
-		Set<RE::FormID>    collectedFormIDs{};
-
-		collectedForms.reserve(vec.size());
-		collectedFormIDs.reserve(vec.size());
-
-		for (auto& formData : vec) {
-			auto form = formData.form;
-			auto formID = form->GetFormID();
-			if (collectedFormIDs.contains(formID)) {
-				continue;
-			}
-			if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-				if (detail::passed_filters(a_npcData, formData) && a_npcData.InsertKeyword(form->GetFormEditorID())) {
-					collectedForms.emplace_back(form);
-					collectedFormIDs.emplace(formID);
-					++formData.npcCount;
-				}
-			} else {
-				if (detail::passed_filters(a_npcData, formData) && !detail::has_form(npc, form) && collectedFormIDs.emplace(formID).second) {
-					collectedForms.emplace_back(form);
-					++formData.npcCount;
-				}
-			}
-		}
-
-		if (!collectedForms.empty()) {
-			a_callback(collectedForms);
-		}
-	}
+#pragma endregion
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input);
 	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries);

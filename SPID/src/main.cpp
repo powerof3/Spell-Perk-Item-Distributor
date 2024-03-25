@@ -37,7 +37,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
-			if (shouldDistribute = Lookup::DoFormLookup(); shouldDistribute) {
+			if (shouldDistribute = Lookup::LookupForms(); shouldDistribute) {
 				Distribute::Setup();
 			}
 

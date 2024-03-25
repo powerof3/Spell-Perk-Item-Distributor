@@ -1,4 +1,5 @@
 #include "LookupConfigs.h"
+#include "LinkedDistribution.h"
 
 namespace INI
 {
@@ -44,6 +45,43 @@ namespace INI
 			//string::replace_all(newValue, "NOT ", "-");
 
 			return newValue;
+		}
+
+		std::optional<RawExclusiveGroup> parse_exclusive_group(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+		{
+			if (a_key != "ExclusiveGroup") {
+				return std::nullopt;
+			}
+
+			const auto sections = string::split(a_value, "|");
+			const auto size = sections.size();
+
+			if (size < 2) {
+				logger::warn("IGNORED: ExclusiveGroup must have a name and at least one Form Filter: {} = {}"sv, a_key, a_value);
+				return std::nullopt;
+			}
+
+			auto split_IDs = distribution::split_entry(sections[1]);
+
+			if (split_IDs.empty()) {
+				logger::warn("ExclusiveGroup must have at least one Form Filter : {} = {}"sv, a_key, a_value);
+				return std::nullopt;
+			}
+
+			RawExclusiveGroup group{};
+			group.name = sections[0];
+			group.path = a_path;
+
+			for (auto& IDs : split_IDs) {
+				if (IDs.at(0) == '-') {
+					IDs.erase(0, 1);
+					group.rawFormFilters.NOT.push_back(distribution::get_record(IDs));
+				} else {
+					group.rawFormFilters.MATCH.push_back(distribution::get_record(IDs));
+				}
+			}
+
+			return group;
 		}
 
 		std::pair<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
@@ -207,9 +245,25 @@ namespace INI
 			if (a_key == "Package") {  // reuse item count for package stack index
 				data.idxOrCount = 0;
 			}
+
 			if (kIdxOrCount < size) {
-				if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
-					data.idxOrCount = string::to_num<std::int32_t>(str);
+				if (a_key == "Package") {  // If it's a package, then we only expect a single number.
+					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+						data.idxOrCount = string::to_num<Index>(str);
+					}
+				} else {
+					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+						if (auto countPair = string::split(str, "-"); countPair.size() > 1) {
+							auto minCount = string::to_num<Count>(countPair[0]);
+							auto maxCount = string::to_num<Count>(countPair[1]);
+
+							data.idxOrCount = RandomCount(minCount, maxCount);
+						} else {
+							auto count = string::to_num<Count>(str);
+
+							data.idxOrCount = RandomCount(count, count);  // create the exact match range.
+						}
+					}
 				}
 			}
 
@@ -263,6 +317,15 @@ namespace INI
 
 				for (auto& [key, entry] : *values) {
 					try {
+						if (const auto group = detail::parse_exclusive_group(key.pItem, entry, truncatedPath); group) {
+							exclusiveGroups.emplace_back(*group);
+							continue;
+						}
+
+						if (LinkedDistribution::INI::TryParse(key.pItem, entry, truncatedPath)) {
+							continue;
+						}
+
 						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
 						configs[key.pItem].emplace_back(data);
 

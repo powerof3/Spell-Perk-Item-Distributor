@@ -46,13 +46,29 @@ namespace INI
 		Filters<FormOrEditorID> rawFormFilters{};
 		LevelFilters            levelFilters{};
 		Traits                  traits{};
-		IdxOrCount              idxOrCount{ 1 };
+		IndexOrCount            idxOrCount{ RandomCount(1, 1) };
 		Chance                  chance{ 100 };
 		std::string             path{};
 	};
+
+	struct RawExclusiveGroup
+	{
+		std::string name{};
+
+		/// Raw filters in RawExclusiveGroup only use NOT and MATCH, there is no meaning for ALL, so it's ignored.
+		Filters<FormOrEditorID> rawFormFilters{};
+		std::string             path{};
+	};
+
 	using DataVec = std::vector<Data>;
+	using ExclusiveGroupsVec = std::vector<RawExclusiveGroup>;
 
 	inline StringMap<DataVec> configs{};
+
+	/// <summary>
+	/// A list of RawExclusiveGroups that will be processed along with configs.
+	/// </summary>
+	inline ExclusiveGroupsVec exclusiveGroups{};
 
 	std::pair<bool, bool> GetConfigs();
 }
