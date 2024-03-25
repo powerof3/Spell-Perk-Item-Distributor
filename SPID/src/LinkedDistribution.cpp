@@ -14,7 +14,7 @@ namespace LinkedDistribution
 		{
 			kForm = 0,
 			kLinkedForms,
-			kCount,
+			kIdxOrCount,
 			kChance,
 
 			// Minimum required sections
@@ -26,11 +26,11 @@ namespace LinkedDistribution
 			if (!a_key.starts_with("Linked"sv)) {
 				return false;
 			}
-
-			std::string_view rawType = a_key.substr(6);
+			
+			std::string rawType = a_key.substr(6);
 			auto type = RECORD::GetType(rawType);
 			if (type == RECORD::kTotal) {
-				logger::warn("IGNORED: Invalid Linked Form type: {}"sv, a_key);
+				logger::warn("IGNORED: Invalid Linked Form type: {}"sv, rawType);
 				return true;
 			}
 
@@ -57,17 +57,27 @@ namespace LinkedDistribution
 				item.formIDs.MATCH.push_back(distribution::get_record(IDs));
 			}
 
-			if (kCount < size) {
-				if (const auto& str = sections[kCount]; distribution::is_valid_entry(str)) {
-					if (auto countPair = string::split(str, "-"); countPair.size() > 1) {
-						auto minCount = string::to_num<Count>(countPair[0]);
-						auto maxCount = string::to_num<Count>(countPair[1]);
+			if (type == RECORD::kPackage) {  // reuse item count for package stack index
+				item.idxOrCount = 0;
+			}
 
-						item.count = RandomCount(minCount, maxCount);
-					} else {
-						auto count = string::to_num<Count>(str);
+			if (kIdxOrCount < size) {
+				if (type == RECORD::kPackage) {
+					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+						item.idxOrCount = string::to_num<Index>(str);
+					}
+				} else {
+					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+						if (auto countPair = string::split(str, "-"); countPair.size() > 1) {
+							auto minCount = string::to_num<Count>(countPair[0]);
+							auto maxCount = string::to_num<Count>(countPair[1]);
 
-						item.count = RandomCount(count, count);  // create the exact match range.
+							item.idxOrCount = RandomCount(minCount, maxCount);
+						} else {
+							auto count = string::to_num<Count>(str);
+
+							item.idxOrCount = RandomCount(count, count);  // create the exact match range.
+						}
 					}
 				}
 			}
@@ -96,32 +106,44 @@ namespace LinkedDistribution
 		auto& genericForms = rawLinkedForms[RECORD::kForm];
 		for (auto& rawForm : genericForms) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
-				auto& [formID, parentFormIDs, count, chance, path] = rawForm;
+				auto& [formID, parentFormIDs, idxOrCount, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
 					continue;
 				}
-				// Add to appropriate list.
+				// Add to appropriate list. (Note that type inferring doesn't recognize SleepingOutfit or DeathItems)
 				if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
-					keywords.Link(keyword, parentForms, count, chance, path);
+					keywords.Link(keyword, parentForms, idxOrCount, chance, path);
 				} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
-					spells.Link(spell, parentForms, count, chance, path);
+					spells.Link(spell, parentForms, idxOrCount, chance, path);
 				} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
-					perks.Link(perk, parentForms, count, chance, path);
+					perks.Link(perk, parentForms, idxOrCount, chance, path);
 				} else if (const auto shout = form->As<RE::TESShout>(); shout) {
-					shouts.Link(shout, parentForms, count, chance, path);
+					shouts.Link(shout, parentForms, idxOrCount, chance, path);
 				} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
-					items.Link(item, parentForms, count, chance, path);
+					items.Link(item, parentForms, idxOrCount, chance, path);
 				} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
-					outfits.Link(outfit, parentForms, count, chance, path);
+					outfits.Link(outfit, parentForms, idxOrCount, chance, path);
 				} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
-					factions.Link(faction, parentForms, count, chance, path);
+					factions.Link(faction, parentForms, idxOrCount, chance, path);
 				} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
-					skins.Link(skin, parentForms, count, chance, path);
+					skins.Link(skin, parentForms, idxOrCount, chance, path);
 				} else if (const auto package = form->As<RE::TESForm>(); package) {
 					auto type = package->GetFormType();
-					if (type == RE::FormType::Package || type == RE::FormType::FormList)
-						packages.Link(package, parentForms, count, chance, path);
+					if (type == RE::FormType::Package || type == RE::FormType::FormList) {
+						// During type inferring we'll default to RandomCount, so we need to properly convert it to Index if it's a package.
+						Index packageIndex = 1;
+						if (std::holds_alternative<RandomCount>(idxOrCount)) {
+							auto& count = std::get<RandomCount>(idxOrCount);
+							if (!count.IsExact()) {
+								logger::warn("Inferred Form is a package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", count.min);
+							}
+							packageIndex = count.min;
+						} else {
+							packageIndex = std::get<Index>(idxOrCount);
+						}
+						packages.Link(package, parentForms, packageIndex, chance, path);
+					}
 				}
 			}
 		}

@@ -14,7 +14,7 @@ namespace LinkedDistribution
 			/// Raw filters in RawLinkedForm only use MATCH, there is no meaning for ALL or NOT, so they are ignored.
 			Filters<FormOrEditorID> formIDs{};
 
-			RandomCount count{ 1, 1 };
+			IndexOrCount idxOrCount { RandomCount(1, 1) };
 			Chance      chance{ 100 };
 
 			std::string path{};
@@ -67,7 +67,7 @@ namespace LinkedDistribution
 		RECORD::TYPE type;
 		FormsMap     forms{};
 
-		void Link(Form* form, const FormVec& linkedForms, const RandomCount& count, const Chance& chance, const std::string& path);
+		void Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const Chance& chance, const std::string& path);
 	};
 
 	class Manager : public ISingleton<Manager>
@@ -99,10 +99,12 @@ namespace LinkedDistribution
 		LinkedForms<RE::SpellItem>      spells{ RECORD::kSpell };
 		LinkedForms<RE::BGSPerk>        perks{ RECORD::kPerk };
 		LinkedForms<RE::TESBoundObject> items{ RECORD::kItem };
+		LinkedForms<RE::TESBoundObject> deathItems{ RECORD::kDeathItem };
 		LinkedForms<RE::TESShout>       shouts{ RECORD::kShout };
 		LinkedForms<RE::TESLevSpell>    levSpells{ RECORD::kLevSpell };
 		LinkedForms<RE::TESForm>        packages{ RECORD::kPackage };
 		LinkedForms<RE::BGSOutfit>      outfits{ RECORD::kOutfit };
+		LinkedForms<RE::BGSOutfit>      sleepingOutfits{ RECORD::kSleepOutfit };
 		LinkedForms<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
 		LinkedForms<RE::TESFaction>     factions{ RECORD::kFaction };
 		LinkedForms<RE::TESObjectARMO>  skins{ RECORD::kSkin };
@@ -183,7 +185,9 @@ namespace LinkedDistribution
 		func(perks, std::forward<Args>(args)...);
 		func(shouts, std::forward<Args>(args)...);
 		func(items, std::forward<Args>(args)...);
+		func(deathItems, std::forward<Args>(args)...);
 		func(outfits, std::forward<Args>(args)...);
+		func(sleepingOutfits, std::forward<Args>(args)...);
 		func(factions, std::forward<Args>(args)...);
 		func(packages, std::forward<Args>(args)...);
 		func(skins, std::forward<Args>(args)...);
@@ -203,14 +207,14 @@ namespace LinkedDistribution
 	}
 
 	template <class Form>
-	void LinkedForms<Form>::Link(Form* form, const FormVec& linkedForms, const RandomCount& count, const Chance& chance, const std::string& path)
+	void LinkedForms<Form>::Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const Chance& chance, const std::string& path)
 	{
 		for (const auto& linkedForm : linkedForms) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
 				auto& distributableForms = forms[std::get<RE::TESForm*>(linkedForm)];
 				// Note that we don't use Data.index here, as these linked forms don't have any leveled filters
 				// and as such do not to track their index.
-				distributableForms.emplace_back(0, form, count, FilterData({}, {}, {}, {}, chance), path);
+				distributableForms.emplace_back(0, form, idxOrCount, FilterData({}, {}, {}, {}, chance), path);
 			}
 		}
 	}
