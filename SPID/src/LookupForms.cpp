@@ -11,7 +11,7 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 	bool valid = false;
 
 	ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
-		const auto& recordName = RECORD::add[a_distributable.GetType()];
+		const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
 
 		a_distributable.LookupForms(dataHandler, recordName, INI::configs[recordName]);
 		if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
@@ -34,7 +34,7 @@ void LogDistributablesLookup()
 	logger::info("{:*^50}", "PROCESSING");
 
 	ForEachDistributable([]<typename Form>(const Distributables<Form>& a_distributable) {
-		const auto& recordName = RECORD::add[a_distributable.GetType()];
+		const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
 
 		const auto all = INI::configs[recordName].size();
 		const auto added = a_distributable.GetSize();

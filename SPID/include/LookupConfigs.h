@@ -4,7 +4,12 @@ namespace RECORD
 {
 	enum TYPE
 	{
-		kSpell = 0,
+		/// <summary>
+		/// A generic form type that requries type inference.
+		/// </summary>
+		kForm = 0,
+
+		kSpell,
 		kPerk,
 		kItem,
 		kShout,
@@ -20,8 +25,35 @@ namespace RECORD
 		kTotal
 	};
 
-	inline constexpr std::array add{ "Spell"sv, "Perk"sv, "Item"sv, "Shout"sv, "LevSpell"sv, "Package"sv, "Outfit"sv, "Keyword"sv, "DeathItem"sv, "Faction"sv, "SleepOutfit"sv, "Skin"sv };
-	inline constexpr std::array remove{ "-Spell"sv, "-Perk"sv, "-Item"sv, "-Shout"sv, "-LevSpell"sv, "-Package"sv, "-Outfit"sv, "-Keyword"sv, "-DeathItem"sv, "-Faction"sv, "-SleepOutfit"sv, "-Skin"sv };
+	namespace detail
+	{
+		inline static constexpr std::array add{
+			"Form"sv,
+			"Spell"sv,
+			"Perk"sv,
+			"Item"sv,
+			"Shout"sv,
+			"LevSpell"sv,
+			"Package"sv,
+			"Outfit"sv,
+			"Keyword"sv,
+			"DeathItem"sv,
+			"Faction"sv,
+			"SleepOutfit"sv,
+			"Skin"sv
+		};
+	}
+
+	inline constexpr std::string_view GetTypeName(const TYPE aType) 
+	{
+		return detail::add.at(aType);
+	}
+
+	inline constexpr TYPE GetType(const std::string& aType) 
+	{
+		using namespace detail;
+		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));
+	}
 }
 
 namespace INI

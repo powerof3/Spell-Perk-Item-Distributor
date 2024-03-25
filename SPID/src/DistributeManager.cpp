@@ -130,7 +130,7 @@ namespace Distribute
 
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
 			if (a_distributable && a_distributable.GetType() != RECORD::kDeathItem) {
-				logger::info("{}", RECORD::add[a_distributable.GetType()]);
+				logger::info("{}", RECORD::GetTypeName(a_distributable.GetType()));
 
 				auto& forms = a_distributable.GetForms();
 

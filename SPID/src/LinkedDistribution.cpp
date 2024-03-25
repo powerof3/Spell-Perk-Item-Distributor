@@ -174,7 +174,7 @@ namespace LinkedDistribution
 				}
 			}
 
-			const auto& recordName = RECORD::add[linkedForms.GetType()];
+			const auto& recordName = RECORD::GetTypeName(linkedForms.GetType());
 			logger::info("Linked {}s: ", recordName);
 
 			for (const auto& [form, linkedItems] : map) {
