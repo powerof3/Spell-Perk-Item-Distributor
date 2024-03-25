@@ -3,13 +3,12 @@
 namespace Distribute
 {
 	inline RE::BGSKeyword* processed{ nullptr };
-	inline RE::BGSKeyword* processedOnLoad{ nullptr };
 	inline RE::BGSKeyword* processedOutfit{ nullptr };
 
 	namespace detail
 	{
 		bool should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword = processed);
-		void force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc);
+		void distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc);
 	}
 
 	namespace Actor

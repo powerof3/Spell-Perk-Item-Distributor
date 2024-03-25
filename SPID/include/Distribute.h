@@ -67,10 +67,7 @@ namespace Distribute
 			}
 		}
 
-		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit);
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount);
-		void init_leveled_items(RE::Actor* a_actor);
-		bool can_equip_outfit(const RE::TESNPC* a_npc, RE::BGSOutfit* a_outfit);
 	}
 
 #pragma region Packages, Death Items
@@ -143,21 +140,32 @@ namespace Distribute
 	// countable items
 	template <class Form>
 	void for_each_form(
-		const NPCData&                                     a_npcData,
-		Forms::DataVec<Form>&                              forms,
-		const PCLevelMult::Input&                          a_input,
-		std::function<bool(std::map<Form*, Count>&, bool)> a_callback,
-		std::set<RE::TESForm*>*                            accumulatedForms = nullptr)
+		const NPCData&                               a_npcData,
+		Forms::DataVec<Form>&                        forms,
+		const PCLevelMult::Input&                    a_input,
+		std::function<bool(std::map<Form*, Count>&)> a_callback,
+		std::set<RE::TESForm*>*                      accumulatedForms = nullptr)
 	{
 		std::map<Form*, Count> collectedForms{};
-		bool                   hasLeveledItems = false;
 
 		for (auto& formData : forms) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
-				if (formData.form->Is(RE::FormType::LeveledItem)) {
-					hasLeveledItems = true;
+				// TODO: Safe guard getting RandomCount and if for any reason there is a PackageIndex, default it to count = 1
+				auto count = std::get<RandomCount>(formData.idxOrCount).GetRandom(); 
+				if (auto leveledItem = formData.form->As<RE::TESLevItem>())
+				{
+					auto                                level = a_npcData.GetLevel();
+					RE::BSScrapArray<RE::CALCED_OBJECT> calcedObjects{};
+
+					leveledItem->CalculateCurrentFormList(level, count, calcedObjects, 0, true);
+					for (auto& calcObj : calcedObjects) {
+						collectedForms[static_cast<RE::TESBoundObject*>(calcObj.form)] += calcObj.count;
+					}
 				}
-				collectedForms.emplace(formData.form, std::get<RandomCount>(formData.idxOrCount).GetRandom());
+				else
+				{
+					collectedForms[formData.form] += count;
+				}
 				++formData.npcCount;
 			}
 		}
@@ -166,7 +174,7 @@ namespace Distribute
 			if (accumulatedForms) {
 				std::ranges::copy(collectedForms | std::views::keys, std::inserter(*accumulatedForms, accumulatedForms->end()));
 			}
-			a_callback(collectedForms, hasLeveledItems);
+			a_callback(collectedForms);
 		}
 	}
 #pragma endregion
@@ -231,8 +239,5 @@ namespace Distribute
 #pragma endregion
 
 	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input);
-	void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input);
-
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits = false);
-
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries);
 }

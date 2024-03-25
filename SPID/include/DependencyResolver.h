@@ -155,6 +155,7 @@ public:
 		for (const auto& pair : nodes) {
 			delete pair.second;
 		}
+		nodes.clear();
 	}
 
 	/// Attempts to create a dependency rule between `parent` and `dependency` objects.

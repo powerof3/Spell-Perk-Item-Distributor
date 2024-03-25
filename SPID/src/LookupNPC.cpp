@@ -31,13 +31,11 @@ namespace NPC
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
 		npc(a_npc),
 		actor(a_actor),
+		race(a_actor->GetRace()),
 		name(a_actor->GetName()),
-		race(a_npc->GetRace()),
 		level(a_npc->GetLevel()),
-		sex(a_npc->GetSex()),
-		unique(a_npc->IsUnique()),
-		summonable(a_npc->IsSummonable()),
-		child(a_actor->IsChild() || race && race->formEditorID.contains("RaceChild"))
+		child(a_actor->IsChild() || race && race->formEditorID.contains("RaceChild")),
+		leveled(a_actor->IsLeveled())
 	{
 		npc->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
 			keywords.emplace(a_keyword->GetFormEditorID());
@@ -49,11 +47,7 @@ namespace NPC
 				IDs.emplace_back(originalBase);
 			}
 			if (const auto templateBase = extraLvlCreature->templateBase) {
-				leveled = true;
 				IDs.emplace_back(templateBase);
-				if (const auto templateRace = templateBase->As<RE::TESNPC>()->GetRace()) {
-					race = templateRace;
-				}
 			}
 		} else {
 			IDs.emplace_back(npc);
@@ -206,21 +200,6 @@ namespace NPC
 	std::uint16_t Data::GetLevel() const
 	{
 		return level;
-	}
-
-	RE::SEX Data::GetSex() const
-	{
-		return sex;
-	}
-
-	bool Data::IsUnique() const
-	{
-		return unique;
-	}
-
-	bool Data::IsSummonable() const
-	{
-		return summonable;
 	}
 
 	bool Data::IsChild() const

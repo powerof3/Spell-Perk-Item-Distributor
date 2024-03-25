@@ -67,7 +67,8 @@ void Dependencies::ResolveKeywords()
 		return;
 	}
 
-	const auto startTime = std::chrono::steady_clock::now();
+	Timer timer;
+	timer.start();
 
 	// Pre-build a map of all available keywords by names.
 	StringMap<RE::BGSKeyword*> allKeywords{};
@@ -140,7 +141,8 @@ void Dependencies::ResolveKeywords()
 	}
 
 	const auto result = resolver.resolve();
-	const auto endTime = std::chrono::steady_clock::now();
+
+	timer.end();
 
 	keywordForms.clear();
 	logger::info("\tSorted keywords: ");
@@ -154,6 +156,7 @@ void Dependencies::ResolveKeywords()
 		}
 	}
 
-	const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-	logger::info("\tKeyword resolution took {}μs / {}ms", duration, duration / 1000.0f);
+	logger::info("\tKeyword resolution took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
+
+	allKeywords.clear();
 }

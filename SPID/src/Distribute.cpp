@@ -7,51 +7,11 @@ namespace Distribute
 {
 	namespace detail
 	{
-		void equip_worn_outfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
-		{
-			if (!actor || !a_outfit) {
-				return;
-			}
-
-			if (const auto invChanges = actor->GetInventoryChanges()) {
-				if (const auto entryLists = invChanges->entryList) {
-					const auto formID = a_outfit->GetFormID();
-
-					for (const auto& entryList : *entryLists) {
-						if (entryList && entryList->object && entryList->extraLists) {
-							for (const auto& xList : *entryList->extraLists) {
-								const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
-								if (outfitItem && outfitItem->id == formID) {
-									RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount)
 		{
 			using func_t = void (*)(RE::Actor*, RE::TESBoundObject*, std::uint32_t, bool, std::uint32_t, RE::BSScript::Internal::VirtualMachine*);
 			REL::Relocation<func_t> func{ RELOCATION_ID(55945, 56489) };
 			return func(a_actor, a_item, a_itemCount, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
-		}
-
-		void init_leveled_items(RE::Actor* a_actor)
-		{
-			if (const auto invChanges = a_actor->GetInventoryChanges(true)) {
-				invChanges->InitLeveledItems();
-			}
-		}
-
-		bool can_equip_outfit(const RE::TESNPC* a_npc, RE::BGSOutfit* a_outfit)
-		{
-			if (a_npc->HasKeyword(processedOutfit) || a_npc->defaultOutfit == a_outfit) {
-				return false;
-			}
-
-			return true;
 		}
 
 		/// <summary>
@@ -161,14 +121,15 @@ namespace Distribute
 					return false;
 				},
 				accumulatedForms);
-
-			for_each_form<RE::TESObjectARMO>(
-				npcData, forms.skins, input, [&](auto* a_skin) {
-					if (npc->skin != a_skin) {
-						npc->skin = a_skin;
-						return true;
-					}
-					return false;
+			
+			for_each_form<RE::BGSOutfit>(
+				npcData, forms.outfits, input, [&](auto* a_outfit) {
+				if (npc->defaultOutfit != a_outfit && !npc->HasKeyword(processedOutfit)) {
+					npc->AddKeyword(processedOutfit);
+					npc->defaultOutfit = a_outfit;
+					return true;
+				}
+				return false;
 				},
 				accumulatedForms);
 
@@ -176,6 +137,22 @@ namespace Distribute
 				npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
 					if (npc->sleepOutfit != a_outfit) {
 						npc->sleepOutfit = a_outfit;
+						return true;
+					}
+					return false;
+				},
+				accumulatedForms);
+
+			for_each_form<RE::TESBoundObject>(
+				npcData, forms.items, input, [&](std::map<RE::TESBoundObject*, Count>& a_objects) {
+				return npc->AddObjectsToContainer(a_objects, npc);
+				},
+				accumulatedForms);
+
+			for_each_form<RE::TESObjectARMO>(
+				npcData, forms.skins, input, [&](auto* a_skin) {
+					if (npc->skin != a_skin) {
+						npc->skin = a_skin;
 						return true;
 					}
 					return false;
@@ -202,11 +179,11 @@ namespace Distribute
 		Forms::DistributionSet entries{
 			Forms::spells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::perks.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::DistributionSet::empty<RE::TESBoundObject>(),  // items are processed separately
+			Forms::items.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::shouts.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::levSpells.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::packages.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::DistributionSet::empty<RE::BGSOutfit>(),  // outfits are processed along with items.
+			Forms::outfits.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::keywords.GetForms(a_input.onlyPlayerLevelEntries),
 			Forms::DistributionSet::empty<RE::TESBoundObject>(),  // deathItems are only processed on... well, death.
 			Forms::factions.GetForms(a_input.onlyPlayerLevelEntries),
@@ -224,55 +201,9 @@ namespace Distribute
 		}
 	}
 
-	void DistributeItemOutfits(NPCData& a_npcData, const PCLevelMult::Input& a_input)
-	{
-		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
-			return;
-		}
-
-		const auto npc = a_npcData.GetNPC();
-		const auto actor = a_npcData.GetActor();
-
-		std::set<RE::TESForm*> distributedForms{};
-
-		for_each_form<RE::TESBoundObject>(
-			a_npcData, Forms::items.GetForms(a_input.onlyPlayerLevelEntries), a_input, [&](std::map<RE::TESBoundObject*, Count>& a_objects, const bool a_hasLvlItem) {
-				if (npc->AddObjectsToContainer(a_objects, npc)) {
-					if (a_hasLvlItem) {
-						detail::init_leveled_items(actor);
-					}
-					return true;
-				}
-				return false;
-			},
-			&distributedForms);
-
-		for_each_form<RE::BGSOutfit>(
-			a_npcData, Forms::outfits.GetForms(a_input.onlyPlayerLevelEntries), a_input, [&](auto* a_outfit) {
-				if (detail::can_equip_outfit(npc, a_outfit)) {
-					actor->RemoveOutfitItems(npc->defaultOutfit);
-					npc->defaultOutfit = a_outfit;
-					npc->AddKeyword(processedOutfit);
-					return true;
-				}
-				return false;
-			},
-			&distributedForms);
-
-		// TODO: We can now log per-NPC distributed forms.
-
-		if (!distributedForms.empty()) {
-			DistributeLinkedEntries(a_npcData, a_input, distributedForms);
-		}
-	}
-
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries, bool a_noItemOutfits)
+	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries)
 	{
 		const auto input = PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries };
-
 		Distribute(a_npcData, input);
-		if (!a_noItemOutfits) {
-			DistributeItemOutfits(a_npcData, input);
-		}
 	}
 }

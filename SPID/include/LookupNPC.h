@@ -27,9 +27,6 @@ namespace NPC
 		[[nodiscard]] bool HasMutuallyExclusiveForm(RE::TESForm* otherForm) const;
 
 		[[nodiscard]] std::uint16_t GetLevel() const;
-		[[nodiscard]] RE::SEX       GetSex() const;
-		[[nodiscard]] bool          IsUnique() const;
-		[[nodiscard]] bool          IsSummonable() const;
 		[[nodiscard]] bool          IsChild() const;
 		[[nodiscard]] bool          IsLeveled() const;
 		[[nodiscard]] bool          IsTeammate() const;
@@ -41,6 +38,7 @@ namespace NPC
 		{
 			ID() = default;
 			explicit ID(const RE::TESActorBase* a_base);
+			~ID() = default;
 
 			[[nodiscard]] bool contains(const std::string& a_str) const;
 
@@ -57,14 +55,11 @@ namespace NPC
 
 		RE::TESNPC*     npc;
 		RE::Actor*      actor;
-		std::string     name;
 		RE::TESRace*    race;
 		std::vector<ID> IDs;
+		std::string     name;
 		StringSet       keywords{};
 		std::uint16_t   level;
-		RE::SEX         sex;
-		bool            unique;
-		bool            summonable;
 		bool            child;
 		bool            teammate;
 		bool            leveled;

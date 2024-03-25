@@ -6,7 +6,7 @@ namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword)
 	{
-		if (a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
+		if (a_npc->IsPlayer() || a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
 			return false;
 		}
 
@@ -15,14 +15,12 @@ namespace Distribute
 		return true;
 	}
 
-	void detail::force_equip_outfit(RE::Actor* a_actor, const RE::TESNPC* a_npc)
+	void detail::distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc)
 	{
-		if (!a_actor->HasOutfitItems(a_npc->defaultOutfit)) {
-			if (const auto invChanges = a_actor->GetInventoryChanges()) {
-				invChanges->InitOutfitItems(a_npc->defaultOutfit, a_npc->GetLevel());
-			}
+		if (should_process_NPC(a_npc)) {
+			auto npcData = NPCData(a_actor, a_npc);
+			Distribute(npcData, false);
 		}
-		equip_worn_outfit(a_actor, a_npc->defaultOutfit);
 	}
 
 	namespace Actor
@@ -33,10 +31,7 @@ namespace Distribute
 			static bool thunk(RE::Character* a_this)
 			{
 				if (const auto npc = a_this->GetActorBase()) {
-					if (detail::should_process_NPC(npc)) {
-						auto npcData = NPCData(a_this, npc);
-						Distribute(npcData, false);
-					}
+					detail::distribute_on_load(a_this, npc);
 				}
 
 				return func(a_this);
@@ -47,28 +42,6 @@ namespace Distribute
 			static inline constexpr std::size_t size{ 0x6D };
 		};
 
-		// Force outfit equip
-		struct Load3D
-		{
-			static RE::NiAVObject* thunk(RE::Character* a_this, bool a_arg1)
-			{
-				const auto root = func(a_this, a_arg1);
-
-				if (const auto npc = a_this->GetActorBase()) {
-					if (npc->HasKeyword(processedOutfit)) {
-						detail::force_equip_outfit(a_this, npc);
-					}
-				}
-
-				return root;
-			}
-
-			static inline REL::Relocation<decltype(thunk)> func;
-
-			static inline constexpr std::size_t index{ 0 };
-			static inline constexpr std::size_t size{ 0x6A };
-		};
-
 		// Post distribution
 		struct InitLoadGame
 		{
@@ -77,13 +50,9 @@ namespace Distribute
 				func(a_this, a_buf);
 
 				if (const auto npc = a_this->GetActorBase()) {
-					// some npcs are completely reset upon loading
-					if (a_this->Is3DLoaded() && detail::should_process_NPC(npc)) {
-						auto npcData = NPCData(a_this, npc);
-						Distribute(npcData, false);
-					}
-					if (npc->HasKeyword(processedOutfit)) {
-						detail::force_equip_outfit(a_this, npc);
+					// some leveled npcs are completely reset upon loading
+					if (a_this->Is3DLoaded()) {
+						detail::distribute_on_load(a_this, npc);
 					}
 				}
 			}
@@ -96,7 +65,6 @@ namespace Distribute
 		void Install()
 		{
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			stl::write_vfunc<RE::Character, Load3D>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
 
 			logger::info("Installed actor load hooks");
@@ -123,7 +91,7 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
-		//DoInitialDistribution();
+		DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();
@@ -136,14 +104,16 @@ namespace Distribute
 
 		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
 			timer.start();
-			processLists->ForAllActors([&](RE::Actor* a_actor) {
-				if (const auto npc = a_actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
-					auto npcData = NPCData(a_actor, npc);
-					Distribute(npcData, false, true);
-					++actorCount;
+
+			for (auto& actorHandle : processLists->lowActorHandles) {
+				if (const auto& actor = actorHandle.get()) {
+					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
+						auto npcData = NPCData(actor.get(), npc);
+						Distribute(npcData, false);
+						++actorCount;
+					}
 				}
-				return RE::BSContainer::ForEachResult::kContinue;
-			});
+			}
 			timer.end();
 		}
 
@@ -159,7 +129,7 @@ namespace Distribute
 		logger::info("{:*^50}", "RESULTS");
 
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
-			if (a_distributable && a_distributable.GetType() != RECORD::kItem && a_distributable.GetType() != RECORD::kOutfit && a_distributable.GetType() != RECORD::kDeathItem) {
+			if (a_distributable && a_distributable.GetType() != RECORD::kDeathItem) {
 				logger::info("{}", RECORD::add[a_distributable.GetType()]);
 
 				auto& forms = a_distributable.GetForms();
