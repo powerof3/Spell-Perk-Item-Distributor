@@ -31,6 +31,25 @@ namespace Forms
 			{}
 		};
 
+		/// <summary>
+		/// An exception thrown when actual form's type does not match the form type excplicilty defined in the config.
+		/// E.g. Spell = 0x12345, but the 0x12345 form is actually a Perk.
+		/// </summary>
+		struct MismatchingFormTypeException : std::exception
+		{
+			const RE::FormType   expectedFformType;
+			const RE::FormType   actualFormType;
+			const FormOrEditorID formOrEditorID;
+			const std::string    path;
+
+			MismatchingFormTypeException(RE::FormType expectedFformType, RE::FormType actualFormType, const FormOrEditorID& formOrEditorID, const std::string& path) :
+				expectedFformType(expectedFformType),
+				actualFormType(actualFormType),
+				formOrEditorID(formOrEditorID),
+				path(path)
+			{}
+		};
+
 		struct InvalidKeywordException : std::exception
 		{
 			const RE::FormID                 formID;
@@ -68,6 +87,9 @@ namespace Forms
 			{}
 		};
 
+		/// <summary>
+		/// An exception thrown when actual form's type is not in the whitelist.
+		/// </summary>
 		struct InvalidFormTypeException : std::exception
 		{
 			const RE::FormType   formType;
@@ -182,13 +204,20 @@ namespace Forms
 
 							   // Either 0x1235 or 0x1235~MyPlugin.esp
 							   if (formID) {
+								   RE::TESForm* anyForm;
 								   if (modName) {
-									   form = as_form(dataHandler->LookupForm(*formID, *modName));
+									   anyForm = dataHandler->LookupForm(*formID, *modName);
 								   } else {
-									   form = as_form(RE::TESForm::LookupByID(*formID));
+									   anyForm = RE::TESForm::LookupByID(*formID);
 								   }
-								   if (!form) {
+
+								   if (!anyForm) {
 									   throw UnknownFormIDException(*formID, path, modName);
+								   }
+
+								   form = as_form(anyForm);
+								   if (!form) {
+									   throw MismatchingFormTypeException(anyForm->GetFormType(), Form::FORMTYPE, FormModPair{*formID, modName}, path);
 								   }
 
 								   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
@@ -207,8 +236,12 @@ namespace Forms
 							   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 								   form = find_or_create_keyword(editorID);
 							   } else {
-								   form = as_form(RE::TESForm::LookupByEditorID(editorID));
-								   if (!form) {
+								   if (const auto anyForm = RE::TESForm::LookupByEditorID(editorID); anyForm) {
+									   form = as_form(anyForm);
+									   if (!form) {
+										   throw MismatchingFormTypeException(anyForm->GetFormType(), Form::FORMTYPE, editorID, path);
+									   }
+								   } else {
 									   if constexpr (std::is_same_v<Form, RE::TESForm>) {
 										   form = find_or_create_keyword(editorID);
 									   } else {
@@ -285,6 +318,16 @@ namespace Forms
 					buffered_logger::error("\t\t[{}] Filter ({}) SKIP - editorID doesn't exist", e.path, e.editorID);
 				} catch (const MalformedEditorIDException& e) {
 					buffered_logger::error("\t\t[{}] Filter (\"\") SKIP - malformed editorID", e.path);
+				} catch (const Lookup::MismatchingFormTypeException& e) {
+					std::visit(overload{
+								   [&](const FormModPair& formMod) {
+									   auto& [formID, modName] = formMod;
+									   buffered_logger::error("\t\t[{}] Filter[0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+								   },
+								   [&](std::string editorID) {
+									   buffered_logger::error("\t\t[{}] Filter ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+								   } },
+						e.formOrEditorID);
 				} catch (const InvalidFormTypeException& e) {
 					std::visit(overload{
 								   [&](const FormModPair& formMod) {
@@ -512,6 +555,16 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 			buffered_logger::error("\t[{}] ({}) FAIL - editorID doesn't exist", e.path, e.editorID);
 		} catch (const Lookup::MalformedEditorIDException& e) {
 			buffered_logger::error("\t[{}] FAIL - editorID can't be empty", e.path);
+		} catch (const Lookup::MismatchingFormTypeException& e) {
+			std::visit(overload{
+						   [&](const FormModPair& formMod) {
+							   auto& [formID, modName] = formMod;
+							   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+						   },
+						   [&](std::string editorID) {
+							   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+						   } },
+				e.formOrEditorID);
 		} catch (const Lookup::InvalidFormTypeException& e) {
 			// Whitelisting is disabled, so this should not occur
 		} catch (const Lookup::UnknownPluginException& e) {
