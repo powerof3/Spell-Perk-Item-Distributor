@@ -78,14 +78,14 @@ void LogExclusiveGroupsLookup()
 	}
 }
 
-void LookupLinkedItems(RE::TESDataHandler* const dataHandler)
+void LookupLinkedForms(RE::TESDataHandler* const dataHandler)
 {
-	LinkedDistribution::Manager::GetSingleton()->LookupLinkedItems(dataHandler);
+	LinkedDistribution::Manager::GetSingleton()->LookupLinkedForms(dataHandler);
 }
 
-void LogLinkedItemsLookup()
+void LogLinkedFormsLookup()
 {
-	LinkedDistribution::Manager::GetSingleton()->LogLinkedItemsLookup();
+	LinkedDistribution::Manager::GetSingleton()->LogLinkedFormsLookup();
 }
 
 bool Lookup::LookupForms()
@@ -104,8 +104,8 @@ bool Lookup::LookupForms()
 			logger::info("Lookup took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
 		}
 
-		LookupLinkedItems(dataHandler);
-		LogLinkedItemsLookup();
+		LookupLinkedForms(dataHandler);
+		LogLinkedFormsLookup();
 
 		LookupExclusiveGroups(dataHandler);
 		LogExclusiveGroupsLookup();

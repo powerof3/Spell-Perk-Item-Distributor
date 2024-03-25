@@ -1,5 +1,6 @@
 #include "LinkedDistribution.h"
 #include "FormData.h"
+#include "LookupConfigs.h"
 
 namespace LinkedDistribution
 {
@@ -22,8 +23,15 @@ namespace LinkedDistribution
 
 		bool TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path)
 		{
-			if (a_key != "LinkedItem") {
+			if (!a_key.starts_with("Linked"sv)) {
 				return false;
+			}
+
+			std::string_view rawType = a_key.substr(6);
+			auto type = RECORD::GetType(rawType);
+			if (type == RECORD::kTotal) {
+				logger::warn("IGNORED: Invalid Linked Form type: {}"sv, a_key);
+				return true;
 			}
 
 			const auto sections = string::split(a_value, "|");
@@ -31,22 +39,22 @@ namespace LinkedDistribution
 
 			if (size <= kRequired) {
 				logger::warn("IGNORED: LinkedItem must have a form and at least one Form Filter: {} = {}"sv, a_key, a_value);
-				return false;
+				return true;
 			}
 
 			auto split_IDs = distribution::split_entry(sections[kLinkedForms]);
 
 			if (split_IDs.empty()) {
 				logger::warn("IGNORED: LinkedItem must have at least one Form Filter : {} = {}"sv, a_key, a_value);
-				return false;
+				return true;
 			}
 
-			INI::RawLinkedItem item{};
-			item.rawForm = distribution::get_record(sections[kForm]);
+			INI::RawLinkedForm item{};
+			item.formOrEditorID = distribution::get_record(sections[kForm]);
 			item.path = a_path;
 
 			for (auto& IDs : split_IDs) {
-				item.rawFormFilters.MATCH.push_back(distribution::get_record(IDs));
+				item.formIDs.MATCH.push_back(distribution::get_record(IDs));
 			}
 
 			if (kCount < size) {
@@ -70,7 +78,7 @@ namespace LinkedDistribution
 				}
 			}
 
-			linkedItems.push_back(item);
+			linkedForms[type].push_back(item);
 
 			return true;
 		}
@@ -79,65 +87,42 @@ namespace LinkedDistribution
 
 #pragma region Lookup
 
-	void Manager::LookupLinkedItems(RE::TESDataHandler* const dataHandler, INI::LinkedItemsVec& rawLinkedItems)
+	void Manager::LookupLinkedForms(RE::TESDataHandler* dataHandler, INI::LinkedFormsConfig& rawLinkedForms)
 	{
-		using namespace Forms::Lookup;
+		ForEachLinkedForms([&]<typename Form>(LinkedForms<Form>& forms) {
+			forms.LookupForms(dataHandler, rawLinkedForms[forms.GetType()]);
+		});
 
-		for (auto& [formOrEditorID, linkedIDs, count, chance, path] : rawLinkedItems) {
-			try {
-				auto    form = detail::get_form(dataHandler, formOrEditorID, path);
-				FormVec match{};
-				if (!detail::formID_to_form(dataHandler, linkedIDs.MATCH, match, path, false, false)) {
+		auto& genericForms = rawLinkedForms[RECORD::kForm];
+		for (auto& rawForm : genericForms) {
+			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
+				auto& [formID, parentFormIDs, count, chance, path] = rawForm;
+				FormVec parentForms{};
+				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
 					continue;
 				}
 				// Add to appropriate list.
 				if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
-					keywords.Link(keyword, match, count, chance, path);
+					keywords.Link(keyword, parentForms, count, chance, path);
 				} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
-					spells.Link(spell, match, count, chance, path);
+					spells.Link(spell, parentForms, count, chance, path);
 				} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
-					perks.Link(perk, match, count, chance, path);
+					perks.Link(perk, parentForms, count, chance, path);
 				} else if (const auto shout = form->As<RE::TESShout>(); shout) {
-					shouts.Link(shout, match, count, chance, path);
+					shouts.Link(shout, parentForms, count, chance, path);
 				} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
-					items.Link(item, match, count, chance, path);
+					items.Link(item, parentForms, count, chance, path);
 				} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
-					outfits.Link(outfit, match, count, chance, path);
+					outfits.Link(outfit, parentForms, count, chance, path);
 				} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
-					factions.Link(faction, match, count, chance, path);
+					factions.Link(faction, parentForms, count, chance, path);
 				} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
-					skins.Link(skin, match, count, chance, path);
+					skins.Link(skin, parentForms, count, chance, path);
 				} else if (const auto package = form->As<RE::TESForm>(); package) {
 					auto type = package->GetFormType();
 					if (type == RE::FormType::Package || type == RE::FormType::FormList)
-						packages.Link(package, match, count, chance, path);
+						packages.Link(package, parentForms, count, chance, path);
 				}
-			} catch (const UnknownFormIDException& e) {
-				buffered_logger::error("\t\t[{}] LinkedItem [0x{:X}] ({}) SKIP - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
-			} catch (const UnknownPluginException& e) {
-				buffered_logger::error("\t\t[{}] LinkedItem ({}) SKIP - mod cannot be found", e.path, e.modName);
-			} catch (const InvalidKeywordException& e) {
-				buffered_logger::error("\t\t[{}] LinkedItem [0x{:X}] ({}) SKIP - keyword does not have a valid editorID", e.path, e.formID, e.modName.value_or(""));
-			} catch (const KeywordNotFoundException& e) {
-				if (e.isDynamic) {
-					buffered_logger::critical("\t\t[{}] LinkedItem {} FAIL - couldn't create keyword", e.path, e.editorID);
-				} else {
-					buffered_logger::critical("\t\t[{}] LinkedItem {} FAIL - couldn't get existing keyword", e.path, e.editorID);
-				}
-			} catch (const UnknownEditorIDException& e) {
-				buffered_logger::error("\t\t[{}] LinkedItem ({}) SKIP - editorID doesn't exist", e.path, e.editorID);
-			} catch (const MalformedEditorIDException& e) {
-				buffered_logger::error("\t\t[{}] LinkedItem (\"\") SKIP - malformed editorID", e.path);
-			} catch (const InvalidFormTypeException& e) {
-				std::visit(overload{
-							   [&](const FormModPair& formMod) {
-								   auto& [formID, modName] = formMod;
-								   buffered_logger::error("\t\t[{}] LinkedItem [0x{:X}] ({}) SKIP - unsupported form type ({})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.formType));
-							   },
-							   [&](std::string editorID) {
-								   buffered_logger::error("\t\t[{}] LinkedItem ({}) SKIP - unsupported form type ({})", e.path, editorID, RE::FormTypeToString(e.formType));
-							   } },
-					e.formOrEditorID);
 			}
 		}
 
@@ -147,17 +132,17 @@ namespace LinkedDistribution
 		});
 
 		// Clear INI once lookup is done
-		rawLinkedItems.clear();
+		rawLinkedForms.clear();
 
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();
 	}
 
-	void Manager::LogLinkedItemsLookup()
+	void Manager::LogLinkedFormsLookup()
 	{
 		logger::info("{:*^50}", "LINKED ITEMS");
 
-		ForEachLinkedForms([]<typename Form>(const LinkedForms<Form>& linkedForms) {
+		ForEachLinkedForms([]<typename Form>(LinkedForms<Form>& linkedForms) {
 			if (linkedForms.GetForms().empty()) {
 				return;
 			}
@@ -177,15 +162,15 @@ namespace LinkedDistribution
 			const auto& recordName = RECORD::GetTypeName(linkedForms.GetType());
 			logger::info("Linked {}s: ", recordName);
 
-			for (const auto& [form, linkedItems] : map) {
+			for (const auto& [form, linkedForms] : map) {
 				logger::info("\t{}", describe(form));
 
-				const auto lastItemIndex = linkedItems.size() - 1;
+				const auto lastItemIndex = linkedForms.size() - 1;
 				for (int i = 0; i < lastItemIndex; ++i) {
-					const auto& linkedItem = linkedItems[i];
+					const auto& linkedItem = linkedForms[i];
 					logger::info("\t├─── {}", describe(linkedItem));
 				}
-				const auto& lastLinkedItem = linkedItems[lastItemIndex];
+				const auto& lastLinkedItem = linkedForms[lastItemIndex];
 				logger::info("\t└─── {}", describe(lastLinkedItem));
 			}
 		});

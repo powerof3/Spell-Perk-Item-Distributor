@@ -54,6 +54,12 @@ namespace RECORD
 		using namespace detail;
 		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));
 	}
+
+	inline constexpr TYPE GetType(const std::string_view& aType)
+	{
+		using namespace detail;
+		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));
+	}
 }
 
 namespace INI
