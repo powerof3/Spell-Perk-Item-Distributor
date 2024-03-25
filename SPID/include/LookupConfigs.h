@@ -44,12 +44,12 @@ namespace RECORD
 		};
 	}
 
-	inline constexpr std::string_view GetTypeName(const TYPE aType) 
+	inline constexpr std::string_view GetTypeName(const TYPE aType)
 	{
 		return detail::add.at(aType);
 	}
 
-	inline constexpr TYPE GetType(const std::string& aType) 
+	inline constexpr TYPE GetType(const std::string& aType)
 	{
 		using namespace detail;
 		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));

@@ -217,7 +217,7 @@ namespace Forms
 
 								   form = as_form(anyForm);
 								   if (!form) {
-									   throw MismatchingFormTypeException(anyForm->GetFormType(), Form::FORMTYPE, FormModPair{*formID, modName}, path);
+									   throw MismatchingFormTypeException(anyForm->GetFormType(), Form::FORMTYPE, FormModPair{ *formID, modName }, path);
 								   }
 
 								   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {

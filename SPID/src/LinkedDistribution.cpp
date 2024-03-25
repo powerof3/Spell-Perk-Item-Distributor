@@ -26,9 +26,9 @@ namespace LinkedDistribution
 			if (!a_key.starts_with("Linked"sv)) {
 				return false;
 			}
-			
+
 			std::string rawType = a_key.substr(6);
-			auto type = RECORD::GetType(rawType);
+			auto        type = RECORD::GetType(rawType);
 			if (type == RECORD::kTotal) {
 				logger::warn("IGNORED: Invalid Linked Form type: {}"sv, rawType);
 				return true;

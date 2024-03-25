@@ -14,8 +14,8 @@ namespace LinkedDistribution
 			/// Raw filters in RawLinkedForm only use MATCH, there is no meaning for ALL or NOT, so they are ignored.
 			Filters<FormOrEditorID> formIDs{};
 
-			IndexOrCount idxOrCount { RandomCount(1, 1) };
-			Chance      chance{ 100 };
+			IndexOrCount idxOrCount{ RandomCount(1, 1) };
+			Chance       chance{ 100 };
 
 			std::string path{};
 		};
@@ -32,10 +32,9 @@ namespace LinkedDistribution
 		bool TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path);
 	}
 
-
 	class Manager;
-	
-	template<class Form>
+
+	template <class Form>
 	struct LinkedForms;
 
 	namespace detail
@@ -58,7 +57,7 @@ namespace LinkedDistribution
 			type(type)
 		{}
 
-		RECORD::TYPE GetType() const { return type; }
+		RECORD::TYPE    GetType() const { return type; }
 		const FormsMap& GetForms() const { return forms; }
 
 		void LookupForms(RE::TESDataHandler* const dataHandler, INI::LinkedFormsVec& rawLinkedForms);
