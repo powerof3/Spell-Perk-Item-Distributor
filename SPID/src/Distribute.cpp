@@ -228,12 +228,11 @@ namespace Distribute
 			Forms::DistributionSet::empty<RE::BGSOutfit>(),
 			Forms::DistributionSet::empty<RE::TESObjectARMO>()
 		};
-		
+
 		detail::distribute(npcData, input, entries, &distributedForms);
 		// TODO: We can now log per-NPC distributed forms.
 
 		if (!distributedForms.empty()) {
-
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDeathDistributionSet(distributedForms, [&](Forms::DistributionSet& set) {
 				detail::distribute(npcData, input, set, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
 			});

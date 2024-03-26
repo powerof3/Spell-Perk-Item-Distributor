@@ -189,7 +189,7 @@ namespace Distribute::Event
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				auto npcData = NPCData(actor, npc);
+				auto       npcData = NPCData(actor, npc);
 				const auto input = PCLevelMult::Input{ actor, npc, false };
 
 				DistributeDeathItems(npcData, input);

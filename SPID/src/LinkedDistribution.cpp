@@ -240,7 +240,7 @@ namespace LinkedDistribution
 	{
 		for (const auto form : targetForms) {
 			auto& linkedDeathItems = LinkedFormsForForm(form, deathItems);
-			
+
 			DistributionSet linkedEntries{
 				DistributionSet::empty<RE::SpellItem>(),
 				DistributionSet::empty<RE::BGSPerk>(),
