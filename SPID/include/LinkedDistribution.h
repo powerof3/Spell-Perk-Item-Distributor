@@ -91,6 +91,15 @@ namespace LinkedDistribution
 		/// <param name="callback">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
 		void ForEachLinkedDistributionSet(const std::set<RE::TESForm*>& linkedForms, std::function<void(DistributionSet&)> callback);
 
+		/// <summary>
+		/// Calculates DistributionSet with only DeathItems for each linked form and calls a callback for each of them.
+		/// This method is suitable for distributing items on death.
+		/// </summary>
+		/// <param name="linkedForms">A set of forms for which distribution sets should be calculated.
+		///							  This is typically distributed forms accumulated during first distribution pass.</param>
+		/// <param name="callback">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
+		void ForEachLinkedDeathDistributionSet(const std::set<RE::TESForm*>& linkedForms, std::function<void(DistributionSet&)> callback);
+
 	private:
 		template <class Form>
 		DataVec<Form>& LinkedFormsForForm(RE::TESForm* form, LinkedForms<Form>& linkedForms) const;
@@ -103,7 +112,7 @@ namespace LinkedDistribution
 		LinkedForms<RE::TESLevSpell>    levSpells{ RECORD::kLevSpell };
 		LinkedForms<RE::TESForm>        packages{ RECORD::kPackage };
 		LinkedForms<RE::BGSOutfit>      outfits{ RECORD::kOutfit };
-		LinkedForms<RE::BGSOutfit>      sleepingOutfits{ RECORD::kSleepOutfit };
+		LinkedForms<RE::BGSOutfit>      sleepOutfits{ RECORD::kSleepOutfit };
 		LinkedForms<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
 		LinkedForms<RE::TESFaction>     factions{ RECORD::kFaction };
 		LinkedForms<RE::TESObjectARMO>  skins{ RECORD::kSkin };
@@ -186,7 +195,7 @@ namespace LinkedDistribution
 		func(items, std::forward<Args>(args)...);
 		func(deathItems, std::forward<Args>(args)...);
 		func(outfits, std::forward<Args>(args)...);
-		func(sleepingOutfits, std::forward<Args>(args)...);
+		func(sleepOutfits, std::forward<Args>(args)...);
 		func(factions, std::forward<Args>(args)...);
 		func(packages, std::forward<Args>(args)...);
 		func(skins, std::forward<Args>(args)...);

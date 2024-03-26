@@ -111,7 +111,7 @@ namespace LinkedDistribution
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
 					continue;
 				}
-				// Add to appropriate list. (Note that type inferring doesn't recognize SleepingOutfit or DeathItems)
+				// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit or DeathItems)
 				if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
 					keywords.Link(keyword, parentForms, idxOrCount, chance, path);
 				} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
@@ -131,12 +131,12 @@ namespace LinkedDistribution
 				} else if (const auto package = form->As<RE::TESForm>(); package) {
 					auto type = package->GetFormType();
 					if (type == RE::FormType::Package || type == RE::FormType::FormList) {
-						// During type inferring we'll default to RandomCount, so we need to properly convert it to Index if it's a package.
+						// With generic Form entries we default to RandomCount, so we need to properly convert it to Index if it turned out to be a package.
 						Index packageIndex = 1;
 						if (std::holds_alternative<RandomCount>(idxOrCount)) {
 							auto& count = std::get<RandomCount>(idxOrCount);
 							if (!count.IsExact()) {
-								logger::warn("Inferred Form is a package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", count.min);
+								logger::warn("Inferred Form is a Package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", count.min);
 							}
 							packageIndex = count.min;
 						} else {
@@ -210,6 +210,7 @@ namespace LinkedDistribution
 			auto& linkedOutfits = LinkedFormsForForm(form, outfits);
 			auto& linkedKeywords = LinkedFormsForForm(form, keywords);
 			auto& linkedFactions = LinkedFormsForForm(form, factions);
+			auto& linkedSleepOutfits = LinkedFormsForForm(form, sleepOutfits);
 			auto& linkedSkins = LinkedFormsForForm(form, skins);
 
 			DistributionSet linkedEntries{
@@ -221,10 +222,38 @@ namespace LinkedDistribution
 				linkedPackages,
 				linkedOutfits,
 				linkedKeywords,
-				DistributionSet::empty<RE::TESBoundObject>(),  // deathItems can't be linked at the moment (only makes sense on death)
+				DistributionSet::empty<RE::TESBoundObject>(),  // deathItems are distributed only on death :) as such, linked items are also distributed only on death.
 				linkedFactions,
-				DistributionSet::empty<RE::BGSOutfit>(),  // sleeping outfits are not supported for now due to lack of support in config's syntax.
+				linkedSleepOutfits,
 				linkedSkins
+			};
+
+			if (linkedEntries.IsEmpty()) {
+				continue;
+			}
+
+			performDistribution(linkedEntries);
+		}
+	}
+
+	void Manager::ForEachLinkedDeathDistributionSet(const std::set<RE::TESForm*>& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	{
+		for (const auto form : targetForms) {
+			auto& linkedDeathItems = LinkedFormsForForm(form, deathItems);
+			
+			DistributionSet linkedEntries{
+				DistributionSet::empty<RE::SpellItem>(),
+				DistributionSet::empty<RE::BGSPerk>(),
+				DistributionSet::empty<RE::TESBoundObject>(),
+				DistributionSet::empty<RE::TESShout>(),
+				DistributionSet::empty<RE::TESLevSpell>(),
+				DistributionSet::empty<RE::TESForm>(),
+				DistributionSet::empty<RE::BGSOutfit>(),
+				DistributionSet::empty<RE::BGSKeyword>(),
+				linkedDeathItems,
+				DistributionSet::empty<RE::TESFaction>(),
+				DistributionSet::empty<RE::BGSOutfit>(),
+				DistributionSet::empty<RE::TESObjectARMO>()
 			};
 
 			if (linkedEntries.IsEmpty()) {

@@ -235,6 +235,8 @@ namespace Distribute
 	}
 #pragma endregion
 
-	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input);
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries);
+	void Distribute(NPCData& npcData, const PCLevelMult::Input& input);
+	void Distribute(NPCData& npcData, bool onlyLeveledEntries);
+
+	void DistributeDeathItems(NPCData& npcData, const PCLevelMult::Input& input);
 }
