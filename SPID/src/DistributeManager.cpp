@@ -130,7 +130,7 @@ namespace Distribute
 
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
 			if (a_distributable && a_distributable.GetType() != RECORD::kDeathItem) {
-				logger::info("{}", RECORD::add[a_distributable.GetType()]);
+				logger::info("{}", RECORD::GetTypeName(a_distributable.GetType()));
 
 				auto& forms = a_distributable.GetForms();
 
@@ -189,15 +189,10 @@ namespace Distribute::Event
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				const auto npcData = NPCData(actor, npc);
+				auto       npcData = NPCData(actor, npc);
 				const auto input = PCLevelMult::Input{ actor, npc, false };
 
-				for_each_form<RE::TESBoundObject>(npcData, Forms::deathItems.GetForms(input.onlyPlayerLevelEntries), input, [&](auto* deathItem, IndexOrCount idxOrCount) {
-					auto count = std::get<RandomCount>(idxOrCount);
-
-					detail::add_item(actor, deathItem, count.GetRandom());
-					return true;
-				});
+				DistributeDeathItems(npcData, input);
 			}
 		}
 

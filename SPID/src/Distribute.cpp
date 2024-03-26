@@ -158,52 +158,84 @@ namespace Distribute
 					return false;
 				},
 				accumulatedForms);
+
+			for_each_form<RE::TESBoundObject>(
+				npcData, forms.deathItems, input, [&](auto* deathItem, IndexOrCount idxOrCount) {
+					auto count = std::get<RandomCount>(idxOrCount);
+
+					detail::add_item(npcData.GetActor(), deathItem, count.GetRandom());
+					return true;
+				},
+				accumulatedForms);
 		}
 	}
 
-	// This only does one-level linking. So that linked entries won't trigger another level of distribution.
-	void DistributeLinkedEntries(NPCData& npcData, const PCLevelMult::Input& input, const std::set<RE::TESForm*>& forms)
+	void Distribute(NPCData& npcData, const PCLevelMult::Input& input)
 	{
-		LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(forms, [&](Forms::DistributionSet& set) {
-			detail::distribute(npcData, input, set, nullptr);  // TODO: Accumulate forms here?
-		});
-	}
-
-	void Distribute(NPCData& a_npcData, const PCLevelMult::Input& a_input)
-	{
-		if (a_input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(a_input)) {
+		if (input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input)) {
 			return;
 		}
 
-		// TODO: Figure out how to distribute only death items perhaps?
 		Forms::DistributionSet entries{
-			Forms::spells.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::perks.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::items.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::shouts.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::levSpells.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::packages.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::outfits.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::keywords.GetForms(a_input.onlyPlayerLevelEntries),
+			Forms::spells.GetForms(input.onlyPlayerLevelEntries),
+			Forms::perks.GetForms(input.onlyPlayerLevelEntries),
+			Forms::items.GetForms(input.onlyPlayerLevelEntries),
+			Forms::shouts.GetForms(input.onlyPlayerLevelEntries),
+			Forms::levSpells.GetForms(input.onlyPlayerLevelEntries),
+			Forms::packages.GetForms(input.onlyPlayerLevelEntries),
+			Forms::outfits.GetForms(input.onlyPlayerLevelEntries),
+			Forms::keywords.GetForms(input.onlyPlayerLevelEntries),
 			Forms::DistributionSet::empty<RE::TESBoundObject>(),  // deathItems are only processed on... well, death.
-			Forms::factions.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::sleepOutfits.GetForms(a_input.onlyPlayerLevelEntries),
-			Forms::skins.GetForms(a_input.onlyPlayerLevelEntries)
+			Forms::factions.GetForms(input.onlyPlayerLevelEntries),
+			Forms::sleepOutfits.GetForms(input.onlyPlayerLevelEntries),
+			Forms::skins.GetForms(input.onlyPlayerLevelEntries)
 		};
 
 		std::set<RE::TESForm*> distributedForms{};
 
-		detail::distribute(a_npcData, a_input, entries, &distributedForms);
+		detail::distribute(npcData, input, entries, &distributedForms);
 		// TODO: We can now log per-NPC distributed forms.
 
 		if (!distributedForms.empty()) {
-			DistributeLinkedEntries(a_npcData, a_input, distributedForms);
+			// This only does one-level linking. So that linked entries won't trigger another level of distribution.
+			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(distributedForms, [&](Forms::DistributionSet& set) {
+				detail::distribute(npcData, input, set, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
+			});
 		}
 	}
 
-	void Distribute(NPCData& a_npcData, bool a_onlyLeveledEntries)
+	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
 	{
-		const auto input = PCLevelMult::Input{ a_npcData.GetActor(), a_npcData.GetNPC(), a_onlyLeveledEntries };
-		Distribute(a_npcData, input);
+		const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
+		Distribute(npcData, input);
+	}
+
+	void DistributeDeathItems(NPCData& npcData, const PCLevelMult::Input& input)
+	{
+		std::set<RE::TESForm*> distributedForms{};
+
+		Forms::DistributionSet entries{
+			Forms::DistributionSet::empty<RE::SpellItem>(),
+			Forms::DistributionSet::empty<RE::BGSPerk>(),
+			Forms::DistributionSet::empty<RE::TESBoundObject>(),
+			Forms::DistributionSet::empty<RE::TESShout>(),
+			Forms::DistributionSet::empty<RE::TESLevSpell>(),
+			Forms::DistributionSet::empty<RE::TESForm>(),
+			Forms::DistributionSet::empty<RE::BGSOutfit>(),
+			Forms::DistributionSet::empty<RE::BGSKeyword>(),
+			Forms::deathItems.GetForms(input.onlyPlayerLevelEntries),
+			Forms::DistributionSet::empty<RE::TESFaction>(),
+			Forms::DistributionSet::empty<RE::BGSOutfit>(),
+			Forms::DistributionSet::empty<RE::TESObjectARMO>()
+		};
+
+		detail::distribute(npcData, input, entries, &distributedForms);
+		// TODO: We can now log per-NPC distributed forms.
+
+		if (!distributedForms.empty()) {
+			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDeathDistributionSet(distributedForms, [&](Forms::DistributionSet& set) {
+				detail::distribute(npcData, input, set, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
+			});
+		}
 	}
 }
