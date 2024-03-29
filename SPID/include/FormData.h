@@ -427,6 +427,8 @@ namespace Forms
 		RECORD::TYPE  type;
 		DataVec<Form> forms{};
 		DataVec<Form> formsWithLevels{};
+
+		void LookupForm(RE::TESDataHandler* a_dataHandler, INI::Data& rawForm);
 	};
 
 	inline Distributables<RE::SpellItem>      spells{ RECORD::kSpell };
@@ -461,6 +463,17 @@ namespace Forms
 		a_func(packages, std::forward<Args>(args)...);
 		a_func(skins, std::forward<Args>(args)...);
 	}
+
+	/// <summary>
+	/// Performs lookup for a single entry.
+	/// It's up to the callee to add the form to the appropriate distributable container.
+	/// </summary>
+	/// <typeparam name="Form">Type of the form to lookup. This type can be defaulted to accept any TESForm.</typeparam>
+	/// <param name="dataHandler"></param>
+	/// <param name="rawForm">A raw form entry that needs to be looked up.</param>
+	/// <param name="callback">A callback to be called with validated data after successful lookup.</param>
+	template <class Form = RE::TESForm*>
+	void LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(Form*, IndexOrCount&, FilterData&, std::string& path)> callback);
 }
 
 template <class Form>
@@ -511,6 +524,14 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntr
 	return forms;
 }
 
+template<class Form>
+void Forms::Distributables<Form>::LookupForm(RE::TESDataHandler* a_dataHandler, INI::Data& rawForm)
+{
+	Forms::LookupGenericForm<Form>(a_dataHandler, rawForm, [&](Form* form, auto& idxOrCount, auto& filters, std::string& path) {
+		forms.emplace_back(forms.size(), form, idxOrCount, filters, path);
+	});
+}
+
 template <class Form>
 void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec)
 {
@@ -521,55 +542,9 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 	logger::info("{}", a_type);
 
 	forms.reserve(a_INIDataVec.size());
-	std::uint32_t index = 0;
 
-	for (auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] : a_INIDataVec) {
-		try {
-			if (auto form = detail::get_form<Form>(a_dataHandler, formOrEditorID, path); form) {
-				FormFilters filterForms{};
-
-				bool validEntry = detail::formID_to_form(a_dataHandler, filterIDs.ALL, filterForms.ALL, path, true);
-				if (validEntry) {
-					validEntry = detail::formID_to_form(a_dataHandler, filterIDs.NOT, filterForms.NOT, path);
-				}
-				if (validEntry) {
-					validEntry = detail::formID_to_form(a_dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
-				}
-
-				if (validEntry) {
-					forms.emplace_back(index, form, idxOrCount, FilterData(strings, filterForms, level, traits, chance), path);
-					index++;
-				}
-			}
-		} catch (const Lookup::UnknownFormIDException& e) {
-			buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
-		} catch (const Lookup::InvalidKeywordException& e) {
-			buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", e.path, e.formID, e.modName.value_or(""));
-		} catch (const Lookup::KeywordNotFoundException& e) {
-			if (e.isDynamic) {
-				buffered_logger::critical("\t[{}] {} FAIL - couldn't create keyword", e.path, e.editorID);
-			} else {
-				buffered_logger::critical("\t[{}] {} FAIL - couldn't get existing keyword", e.path, e.editorID);
-			}
-		} catch (const Lookup::UnknownEditorIDException& e) {
-			buffered_logger::error("\t[{}] ({}) FAIL - editorID doesn't exist", e.path, e.editorID);
-		} catch (const Lookup::MalformedEditorIDException& e) {
-			buffered_logger::error("\t[{}] FAIL - editorID can't be empty", e.path);
-		} catch (const Lookup::MismatchingFormTypeException& e) {
-			std::visit(overload{
-						   [&](const FormModPair& formMod) {
-							   auto& [formID, modName] = formMod;
-							   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
-						   },
-						   [&](std::string editorID) {
-							   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
-						   } },
-				e.formOrEditorID);
-		} catch (const Lookup::InvalidFormTypeException& e) {
-			// Whitelisting is disabled, so this should not occur
-		} catch (const Lookup::UnknownPluginException& e) {
-			// Likewise, we don't expect plugin names in distributable forms.
-		}
+	for (auto& rawForm : a_INIDataVec) {
+		LookupForm(a_dataHandler, rawForm);
 	}
 }
 
@@ -594,4 +569,57 @@ void Forms::Distributables<Form>::FinishLookupForms()
 	std::copy_if(forms.begin(), forms.end(),
 		std::back_inserter(formsWithLevels),
 		[](const auto& formData) { return formData.filters.HasLevelFilters(); });
+}
+
+template <class Form>
+void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(Form*, IndexOrCount&, FilterData&, std::string& path)> callback)
+{
+	auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] = rawForm;
+
+	try {
+		if (auto form = detail::get_form<Form>(dataHandler, formOrEditorID, path); form) {
+			FormFilters filterForms{};
+
+			bool validEntry = detail::formID_to_form(dataHandler, filterIDs.ALL, filterForms.ALL, path, true);
+			if (validEntry) {
+				validEntry = detail::formID_to_form(dataHandler, filterIDs.NOT, filterForms.NOT, path);
+			}
+			if (validEntry) {
+				validEntry = detail::formID_to_form(dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
+			}
+
+			if (validEntry) {
+				FilterData filters{ strings, filterForms, level, traits, chance };
+				callback(form, idxOrCount, filters, path);
+			}
+		}
+	} catch (const Lookup::UnknownFormIDException& e) {
+		buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
+	} catch (const Lookup::InvalidKeywordException& e) {
+		buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - keyword does not have a valid editorID", e.path, e.formID, e.modName.value_or(""));
+	} catch (const Lookup::KeywordNotFoundException& e) {
+		if (e.isDynamic) {
+			buffered_logger::critical("\t[{}] {} FAIL - couldn't create keyword", e.path, e.editorID);
+		} else {
+			buffered_logger::critical("\t[{}] {} FAIL - couldn't get existing keyword", e.path, e.editorID);
+		}
+	} catch (const Lookup::UnknownEditorIDException& e) {
+		buffered_logger::error("\t[{}] ({}) FAIL - editorID doesn't exist", e.path, e.editorID);
+	} catch (const Lookup::MalformedEditorIDException& e) {
+		buffered_logger::error("\t[{}] FAIL - editorID can't be empty", e.path);
+	} catch (const Lookup::MismatchingFormTypeException& e) {
+		std::visit(overload{
+					   [&](const FormModPair& formMod) {
+						   auto& [formID, modName] = formMod;
+						   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+					   },
+					   [&](std::string editorID) {
+						   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+					   } },
+			e.formOrEditorID);
+	} catch (const Lookup::InvalidFormTypeException& e) {
+		// Whitelisting is disabled, so this should not occur
+	} catch (const Lookup::UnknownPluginException& e) {
+		// Likewise, we don't expect plugin names in distributable forms.
+	}
 }

@@ -32,6 +32,8 @@ namespace LinkedDistribution
 		bool TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path);
 	}
 
+	using namespace Forms;
+
 	class Manager;
 
 	template <class Form>
@@ -42,9 +44,7 @@ namespace LinkedDistribution
 		template <class Form = RE::TESForm>
 		Form* LookupLinkedForm(RE::TESDataHandler* const dataHandler, INI::RawLinkedForm& rawForm);
 	}
-
-	using namespace Forms;
-
+	
 	template <class Form>
 	struct LinkedForms
 	{

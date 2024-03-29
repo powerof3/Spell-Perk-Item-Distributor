@@ -128,8 +128,8 @@ namespace LinkedDistribution
 					factions.Link(faction, parentForms, idxOrCount, chance, path);
 				} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
 					skins.Link(skin, parentForms, idxOrCount, chance, path);
-				} else if (const auto package = form->As<RE::TESForm>(); package) {
-					auto type = package->GetFormType();
+				} else {
+					auto type = form->GetFormType();
 					if (type == RE::FormType::Package || type == RE::FormType::FormList) {
 						// With generic Form entries we default to RandomCount, so we need to properly convert it to Index if it turned out to be a package.
 						Index packageIndex = 1;
@@ -142,7 +142,7 @@ namespace LinkedDistribution
 						} else {
 							packageIndex = std::get<Index>(idxOrCount);
 						}
-						packages.Link(package, parentForms, packageIndex, chance, path);
+						packages.Link(form, parentForms, packageIndex, chance, path);
 					}
 				}
 			}

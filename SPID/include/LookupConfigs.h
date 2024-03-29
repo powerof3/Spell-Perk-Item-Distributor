@@ -60,6 +60,12 @@ namespace RECORD
 		using namespace detail;
 		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));
 	}
+
+	inline constexpr TYPE GetType(const char* aType)
+	{
+		using namespace detail;
+		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));
+	}
 }
 
 namespace INI
@@ -101,7 +107,7 @@ namespace INI
 	using DataVec = std::vector<Data>;
 	using ExclusiveGroupsVec = std::vector<RawExclusiveGroup>;
 
-	inline StringMap<DataVec> configs{};
+	inline Map<RECORD::TYPE, DataVec> configs{};
 
 	/// <summary>
 	/// A list of RawExclusiveGroups that will be processed along with configs.
