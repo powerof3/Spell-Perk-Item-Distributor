@@ -524,7 +524,7 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntr
 	return forms;
 }
 
-template<class Form>
+template <class Form>
 void Forms::Distributables<Form>::LookupForm(RE::TESDataHandler* a_dataHandler, INI::Data& rawForm)
 {
 	Forms::LookupGenericForm<Form>(a_dataHandler, rawForm, [&](Form* form, auto& idxOrCount, auto& filters, std::string& path) {

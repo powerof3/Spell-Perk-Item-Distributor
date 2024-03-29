@@ -44,7 +44,7 @@ namespace LinkedDistribution
 		template <class Form = RE::TESForm>
 		Form* LookupLinkedForm(RE::TESDataHandler* const dataHandler, INI::RawLinkedForm& rawForm);
 	}
-	
+
 	template <class Form>
 	struct LinkedForms
 	{

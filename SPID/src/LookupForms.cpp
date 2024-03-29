@@ -4,7 +4,6 @@
 #include "KeywordDependencies.h"
 #include "LinkedDistribution.h"
 
-
 bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 {
 	using namespace Forms;
@@ -53,7 +52,7 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 					packages.GetForms().emplace_back(packages.GetSize(), form, packageIndex, filters, path);
 				}
 			}
-		});		
+		});
 	}
 
 	Dependencies::ResolveKeywords();
