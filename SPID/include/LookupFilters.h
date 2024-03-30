@@ -16,13 +16,14 @@ namespace Filter
 
 	struct Data
 	{
-		Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, Chance a_chance);
+		// Note that chance passed to this constructor is expected to be in percent. It will be converted to a decimal chance during by the constructor.
+		Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, PercentChance a_chance);
 
 		StringFilters strings{};
 		FormFilters   forms{};
 		LevelFilters  levels{};
 		Traits        traits{};
-		Chance        chance{ 100 };
+		DecimalChance chance{ 1 };
 
 		bool hasLeveledFilters;
 

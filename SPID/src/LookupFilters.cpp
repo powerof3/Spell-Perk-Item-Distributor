@@ -3,12 +3,12 @@
 
 namespace Filter
 {
-	Data::Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, Chance a_chance) :
+	Data::Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, PercentChance a_chance) :
 		strings(std::move(a_strings)),
 		forms(std::move(a_formFilters)),
 		levels(std::move(a_level)),
 		traits(a_traits),
-		chance(a_chance)
+		chance(a_chance / 100)
 	{
 		hasLeveledFilters = HasLevelFiltersImpl();
 	}
@@ -192,11 +192,12 @@ namespace Filter
 	Result Data::PassedFilters(const NPCData& a_npcData) const
 	{
 		// Fail chance first to avoid running unnecessary checks
-		if (chance < 100) {
-			const auto randNum = RNG().generate<Chance>(0, 100);
+		if (chance < 1) {
+			double randNum = RNG().generate();
 			if (randNum > chance) {
 				return Result::kFailRNG;
 			}
+			std::string res = "passed";
 		}
 
 		if (passed_string_filters(a_npcData) == Result::kFail) {

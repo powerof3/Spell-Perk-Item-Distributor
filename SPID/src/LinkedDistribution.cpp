@@ -84,7 +84,7 @@ namespace LinkedDistribution
 
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
-					item.chance = string::to_num<Chance>(str);
+					item.chance = string::to_num<PercentChance>(str);
 				}
 			}
 

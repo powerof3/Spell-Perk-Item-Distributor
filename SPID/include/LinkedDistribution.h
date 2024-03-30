@@ -14,8 +14,8 @@ namespace LinkedDistribution
 			/// Raw filters in RawLinkedForm only use MATCH, there is no meaning for ALL or NOT, so they are ignored.
 			Filters<FormOrEditorID> formIDs{};
 
-			IndexOrCount idxOrCount{ RandomCount(1, 1) };
-			Chance       chance{ 100 };
+			IndexOrCount  idxOrCount{ RandomCount(1, 1) };
+			PercentChance chance{ 100 };
 
 			std::string path{};
 		};
@@ -66,7 +66,7 @@ namespace LinkedDistribution
 		RECORD::TYPE type;
 		FormsMap     forms{};
 
-		void Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const Chance& chance, const std::string& path);
+		void Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const std::string& path);
 	};
 
 	class Manager : public ISingleton<Manager>
@@ -215,7 +215,7 @@ namespace LinkedDistribution
 	}
 
 	template <class Form>
-	void LinkedForms<Form>::Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const Chance& chance, const std::string& path)
+	void LinkedForms<Form>::Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const std::string& path)
 	{
 		for (const auto& linkedForm : linkedForms) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
