@@ -193,11 +193,10 @@ namespace Filter
 	{
 		// Fail chance first to avoid running unnecessary checks
 		if (chance < 1) {
-			double randNum = RNG().generate();
+			const auto randNum = RNG().generate();
 			if (randNum > chance) {
 				return Result::kFailRNG;
 			}
-			std::string res = "passed";
 		}
 
 		if (passed_string_filters(a_npcData) == Result::kFail) {

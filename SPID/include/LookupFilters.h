@@ -16,7 +16,7 @@ namespace Filter
 
 	struct Data
 	{
-		// Note that chance passed to this constructor is expected to be in percent. It will be converted to a decimal chance during by the constructor.
+		// Note that chance passed to this constructor is expected to be in percent. It will be converted to a decimal chance by the constructor.
 		Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, PercentChance a_chance);
 
 		StringFilters strings{};
