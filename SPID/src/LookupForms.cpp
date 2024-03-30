@@ -18,23 +18,23 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 
 	for (auto& rawForm : genericForms) {
 		// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit or DeathItems)
-		LookupGenericForm<RE::TESForm>(dataHandler, rawForm, [&](auto form, auto& idxOrCount, auto& filters, std::string& path) {
+		LookupGenericForm<RE::TESForm>(dataHandler, rawForm, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
 			if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
-				keywords.GetForms().emplace_back(keywords.GetSize(), keyword, idxOrCount, filters, path);
+				keywords.EmplaceForm(isValid, keyword, idxOrCount, filters, path);
 			} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
-				spells.GetForms().emplace_back(spells.GetSize(), spell, idxOrCount, filters, path);
+				spells.EmplaceForm(isValid, spell, idxOrCount, filters, path);
 			} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
-				perks.GetForms().emplace_back(perks.GetSize(), perk, idxOrCount, filters, path);
+				perks.EmplaceForm(isValid, perk, idxOrCount, filters, path);
 			} else if (const auto shout = form->As<RE::TESShout>(); shout) {
-				shouts.GetForms().emplace_back(shouts.GetSize(), shout, idxOrCount, filters, path);
+				shouts.EmplaceForm(isValid, shout, idxOrCount, filters, path);
 			} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
-				items.GetForms().emplace_back(items.GetSize(), item, idxOrCount, filters, path);
+				items.EmplaceForm(isValid, item, idxOrCount, filters, path);
 			} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
-				outfits.GetForms().emplace_back(outfits.GetSize(), outfit, idxOrCount, filters, path);
+				outfits.EmplaceForm(isValid, outfit, idxOrCount, filters, path);
 			} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
-				factions.GetForms().emplace_back(factions.GetSize(), faction, idxOrCount, filters, path);
+				factions.EmplaceForm(isValid, faction, idxOrCount, filters, path);
 			} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
-				skins.GetForms().emplace_back(skins.GetSize(), skin, idxOrCount, filters, path);
+				skins.EmplaceForm(isValid, skin, idxOrCount, filters, path);
 			} else {
 				auto type = form->GetFormType();
 				if (type == RE::FormType::Package || type == RE::FormType::FormList) {
@@ -49,7 +49,7 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 					} else {
 						packageIndex = std::get<Index>(idxOrCount);
 					}
-					packages.GetForms().emplace_back(packages.GetSize(), form, packageIndex, filters, path);
+					packages.EmplaceForm(isValid, form, packageIndex, filters, path);
 				}
 			}
 		});
@@ -78,12 +78,12 @@ void LogDistributablesLookup()
 	ForEachDistributable([]<typename Form>(Distributables<Form>& a_distributable) {
 		const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
 
-		const auto all = INI::configs[a_distributable.GetType()].size();
 		const auto added = a_distributable.GetSize();
+		const auto all = a_distributable.GetLookupCount();
 
 		// Only log entries that are actually present in INIs.
 		if (all > 0) {
-			logger::info("Registered {}/{} {}s:", added, all, recordName);
+			logger::info("Registered {}/{} {}s", added, all, recordName);
 		}
 	});
 

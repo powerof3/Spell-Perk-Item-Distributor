@@ -413,12 +413,15 @@ namespace Forms
 		std::size_t GetSize() const;
 		std::size_t GetLeveledSize() const;
 
+		std::size_t GetLookupCount() const;
+
 		RECORD::TYPE GetType() const;
 
 		DataVec<Form>& GetForms(bool a_onlyLevelEntries);
 		DataVec<Form>& GetForms();
 
 		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
+		void EmplaceForm(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path);
 
 		// Init formsWithLevels and formsNoLevels
 		void FinishLookupForms();
@@ -427,6 +430,10 @@ namespace Forms
 		RECORD::TYPE  type;
 		DataVec<Form> forms{};
 		DataVec<Form> formsWithLevels{};
+
+		/// Total number of entries that were matched to this Distributable, including invalid.
+		/// This counter is used for logging purposes.
+		std::size_t lookupCount{ 0 };
 
 		void LookupForm(RE::TESDataHandler* a_dataHandler, INI::Data& rawForm);
 	};
@@ -473,7 +480,7 @@ namespace Forms
 	/// <param name="rawForm">A raw form entry that needs to be looked up.</param>
 	/// <param name="callback">A callback to be called with validated data after successful lookup.</param>
 	template <class Form = RE::TESForm*>
-	void LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(Form*, IndexOrCount&, FilterData&, std::string& path)> callback);
+	void LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path)> callback);
 }
 
 template <class Form>
@@ -504,6 +511,12 @@ std::size_t Forms::Distributables<Form>::GetLeveledSize() const
 }
 
 template <class Form>
+std::size_t Forms::Distributables<Form>::GetLookupCount() const
+{
+	return lookupCount;
+}
+
+template <class Form>
 RECORD::TYPE Forms::Distributables<Form>::GetType() const
 {
 	return type;
@@ -525,15 +538,15 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntr
 }
 
 template <class Form>
-void Forms::Distributables<Form>::LookupForm(RE::TESDataHandler* a_dataHandler, INI::Data& rawForm)
+void Forms::Distributables<Form>::LookupForm(RE::TESDataHandler* dataHandler, INI::Data& rawForm)
 {
-	Forms::LookupGenericForm<Form>(a_dataHandler, rawForm, [&](Form* form, auto& idxOrCount, auto& filters, std::string& path) {
-		forms.emplace_back(forms.size(), form, idxOrCount, filters, path);
+	Forms::LookupGenericForm<Form>(dataHandler, rawForm, [&](bool isValid, Form* form, const auto& idxOrCount, const auto& filters, const auto& path) {
+		EmplaceForm(isValid, form, idxOrCount, filters, path);
 	});
 }
 
 template <class Form>
-void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec)
+void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec)
 {
 	if (a_INIDataVec.empty()) {
 		return;
@@ -544,8 +557,17 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* a_dataHandler,
 	forms.reserve(a_INIDataVec.size());
 
 	for (auto& rawForm : a_INIDataVec) {
-		LookupForm(a_dataHandler, rawForm);
+		LookupForm(dataHandler, rawForm);
 	}
+}
+
+template <class Form>
+void Forms::Distributables<Form>::EmplaceForm(bool isValid, Form* form, const IndexOrCount& idxOrCount, const FilterData& filters, const std::string& path)
+{
+	if (isValid) {
+		forms.emplace_back(forms.size(), form, idxOrCount, filters, path);
+	}
+	lookupCount++;
 }
 
 template <class Form>
@@ -572,7 +594,7 @@ void Forms::Distributables<Form>::FinishLookupForms()
 }
 
 template <class Form>
-void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(Form*, IndexOrCount&, FilterData&, std::string& path)> callback)
+void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path)> callback)
 {
 	auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] = rawForm;
 
@@ -588,10 +610,8 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& 
 				validEntry = detail::formID_to_form(dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
 			}
 
-			if (validEntry) {
-				FilterData filters{ strings, filterForms, level, traits, chance };
-				callback(form, idxOrCount, filters, path);
-			}
+			FilterData filters{ strings, filterForms, level, traits, chance };
+			callback(validEntry, form, idxOrCount, filters, path);
 		}
 	} catch (const Lookup::UnknownFormIDException& e) {
 		buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
