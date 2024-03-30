@@ -270,7 +270,7 @@ namespace INI
 			//CHANCE
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
-					data.chance = string::to_num<Chance>(str);
+					data.chance = string::to_num<PercentChance>(str);
 				}
 			}
 

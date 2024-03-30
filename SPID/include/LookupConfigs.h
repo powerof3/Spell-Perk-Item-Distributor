@@ -91,7 +91,7 @@ namespace INI
 		LevelFilters            levelFilters{};
 		Traits                  traits{};
 		IndexOrCount            idxOrCount{ RandomCount(1, 1) };
-		Chance                  chance{ 100 };
+		PercentChance           chance{ 100 };
 		std::string             path{};
 	};
 
