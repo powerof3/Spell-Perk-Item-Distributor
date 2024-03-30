@@ -84,24 +84,9 @@ namespace INI
 		std::string             path{};
 	};
 
-	struct RawExclusiveGroup
-	{
-		std::string name{};
-
-		/// Raw filters in RawExclusiveGroup only use NOT and MATCH, there is no meaning for ALL, so it's ignored.
-		Filters<FormOrEditorID> rawFormFilters{};
-		std::string             path{};
-	};
-
 	using DataVec = std::vector<Data>;
-	using ExclusiveGroupsVec = std::vector<RawExclusiveGroup>;
-
+	
 	inline Map<RECORD::TYPE, DataVec> configs{};
-
-	/// <summary>
-	/// A list of RawExclusiveGroups that will be processed along with configs.
-	/// </summary>
-	inline ExclusiveGroupsVec exclusiveGroups{};
 
 	std::pair<bool, bool> GetConfigs();
 }

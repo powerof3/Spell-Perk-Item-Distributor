@@ -101,25 +101,12 @@ void LogDistributablesLookup()
 //      instead of quering data handler for the same raw FormOrEditorID.
 void LookupExclusiveGroups(RE::TESDataHandler* const dataHandler)
 {
-	ExclusiveGroups::Manager::GetSingleton()->LookupExclusiveGroups(dataHandler, INI::exclusiveGroups);
+	ExclusiveGroups::Manager::GetSingleton()->LookupExclusiveGroups(dataHandler);
 }
 
 void LogExclusiveGroupsLookup()
 {
-	if (const auto manager = ExclusiveGroups::Manager::GetSingleton(); manager) {
-		const auto& groups = manager->GetGroups();
-
-		if (!groups.empty()) {
-			logger::info("{:*^50}", "EXCLUSIVE GROUPS");
-
-			for (const auto& [group, forms] : groups) {
-				logger::info("Adding '{}' exclusive group", group);
-				for (const auto& form : forms) {
-					logger::info("  {}", describe(form));
-				}
-			}
-		}
-	}
+	ExclusiveGroups::Manager::GetSingleton()->LogExclusiveGroupsLookup();
 }
 
 void LookupLinkedForms(RE::TESDataHandler* const dataHandler)
