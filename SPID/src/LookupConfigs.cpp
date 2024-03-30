@@ -84,7 +84,7 @@ namespace INI
 			return group;
 		}
 
-		std::pair<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+		std::pair<Data, std::optional<std::string>> parse_ini(const RECORD::TYPE& typeHint, const std::string& a_value, const std::string& a_path)
 		{
 			Data data{};
 
@@ -242,12 +242,12 @@ namespace INI
 			}
 
 			//ITEMCOUNT/INDEX
-			if (a_key == "Package") {  // reuse item count for package stack index
+			if (typeHint == RECORD::kPackage) {  // reuse item count for package stack index
 				data.idxOrCount = 0;
 			}
 
 			if (kIdxOrCount < size) {
-				if (a_key == "Package") {  // If it's a package, then we only expect a single number.
+				if (typeHint == RECORD::kPackage) {  // If it's a package, then we only expect a single number.
 					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
 						data.idxOrCount = string::to_num<Index>(str);
 					}
@@ -326,8 +326,10 @@ namespace INI
 							continue;
 						}
 
-						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
-						configs[key.pItem].emplace_back(data);
+						auto type = RECORD::GetType(key.pItem);
+						auto [data, sanitized_str] = detail::parse_ini(type, entry, truncatedPath);
+
+						configs[type].emplace_back(data);
 
 						if (sanitized_str) {
 							oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));

@@ -8,17 +8,59 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 {
 	using namespace Forms;
 
+	ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
+		const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
+
+		a_distributable.LookupForms(dataHandler, recordName, INI::configs[a_distributable.GetType()]);
+	});
+
+	auto& genericForms = INI::configs[RECORD::kForm];
+
+	for (auto& rawForm : genericForms) {
+		// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit or DeathItems)
+		LookupGenericForm<RE::TESForm>(dataHandler, rawForm, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
+			if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
+				keywords.EmplaceForm(isValid, keyword, idxOrCount, filters, path);
+			} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
+				spells.EmplaceForm(isValid, spell, idxOrCount, filters, path);
+			} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
+				perks.EmplaceForm(isValid, perk, idxOrCount, filters, path);
+			} else if (const auto shout = form->As<RE::TESShout>(); shout) {
+				shouts.EmplaceForm(isValid, shout, idxOrCount, filters, path);
+			} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
+				items.EmplaceForm(isValid, item, idxOrCount, filters, path);
+			} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
+				outfits.EmplaceForm(isValid, outfit, idxOrCount, filters, path);
+			} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
+				factions.EmplaceForm(isValid, faction, idxOrCount, filters, path);
+			} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
+				skins.EmplaceForm(isValid, skin, idxOrCount, filters, path);
+			} else {
+				auto type = form->GetFormType();
+				if (type == RE::FormType::Package || type == RE::FormType::FormList) {
+					// With generic Form entries we default to RandomCount, so we need to properly convert it to Index if it turned out to be a package.
+					Index packageIndex = 1;
+					if (std::holds_alternative<RandomCount>(idxOrCount)) {
+						auto& count = std::get<RandomCount>(idxOrCount);
+						if (!count.IsExact()) {
+							logger::warn("Inferred Form is a Package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", count.min);
+						}
+						packageIndex = count.min;
+					} else {
+						packageIndex = std::get<Index>(idxOrCount);
+					}
+					packages.EmplaceForm(isValid, form, packageIndex, filters, path);
+				}
+			}
+		});
+	}
+
+	Dependencies::ResolveKeywords();
+
 	bool valid = false;
 
 	ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
-		const auto& recordName = RECORD::add[a_distributable.GetType()];
-
-		a_distributable.LookupForms(dataHandler, recordName, INI::configs[recordName]);
-		if constexpr (std::is_same_v<RE::BGSKeyword, Form>) {
-			Dependencies::ResolveKeywords();
-		}
 		a_distributable.FinishLookupForms();
-
 		if (a_distributable) {
 			valid = true;
 		}
@@ -33,15 +75,15 @@ void LogDistributablesLookup()
 
 	logger::info("{:*^50}", "PROCESSING");
 
-	ForEachDistributable([]<typename Form>(const Distributables<Form>& a_distributable) {
-		const auto& recordName = RECORD::add[a_distributable.GetType()];
+	ForEachDistributable([]<typename Form>(Distributables<Form>& a_distributable) {
+		const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
 
-		const auto all = INI::configs[recordName].size();
 		const auto added = a_distributable.GetSize();
+		const auto all = a_distributable.GetLookupCount();
 
 		// Only log entries that are actually present in INIs.
 		if (all > 0) {
-			logger::info("Adding {}/{} {}s", added, all, recordName);
+			logger::info("Registered {}/{} {}s", added, all, recordName);
 		}
 	});
 
@@ -78,14 +120,14 @@ void LogExclusiveGroupsLookup()
 	}
 }
 
-void LookupLinkedItems(RE::TESDataHandler* const dataHandler)
+void LookupLinkedForms(RE::TESDataHandler* const dataHandler)
 {
-	LinkedDistribution::Manager::GetSingleton()->LookupLinkedItems(dataHandler);
+	LinkedDistribution::Manager::GetSingleton()->LookupLinkedForms(dataHandler);
 }
 
-void LogLinkedItemsLookup()
+void LogLinkedFormsLookup()
 {
-	LinkedDistribution::Manager::GetSingleton()->LogLinkedItemsLookup();
+	LinkedDistribution::Manager::GetSingleton()->LogLinkedFormsLookup();
 }
 
 bool Lookup::LookupForms()
@@ -104,8 +146,8 @@ bool Lookup::LookupForms()
 			logger::info("Lookup took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
 		}
 
-		LookupLinkedItems(dataHandler);
-		LogLinkedItemsLookup();
+		LookupLinkedForms(dataHandler);
+		LogLinkedFormsLookup();
 
 		LookupExclusiveGroups(dataHandler);
 		LogExclusiveGroupsLookup();
