@@ -327,6 +327,10 @@ namespace INI
 						}
 
 						auto type = RECORD::GetType(key.pItem);
+						if (type == RECORD::kTotal) {
+							logger::warn("\t\tUnsupported Form type: {}"sv, key.pItem);
+							continue;
+						}
 						auto [data, sanitized_str] = detail::parse_ini(type, entry, truncatedPath);
 
 						configs[type].emplace_back(data);
@@ -335,7 +339,7 @@ namespace INI
 							oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
 						}
 					} catch (...) {
-						logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
+						logger::warn("\t\tFailed to parse entry [{} = {}]"sv, key.pItem, entry);
 						shouldLogErrors = true;
 					}
 				}

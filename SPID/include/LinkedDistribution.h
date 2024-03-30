@@ -153,10 +153,10 @@ namespace LinkedDistribution
 			std::visit(overload{
 						   [&](const FormModPair& formMod) {
 							   auto& [formID, modName] = formMod;
-							   buffered_logger::error("\t\t[{}] LinkedForm [0x{:X}] ({}) SKIP - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+							   buffered_logger::error("\t\t[{}] LinkedForm [0x{:X}] ({}) SKIP - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 						   },
 						   [&](std::string editorID) {
-							   buffered_logger::error("\t\t[{}] LinkedForm ({}) SKIP - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+							   buffered_logger::error("\t\t[{}] LinkedForm ({}) SKIP - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 						   } },
 				e.formOrEditorID);
 		} catch (const InvalidFormTypeException& e) {

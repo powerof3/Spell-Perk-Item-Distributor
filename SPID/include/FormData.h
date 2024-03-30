@@ -37,13 +37,13 @@ namespace Forms
 		/// </summary>
 		struct MismatchingFormTypeException : std::exception
 		{
-			const RE::FormType   expectedFformType;
+			const RE::FormType   expectedFormType;
 			const RE::FormType   actualFormType;
 			const FormOrEditorID formOrEditorID;
 			const std::string    path;
 
-			MismatchingFormTypeException(RE::FormType expectedFformType, RE::FormType actualFormType, const FormOrEditorID& formOrEditorID, const std::string& path) :
-				expectedFformType(expectedFformType),
+			MismatchingFormTypeException(RE::FormType expectedFormType, RE::FormType actualFormType, const FormOrEditorID& formOrEditorID, const std::string& path) :
+				expectedFormType(expectedFormType),
 				actualFormType(actualFormType),
 				formOrEditorID(formOrEditorID),
 				path(path)
@@ -216,8 +216,10 @@ namespace Forms
 								   }
 
 								   form = as_form(anyForm);
-								   if (!form) {
-									   throw MismatchingFormTypeException(anyForm->GetFormType(), Form::FORMTYPE, FormModPair{ *formID, modName }, path);
+								   if (!form || anyForm->GetFormType() != Form::FORMTYPE) {
+									   // Ideally, we'd want to throw separate exception for unsupported form type, 
+									   // so that attempting to distribute, for example, CELL would properly report such error.
+									   throw MismatchingFormTypeException(Form::FORMTYPE, anyForm->GetFormType(), FormModPair{ *formID, modName }, path);
 								   }
 
 								   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
@@ -232,7 +234,6 @@ namespace Forms
 							   if (editorID.empty()) {
 								   throw MalformedEditorIDException(path);
 							   }
-							   //
 							   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 								   form = find_or_create_keyword(editorID);
 							   } else {
@@ -322,10 +323,10 @@ namespace Forms
 					std::visit(overload{
 								   [&](const FormModPair& formMod) {
 									   auto& [formID, modName] = formMod;
-									   buffered_logger::error("\t\t[{}] Filter[0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+									   buffered_logger::error("\t\t[{}] Filter[0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 								   },
 								   [&](std::string editorID) {
-									   buffered_logger::error("\t\t[{}] Filter ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+									   buffered_logger::error("\t\t[{}] Filter ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 								   } },
 						e.formOrEditorID);
 				} catch (const InvalidFormTypeException& e) {
@@ -631,10 +632,10 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& 
 		std::visit(overload{
 					   [&](const FormModPair& formMod) {
 						   auto& [formID, modName] = formMod;
-						   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+						   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 					   },
 					   [&](std::string editorID) {
-						   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+						   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 					   } },
 			e.formOrEditorID);
 	} catch (const Lookup::InvalidFormTypeException& e) {

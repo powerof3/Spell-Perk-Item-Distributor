@@ -30,7 +30,7 @@ namespace LinkedDistribution
 			std::string rawType = a_key.substr(6);
 			auto        type = RECORD::GetType(rawType);
 			if (type == RECORD::kTotal) {
-				logger::warn("IGNORED: Invalid Linked Form type: {}"sv, rawType);
+				logger::warn("IGNORED: Unsupported Linked Form type: {}"sv, rawType);
 				return true;
 			}
 
@@ -136,13 +136,15 @@ namespace LinkedDistribution
 						if (std::holds_alternative<RandomCount>(idxOrCount)) {
 							auto& count = std::get<RandomCount>(idxOrCount);
 							if (!count.IsExact()) {
-								logger::warn("Inferred Form is a Package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", count.min);
+								logger::warn("\t[{}] Inferred Form is a Package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", path, count.min);
 							}
 							packageIndex = count.min;
 						} else {
 							packageIndex = std::get<Index>(idxOrCount);
 						}
 						packages.Link(form, parentForms, packageIndex, chance, path);
+					} else {
+						logger::warn("\t[{}] Unsupported Form type: {}", path, RE::FormTypeToString(type));
 					}
 				}
 			}
