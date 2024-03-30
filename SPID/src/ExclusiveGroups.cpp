@@ -3,7 +3,7 @@
 
 namespace ExclusiveGroups
 {
-	bool INI::TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+	bool INI::TryParse(const std::string& a_key, const std::string& a_value, const Path& a_path)
 	{
 		if (a_key != "ExclusiveGroup") {
 			return false;

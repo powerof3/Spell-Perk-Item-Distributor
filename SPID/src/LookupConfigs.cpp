@@ -48,7 +48,7 @@ namespace INI
 			return newValue;
 		}
 
-		std::pair<Data, std::optional<std::string>> parse_ini(const RECORD::TYPE& typeHint, const std::string& a_value, const std::string& a_path)
+		std::pair<Data, std::optional<std::string>> parse_ini(const RECORD::TYPE& typeHint, const std::string& a_value, const Path& a_path)
 		{
 			Data data{};
 

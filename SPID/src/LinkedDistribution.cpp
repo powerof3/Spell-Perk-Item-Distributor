@@ -21,37 +21,37 @@ namespace LinkedDistribution
 			kRequired = kLinkedForms
 		};
 
-		bool TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+		bool TryParse(const std::string& key, const std::string& value, const Path& path)
 		{
-			if (!a_key.starts_with("Linked"sv)) {
+			if (!key.starts_with("Linked"sv)) {
 				return false;
 			}
 
-			std::string rawType = a_key.substr(6);
+			std::string rawType = key.substr(6);
 			auto        type = RECORD::GetType(rawType);
 			if (type == RECORD::kTotal) {
 				logger::warn("IGNORED: Unsupported Linked Form type: {}"sv, rawType);
 				return true;
 			}
 
-			const auto sections = string::split(a_value, "|");
+			const auto sections = string::split(value, "|");
 			const auto size = sections.size();
 
 			if (size <= kRequired) {
-				logger::warn("IGNORED: LinkedItem must have a form and at least one Form Filter: {} = {}"sv, a_key, a_value);
+				logger::warn("IGNORED: LinkedItem must have a form and at least one Form Filter: {} = {}"sv, key, value);
 				return true;
 			}
 
 			auto split_IDs = distribution::split_entry(sections[kLinkedForms]);
 
 			if (split_IDs.empty()) {
-				logger::warn("IGNORED: LinkedItem must have at least one Form Filter : {} = {}"sv, a_key, a_value);
+				logger::warn("IGNORED: LinkedItem must have at least one Form Filter : {} = {}"sv, key, value);
 				return true;
 			}
 
 			INI::RawLinkedForm item{};
 			item.formOrEditorID = distribution::get_record(sections[kForm]);
-			item.path = a_path;
+			item.path = path;
 
 			for (auto& IDs : split_IDs) {
 				item.formIDs.MATCH.push_back(distribution::get_record(IDs));

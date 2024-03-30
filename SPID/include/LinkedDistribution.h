@@ -17,7 +17,7 @@ namespace LinkedDistribution
 			IndexOrCount  idxOrCount{ RandomCount(1, 1) };
 			PercentChance chance{ 100 };
 
-			std::string path{};
+			Path path{};
 		};
 
 		using LinkedFormsVec = std::vector<RawLinkedForm>;
@@ -29,7 +29,7 @@ namespace LinkedDistribution
 		/// Checks whether given entry is a linked form and attempts to parse it.
 		/// </summary>
 		/// <returns>true if given entry was a linked form. Note that returned value doesn't represent whether or parsing was successful.</returns>
-		bool TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path);
+		bool TryParse(const std::string& key, const std::string& value, const Path&);
 	}
 
 	using namespace Forms;
@@ -66,7 +66,7 @@ namespace LinkedDistribution
 		RECORD::TYPE type;
 		FormsMap     forms{};
 
-		void Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const std::string& path);
+		void Link(Form*, const FormVec& linkedForms, const IndexOrCount&, const PercentChance&, const Path&);
 	};
 
 	class Manager : public ISingleton<Manager>
@@ -215,7 +215,7 @@ namespace LinkedDistribution
 	}
 
 	template <class Form>
-	void LinkedForms<Form>::Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const std::string& path)
+	void LinkedForms<Form>::Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
 	{
 		for (const auto& linkedForm : linkedForms) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {

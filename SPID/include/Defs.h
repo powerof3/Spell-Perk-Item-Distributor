@@ -93,6 +93,8 @@ struct Traits
 	std::optional<bool>    teammate{};
 };
 
+using Path = std::string;
+
 using Index = std::int32_t;
 using Count = std::int32_t;
 using RandomCount = Range<Count>;

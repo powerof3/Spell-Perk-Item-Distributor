@@ -10,9 +10,9 @@ namespace Forms
 		struct UnknownPluginException : std::exception
 		{
 			const std::string modName;
-			const std::string path;
+			const Path        path;
 
-			UnknownPluginException(const std::string& modName, const std::string& path) :
+			UnknownPluginException(const std::string& modName, const Path& path) :
 				modName(modName),
 				path(path)
 			{}
@@ -22,9 +22,9 @@ namespace Forms
 		{
 			const RE::FormID                 formID;
 			const std::optional<std::string> modName;
-			const std::string                path;
+			const Path                       path;
 
-			UnknownFormIDException(RE::FormID formID, const std::string& path, std::optional<std::string> modName = std::nullopt) :
+			UnknownFormIDException(RE::FormID formID, const Path& path, std::optional<std::string> modName = std::nullopt) :
 				formID(formID),
 				path(path),
 				modName(modName)
@@ -40,9 +40,9 @@ namespace Forms
 			const RE::FormType   expectedFormType;
 			const RE::FormType   actualFormType;
 			const FormOrEditorID formOrEditorID;
-			const std::string    path;
+			const Path           path;
 
-			MismatchingFormTypeException(RE::FormType expectedFormType, RE::FormType actualFormType, const FormOrEditorID& formOrEditorID, const std::string& path) :
+			MismatchingFormTypeException(RE::FormType expectedFormType, RE::FormType actualFormType, const FormOrEditorID& formOrEditorID, const Path& path) :
 				expectedFormType(expectedFormType),
 				actualFormType(actualFormType),
 				formOrEditorID(formOrEditorID),
@@ -54,9 +54,9 @@ namespace Forms
 		{
 			const RE::FormID                 formID;
 			const std::optional<std::string> modName;
-			const std::string                path;
+			const Path                       path;
 
-			InvalidKeywordException(RE::FormID formID, const std::string& path, std::optional<std::string> modName = std::nullopt) :
+			InvalidKeywordException(RE::FormID formID, const Path& path, std::optional<std::string> modName = std::nullopt) :
 				formID(formID),
 				modName(modName),
 				path(path)
@@ -67,9 +67,9 @@ namespace Forms
 		{
 			const std::string editorID;
 			const bool        isDynamic;
-			const std::string path;
+			const Path        path;
 
-			KeywordNotFoundException(const std::string& editorID, bool isDynamic, const std::string& path) :
+			KeywordNotFoundException(const std::string& editorID, bool isDynamic, const Path& path) :
 				editorID(editorID),
 				isDynamic(isDynamic),
 				path(path)
@@ -79,9 +79,9 @@ namespace Forms
 		struct UnknownEditorIDException : std::exception
 		{
 			const std::string editorID;
-			const std::string path;
+			const Path        path;
 
-			UnknownEditorIDException(const std::string& editorID, const std::string& path) :
+			UnknownEditorIDException(const std::string& editorID, const Path& path) :
 				editorID(editorID),
 				path(path)
 			{}
@@ -94,9 +94,9 @@ namespace Forms
 		{
 			const RE::FormType   formType;
 			const FormOrEditorID formOrEditorID;
-			const std::string    path;
+			const Path           path;
 
-			InvalidFormTypeException(RE::FormType formType, const FormOrEditorID& formOrEditorID, const std::string& path) :
+			InvalidFormTypeException(RE::FormType formType, const FormOrEditorID& formOrEditorID, const Path& path) :
 				formType(formType),
 				formOrEditorID(formOrEditorID),
 				path(path)
@@ -105,9 +105,9 @@ namespace Forms
 
 		struct MalformedEditorIDException : std::exception
 		{
-			const std::string path;
+			const Path path;
 
-			MalformedEditorIDException(const std::string& path) :
+			MalformedEditorIDException(const Path& path) :
 				path(path)
 			{}
 		};
@@ -140,7 +140,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, bool whitelistedOnly = false)
 		{
 			Form*              form = nullptr;
 			const RE::TESFile* mod = nullptr;
@@ -269,7 +269,7 @@ namespace Forms
 			return form;
 		}
 
-		inline const RE::TESFile* get_file(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path)
+		inline const RE::TESFile* get_file(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path)
 		{
 			auto formOrMod = get_form_or_mod(dataHandler, formOrEditorID, path);
 
@@ -281,7 +281,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		Form* get_form(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		Form* get_form(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, bool whitelistedOnly = false)
 		{
 			auto formOrMod = get_form_or_mod<Form>(dataHandler, formOrEditorID, path, whitelistedOnly);
 
@@ -292,7 +292,7 @@ namespace Forms
 			return nullptr;
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* const a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false, bool whitelistedOnly = true)
+		inline bool formID_to_form(RE::TESDataHandler* const a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const Path& a_path, bool a_all = false, bool whitelistedOnly = true)
 		{
 			if (a_rawFormVec.empty()) {
 				return true;
@@ -355,7 +355,7 @@ namespace Forms
 		IndexOrCount idxOrCount{ RandomCount(1, 1) };
 		FilterData   filters{};
 
-		std::string   path{};
+		Path          path{};
 		std::uint32_t npcCount{ 0 };
 
 		bool operator==(const Data& a_rhs) const;
@@ -421,8 +421,8 @@ namespace Forms
 		DataVec<Form>& GetForms(bool a_onlyLevelEntries);
 		DataVec<Form>& GetForms();
 
-		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
-		void EmplaceForm(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path);
+		void LookupForms(RE::TESDataHandler*, std::string_view a_type, INI::DataVec&);
+		void EmplaceForm(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path&);
 
 		// Init formsWithLevels and formsNoLevels
 		void FinishLookupForms();
@@ -436,7 +436,7 @@ namespace Forms
 		/// This counter is used for logging purposes.
 		std::size_t lookupCount{ 0 };
 
-		void LookupForm(RE::TESDataHandler* a_dataHandler, INI::Data& rawForm);
+		void LookupForm(RE::TESDataHandler*, INI::Data&);
 	};
 
 	inline Distributables<RE::SpellItem>      spells{ RECORD::kSpell };
@@ -481,7 +481,7 @@ namespace Forms
 	/// <param name="rawForm">A raw form entry that needs to be looked up.</param>
 	/// <param name="callback">A callback to be called with validated data after successful lookup.</param>
 	template <class Form = RE::TESForm*>
-	void LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path)> callback);
+	void LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback);
 }
 
 template <class Form>
@@ -563,7 +563,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* dataHandler, s
 }
 
 template <class Form>
-void Forms::Distributables<Form>::EmplaceForm(bool isValid, Form* form, const IndexOrCount& idxOrCount, const FilterData& filters, const std::string& path)
+void Forms::Distributables<Form>::EmplaceForm(bool isValid, Form* form, const IndexOrCount& idxOrCount, const FilterData& filters, const Path& path)
 {
 	if (isValid) {
 		forms.emplace_back(forms.size(), form, idxOrCount, filters, path);
@@ -595,7 +595,7 @@ void Forms::Distributables<Form>::FinishLookupForms()
 }
 
 template <class Form>
-void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path)> callback)
+void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback)
 {
 	auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] = rawForm;
 
