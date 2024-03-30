@@ -217,7 +217,7 @@ namespace Forms
 
 								   form = as_form(anyForm);
 								   if (!form || anyForm->GetFormType() != Form::FORMTYPE) {
-									   // Ideally, we'd want to throw separate exception for unsupported form type, 
+									   // Ideally, we'd want to throw separate exception for unsupported form type,
 									   // so that attempting to distribute, for example, CELL would properly report such error.
 									   throw MismatchingFormTypeException(Form::FORMTYPE, anyForm->GetFormType(), FormModPair{ *formID, modName }, path);
 								   }
