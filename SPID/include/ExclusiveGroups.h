@@ -3,6 +3,27 @@
 
 namespace ExclusiveGroups
 {
+	namespace INI
+	{
+		struct RawExclusiveGroup
+		{
+			std::string name{};
+
+			/// Raw filters in RawExclusiveGroup only use NOT and MATCH, there is no meaning for ALL, so it's ignored.
+			Filters<FormOrEditorID> formIDs{};
+			Path                    path{};
+		};
+
+		using ExclusiveGroupsVec = std::vector<RawExclusiveGroup>;
+
+		/// <summary>
+		/// A list of RawExclusiveGroups that will be processed along with configs.
+		/// </summary>
+		inline ExclusiveGroupsVec exclusiveGroups{};
+
+		bool TryParse(const std::string& a_key, const std::string& a_value, const Path& a_path);
+	}
+
 	using GroupName = std::string;
 	using LinkedGroups = std::unordered_map<RE::TESForm*, std::unordered_set<GroupName>>;
 	using Groups = std::unordered_map<GroupName, std::unordered_set<RE::TESForm*>>;
@@ -17,7 +38,9 @@ namespace ExclusiveGroups
 		/// </summary>
 		/// <param name="dataHandler">A DataHandler that will perform the actual lookup.</param>
 		/// <param name="rawExclusiveGroups">A raw exclusive group entries that should be processed.</param>
-		void LookupExclusiveGroups(RE::TESDataHandler* const dataHandler, INI::ExclusiveGroupsVec& rawExclusiveGroups);
+		void LookupExclusiveGroups(RE::TESDataHandler* const dataHandler, INI::ExclusiveGroupsVec& rawExclusiveGroups = INI::exclusiveGroups);
+
+		void LogExclusiveGroupsLookup();
 
 		/// <summary>
 		/// Gets a set of all forms that are in the same exclusive group as the given form.

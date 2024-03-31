@@ -21,37 +21,48 @@ namespace LinkedDistribution
 			kRequired = kLinkedForms
 		};
 
-		bool TryParse(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+		bool TryParse(const std::string& originalKey, const std::string& value, const Path& path)
 		{
-			if (!a_key.starts_with("Linked"sv)) {
+			std::string key = originalKey;
+
+			Scope scope = kLocal;
+
+			if (key.starts_with("Global"sv)) {
+				scope = kGlobal;
+				key.erase(0, 6);
+			}
+
+			if (!key.starts_with("Linked"sv)) {
 				return false;
 			}
 
-			std::string rawType = a_key.substr(6);
+			std::string rawType = key.substr(6);
 			auto        type = RECORD::GetType(rawType);
+
 			if (type == RECORD::kTotal) {
-				logger::warn("IGNORED: Invalid Linked Form type: {}"sv, rawType);
+				logger::warn("IGNORED: Unsupported Linked Form type: {}"sv, rawType);
 				return true;
 			}
 
-			const auto sections = string::split(a_value, "|");
+			const auto sections = string::split(value, "|");
 			const auto size = sections.size();
 
 			if (size <= kRequired) {
-				logger::warn("IGNORED: LinkedItem must have a form and at least one Form Filter: {} = {}"sv, a_key, a_value);
+				logger::warn("IGNORED: LinkedItem must have a form and at least one Form Filter: {} = {}"sv, key, value);
 				return true;
 			}
 
 			auto split_IDs = distribution::split_entry(sections[kLinkedForms]);
 
 			if (split_IDs.empty()) {
-				logger::warn("IGNORED: LinkedItem must have at least one Form Filter : {} = {}"sv, a_key, a_value);
+				logger::warn("IGNORED: LinkedItem must have at least one Form Filter : {} = {}"sv, key, value);
 				return true;
 			}
 
 			INI::RawLinkedForm item{};
 			item.formOrEditorID = distribution::get_record(sections[kForm]);
-			item.path = a_path;
+			item.scope = scope;
+			item.path = path;
 
 			for (auto& IDs : split_IDs) {
 				item.formIDs.MATCH.push_back(distribution::get_record(IDs));
@@ -106,28 +117,28 @@ namespace LinkedDistribution
 		auto& genericForms = rawLinkedForms[RECORD::kForm];
 		for (auto& rawForm : genericForms) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
-				auto& [formID, parentFormIDs, idxOrCount, chance, path] = rawForm;
+				auto& [formID, scope, parentFormIDs, idxOrCount, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
 					continue;
 				}
 				// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit or DeathItems)
 				if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
-					keywords.Link(keyword, parentForms, idxOrCount, chance, path);
+					keywords.Link(keyword, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
-					spells.Link(spell, parentForms, idxOrCount, chance, path);
+					spells.Link(spell, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
-					perks.Link(perk, parentForms, idxOrCount, chance, path);
+					perks.Link(perk, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto shout = form->As<RE::TESShout>(); shout) {
-					shouts.Link(shout, parentForms, idxOrCount, chance, path);
+					shouts.Link(shout, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
-					items.Link(item, parentForms, idxOrCount, chance, path);
+					items.Link(item, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
-					outfits.Link(outfit, parentForms, idxOrCount, chance, path);
+					outfits.Link(outfit, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
-					factions.Link(faction, parentForms, idxOrCount, chance, path);
+					factions.Link(faction, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
-					skins.Link(skin, parentForms, idxOrCount, chance, path);
+					skins.Link(skin, scope, parentForms, idxOrCount, chance, path);
 				} else {
 					auto type = form->GetFormType();
 					if (type == RE::FormType::Package || type == RE::FormType::FormList) {
@@ -136,13 +147,15 @@ namespace LinkedDistribution
 						if (std::holds_alternative<RandomCount>(idxOrCount)) {
 							auto& count = std::get<RandomCount>(idxOrCount);
 							if (!count.IsExact()) {
-								logger::warn("Inferred Form is a Package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", count.min);
+								logger::warn("\t[{}] Inferred Form is a Package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", path, count.min);
 							}
 							packageIndex = count.min;
 						} else {
 							packageIndex = std::get<Index>(idxOrCount);
 						}
-						packages.Link(form, parentForms, packageIndex, chance, path);
+						packages.Link(form, scope, parentForms, packageIndex, chance, path);
+					} else {
+						logger::warn("\t[{}] Unsupported Form type: {}", path, RE::FormTypeToString(type));
 					}
 				}
 			}
@@ -169,15 +182,19 @@ namespace LinkedDistribution
 				return;
 			}
 
-			std::unordered_map<RE::TESForm*, std::vector<RE::TESForm*>> map{};
+			std::unordered_map<RE::TESForm*, std::vector<DistributedForm>> map{};
 
 			// Iterate through the original map
 			for (const auto& pair : linkedForms.GetForms()) {
-				const auto           key = pair.first;
-				const DataVec<Form>& values = pair.second;
+				const auto& path = pair.first;
+				const auto& formsMap = pair.second;
 
-				for (const auto& value : values) {
-					map[value.form].push_back(key);
+				for (const auto& pair : formsMap) {
+					const auto  key = pair.first;
+					const auto& values = pair.second;
+					for (const auto& value : values) {
+						map[value.form].emplace_back(key, path);
+					}
 				}
 			}
 
@@ -197,21 +214,23 @@ namespace LinkedDistribution
 			}
 		});
 	}
+#pragma endregion
 
-	void Manager::ForEachLinkedDistributionSet(const std::set<RE::TESForm*>& targetForms, std::function<void(DistributionSet&)> performDistribution)
+#pragma region Distribution
+	void Manager::ForEachLinkedDistributionSet(const DistributedForms& targetForms, Scope scope, std::function<void(DistributionSet&)> performDistribution)
 	{
-		for (const auto form : targetForms) {
-			auto& linkedSpells = LinkedFormsForForm(form, spells);
-			auto& linkedPerks = LinkedFormsForForm(form, perks);
-			auto& linkedItems = LinkedFormsForForm(form, items);
-			auto& linkedShouts = LinkedFormsForForm(form, shouts);
-			auto& linkedLevSpells = LinkedFormsForForm(form, levSpells);
-			auto& linkedPackages = LinkedFormsForForm(form, packages);
-			auto& linkedOutfits = LinkedFormsForForm(form, outfits);
-			auto& linkedKeywords = LinkedFormsForForm(form, keywords);
-			auto& linkedFactions = LinkedFormsForForm(form, factions);
-			auto& linkedSleepOutfits = LinkedFormsForForm(form, sleepOutfits);
-			auto& linkedSkins = LinkedFormsForForm(form, skins);
+		for (const auto& form : targetForms) {
+			auto& linkedSpells = LinkedFormsForForm(form, scope, spells);
+			auto& linkedPerks = LinkedFormsForForm(form, scope, perks);
+			auto& linkedItems = LinkedFormsForForm(form, scope, items);
+			auto& linkedShouts = LinkedFormsForForm(form, scope, shouts);
+			auto& linkedLevSpells = LinkedFormsForForm(form, scope, levSpells);
+			auto& linkedPackages = LinkedFormsForForm(form, scope, packages);
+			auto& linkedOutfits = LinkedFormsForForm(form, scope, outfits);
+			auto& linkedKeywords = LinkedFormsForForm(form, scope, keywords);
+			auto& linkedFactions = LinkedFormsForForm(form, scope, factions);
+			auto& linkedSleepOutfits = LinkedFormsForForm(form, scope, sleepOutfits);
+			auto& linkedSkins = LinkedFormsForForm(form, scope, skins);
 
 			DistributionSet linkedEntries{
 				linkedSpells,
@@ -236,10 +255,16 @@ namespace LinkedDistribution
 		}
 	}
 
-	void Manager::ForEachLinkedDeathDistributionSet(const std::set<RE::TESForm*>& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	void Manager::ForEachLinkedDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
 	{
-		for (const auto form : targetForms) {
-			auto& linkedDeathItems = LinkedFormsForForm(form, deathItems);
+		ForEachLinkedDistributionSet(targetForms, Scope::kLocal, performDistribution);
+		ForEachLinkedDistributionSet(targetForms, Scope::kGlobal, performDistribution);
+	}
+
+	void Manager::ForEachLinkedDeathDistributionSet(const DistributedForms& targetForms, Scope scope, std::function<void(DistributionSet&)> performDistribution)
+	{
+		for (const auto& form : targetForms) {
+			auto& linkedDeathItems = LinkedFormsForForm(form, scope, deathItems);
 
 			DistributionSet linkedEntries{
 				DistributionSet::empty<RE::SpellItem>(),
@@ -264,5 +289,10 @@ namespace LinkedDistribution
 		}
 	}
 
+	void Manager::ForEachLinkedDeathDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	{
+		ForEachLinkedDeathDistributionSet(targetForms, Scope::kLocal, performDistribution);
+		ForEachLinkedDeathDistributionSet(targetForms, Scope::kGlobal, performDistribution);
+	}
 #pragma endregion
 }

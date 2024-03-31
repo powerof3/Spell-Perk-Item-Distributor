@@ -70,6 +70,8 @@ namespace Distribute
 		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount);
 	}
 
+	using namespace Forms;
+
 #pragma region Packages, Death Items
 	// old method (distributing one by one)
 	// for now, only packages/death items use this
@@ -79,12 +81,12 @@ namespace Distribute
 		Forms::DataVec<Form>&                    forms,
 		const PCLevelMult::Input&                a_input,
 		std::function<bool(Form*, IndexOrCount)> a_callback,
-		std::set<RE::TESForm*>*                  accumulatedForms = nullptr)
+		DistributedForms*                        accumulatedForms = nullptr)
 	{
 		for (auto& formData : forms) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData)) {
 				if (accumulatedForms) {
-					accumulatedForms->insert(formData.form);
+					accumulatedForms->insert({ formData.form, formData.path });
 				}
 				a_callback(formData.form, formData.idxOrCount);
 				++formData.npcCount;
@@ -100,12 +102,12 @@ namespace Distribute
 		Forms::DataVec<Form>&      forms,
 		const PCLevelMult::Input&  a_input,
 		std::function<bool(Form*)> a_callback,
-		std::set<RE::TESForm*>*    accumulatedForms = nullptr)
+		DistributedForms*          accumulatedForms = nullptr)
 	{
 		for (auto& formData : forms) {  // Vector is reversed in FinishLookupForms
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
 				if (accumulatedForms) {
-					accumulatedForms->insert(formData.form);
+					accumulatedForms->insert({ formData.form, formData.path });
 				}
 				++formData.npcCount;
 				break;
@@ -121,14 +123,14 @@ namespace Distribute
 		const NPCData&               a_npcData,
 		Forms::Distributables<Form>& a_distributables,
 		std::function<bool(Form*)>   a_callback,
-		std::set<RE::TESForm*>*      accumulatedForms = nullptr)
+		DistributedForms*            accumulatedForms = nullptr)
 	{
 		auto& vec = a_distributables.GetForms(false);
 
 		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
 				if (accumulatedForms) {
-					accumulatedForms->insert(formData.form);
+					accumulatedForms->insert({ formData.form, formData.path });
 				}
 				++formData.npcCount;
 				break;
@@ -144,7 +146,7 @@ namespace Distribute
 		Forms::DataVec<Form>&                        forms,
 		const PCLevelMult::Input&                    a_input,
 		std::function<bool(std::map<Form*, Count>&)> a_callback,
-		std::set<RE::TESForm*>*                      accumulatedForms = nullptr)
+		DistributedForms*                            accumulatedForms = nullptr)
 	{
 		std::map<Form*, Count> collectedForms{};
 
@@ -159,18 +161,21 @@ namespace Distribute
 					leveledItem->CalculateCurrentFormList(level, count, calcedObjects, 0, true);
 					for (auto& calcObj : calcedObjects) {
 						collectedForms[static_cast<RE::TESBoundObject*>(calcObj.form)] += calcObj.count;
+						if (accumulatedForms) {
+							accumulatedForms->insert({ calcObj.form, formData.path });
+						}
 					}
 				} else {
 					collectedForms[formData.form] += count;
+					if (accumulatedForms) {
+						accumulatedForms->insert({ formData.form, formData.path });
+					}
 				}
 				++formData.npcCount;
 			}
 		}
 
 		if (!collectedForms.empty()) {
-			if (accumulatedForms) {
-				std::ranges::copy(collectedForms | std::views::keys, std::inserter(*accumulatedForms, accumulatedForms->end()));
-			}
 			a_callback(collectedForms);
 		}
 	}
@@ -185,7 +190,7 @@ namespace Distribute
 		Forms::DataVec<Form>&                          forms,
 		const PCLevelMult::Input&                      a_input,
 		std::function<void(const std::vector<Form*>&)> a_callback,
-		std::set<RE::TESForm*>*                        accumulatedForms = nullptr)
+		DistributedForms*                              accumulatedForms = nullptr)
 	{
 		const auto npc = a_npcData.GetNPC();
 
@@ -210,6 +215,9 @@ namespace Distribute
 					if (formData.filters.HasLevelFilters()) {
 						collectedLeveledFormIDs.emplace(formID);
 					}
+					if (accumulatedForms) {
+						accumulatedForms->insert({ form, formData.path });
+					}
 					++formData.npcCount;
 				}
 			} else {
@@ -218,15 +226,15 @@ namespace Distribute
 					if (formData.filters.HasLevelFilters()) {
 						collectedLeveledFormIDs.emplace(formID);
 					}
+					if (accumulatedForms) {
+						accumulatedForms->insert({ form, formData.path });
+					}
 					++formData.npcCount;
 				}
 			}
 		}
 
 		if (!collectedForms.empty()) {
-			if (accumulatedForms) {
-				accumulatedForms->insert(collectedForms.begin(), collectedForms.end());
-			}
 			a_callback(collectedForms);
 			if (!collectedLeveledFormIDs.empty()) {
 				PCLevelMult::Manager::GetSingleton()->InsertDistributedEntry(a_input, Form::FORMTYPE, collectedLeveledFormIDs);

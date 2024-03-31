@@ -43,13 +43,15 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 					if (std::holds_alternative<RandomCount>(idxOrCount)) {
 						auto& count = std::get<RandomCount>(idxOrCount);
 						if (!count.IsExact()) {
-							logger::warn("Inferred Form is a Package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", count.min);
+							logger::warn("\t[{}] Inferred Form is a Package, but specifies a random count instead of index. Min value ({}) of the range will be used as an index.", path, count.min);
 						}
 						packageIndex = count.min;
 					} else {
 						packageIndex = std::get<Index>(idxOrCount);
 					}
 					packages.EmplaceForm(isValid, form, packageIndex, filters, path);
+				} else {
+					logger::warn("\t[{}] Unsupported Form type: {}", path, RE::FormTypeToString(type));
 				}
 			}
 		});
@@ -99,25 +101,12 @@ void LogDistributablesLookup()
 //      instead of quering data handler for the same raw FormOrEditorID.
 void LookupExclusiveGroups(RE::TESDataHandler* const dataHandler)
 {
-	ExclusiveGroups::Manager::GetSingleton()->LookupExclusiveGroups(dataHandler, INI::exclusiveGroups);
+	ExclusiveGroups::Manager::GetSingleton()->LookupExclusiveGroups(dataHandler);
 }
 
 void LogExclusiveGroupsLookup()
 {
-	if (const auto manager = ExclusiveGroups::Manager::GetSingleton(); manager) {
-		const auto& groups = manager->GetGroups();
-
-		if (!groups.empty()) {
-			logger::info("{:*^50}", "EXCLUSIVE GROUPS");
-
-			for (const auto& [group, forms] : groups) {
-				logger::info("Adding '{}' exclusive group", group);
-				for (const auto& form : forms) {
-					logger::info("  {}", describe(form));
-				}
-			}
-		}
-	}
+	ExclusiveGroups::Manager::GetSingleton()->LogExclusiveGroupsLookup();
 }
 
 void LookupLinkedForms(RE::TESDataHandler* const dataHandler)

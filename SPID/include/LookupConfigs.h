@@ -27,7 +27,7 @@ namespace RECORD
 
 	namespace detail
 	{
-		inline static constexpr std::array add{
+		inline static constexpr std::array names{
 			"Form"sv,
 			"Spell"sv,
 			"Perk"sv,
@@ -46,25 +46,14 @@ namespace RECORD
 
 	inline constexpr std::string_view GetTypeName(const TYPE aType)
 	{
-		return detail::add.at(aType);
+		return detail::names.at(aType);
 	}
 
-	inline constexpr TYPE GetType(const std::string& aType)
+	template <typename T>
+	constexpr TYPE GetType(const T& aType)
 	{
 		using namespace detail;
-		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));
-	}
-
-	inline constexpr TYPE GetType(const std::string_view& aType)
-	{
-		using namespace detail;
-		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));
-	}
-
-	inline constexpr TYPE GetType(const char* aType)
-	{
-		using namespace detail;
-		return static_cast<TYPE>(std::distance(add.begin(), std::find(add.begin(), add.end(), aType)));
+		return static_cast<TYPE>(std::distance(names.begin(), std::find(names.begin(), names.end(), aType)));
 	}
 }
 
@@ -95,24 +84,9 @@ namespace INI
 		std::string             path{};
 	};
 
-	struct RawExclusiveGroup
-	{
-		std::string name{};
-
-		/// Raw filters in RawExclusiveGroup only use NOT and MATCH, there is no meaning for ALL, so it's ignored.
-		Filters<FormOrEditorID> rawFormFilters{};
-		std::string             path{};
-	};
-
 	using DataVec = std::vector<Data>;
-	using ExclusiveGroupsVec = std::vector<RawExclusiveGroup>;
 
 	inline Map<RECORD::TYPE, DataVec> configs{};
-
-	/// <summary>
-	/// A list of RawExclusiveGroups that will be processed along with configs.
-	/// </summary>
-	inline ExclusiveGroupsVec exclusiveGroups{};
 
 	std::pair<bool, bool> GetConfigs();
 }

@@ -1,4 +1,5 @@
 #include "LookupConfigs.h"
+#include "ExclusiveGroups.h"
 #include "LinkedDistribution.h"
 
 namespace INI
@@ -47,44 +48,7 @@ namespace INI
 			return newValue;
 		}
 
-		std::optional<RawExclusiveGroup> parse_exclusive_group(const std::string& a_key, const std::string& a_value, const std::string& a_path)
-		{
-			if (a_key != "ExclusiveGroup") {
-				return std::nullopt;
-			}
-
-			const auto sections = string::split(a_value, "|");
-			const auto size = sections.size();
-
-			if (size < 2) {
-				logger::warn("IGNORED: ExclusiveGroup must have a name and at least one Form Filter: {} = {}"sv, a_key, a_value);
-				return std::nullopt;
-			}
-
-			auto split_IDs = distribution::split_entry(sections[1]);
-
-			if (split_IDs.empty()) {
-				logger::warn("ExclusiveGroup must have at least one Form Filter : {} = {}"sv, a_key, a_value);
-				return std::nullopt;
-			}
-
-			RawExclusiveGroup group{};
-			group.name = sections[0];
-			group.path = a_path;
-
-			for (auto& IDs : split_IDs) {
-				if (IDs.at(0) == '-') {
-					IDs.erase(0, 1);
-					group.rawFormFilters.NOT.push_back(distribution::get_record(IDs));
-				} else {
-					group.rawFormFilters.MATCH.push_back(distribution::get_record(IDs));
-				}
-			}
-
-			return group;
-		}
-
-		std::pair<Data, std::optional<std::string>> parse_ini(const RECORD::TYPE& typeHint, const std::string& a_value, const std::string& a_path)
+		std::pair<Data, std::optional<std::string>> parse_ini(const RECORD::TYPE& typeHint, const std::string& a_value, const Path& a_path)
 		{
 			Data data{};
 
@@ -317,8 +281,7 @@ namespace INI
 
 				for (auto& [key, entry] : *values) {
 					try {
-						if (const auto group = detail::parse_exclusive_group(key.pItem, entry, truncatedPath); group) {
-							exclusiveGroups.emplace_back(*group);
+						if (ExclusiveGroups::INI::TryParse(key.pItem, entry, truncatedPath)) {
 							continue;
 						}
 
@@ -327,6 +290,10 @@ namespace INI
 						}
 
 						auto type = RECORD::GetType(key.pItem);
+						if (type == RECORD::kTotal) {
+							logger::warn("\t\tUnsupported Form type: {}"sv, key.pItem);
+							continue;
+						}
 						auto [data, sanitized_str] = detail::parse_ini(type, entry, truncatedPath);
 
 						configs[type].emplace_back(data);
@@ -335,7 +302,7 @@ namespace INI
 							oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
 						}
 					} catch (...) {
-						logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
+						logger::warn("\t\tFailed to parse entry [{} = {}]"sv, key.pItem, entry);
 						shouldLogErrors = true;
 					}
 				}

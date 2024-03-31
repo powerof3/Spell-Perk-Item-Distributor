@@ -10,9 +10,9 @@ namespace Forms
 		struct UnknownPluginException : std::exception
 		{
 			const std::string modName;
-			const std::string path;
+			const Path        path;
 
-			UnknownPluginException(const std::string& modName, const std::string& path) :
+			UnknownPluginException(const std::string& modName, const Path& path) :
 				modName(modName),
 				path(path)
 			{}
@@ -22,9 +22,9 @@ namespace Forms
 		{
 			const RE::FormID                 formID;
 			const std::optional<std::string> modName;
-			const std::string                path;
+			const Path                       path;
 
-			UnknownFormIDException(RE::FormID formID, const std::string& path, std::optional<std::string> modName = std::nullopt) :
+			UnknownFormIDException(RE::FormID formID, const Path& path, std::optional<std::string> modName = std::nullopt) :
 				formID(formID),
 				path(path),
 				modName(modName)
@@ -37,13 +37,13 @@ namespace Forms
 		/// </summary>
 		struct MismatchingFormTypeException : std::exception
 		{
-			const RE::FormType   expectedFformType;
+			const RE::FormType   expectedFormType;
 			const RE::FormType   actualFormType;
 			const FormOrEditorID formOrEditorID;
-			const std::string    path;
+			const Path           path;
 
-			MismatchingFormTypeException(RE::FormType expectedFformType, RE::FormType actualFormType, const FormOrEditorID& formOrEditorID, const std::string& path) :
-				expectedFformType(expectedFformType),
+			MismatchingFormTypeException(RE::FormType expectedFormType, RE::FormType actualFormType, const FormOrEditorID& formOrEditorID, const Path& path) :
+				expectedFormType(expectedFormType),
 				actualFormType(actualFormType),
 				formOrEditorID(formOrEditorID),
 				path(path)
@@ -54,9 +54,9 @@ namespace Forms
 		{
 			const RE::FormID                 formID;
 			const std::optional<std::string> modName;
-			const std::string                path;
+			const Path                       path;
 
-			InvalidKeywordException(RE::FormID formID, const std::string& path, std::optional<std::string> modName = std::nullopt) :
+			InvalidKeywordException(RE::FormID formID, const Path& path, std::optional<std::string> modName = std::nullopt) :
 				formID(formID),
 				modName(modName),
 				path(path)
@@ -67,9 +67,9 @@ namespace Forms
 		{
 			const std::string editorID;
 			const bool        isDynamic;
-			const std::string path;
+			const Path        path;
 
-			KeywordNotFoundException(const std::string& editorID, bool isDynamic, const std::string& path) :
+			KeywordNotFoundException(const std::string& editorID, bool isDynamic, const Path& path) :
 				editorID(editorID),
 				isDynamic(isDynamic),
 				path(path)
@@ -79,9 +79,9 @@ namespace Forms
 		struct UnknownEditorIDException : std::exception
 		{
 			const std::string editorID;
-			const std::string path;
+			const Path        path;
 
-			UnknownEditorIDException(const std::string& editorID, const std::string& path) :
+			UnknownEditorIDException(const std::string& editorID, const Path& path) :
 				editorID(editorID),
 				path(path)
 			{}
@@ -94,9 +94,9 @@ namespace Forms
 		{
 			const RE::FormType   formType;
 			const FormOrEditorID formOrEditorID;
-			const std::string    path;
+			const Path           path;
 
-			InvalidFormTypeException(RE::FormType formType, const FormOrEditorID& formOrEditorID, const std::string& path) :
+			InvalidFormTypeException(RE::FormType formType, const FormOrEditorID& formOrEditorID, const Path& path) :
 				formType(formType),
 				formOrEditorID(formOrEditorID),
 				path(path)
@@ -105,9 +105,9 @@ namespace Forms
 
 		struct MalformedEditorIDException : std::exception
 		{
-			const std::string path;
+			const Path path;
 
-			MalformedEditorIDException(const std::string& path) :
+			MalformedEditorIDException(const Path& path) :
 				path(path)
 			{}
 		};
@@ -140,7 +140,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, bool whitelistedOnly = false)
 		{
 			Form*              form = nullptr;
 			const RE::TESFile* mod = nullptr;
@@ -217,7 +217,7 @@ namespace Forms
 
 								   form = as_form(anyForm);
 								   if (!form) {
-									   throw MismatchingFormTypeException(anyForm->GetFormType(), Form::FORMTYPE, FormModPair{ *formID, modName }, path);
+									   throw MismatchingFormTypeException(Form::FORMTYPE, anyForm->GetFormType(), FormModPair{ *formID, modName }, path);
 								   }
 
 								   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
@@ -232,7 +232,6 @@ namespace Forms
 							   if (editorID.empty()) {
 								   throw MalformedEditorIDException(path);
 							   }
-							   //
 							   if constexpr (std::is_same_v<Form, RE::BGSKeyword>) {
 								   form = find_or_create_keyword(editorID);
 							   } else {
@@ -268,7 +267,7 @@ namespace Forms
 			return form;
 		}
 
-		inline const RE::TESFile* get_file(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path)
+		inline const RE::TESFile* get_file(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path)
 		{
 			auto formOrMod = get_form_or_mod(dataHandler, formOrEditorID, path);
 
@@ -280,7 +279,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		Form* get_form(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const std::string& path, bool whitelistedOnly = false)
+		Form* get_form(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, bool whitelistedOnly = false)
 		{
 			auto formOrMod = get_form_or_mod<Form>(dataHandler, formOrEditorID, path, whitelistedOnly);
 
@@ -291,7 +290,7 @@ namespace Forms
 			return nullptr;
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* const a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const std::string& a_path, bool a_all = false, bool whitelistedOnly = true)
+		inline bool formID_to_form(RE::TESDataHandler* const a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const Path& a_path, bool a_all = false, bool whitelistedOnly = true)
 		{
 			if (a_rawFormVec.empty()) {
 				return true;
@@ -322,10 +321,10 @@ namespace Forms
 					std::visit(overload{
 								   [&](const FormModPair& formMod) {
 									   auto& [formID, modName] = formMod;
-									   buffered_logger::error("\t\t[{}] Filter[0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+									   buffered_logger::error("\t\t[{}] Filter[0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 								   },
 								   [&](std::string editorID) {
-									   buffered_logger::error("\t\t[{}] Filter ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+									   buffered_logger::error("\t\t[{}] Filter ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 								   } },
 						e.formOrEditorID);
 				} catch (const InvalidFormTypeException& e) {
@@ -354,7 +353,7 @@ namespace Forms
 		IndexOrCount idxOrCount{ RandomCount(1, 1) };
 		FilterData   filters{};
 
-		std::string   path{};
+		Path          path{};
 		std::uint32_t npcCount{ 0 };
 
 		bool operator==(const Data& a_rhs) const;
@@ -362,6 +361,9 @@ namespace Forms
 
 	template <class Form>
 	using DataVec = std::vector<Data<Form>>;
+
+	using DistributedForm = std::pair<RE::TESForm*, const Path>;
+	using DistributedForms = std::set<DistributedForm>;
 
 	/// <summary>
 	/// A set of distributable forms that should be processed.
@@ -420,8 +422,8 @@ namespace Forms
 		DataVec<Form>& GetForms(bool a_onlyLevelEntries);
 		DataVec<Form>& GetForms();
 
-		void LookupForms(RE::TESDataHandler* a_dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec);
-		void EmplaceForm(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path);
+		void LookupForms(RE::TESDataHandler*, std::string_view a_type, INI::DataVec&);
+		void EmplaceForm(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path&);
 
 		// Init formsWithLevels and formsNoLevels
 		void FinishLookupForms();
@@ -435,7 +437,7 @@ namespace Forms
 		/// This counter is used for logging purposes.
 		std::size_t lookupCount{ 0 };
 
-		void LookupForm(RE::TESDataHandler* a_dataHandler, INI::Data& rawForm);
+		void LookupForm(RE::TESDataHandler*, INI::Data&);
 	};
 
 	inline Distributables<RE::SpellItem>      spells{ RECORD::kSpell };
@@ -480,7 +482,7 @@ namespace Forms
 	/// <param name="rawForm">A raw form entry that needs to be looked up.</param>
 	/// <param name="callback">A callback to be called with validated data after successful lookup.</param>
 	template <class Form = RE::TESForm*>
-	void LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path)> callback);
+	void LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback);
 }
 
 template <class Form>
@@ -562,7 +564,7 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* dataHandler, s
 }
 
 template <class Form>
-void Forms::Distributables<Form>::EmplaceForm(bool isValid, Form* form, const IndexOrCount& idxOrCount, const FilterData& filters, const std::string& path)
+void Forms::Distributables<Form>::EmplaceForm(bool isValid, Form* form, const IndexOrCount& idxOrCount, const FilterData& filters, const Path& path)
 {
 	if (isValid) {
 		forms.emplace_back(forms.size(), form, idxOrCount, filters, path);
@@ -594,7 +596,7 @@ void Forms::Distributables<Form>::FinishLookupForms()
 }
 
 template <class Form>
-void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const std::string& path)> callback)
+void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback)
 {
 	auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] = rawForm;
 
@@ -631,10 +633,10 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& 
 		std::visit(overload{
 					   [&](const FormModPair& formMod) {
 						   auto& [formID, modName] = formMod;
-						   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+						   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 					   },
 					   [&](std::string editorID) {
-						   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFformType), RE::FormTypeToString(e.actualFormType));
+						   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
 					   } },
 			e.formOrEditorID);
 	} catch (const Lookup::InvalidFormTypeException& e) {
@@ -642,4 +644,15 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& 
 	} catch (const Lookup::UnknownPluginException& e) {
 		// Likewise, we don't expect plugin names in distributable forms.
 	}
+}
+
+inline std::ostream& operator<<(std::ostream& os, Forms::DistributedForm form)
+{
+	os << form.first;
+
+	if (!form.second.empty()) {
+		os << " @" << form.second;
+	}
+
+	return os;
 }
