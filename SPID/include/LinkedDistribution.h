@@ -203,7 +203,7 @@ namespace LinkedDistribution
 				return linkedFormsIt->second;
 			}
 		}
-		
+
 		static DataVec<Form> empty{};
 		return empty;
 	}
@@ -244,7 +244,7 @@ namespace LinkedDistribution
 	{
 		for (const auto& linkedForm : linkedForms) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
-				auto& distributableFormsAtPath = forms[scope == kLocal ? path : ""]; // If item is global, we put it in a common map with no information about the path.
+				auto& distributableFormsAtPath = forms[scope == kLocal ? path : ""];  // If item is global, we put it in a common map with no information about the path.
 				auto& distributableForms = distributableFormsAtPath[std::get<RE::TESForm*>(linkedForm)];
 				// Note that we don't use Data.index here, as these linked forms don't have any leveled filters
 				// and as such do not to track their index.
