@@ -21,14 +21,24 @@ namespace LinkedDistribution
 			kRequired = kLinkedForms
 		};
 
-		bool TryParse(const std::string& key, const std::string& value, const Path& path)
+		bool TryParse(const std::string& originalKey, const std::string& value, const Path& path)
 		{
+			std::string key = originalKey;
+
+			Scope scope = kLocal; 
+
+			if (key.starts_with("Global"sv)) {
+				scope = kGlobal;
+				key.erase(0, 6);
+			}
+
 			if (!key.starts_with("Linked"sv)) {
 				return false;
 			}
 
 			std::string rawType = key.substr(6);
 			auto        type = RECORD::GetType(rawType);
+
 			if (type == RECORD::kTotal) {
 				logger::warn("IGNORED: Unsupported Linked Form type: {}"sv, rawType);
 				return true;
@@ -51,6 +61,7 @@ namespace LinkedDistribution
 
 			INI::RawLinkedForm item{};
 			item.formOrEditorID = distribution::get_record(sections[kForm]);
+			item.scope = scope;
 			item.path = path;
 
 			for (auto& IDs : split_IDs) {
@@ -106,28 +117,28 @@ namespace LinkedDistribution
 		auto& genericForms = rawLinkedForms[RECORD::kForm];
 		for (auto& rawForm : genericForms) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
-				auto& [formID, parentFormIDs, idxOrCount, chance, path] = rawForm;
+				auto& [formID, scope, parentFormIDs, idxOrCount, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
 					continue;
 				}
 				// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit or DeathItems)
 				if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
-					keywords.Link(keyword, parentForms, idxOrCount, chance, path);
+					keywords.Link(keyword, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
-					spells.Link(spell, parentForms, idxOrCount, chance, path);
+					spells.Link(spell, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
-					perks.Link(perk, parentForms, idxOrCount, chance, path);
+					perks.Link(perk, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto shout = form->As<RE::TESShout>(); shout) {
-					shouts.Link(shout, parentForms, idxOrCount, chance, path);
+					shouts.Link(shout, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
-					items.Link(item, parentForms, idxOrCount, chance, path);
+					items.Link(item, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
-					outfits.Link(outfit, parentForms, idxOrCount, chance, path);
+					outfits.Link(outfit, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
-					factions.Link(faction, parentForms, idxOrCount, chance, path);
+					factions.Link(faction, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
-					skins.Link(skin, parentForms, idxOrCount, chance, path);
+					skins.Link(skin, scope, parentForms, idxOrCount, chance, path);
 				} else {
 					auto type = form->GetFormType();
 					if (type == RE::FormType::Package || type == RE::FormType::FormList) {
@@ -142,7 +153,7 @@ namespace LinkedDistribution
 						} else {
 							packageIndex = std::get<Index>(idxOrCount);
 						}
-						packages.Link(form, parentForms, packageIndex, chance, path);
+						packages.Link(form, scope, parentForms, packageIndex, chance, path);
 					} else {
 						logger::warn("\t[{}] Unsupported Form type: {}", path, RE::FormTypeToString(type));
 					}

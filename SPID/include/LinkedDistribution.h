@@ -5,11 +5,30 @@
 
 namespace LinkedDistribution
 {
+
+	/// <summary>
+	/// Scope of a linked form determines which distributions can trigger linked forms.
+	/// </summary>
+	enum Scope : std::uint8_t
+	{
+		/// <summary>
+		/// Local scope links forms only to distributions defined in the same configuration file.
+		/// </summary>
+		kLocal = 0,
+
+		/// <summary>
+		/// Global scope links forms to all distributions in all loaded configuration files.
+		/// </summary>
+		kGlobal
+	};
+
 	namespace INI
 	{
 		struct RawLinkedForm
 		{
 			FormOrEditorID formOrEditorID{};
+
+			Scope scope{ kLocal };
 
 			/// Raw filters in RawLinkedForm only use MATCH, there is no meaning for ALL or NOT, so they are ignored.
 			Filters<FormOrEditorID> formIDs{};
@@ -66,7 +85,7 @@ namespace LinkedDistribution
 		RECORD::TYPE type;
 		FormsMap     forms{};
 
-		void Link(Form*, const FormVec& linkedForms, const IndexOrCount&, const PercentChance&, const Path&);
+		void Link(Form*, Scope, const FormVec& linkedForms, const IndexOrCount&, const PercentChance&, const Path&);
 	};
 
 	class Manager : public ISingleton<Manager>
@@ -206,17 +225,18 @@ namespace LinkedDistribution
 	{
 		for (auto& rawForm : rawLinkedForms) {
 			auto form = detail::LookupLinkedForm<Form>(dataHandler, rawForm);
-			auto& [formID, parentFormIDs, count, chance, path] = rawForm;
+			auto& [formID, scope, parentFormIDs, count, chance, path] = rawForm;
 			FormVec parentForms{};
 			if (Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
-				Link(form, parentForms, count, chance, path);
+				Link(form, scope, parentForms, count, chance, path);
 			}
 		}
 	}
 
 	template <class Form>
-	void LinkedForms<Form>::Link(Form* form, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
+	void LinkedForms<Form>::Link(Form* form, Scope scope, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
 	{
+		// TODO: Handle scope
 		for (const auto& linkedForm : linkedForms) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
 				auto& distributableForms = forms[std::get<RE::TESForm*>(linkedForm)];
