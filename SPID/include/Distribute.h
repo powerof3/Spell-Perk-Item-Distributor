@@ -116,28 +116,6 @@ namespace Distribute
 	}
 #pragma endregion
 
-	// TODO: Is this unused?
-	// outfits/sleep outfits
-	template <class Form>
-	void for_each_form(
-		const NPCData&               a_npcData,
-		Forms::Distributables<Form>& a_distributables,
-		std::function<bool(Form*)>   a_callback,
-		DistributedForms*            accumulatedForms = nullptr)
-	{
-		auto& vec = a_distributables.GetForms(false);
-
-		for (auto& formData : vec) {  // Vector is reversed in FinishLookupForms
-			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, formData) && a_callback(formData.form)) {
-				if (accumulatedForms) {
-					accumulatedForms->insert({ formData.form, formData.path });
-				}
-				++formData.npcCount;
-				break;
-			}
-		}
-	}
-
 #pragma region Items
 	// countable items
 	template <class Form>

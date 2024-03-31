@@ -20,8 +20,9 @@ namespace Distribute
 		/// <param name="npcData">General information about NPC that is being processed.</param>
 		/// <param name="input">Leveling information about NPC that is being processed.</param>
 		/// <param name="forms">A set of forms that should be distributed to NPC.</param>
+		/// <param name="allowOverwrites">If true, overwritable forms (like Outfits) will be to overwrite last distributed form on NPC.</param>
 		/// <param name="accumulatedForms">An optional pointer to a set that will accumulate all distributed forms.</param>
-		void distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms)
+		void distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, bool allowOverwrites, DistributedForms* accumulatedForms)
 		{
 			const auto npc = npcData.GetNPC();
 
@@ -124,7 +125,7 @@ namespace Distribute
 
 			for_each_form<RE::BGSOutfit>(
 				npcData, forms.outfits, input, [&](auto* a_outfit) {
-					if (npc->defaultOutfit != a_outfit && !npc->HasKeyword(processedOutfit)) {
+					if (npc->defaultOutfit != a_outfit && (allowOverwrites || !npc->HasKeyword(processedOutfit))) {
 						npc->AddKeyword(processedOutfit);
 						npc->defaultOutfit = a_outfit;
 						return true;
@@ -193,13 +194,13 @@ namespace Distribute
 
 		DistributedForms distributedForms{};
 
-		detail::distribute(npcData, input, entries, &distributedForms);
+		detail::distribute(npcData, input, entries, false, &distributedForms);
 		// TODO: We can now log per-NPC distributed forms.
 
 		if (!distributedForms.empty()) {
-			// This only does one-level linking. So that linked entries won't trigger another level of distribution.
+			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(distributedForms, [&](Forms::DistributionSet& set) {
-				detail::distribute(npcData, input, set, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
+				detail::distribute(npcData, input, set, true, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
 			});
 		}
 	}
@@ -229,12 +230,12 @@ namespace Distribute
 			Forms::DistributionSet::empty<RE::TESObjectARMO>()
 		};
 
-		detail::distribute(npcData, input, entries, &distributedForms);
+		detail::distribute(npcData, input, entries, false, &distributedForms);
 		// TODO: We can now log per-NPC distributed forms.
 
 		if (!distributedForms.empty()) {
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDeathDistributionSet(distributedForms, [&](Forms::DistributionSet& set) {
-				detail::distribute(npcData, input, set, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
+				detail::distribute(npcData, input, set, true, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
 			});
 		}
 	}
