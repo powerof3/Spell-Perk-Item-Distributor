@@ -186,11 +186,11 @@ namespace LinkedDistribution
 
 			// Iterate through the original map
 			for (const auto& pair : linkedForms.GetForms()) {
-				const auto&  path = pair.first;
+				const auto& path = pair.first;
 				const auto& formsMap = pair.second;
 
 				for (const auto& pair : formsMap) {
-					const auto key = pair.first;
+					const auto  key = pair.first;
 					const auto& values = pair.second;
 					for (const auto& value : values) {
 						map[value.form].emplace_back(key, path);
