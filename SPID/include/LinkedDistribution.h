@@ -107,8 +107,8 @@ namespace LinkedDistribution
 		/// </summary>
 		/// <param name="linkedForms">A set of forms for which distribution sets should be calculated.
 		///							  This is typically distributed forms accumulated during first distribution pass.</param>
-		/// <param name="callback">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
-		void ForEachLinkedDistributionSet(const DistributedForms& linkedForms, std::function<void(DistributionSet&)> callback);
+		/// <param name="distribute">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
+		void ForEachLinkedDistributionSet(const DistributedForms& linkedForms, std::function<void(DistributionSet&)> distribute);
 
 		/// <summary>
 		/// Calculates DistributionSet with only DeathItems for each linked form and calls a callback for each of them.
@@ -116,12 +116,15 @@ namespace LinkedDistribution
 		/// </summary>
 		/// <param name="linkedForms">A set of forms for which distribution sets should be calculated.
 		///							  This is typically distributed forms accumulated during first distribution pass.</param>
-		/// <param name="callback">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
-		void ForEachLinkedDeathDistributionSet(const DistributedForms& linkedForms, std::function<void(DistributionSet&)> callback);
+		/// <param name="distribute">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
+		void ForEachLinkedDeathDistributionSet(const DistributedForms& linkedForms, std::function<void(DistributionSet&)> distribute);
 
 	private:
 		template <class Form>
-		DataVec<Form>& LinkedFormsForForm(const DistributedForm&, LinkedForms<Form>&) const;
+		DataVec<Form>& LinkedFormsForForm(const DistributedForm&, Scope, LinkedForms<Form>&) const;
+
+		void ForEachLinkedDistributionSet(const DistributedForms& linkedForms, Scope, std::function<void(DistributionSet&)> distribute);
+		void ForEachLinkedDeathDistributionSet(const DistributedForms& linkedForms, Scope, std::function<void(DistributionSet&)> distribute);
 
 		LinkedForms<RE::SpellItem>      spells{ RECORD::kSpell };
 		LinkedForms<RE::BGSPerk>        perks{ RECORD::kPerk };
@@ -193,13 +196,14 @@ namespace LinkedDistribution
 	}
 
 	template <class Form>
-	DataVec<Form>& Manager::LinkedFormsForForm(const DistributedForm& form, LinkedForms<Form>& linkedForms) const
+	DataVec<Form>& Manager::LinkedFormsForForm(const DistributedForm& form, Scope scope, LinkedForms<Form>& linkedForms) const
 	{
-		if (const auto formsIt = linkedForms.forms.find(form.second); formsIt != linkedForms.forms.end()) {
+		if (const auto formsIt = linkedForms.forms.find(scope == kLocal ? form.second : ""); formsIt != linkedForms.forms.end()) {
 			if (const auto linkedFormsIt = formsIt->second.find(form.first); linkedFormsIt != formsIt->second.end()) {
 				return linkedFormsIt->second;
 			}
 		}
+		
 		static DataVec<Form> empty{};
 		return empty;
 	}
@@ -238,10 +242,9 @@ namespace LinkedDistribution
 	template <class Form>
 	void LinkedForms<Form>::Link(Form* form, Scope scope, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
 	{
-		// TODO: Handle scope
 		for (const auto& linkedForm : linkedForms) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
-				auto& distributableFormsAtPath = forms[path];
+				auto& distributableFormsAtPath = forms[scope == kLocal ? path : ""]; // If item is global, we put it in a common map with no information about the path.
 				auto& distributableForms = distributableFormsAtPath[std::get<RE::TESForm*>(linkedForm)];
 				// Note that we don't use Data.index here, as these linked forms don't have any leveled filters
 				// and as such do not to track their index.

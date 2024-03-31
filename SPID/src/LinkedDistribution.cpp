@@ -207,28 +207,30 @@ namespace LinkedDistribution
 				const auto lastItemIndex = linkedForms.size() - 1;
 				for (int i = 0; i < lastItemIndex; ++i) {
 					const auto& linkedItem = linkedForms[i];
-					logger::info("\t├─── {} @{}", describe(linkedItem.first), linkedItem.second);
+					logger::info("\t├─── {}", describe(linkedItem));
 				}
 				const auto& lastLinkedItem = linkedForms[lastItemIndex];
-				logger::info("\t└─── {} @{}", describe(lastLinkedItem.first), lastLinkedItem.second);
+				logger::info("\t└─── {}", describe(lastLinkedItem));
 			}
 		});
 	}
+#pragma endregion
 
-	void Manager::ForEachLinkedDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
+#pragma region Distribution
+	void Manager::ForEachLinkedDistributionSet(const DistributedForms& targetForms, Scope scope, std::function<void(DistributionSet&)> performDistribution)
 	{
 		for (const auto& form : targetForms) {
-			auto& linkedSpells = LinkedFormsForForm(form, spells);
-			auto& linkedPerks = LinkedFormsForForm(form, perks);
-			auto& linkedItems = LinkedFormsForForm(form, items);
-			auto& linkedShouts = LinkedFormsForForm(form, shouts);
-			auto& linkedLevSpells = LinkedFormsForForm(form, levSpells);
-			auto& linkedPackages = LinkedFormsForForm(form, packages);
-			auto& linkedOutfits = LinkedFormsForForm(form, outfits);
-			auto& linkedKeywords = LinkedFormsForForm(form, keywords);
-			auto& linkedFactions = LinkedFormsForForm(form, factions);
-			auto& linkedSleepOutfits = LinkedFormsForForm(form, sleepOutfits);
-			auto& linkedSkins = LinkedFormsForForm(form, skins);
+			auto& linkedSpells = LinkedFormsForForm(form, scope, spells);
+			auto& linkedPerks = LinkedFormsForForm(form, scope, perks);
+			auto& linkedItems = LinkedFormsForForm(form, scope, items);
+			auto& linkedShouts = LinkedFormsForForm(form, scope, shouts);
+			auto& linkedLevSpells = LinkedFormsForForm(form, scope, levSpells);
+			auto& linkedPackages = LinkedFormsForForm(form, scope, packages);
+			auto& linkedOutfits = LinkedFormsForForm(form, scope, outfits);
+			auto& linkedKeywords = LinkedFormsForForm(form, scope, keywords);
+			auto& linkedFactions = LinkedFormsForForm(form, scope, factions);
+			auto& linkedSleepOutfits = LinkedFormsForForm(form, scope, sleepOutfits);
+			auto& linkedSkins = LinkedFormsForForm(form, scope, skins);
 
 			DistributionSet linkedEntries{
 				linkedSpells,
@@ -253,10 +255,16 @@ namespace LinkedDistribution
 		}
 	}
 
-	void Manager::ForEachLinkedDeathDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	void Manager::ForEachLinkedDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	{
+		ForEachLinkedDistributionSet(targetForms, Scope::kLocal, performDistribution);
+		ForEachLinkedDistributionSet(targetForms, Scope::kGlobal, performDistribution);
+	}
+
+	void Manager::ForEachLinkedDeathDistributionSet(const DistributedForms& targetForms, Scope scope, std::function<void(DistributionSet&)> performDistribution)
 	{
 		for (const auto& form : targetForms) {
-			auto& linkedDeathItems = LinkedFormsForForm(form, deathItems);
+			auto& linkedDeathItems = LinkedFormsForForm(form, scope, deathItems);
 
 			DistributionSet linkedEntries{
 				DistributionSet::empty<RE::SpellItem>(),
@@ -281,5 +289,10 @@ namespace LinkedDistribution
 		}
 	}
 
+	void Manager::ForEachLinkedDeathDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	{
+		ForEachLinkedDeathDistributionSet(targetForms, Scope::kLocal, performDistribution);
+		ForEachLinkedDeathDistributionSet(targetForms, Scope::kGlobal, performDistribution);
+	}
 #pragma endregion
 }

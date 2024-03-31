@@ -645,3 +645,14 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& 
 		// Likewise, we don't expect plugin names in distributable forms.
 	}
 }
+
+inline std::ostream& operator<<(std::ostream& os, Forms::DistributedForm form)
+{
+	os << form.first;
+
+	if (!form.second.empty()) {
+		os << " @" << form.second;
+	}
+
+	return os;
+}
