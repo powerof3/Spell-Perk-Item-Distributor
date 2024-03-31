@@ -1,6 +1,6 @@
 #include "LookupConfigs.h"
-#include "LinkedDistribution.h"
 #include "ExclusiveGroups.h"
+#include "LinkedDistribution.h"
 
 namespace INI
 {

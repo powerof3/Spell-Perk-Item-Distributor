@@ -85,7 +85,7 @@ namespace INI
 	};
 
 	using DataVec = std::vector<Data>;
-	
+
 	inline Map<RECORD::TYPE, DataVec> configs{};
 
 	std::pair<bool, bool> GetConfigs();

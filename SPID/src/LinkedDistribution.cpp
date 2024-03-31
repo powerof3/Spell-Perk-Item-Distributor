@@ -25,7 +25,7 @@ namespace LinkedDistribution
 		{
 			std::string key = originalKey;
 
-			Scope scope = kLocal; 
+			Scope scope = kLocal;
 
 			if (key.starts_with("Global"sv)) {
 				scope = kGlobal;
