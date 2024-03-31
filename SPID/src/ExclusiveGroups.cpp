@@ -98,7 +98,7 @@ namespace ExclusiveGroups
 	{
 		std::unordered_set<RE::TESForm*> forms{};
 		if (auto it = linkedGroups.find(form); it != linkedGroups.end()) {
-			std::ranges::for_each(it->second, [&](const GroupName& name) {
+			std::ranges::for_each(it->second, [&](const Group& name) {
 				const auto& group = groups.at(name);
 				forms.insert(group.begin(), group.end());
 			});
@@ -110,7 +110,7 @@ namespace ExclusiveGroups
 		return forms;
 	}
 
-	const Groups& ExclusiveGroups::Manager::GetGroups() const
+	const GroupFormsMap& ExclusiveGroups::Manager::GetGroups() const
 	{
 		return groups;
 	}

@@ -24,9 +24,9 @@ namespace ExclusiveGroups
 		bool TryParse(const std::string& a_key, const std::string& a_value, const Path& a_path);
 	}
 
-	using GroupName = std::string;
-	using LinkedGroups = std::unordered_map<RE::TESForm*, std::unordered_set<GroupName>>;
-	using Groups = std::unordered_map<GroupName, std::unordered_set<RE::TESForm*>>;
+	using Group = std::string;
+	using FormGroupMap = std::unordered_map<RE::TESForm*, std::unordered_set<Group>>;
+	using GroupFormsMap = std::unordered_map<Group, std::unordered_set<RE::TESForm*>>;
 
 	class Manager : public ISingleton<Manager>
 	{
@@ -54,18 +54,18 @@ namespace ExclusiveGroups
 		/// Retrieves all exclusive groups.
 		/// </summary>
 		/// <returns>A reference to discovered exclusive groups</returns>
-		const Groups& GetGroups() const;
+		const GroupFormsMap& GetGroups() const;
 
 	private:
 		/// <summary>
 		/// A map of exclusive group names related to each form in the exclusive groups.
 		/// Provides a quick and easy way to get names of all groups that need to be checked.
 		/// </summary>
-		LinkedGroups linkedGroups{};
+		FormGroupMap linkedGroups{};
 
 		/// <summary>
 		///  A map of exclusive groups names and the forms that are part of each exclusive group.
 		/// </summary>
-		Groups groups{};
+		GroupFormsMap groups{};
 	};
 }
