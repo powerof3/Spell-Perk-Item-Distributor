@@ -216,9 +216,7 @@ namespace Forms
 								   }
 
 								   form = as_form(anyForm);
-								   if (!form || anyForm->GetFormType() != Form::FORMTYPE) {
-									   // Ideally, we'd want to throw separate exception for unsupported form type,
-									   // so that attempting to distribute, for example, CELL would properly report such error.
+								   if (!form) {
 									   throw MismatchingFormTypeException(Form::FORMTYPE, anyForm->GetFormType(), FormModPair{ *formID, modName }, path);
 								   }
 
@@ -363,6 +361,9 @@ namespace Forms
 
 	template <class Form>
 	using DataVec = std::vector<Data<Form>>;
+
+	using DistributedForm = std::pair<RE::TESForm*, const Path>;
+	using DistributedForms = std::set<DistributedForm>;
 
 	/// <summary>
 	/// A set of distributable forms that should be processed.

@@ -182,15 +182,19 @@ namespace LinkedDistribution
 				return;
 			}
 
-			std::unordered_map<RE::TESForm*, std::vector<RE::TESForm*>> map{};
+			std::unordered_map<RE::TESForm*, std::vector<DistributedForm>> map{};
 
 			// Iterate through the original map
 			for (const auto& pair : linkedForms.GetForms()) {
-				const auto           key = pair.first;
-				const DataVec<Form>& values = pair.second;
+				const auto&  path = pair.first;
+				const auto& formsMap = pair.second;
 
-				for (const auto& value : values) {
-					map[value.form].push_back(key);
+				for (const auto& pair : formsMap) {
+					const auto key = pair.first;
+					const auto& values = pair.second;
+					for (const auto& value : values) {
+						map[value.form].emplace_back(key, path);
+					}
 				}
 			}
 
@@ -203,17 +207,17 @@ namespace LinkedDistribution
 				const auto lastItemIndex = linkedForms.size() - 1;
 				for (int i = 0; i < lastItemIndex; ++i) {
 					const auto& linkedItem = linkedForms[i];
-					logger::info("\t├─── {}", describe(linkedItem));
+					logger::info("\t├─── {} @{}", describe(linkedItem.first), linkedItem.second);
 				}
 				const auto& lastLinkedItem = linkedForms[lastItemIndex];
-				logger::info("\t└─── {}", describe(lastLinkedItem));
+				logger::info("\t└─── {} @{}", describe(lastLinkedItem.first), lastLinkedItem.second);
 			}
 		});
 	}
 
-	void Manager::ForEachLinkedDistributionSet(const std::set<RE::TESForm*>& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	void Manager::ForEachLinkedDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
 	{
-		for (const auto form : targetForms) {
+		for (const auto& form : targetForms) {
 			auto& linkedSpells = LinkedFormsForForm(form, spells);
 			auto& linkedPerks = LinkedFormsForForm(form, perks);
 			auto& linkedItems = LinkedFormsForForm(form, items);
@@ -249,9 +253,9 @@ namespace LinkedDistribution
 		}
 	}
 
-	void Manager::ForEachLinkedDeathDistributionSet(const std::set<RE::TESForm*>& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	void Manager::ForEachLinkedDeathDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
 	{
-		for (const auto form : targetForms) {
+		for (const auto& form : targetForms) {
 			auto& linkedDeathItems = LinkedFormsForForm(form, deathItems);
 
 			DistributionSet linkedEntries{

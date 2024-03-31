@@ -21,7 +21,7 @@ namespace Distribute
 		/// <param name="input">Leveling information about NPC that is being processed.</param>
 		/// <param name="forms">A set of forms that should be distributed to NPC.</param>
 		/// <param name="accumulatedForms">An optional pointer to a set that will accumulate all distributed forms.</param>
-		void distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, std::set<RE::TESForm*>* accumulatedForms)
+		void distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms)
 		{
 			const auto npc = npcData.GetNPC();
 
@@ -191,7 +191,7 @@ namespace Distribute
 			Forms::skins.GetForms(input.onlyPlayerLevelEntries)
 		};
 
-		std::set<RE::TESForm*> distributedForms{};
+		DistributedForms distributedForms{};
 
 		detail::distribute(npcData, input, entries, &distributedForms);
 		// TODO: We can now log per-NPC distributed forms.
@@ -212,7 +212,7 @@ namespace Distribute
 
 	void DistributeDeathItems(NPCData& npcData, const PCLevelMult::Input& input)
 	{
-		std::set<RE::TESForm*> distributedForms{};
+		DistributedForms distributedForms{};
 
 		Forms::DistributionSet entries{
 			Forms::DistributionSet::empty<RE::SpellItem>(),
