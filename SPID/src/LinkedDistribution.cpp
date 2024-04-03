@@ -155,7 +155,7 @@ namespace LinkedDistribution
 						}
 						packages.Link(form, scope, parentForms, packageIndex, chance, path);
 					} else {
-						logger::warn("\t[{}] Unsupported Form type: {}", path, RE::FormTypeToString(type));
+						logger::warn("\t[{}] Unsupported Form type: {}", path, type);
 					}
 				}
 			}

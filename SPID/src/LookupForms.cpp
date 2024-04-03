@@ -51,7 +51,7 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 					}
 					packages.EmplaceForm(isValid, form, packageIndex, filters, path);
 				} else {
-					logger::warn("\t[{}] Unsupported Form type: {}", path, RE::FormTypeToString(type));
+					logger::warn("\t[{}] Unsupported Form type: {}", path, type);
 				}
 			}
 		});

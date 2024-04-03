@@ -321,20 +321,20 @@ namespace Forms
 					std::visit(overload{
 								   [&](const FormModPair& formMod) {
 									   auto& [formID, modName] = formMod;
-									   buffered_logger::error("\t\t[{}] Filter[0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
+									   buffered_logger::error("\t\t[{}] Filter[0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), e.expectedFormType, e.actualFormType);
 								   },
 								   [&](std::string editorID) {
-									   buffered_logger::error("\t\t[{}] Filter ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
+									   buffered_logger::error("\t\t[{}] Filter ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, e.expectedFormType, e.actualFormType);
 								   } },
 						e.formOrEditorID);
 				} catch (const InvalidFormTypeException& e) {
 					std::visit(overload{
 								   [&](const FormModPair& formMod) {
 									   auto& [formID, modName] = formMod;
-									   buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.formType));
+									   buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - invalid formtype ({})", e.path, *formID, modName.value_or(""), e.formType);
 								   },
 								   [&](std::string editorID) {
-									   buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", e.path, editorID, RE::FormTypeToString(e.formType));
+									   buffered_logger::error("\t\t[{}] Filter ({}) SKIP - invalid formtype ({})", e.path, editorID, e.formType);
 								   } },
 						e.formOrEditorID);
 				}
@@ -633,10 +633,10 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& 
 		std::visit(overload{
 					   [&](const FormModPair& formMod) {
 						   auto& [formID, modName] = formMod;
-						   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
+						   buffered_logger::error("\t\t[{}] [0x{:X}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), e.expectedFormType, e.actualFormType);
 					   },
 					   [&](std::string editorID) {
-						   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
+						   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, e.expectedFormType, e.actualFormType);
 					   } },
 			e.formOrEditorID);
 	} catch (const Lookup::InvalidFormTypeException& e) {

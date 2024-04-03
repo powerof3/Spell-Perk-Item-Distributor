@@ -175,20 +175,20 @@ namespace LinkedDistribution
 			std::visit(overload{
 						   [&](const FormModPair& formMod) {
 							   auto& [formID, modName] = formMod;
-							   buffered_logger::error("\t\t[{}] LinkedForm [0x{:X}] ({}) SKIP - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
+							   buffered_logger::error("\t\t[{}] LinkedForm [0x{:X}] ({}) SKIP - mismatching form type (expected: {}, actual: {})", e.path, *formID, modName.value_or(""), e.expectedFormType, e.actualFormType);
 						   },
 						   [&](std::string editorID) {
-							   buffered_logger::error("\t\t[{}] LinkedForm ({}) SKIP - mismatching form type (expected: {}, actual: {})", e.path, editorID, RE::FormTypeToString(e.expectedFormType), RE::FormTypeToString(e.actualFormType));
+							   buffered_logger::error("\t\t[{}] LinkedForm ({}) SKIP - mismatching form type (expected: {}, actual: {})", e.path, editorID, e.expectedFormType, e.actualFormType);
 						   } },
 				e.formOrEditorID);
 		} catch (const InvalidFormTypeException& e) {
 			std::visit(overload{
 						   [&](const FormModPair& formMod) {
 							   auto& [formID, modName] = formMod;
-							   buffered_logger::error("\t\t[{}] LinkedForm [0x{:X}] ({}) SKIP - unsupported form type ({})", e.path, *formID, modName.value_or(""), RE::FormTypeToString(e.formType));
+							   buffered_logger::error("\t\t[{}] LinkedForm [0x{:X}] ({}) SKIP - unsupported form type ({})", e.path, *formID, modName.value_or(""), e.formType);
 						   },
 						   [&](std::string editorID) {
-							   buffered_logger::error("\t\t[{}] LinkedForm ({}) SKIP - unsupported form type ({})", e.path, editorID, RE::FormTypeToString(e.formType));
+							   buffered_logger::error("\t\t[{}] LinkedForm ({}) SKIP - unsupported form type ({})", e.path, editorID, e.formType);
 						   } },
 				e.formOrEditorID);
 		}
