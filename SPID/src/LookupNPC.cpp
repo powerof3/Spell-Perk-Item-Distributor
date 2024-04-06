@@ -3,7 +3,7 @@
 
 namespace NPC
 {
-	Data::ID::ID(const RE::TESActorBase* a_base) :
+	Data::ID::ID(const RE::TESForm* a_base) :
 		formID(a_base->GetFormID()),
 		editorID(editorID::get_editorID(a_base))
 	{}
@@ -41,6 +41,10 @@ namespace NPC
 			keywords.emplace(a_keyword->GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
+
+		if (npc->baseTemplateForm) {
+			IDs.emplace_back(npc->baseTemplateForm);
+		}
 
 		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {

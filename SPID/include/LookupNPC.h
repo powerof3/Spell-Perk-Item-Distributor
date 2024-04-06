@@ -37,7 +37,7 @@ namespace NPC
 		struct ID
 		{
 			ID() = default;
-			explicit ID(const RE::TESActorBase* a_base);
+			explicit ID(const RE::TESForm* a_base);
 			~ID() = default;
 
 			[[nodiscard]] bool contains(const std::string& a_str) const;
