@@ -17,12 +17,14 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 	auto& genericForms = INI::configs[RECORD::kForm];
 
 	for (auto& rawForm : genericForms) {
-		// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit or DeathItems)
+		// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin or DeathItems)
 		LookupGenericForm<RE::TESForm>(dataHandler, rawForm, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
 			if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
 				keywords.EmplaceForm(isValid, keyword, idxOrCount, filters, path);
 			} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
 				spells.EmplaceForm(isValid, spell, idxOrCount, filters, path);
+			} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
+				levSpells.EmplaceForm(isValid, levSpell, idxOrCount, filters, path);
 			} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
 				perks.EmplaceForm(isValid, perk, idxOrCount, filters, path);
 			} else if (const auto shout = form->As<RE::TESShout>(); shout) {
@@ -33,8 +35,6 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 				outfits.EmplaceForm(isValid, outfit, idxOrCount, filters, path);
 			} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
 				factions.EmplaceForm(isValid, faction, idxOrCount, filters, path);
-			} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
-				skins.EmplaceForm(isValid, skin, idxOrCount, filters, path);
 			} else {
 				auto type = form->GetFormType();
 				if (type == RE::FormType::Package || type == RE::FormType::FormList) {

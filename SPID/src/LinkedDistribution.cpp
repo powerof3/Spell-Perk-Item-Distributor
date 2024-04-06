@@ -122,11 +122,13 @@ namespace LinkedDistribution
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
 					continue;
 				}
-				// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit or DeathItems)
+				// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin or DeathItems)
 				if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
 					keywords.Link(keyword, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
 					spells.Link(spell, scope, parentForms, idxOrCount, chance, path);
+				} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
+					levSpells.Link(levSpell, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
 					perks.Link(perk, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto shout = form->As<RE::TESShout>(); shout) {
@@ -137,8 +139,6 @@ namespace LinkedDistribution
 					outfits.Link(outfit, scope, parentForms, idxOrCount, chance, path);
 				} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
 					factions.Link(faction, scope, parentForms, idxOrCount, chance, path);
-				} else if (const auto skin = form->As<RE::TESObjectARMO>(); skin) {
-					skins.Link(skin, scope, parentForms, idxOrCount, chance, path);
 				} else {
 					auto type = form->GetFormType();
 					if (type == RE::FormType::Package || type == RE::FormType::FormList) {
