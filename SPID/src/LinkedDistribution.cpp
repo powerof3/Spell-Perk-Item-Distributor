@@ -110,9 +110,31 @@ namespace LinkedDistribution
 
 	void Manager::LookupLinkedForms(RE::TESDataHandler* dataHandler, INI::LinkedFormsConfig& rawLinkedForms)
 	{
-		ForEachLinkedForms([&]<typename Form>(LinkedForms<Form>& forms) {
+		ForEachLinkedForms([&]<class Form>(LinkedForms<Form>& forms) {
+			// If it's spells distributable we want to manually lookup forms to pick LevSpells that are added into the list.
+			if constexpr (std::is_same_v<Form, RE::SpellItem>) {
+				return;
+			}
 			forms.LookupForms(dataHandler, rawLinkedForms[forms.GetType()]);
 		});
+
+		// Sort out Spells and Leveled Spells into two separate lists.
+		auto& rawSpells = rawLinkedForms[RECORD::kSpell];
+
+		for (auto& rawSpell : rawSpells) {
+			if (auto form = detail::LookupLinkedForm(dataHandler, rawSpell); form) {
+				auto& [formID, scope, parentFormIDs, idxOrCount, chance, path] = rawSpell;
+				FormVec parentForms{};
+				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
+					continue;
+				}
+				if (const auto spell = form->As<RE::SpellItem>(); spell) {
+					spells.Link(spell, scope, parentForms, idxOrCount, chance, path);
+				} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
+					levSpells.Link(levSpell, scope, parentForms, idxOrCount, chance, path);
+				}
+			}
+		}
 
 		auto& genericForms = rawLinkedForms[RECORD::kForm];
 		for (auto& rawForm : genericForms) {
