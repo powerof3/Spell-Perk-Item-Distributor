@@ -395,7 +395,6 @@ namespace Forms
 		DataVec<RE::TESForm>&        packages;
 		DataVec<RE::BGSOutfit>&      outfits;
 		DataVec<RE::BGSKeyword>&     keywords;
-		DataVec<RE::TESBoundObject>& deathItems;
 		DataVec<RE::TESFaction>&     factions;
 		DataVec<RE::BGSOutfit>&      sleepOutfits;
 		DataVec<RE::TESObjectARMO>&  skins;
@@ -435,7 +434,7 @@ namespace Forms
 		DataVec<Form>& GetForms(bool a_onlyLevelEntries);
 		DataVec<Form>& GetForms();
 
-		void LookupForms(RE::TESDataHandler*, std::string_view a_type, INI::DataVec&);
+		void LookupForms(RE::TESDataHandler*, std::string_view a_type, Configs::INI::DataVec&);
 		void EmplaceForm(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path&);
 
 		// Init formsWithLevels and formsNoLevels
@@ -450,7 +449,7 @@ namespace Forms
 		/// This counter is used for logging purposes.
 		std::size_t lookupCount{ 0 };
 
-		void LookupForm(RE::TESDataHandler*, INI::Data&);
+		void LookupForm(RE::TESDataHandler*, Configs::INI::Data&);
 	};
 
 	inline Distributables<RE::SpellItem>      spells{ RECORD::kSpell };
@@ -461,7 +460,6 @@ namespace Forms
 	inline Distributables<RE::TESForm>        packages{ RECORD::kPackage };
 	inline Distributables<RE::BGSOutfit>      outfits{ RECORD::kOutfit };
 	inline Distributables<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
-	inline Distributables<RE::TESBoundObject> deathItems{ RECORD::kDeathItem };
 	inline Distributables<RE::TESFaction>     factions{ RECORD::kFaction };
 	inline Distributables<RE::BGSOutfit>      sleepOutfits{ RECORD::kSleepOutfit };
 	inline Distributables<RE::TESObjectARMO>  skins{ RECORD::kSkin };
@@ -470,20 +468,19 @@ namespace Forms
 	std::size_t GetTotalLeveledEntries();
 
 	template <typename Func, typename... Args>
-	void ForEachDistributable(Func&& a_func, Args&&... args)
+	void ForEachDistributable(Func&& func, Args&&... args)
 	{
-		a_func(keywords, std::forward<Args>(args)...);
-		a_func(factions, std::forward<Args>(args)...);
-		a_func(perks, std::forward<Args>(args)...);
-		a_func(spells, std::forward<Args>(args)...);
-		a_func(levSpells, std::forward<Args>(args)...);
-		a_func(shouts, std::forward<Args>(args)...);
-		a_func(items, std::forward<Args>(args)...);
-		a_func(deathItems, std::forward<Args>(args)...);
-		a_func(outfits, std::forward<Args>(args)...);
-		a_func(sleepOutfits, std::forward<Args>(args)...);
-		a_func(packages, std::forward<Args>(args)...);
-		a_func(skins, std::forward<Args>(args)...);
+		func(keywords, std::forward<Args>(args)...);
+		func(factions, std::forward<Args>(args)...);
+		func(spells, std::forward<Args>(args)...);
+		func(levSpells, std::forward<Args>(args)...);
+		func(perks, std::forward<Args>(args)...);
+		func(shouts, std::forward<Args>(args)...);
+		func(packages, std::forward<Args>(args)...);
+		func(outfits, std::forward<Args>(args)...);
+		func(sleepOutfits, std::forward<Args>(args)...);
+		func(skins, std::forward<Args>(args)...);
+		func(items, std::forward<Args>(args)...);
 	}
 
 	/// <summary>
@@ -495,7 +492,7 @@ namespace Forms
 	/// <param name="rawForm">A raw form entry that needs to be looked up.</param>
 	/// <param name="callback">A callback to be called with validated data after successful lookup.</param>
 	template <class Form = RE::TESForm*>
-	void LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback);
+	void LookupGenericForm(RE::TESDataHandler* const dataHandler, Configs::INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback);
 }
 
 template <class Form>
@@ -553,7 +550,7 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntr
 }
 
 template <class Form>
-void Forms::Distributables<Form>::LookupForm(RE::TESDataHandler* dataHandler, INI::Data& rawForm)
+void Forms::Distributables<Form>::LookupForm(RE::TESDataHandler* dataHandler, Configs::INI::Data& rawForm)
 {
 	Forms::LookupGenericForm<Form>(dataHandler, rawForm, [&](bool isValid, Form* form, const auto& idxOrCount, const auto& filters, const auto& path) {
 		EmplaceForm(isValid, form, idxOrCount, filters, path);
@@ -561,7 +558,7 @@ void Forms::Distributables<Form>::LookupForm(RE::TESDataHandler* dataHandler, IN
 }
 
 template <class Form>
-void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* dataHandler, std::string_view a_type, INI::DataVec& a_INIDataVec)
+void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* dataHandler, std::string_view a_type, Configs::INI::DataVec& a_INIDataVec)
 {
 	if (a_INIDataVec.empty()) {
 		return;
@@ -609,7 +606,7 @@ void Forms::Distributables<Form>::FinishLookupForms()
 }
 
 template <class Form>
-void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback)
+void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, Configs::INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback)
 {
 	auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] = rawForm;
 
@@ -652,9 +649,9 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& 
 						   buffered_logger::error("\t\t[{}] ({}) FAIL - mismatching form type (expected: {}, actual: {})", e.path, editorID, e.expectedFormType, e.actualFormType);
 					   } },
 			e.formOrEditorID);
-	} catch (const Lookup::InvalidFormTypeException& e) {
+	} catch (const Lookup::InvalidFormTypeException&) {
 		// Whitelisting is disabled, so this should not occur
-	} catch (const Lookup::UnknownPluginException& e) {
+	} catch (const Lookup::UnknownPluginException&) {
 		// Likewise, we don't expect plugin names in distributable forms.
 	}
 }

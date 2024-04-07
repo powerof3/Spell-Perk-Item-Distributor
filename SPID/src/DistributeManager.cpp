@@ -1,4 +1,5 @@
 #include "DistributeManager.h"
+#include "DeathDistribution.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
 
@@ -90,6 +91,7 @@ namespace Distribute
 		logger::info("{:*^50}", "EVENTS");
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
+		DeathDistribution::Manager::Register();
 
 		DoInitialDistribution();
 
@@ -171,32 +173,7 @@ namespace Distribute::Event
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
 			logger::info("Registered for {}", typeid(RE::TESFormDeleteEvent).name());
-
-			if (Forms::deathItems) {
-				scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
-				logger::info("Registered for {}", typeid(RE::TESDeathEvent).name());
-			}
 		}
-	}
-
-	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
-	{
-		constexpr auto is_NPC = [](auto&& a_ref) {
-			return a_ref && !a_ref->IsPlayerRef();
-		};
-
-		if (a_event && a_event->dead && is_NPC(a_event->actorDying)) {
-			const auto actor = a_event->actorDying->As<RE::Actor>();
-			const auto npc = actor ? actor->GetActorBase() : nullptr;
-			if (actor && npc) {
-				auto       npcData = NPCData(actor, npc);
-				const auto input = PCLevelMult::Input{ actor, npc, false };
-
-				DistributeDeathItems(npcData, input);
-			}
-		}
-
-		return RE::BSEventNotifyControl::kContinue;
 	}
 
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)

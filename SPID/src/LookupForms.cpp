@@ -3,6 +3,7 @@
 #include "FormData.h"
 #include "KeywordDependencies.h"
 #include "LinkedDistribution.h"
+#include "DeathDistribution.h"
 
 bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 {
@@ -10,16 +11,15 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 
 	ForEachDistributable([&]<class Form>(Distributables<Form>& a_distributable) {
 		// If it's spells distributable we want to manually lookup forms to pick LevSpells that are added into the list.
-		if constexpr (std::is_same_v<Form, RE::SpellItem>) {
-			return;
-		}
-		const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
+		if constexpr (!std::is_same_v<Form, RE::SpellItem>) {
+			const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
 
-		a_distributable.LookupForms(dataHandler, recordName, INI::configs[a_distributable.GetType()]);
+			a_distributable.LookupForms(dataHandler, recordName, Configs::INI::configs[a_distributable.GetType()]);
+		}
 	});
 
 	// Sort out Spells and Leveled Spells into two separate lists.
-	auto& rawSpells = INI::configs[RECORD::kSpell];
+	auto& rawSpells = Configs::INI::configs[RECORD::kSpell];
 
 	for (auto& rawSpell : rawSpells) {
 		LookupGenericForm<RE::TESForm>(dataHandler, rawSpell, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
@@ -31,10 +31,10 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 		});
 	}
 
-	auto& genericForms = INI::configs[RECORD::kForm];
+	auto& genericForms = Configs::INI::configs[RECORD::kForm];
 
 	for (auto& rawForm : genericForms) {
-		// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin or DeathItems)
+		// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin)
 		LookupGenericForm<RE::TESForm>(dataHandler, rawForm, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
 			if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
 				keywords.EmplaceForm(isValid, keyword, idxOrCount, filters, path);
@@ -107,7 +107,7 @@ void LogDistributablesLookup()
 	});
 
 	// Clear INI map once lookup is done
-	INI::configs.clear();
+	Configs::INI::configs.clear();
 
 	// Clear logger's buffer to free some memory :)
 	buffered_logger::clear();
@@ -136,6 +136,16 @@ void LogLinkedFormsLookup()
 	LinkedDistribution::Manager::GetSingleton()->LogLinkedFormsLookup();
 }
 
+void LookupDeathForms(RE::TESDataHandler* const dataHandler)
+{
+	DeathDistribution::Manager::GetSingleton()->LookupForms(dataHandler);
+}
+
+void LogDeathFormsLookup()
+{
+	DeathDistribution::Manager::GetSingleton()->LogFormsLookup();
+}
+
 bool Lookup::LookupForms()
 {
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
@@ -152,11 +162,15 @@ bool Lookup::LookupForms()
 			logger::info("Lookup took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
 		}
 
+		LookupDeathForms(dataHandler);
+		LogDeathFormsLookup();
+
 		LookupLinkedForms(dataHandler);
 		LogLinkedFormsLookup();
 
 		LookupExclusiveGroups(dataHandler);
 		LogExclusiveGroupsLookup();
+
 
 		return success;
 	}

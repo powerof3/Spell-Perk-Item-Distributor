@@ -36,11 +36,13 @@ namespace LinkedDistribution
 				return false;
 			}
 
+			// TODO: Parse also Linked Death Forms
+
 			std::string rawType = key.substr(6);
 			auto        type = RECORD::GetType(rawType);
 
 			if (type == RECORD::kTotal) {
-				logger::warn("IGNORED: Unsupported Linked Form type: {}"sv, rawType);
+				logger::warn("IGNORED: Unsupported Linked Form type ({}): {} = {}"sv, rawType, originalKey, value);
 				return true;
 			}
 
@@ -48,14 +50,14 @@ namespace LinkedDistribution
 			const auto size = sections.size();
 
 			if (size <= kRequired) {
-				logger::warn("IGNORED: LinkedItem must have a form and at least one Form Filter: {} = {}"sv, key, value);
+				logger::warn("IGNORED: Linked Form must have a form and at least one Form Filter: {} = {}"sv, originalKey, value);
 				return true;
 			}
 
 			auto split_IDs = distribution::split_entry(sections[kLinkedForms]);
 
 			if (split_IDs.empty()) {
-				logger::warn("IGNORED: LinkedItem must have at least one Form Filter : {} = {}"sv, key, value);
+				logger::warn("IGNORED: Linked Form must have at least one parent Form to link to: {} = {}"sv, originalKey, value);
 				return true;
 			}
 
@@ -112,10 +114,9 @@ namespace LinkedDistribution
 	{
 		ForEachLinkedForms([&]<class Form>(LinkedForms<Form>& forms) {
 			// If it's spells distributable we want to manually lookup forms to pick LevSpells that are added into the list.
-			if constexpr (std::is_same_v<Form, RE::SpellItem>) {
-				return;
+			if constexpr (!std::is_same_v<Form, RE::SpellItem>) {
+				forms.LookupForms(dataHandler, rawLinkedForms[forms.GetType()]);
 			}
-			forms.LookupForms(dataHandler, rawLinkedForms[forms.GetType()]);
 		});
 
 		// Sort out Spells and Leveled Spells into two separate lists.
@@ -263,7 +264,6 @@ namespace LinkedDistribution
 				linkedPackages,
 				linkedOutfits,
 				linkedKeywords,
-				DistributionSet::empty<RE::TESBoundObject>(),  // deathItems are distributed only on death :) as such, linked items are also distributed only on death.
 				linkedFactions,
 				linkedSleepOutfits,
 				linkedSkins
@@ -297,7 +297,6 @@ namespace LinkedDistribution
 				DistributionSet::empty<RE::TESForm>(),
 				DistributionSet::empty<RE::BGSOutfit>(),
 				DistributionSet::empty<RE::BGSKeyword>(),
-				linkedDeathItems,
 				DistributionSet::empty<RE::TESFaction>(),
 				DistributionSet::empty<RE::BGSOutfit>(),
 				DistributionSet::empty<RE::TESObjectARMO>()

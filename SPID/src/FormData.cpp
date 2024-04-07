@@ -24,5 +24,5 @@ std::size_t Forms::GetTotalLeveledEntries()
 
 bool Forms::DistributionSet::IsEmpty() const
 {
-	return spells.empty() && perks.empty() && items.empty() && shouts.empty() && levSpells.empty() && packages.empty() && outfits.empty() && keywords.empty() && deathItems.empty() && factions.empty() && sleepOutfits.empty() && skins.empty();
+	return spells.empty() && perks.empty() && items.empty() && shouts.empty() && levSpells.empty() && packages.empty() && outfits.empty() && keywords.empty() && factions.empty() && sleepOutfits.empty() && skins.empty();
 }

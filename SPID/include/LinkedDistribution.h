@@ -47,7 +47,7 @@ namespace LinkedDistribution
 		/// <summary>
 		/// Checks whether given entry is a linked form and attempts to parse it.
 		/// </summary>
-		/// <returns>true if given entry was a linked form. Note that returned value doesn't represent whether or parsing was successful.</returns>
+		/// <returns>true if given entry was a linked form. Note that returned value doesn't represent whether parsing was successful.</returns>
 		bool TryParse(const std::string& key, const std::string& value, const Path&);
 	}
 
@@ -129,7 +129,6 @@ namespace LinkedDistribution
 		LinkedForms<RE::SpellItem>      spells{ RECORD::kSpell };
 		LinkedForms<RE::BGSPerk>        perks{ RECORD::kPerk };
 		LinkedForms<RE::TESBoundObject> items{ RECORD::kItem };
-		LinkedForms<RE::TESBoundObject> deathItems{ RECORD::kDeathItem };
 		LinkedForms<RE::TESShout>       shouts{ RECORD::kShout };
 		LinkedForms<RE::TESLevSpell>    levSpells{ RECORD::kLevSpell };
 		LinkedForms<RE::TESForm>        packages{ RECORD::kPackage };
@@ -138,6 +137,18 @@ namespace LinkedDistribution
 		LinkedForms<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
 		LinkedForms<RE::TESFaction>     factions{ RECORD::kFaction };
 		LinkedForms<RE::TESObjectARMO>  skins{ RECORD::kSkin };
+
+		LinkedForms<RE::SpellItem>      deathSpells{ RECORD::kSpell };
+		LinkedForms<RE::BGSPerk>        deathPerks{ RECORD::kPerk };
+		LinkedForms<RE::TESBoundObject> deathItems{ RECORD::kItem };
+		LinkedForms<RE::TESShout>       deathShouts{ RECORD::kShout };
+		LinkedForms<RE::TESLevSpell>    deathLevSpells{ RECORD::kLevSpell };
+		LinkedForms<RE::TESForm>        deathPackages{ RECORD::kPackage };
+		LinkedForms<RE::BGSOutfit>      deathOutfits{ RECORD::kOutfit };
+		LinkedForms<RE::BGSOutfit>      deathSleepOutfits{ RECORD::kSleepOutfit };
+		LinkedForms<RE::BGSKeyword>     deathKeywords{ RECORD::kKeyword };
+		LinkedForms<RE::TESFaction>     deathFactions{ RECORD::kFaction };
+		LinkedForms<RE::TESObjectARMO>  deathSkins{ RECORD::kSkin };
 
 		/// <summary>
 		/// Iterates over each type of LinkedForms and calls a callback with each of them.
@@ -217,7 +228,6 @@ namespace LinkedDistribution
 		func(perks, std::forward<Args>(args)...);
 		func(shouts, std::forward<Args>(args)...);
 		func(items, std::forward<Args>(args)...);
-		func(deathItems, std::forward<Args>(args)...);
 		func(outfits, std::forward<Args>(args)...);
 		func(sleepOutfits, std::forward<Args>(args)...);
 		func(factions, std::forward<Args>(args)...);
