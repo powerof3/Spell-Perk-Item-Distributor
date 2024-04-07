@@ -25,7 +25,7 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 		LookupGenericForm<RE::TESForm>(dataHandler, rawSpell, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
 			if (const auto spell = form->As<RE::SpellItem>(); spell) {
 				spells.EmplaceForm(isValid, spell, idxOrCount, filters, path);
-			} else if(const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
+			} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
 				levSpells.EmplaceForm(isValid, levSpell, idxOrCount, filters, path);
 			}
 		});
