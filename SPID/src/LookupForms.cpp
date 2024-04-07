@@ -8,11 +8,28 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 {
 	using namespace Forms;
 
-	ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
+	ForEachDistributable([&]<class Form>(Distributables<Form>& a_distributable) {
+		// If it's spells distributable we want to manually lookup forms to pick LevSpells that are added into the list.
+		if constexpr (std::is_same_v<Form, RE::SpellItem>) {
+			return;
+		}
 		const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
 
 		a_distributable.LookupForms(dataHandler, recordName, INI::configs[a_distributable.GetType()]);
 	});
+
+	// Sort out Spells and Leveled Spells into two separate lists.
+	auto& rawSpells = INI::configs[RECORD::kSpell];
+
+	for (auto& rawSpell : rawSpells) {
+		LookupGenericForm<RE::TESForm>(dataHandler, rawSpell, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
+			if (const auto spell = form->As<RE::SpellItem>(); spell) {
+				spells.EmplaceForm(isValid, spell, idxOrCount, filters, path);
+			} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
+				levSpells.EmplaceForm(isValid, levSpell, idxOrCount, filters, path);
+			}
+		});
+	}
 
 	auto& genericForms = INI::configs[RECORD::kForm];
 
