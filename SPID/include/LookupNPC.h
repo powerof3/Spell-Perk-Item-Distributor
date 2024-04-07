@@ -18,6 +18,14 @@ namespace NPC
 		bool               InsertKeyword(const char* a_keyword);
 		[[nodiscard]] bool HasFormFilter(const FormVec& a_forms, bool all = false) const;
 
+		/// <summary>
+		/// Checks whether given NPC already has another form that is mutually exclusive with the given form,
+		/// according to the exclusive groups configuration.
+		/// </summary>
+		/// <param name="otherForm">A Form that needs to be checked.</param>
+		/// <returns></returns>
+		[[nodiscard]] bool HasMutuallyExclusiveForm(RE::TESForm* otherForm) const;
+
 		[[nodiscard]] std::uint16_t GetLevel() const;
 		[[nodiscard]] bool          IsChild() const;
 		[[nodiscard]] bool          IsLeveled() const;
@@ -29,7 +37,7 @@ namespace NPC
 		struct ID
 		{
 			ID() = default;
-			explicit ID(const RE::TESActorBase* a_base);
+			explicit ID(const RE::TESForm* a_base);
 			~ID() = default;
 
 			[[nodiscard]] bool contains(const std::string& a_str) const;

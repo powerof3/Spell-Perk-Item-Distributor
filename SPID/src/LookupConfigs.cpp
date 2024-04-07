@@ -1,4 +1,6 @@
 #include "LookupConfigs.h"
+#include "ExclusiveGroups.h"
+#include "LinkedDistribution.h"
 
 namespace INI
 {
@@ -46,7 +48,7 @@ namespace INI
 			return newValue;
 		}
 
-		std::pair<Data, std::optional<std::string>> parse_ini(const std::string& a_key, const std::string& a_value, const std::string& a_path)
+		std::pair<Data, std::optional<std::string>> parse_ini(const RECORD::TYPE& typeHint, const std::string& a_value, const Path& a_path)
 		{
 			Data data{};
 
@@ -204,19 +206,35 @@ namespace INI
 			}
 
 			//ITEMCOUNT/INDEX
-			if (a_key == "Package") {  // reuse item count for package stack index
+			if (typeHint == RECORD::kPackage) {  // reuse item count for package stack index
 				data.idxOrCount = 0;
 			}
+
 			if (kIdxOrCount < size) {
-				if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
-					data.idxOrCount = string::to_num<std::int32_t>(str);
+				if (typeHint == RECORD::kPackage) {  // If it's a package, then we only expect a single number.
+					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+						data.idxOrCount = string::to_num<Index>(str);
+					}
+				} else {
+					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
+						if (auto countPair = string::split(str, "-"); countPair.size() > 1) {
+							auto minCount = string::to_num<Count>(countPair[0]);
+							auto maxCount = string::to_num<Count>(countPair[1]);
+
+							data.idxOrCount = RandomCount(minCount, maxCount);
+						} else {
+							auto count = string::to_num<Count>(str);
+
+							data.idxOrCount = RandomCount(count, count);  // create the exact match range.
+						}
+					}
 				}
 			}
 
 			//CHANCE
 			if (kChance < size) {
 				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
-					data.chance = string::to_num<Chance>(str);
+					data.chance = string::to_num<PercentChance>(str);
 				}
 			}
 
@@ -263,14 +281,28 @@ namespace INI
 
 				for (auto& [key, entry] : *values) {
 					try {
-						auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
-						configs[key.pItem].emplace_back(data);
+						if (ExclusiveGroups::INI::TryParse(key.pItem, entry, truncatedPath)) {
+							continue;
+						}
+
+						if (LinkedDistribution::INI::TryParse(key.pItem, entry, truncatedPath)) {
+							continue;
+						}
+
+						auto type = RECORD::GetType(key.pItem);
+						if (type == RECORD::kTotal) {
+							logger::warn("\t\tUnsupported Form type: {}"sv, key.pItem);
+							continue;
+						}
+						auto [data, sanitized_str] = detail::parse_ini(type, entry, truncatedPath);
+
+						configs[type].emplace_back(data);
 
 						if (sanitized_str) {
 							oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
 						}
 					} catch (...) {
-						logger::warn("\t\tFailed to parse entry [{} = {}]", key.pItem, entry);
+						logger::warn("\t\tFailed to parse entry [{} = {}]"sv, key.pItem, entry);
 						shouldLogErrors = true;
 					}
 				}

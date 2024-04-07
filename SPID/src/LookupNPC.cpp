@@ -1,8 +1,9 @@
 #include "LookupNPC.h"
+#include <ExclusiveGroups.h>
 
 namespace NPC
 {
-	Data::ID::ID(const RE::TESActorBase* a_base) :
+	Data::ID::ID(const RE::TESForm* a_base) :
 		formID(a_base->GetFormID()),
 		editorID(editorID::get_editorID(a_base))
 	{}
@@ -40,6 +41,10 @@ namespace NPC
 			keywords.emplace(a_keyword->GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
+
+		if (npc->baseTemplateForm) {
+			IDs.emplace_back(npc->baseTemplateForm);
+		}
 
 		if (const auto extraLvlCreature = a_actor->extraList.GetByType<RE::ExtraLeveledCreature>()) {
 			if (const auto originalBase = extraLvlCreature->originalBase) {
@@ -180,6 +185,20 @@ namespace NPC
 		} else {
 			return std::ranges::any_of(a_forms, has_form_or_file);
 		}
+	}
+
+	bool Data::HasMutuallyExclusiveForm(RE::TESForm* a_form) const
+	{
+		auto excludedForms = ExclusiveGroups::Manager::GetSingleton()->MutuallyExclusiveFormsForForm(a_form);
+		if (excludedForms.empty()) {
+			return false;
+		}
+		return std::ranges::any_of(excludedForms, [&](auto form) {
+			if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
+				return has_keyword_string(keyword->GetFormEditorID());
+			}
+			return has_form(form);
+		});
 	}
 
 	std::uint16_t Data::GetLevel() const

@@ -5,8 +5,10 @@ set(headers ${headers}
 	include/Distribute.h
 	include/DistributeManager.h
 	include/DistributePCLevelMult.h
+	include/ExclusiveGroups.h
 	include/FormData.h
 	include/KeywordDependencies.h
+	include/LinkedDistribution.h
 	include/LogBuffer.h
 	include/LookupConfigs.h
 	include/LookupFilters.h

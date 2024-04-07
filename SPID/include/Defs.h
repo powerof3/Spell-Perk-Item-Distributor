@@ -54,6 +54,16 @@ struct Range
 		return value >= min && value <= max;
 	}
 
+	[[nodiscard]] bool IsExact() const
+	{
+		return min == max;
+	}
+
+	[[nodiscard]] T GetRandom() const
+	{
+		return IsExact() ? min : RNG().generate<T>(min, max);
+	}
+
 	// members
 	T min{ std::numeric_limits<T>::min() };
 	T max{ std::numeric_limits<T>::max() };
@@ -83,8 +93,29 @@ struct Traits
 	std::optional<bool>    teammate{};
 };
 
-using IdxOrCount = std::int32_t;
-using Chance = std::uint32_t;
+using Path = std::string;
+
+using Index = std::int32_t;
+using Count = std::int32_t;
+using RandomCount = Range<Count>;
+using IndexOrCount = std::variant<Index, RandomCount>;
+
+/// <summary>
+/// A chance that is represented as a decimal value between 0 and 1.
+/// For example, 0.5 would be 50%.
+///
+/// This one is used in a processed Data for filtering.
+/// </summary>
+using DecimalChance = double;
+
+/// <summary>
+/// A chance that is represented as a percent value between 0 and 100.
+/// It also can be decimal, but would describe fraction of a percent.
+/// So that 0.5 would be 0.5%.
+///
+/// This is used during parsing of INI files.
+/// </summary>
+using PercentChance = double;
 
 /// A standardized way of converting any object to string.
 ///

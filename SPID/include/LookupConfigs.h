@@ -4,7 +4,12 @@ namespace RECORD
 {
 	enum TYPE
 	{
-		kSpell = 0,
+		/// <summary>
+		/// A generic form type that requries type inference.
+		/// </summary>
+		kForm = 0,
+
+		kSpell,
 		kPerk,
 		kItem,
 		kShout,
@@ -20,8 +25,36 @@ namespace RECORD
 		kTotal
 	};
 
-	inline constexpr std::array add{ "Spell"sv, "Perk"sv, "Item"sv, "Shout"sv, "LevSpell"sv, "Package"sv, "Outfit"sv, "Keyword"sv, "DeathItem"sv, "Faction"sv, "SleepOutfit"sv, "Skin"sv };
-	inline constexpr std::array remove{ "-Spell"sv, "-Perk"sv, "-Item"sv, "-Shout"sv, "-LevSpell"sv, "-Package"sv, "-Outfit"sv, "-Keyword"sv, "-DeathItem"sv, "-Faction"sv, "-SleepOutfit"sv, "-Skin"sv };
+	namespace detail
+	{
+		inline static constexpr std::array names{
+			"Form"sv,
+			"Spell"sv,
+			"Perk"sv,
+			"Item"sv,
+			"Shout"sv,
+			"LevSpell"sv,
+			"Package"sv,
+			"Outfit"sv,
+			"Keyword"sv,
+			"DeathItem"sv,
+			"Faction"sv,
+			"SleepOutfit"sv,
+			"Skin"sv
+		};
+	}
+
+	inline constexpr std::string_view GetTypeName(const TYPE aType)
+	{
+		return detail::names.at(aType);
+	}
+
+	template <typename T>
+	constexpr TYPE GetType(const T& aType)
+	{
+		using namespace detail;
+		return static_cast<TYPE>(std::distance(names.begin(), std::find(names.begin(), names.end(), aType)));
+	}
 }
 
 namespace INI
@@ -46,13 +79,14 @@ namespace INI
 		Filters<FormOrEditorID> rawFormFilters{};
 		LevelFilters            levelFilters{};
 		Traits                  traits{};
-		IdxOrCount              idxOrCount{ 1 };
-		Chance                  chance{ 100 };
+		IndexOrCount            idxOrCount{ RandomCount(1, 1) };
+		PercentChance           chance{ 100 };
 		std::string             path{};
 	};
+
 	using DataVec = std::vector<Data>;
 
-	inline StringMap<DataVec> configs{};
+	inline Map<RECORD::TYPE, DataVec> configs{};
 
 	std::pair<bool, bool> GetConfigs();
 }
