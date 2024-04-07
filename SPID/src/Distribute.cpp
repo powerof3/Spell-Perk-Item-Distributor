@@ -7,13 +7,6 @@ namespace Distribute
 {
 	namespace detail
 	{
-		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount)
-		{
-			using func_t = void (*)(RE::Actor*, RE::TESBoundObject*, std::uint32_t, bool, std::uint32_t, RE::BSScript::Internal::VirtualMachine*);
-			REL::Relocation<func_t> func{ RELOCATION_ID(55945, 56489) };
-			return func(a_actor, a_item, a_itemCount, true, 0, RE::BSScript::Internal::VirtualMachine::GetSingleton());
-		}
-
 		/// <summary>
 		/// Performs distribution of all configured forms to NPC described with npcData and input.
 		/// </summary>
@@ -161,11 +154,8 @@ namespace Distribute
 				accumulatedForms);
 
 			for_each_form<RE::TESBoundObject>(
-				npcData, forms.deathItems, input, [&](auto* deathItem, IndexOrCount idxOrCount) {
-					auto count = std::get<RandomCount>(idxOrCount);
-
-					detail::add_item(npcData.GetActor(), deathItem, count.GetRandom());
-					return true;
+				npcData, forms.deathItems, input, [&](std::map<RE::TESBoundObject*, Count>& a_objects) {
+					return npc->AddObjectsToContainer(a_objects, npc);
 				},
 				accumulatedForms);
 		}
