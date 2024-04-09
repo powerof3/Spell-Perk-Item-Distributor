@@ -255,7 +255,7 @@ namespace LinkedDistribution
 
 			LogLinkedFormsLookup(kRegular);
 		}
-		
+
 		if (!IsEmpty(kDeath)) {
 			logger::info("{:*^50}", "LINKED ON DEATH FORMS");
 

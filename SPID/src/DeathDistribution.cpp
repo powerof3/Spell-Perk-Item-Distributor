@@ -238,7 +238,6 @@ namespace DeathDistribution
 
 #pragma endregion
 
-
 #pragma region Lookup
 
 	void Manager::LookupForms(RE::TESDataHandler* const dataHandler)

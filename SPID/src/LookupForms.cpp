@@ -1,9 +1,9 @@
 #include "LookupForms.h"
+#include "DeathDistribution.h"
 #include "ExclusiveGroups.h"
 #include "FormData.h"
 #include "KeywordDependencies.h"
 #include "LinkedDistribution.h"
-#include "DeathDistribution.h"
 
 bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 {
@@ -170,7 +170,6 @@ bool Lookup::LookupForms()
 
 		LookupExclusiveGroups(dataHandler);
 		LogExclusiveGroupsLookup();
-
 
 		return success;
 	}

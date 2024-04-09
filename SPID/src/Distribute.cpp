@@ -115,7 +115,6 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-
 		for_each_form<RE::BGSOutfit>(
 			npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
 				if (npc->sleepOutfit != a_outfit) {
