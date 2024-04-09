@@ -298,7 +298,17 @@ namespace LinkedDistribution
 
 	bool Manager::IsEmpty(DistributionType type) const
 	{
-		return false;
+		return spells.IsEmpty(type) &&
+		       perks.IsEmpty(type) &&
+		       items.IsEmpty(type) &&
+		       shouts.IsEmpty(type) &&
+		       levSpells.IsEmpty(type) &&
+		       packages.IsEmpty(type) &&
+		       outfits.IsEmpty(type) &&
+		       keywords.IsEmpty(type) &&
+		       factions.IsEmpty(type) &&
+		       sleepOutfits.IsEmpty(type) &&
+		       skins.IsEmpty(type);
 	}
 #pragma endregion
 }

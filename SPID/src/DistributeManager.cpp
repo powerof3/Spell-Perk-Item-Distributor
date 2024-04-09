@@ -128,7 +128,7 @@ namespace Distribute
 	{
 		using namespace Forms;
 
-		logger::info("{:*^50}", "RESULTS");
+		logger::info("{:*^50}", "MAIN MENU DISTRIBUTION");
 
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
 			if (a_distributable && a_distributable.GetType() != RECORD::kDeathItem) {
