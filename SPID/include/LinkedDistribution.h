@@ -154,7 +154,7 @@ namespace LinkedDistribution
 		using namespace Forms::Lookup;
 
 		try {
-			return Forms::detail::get_form<Form>(dataHandler, rawForm.formOrEditorID, rawForm.path);
+			return Forms::detail::get_form<Form>(dataHandler, rawForm.formOrEditorID, rawForm.path, LookupOptions::kCreateIfMissing);
 		} catch (const UnknownFormIDException& e) {
 			buffered_logger::error("\t\t[{}] LinkedForm [0x{:X}] ({}) SKIP - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
 		} catch (const UnknownPluginException& e) {
@@ -232,7 +232,7 @@ namespace LinkedDistribution
 			if (auto form = detail::LookupLinkedForm<Form>(dataHandler, rawForm); form) {
 				auto& [formID, scope, parentFormIDs, count, chance, path] = rawForm;
 				FormVec parentForms{};
-				if (Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
+				if (Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					Link(form, scope, parentForms, count, chance, path);
 				}
 			}

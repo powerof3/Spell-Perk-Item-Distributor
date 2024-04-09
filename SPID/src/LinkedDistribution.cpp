@@ -125,7 +125,7 @@ namespace LinkedDistribution
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawSpell); form) {
 				auto& [formID, scope, parentFormIDs, idxOrCount, chance, path] = rawSpell;
 				FormVec parentForms{};
-				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
+				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					continue;
 				}
 				if (const auto spell = form->As<RE::SpellItem>(); spell) {
@@ -141,7 +141,7 @@ namespace LinkedDistribution
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
 				auto& [formID, scope, parentFormIDs, idxOrCount, chance, path] = rawForm;
 				FormVec parentForms{};
-				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, false, false)) {
+				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					continue;
 				}
 				// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin or DeathItems)

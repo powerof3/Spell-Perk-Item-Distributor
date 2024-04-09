@@ -113,6 +113,14 @@ namespace Forms
 		};
 	}
 
+	enum LookupOptions : std::uint8_t
+	{
+		kNone = 0,
+		kWhitelistedOnly = 1,
+		kRequireAll = 1 << 1,
+		kCreateIfMissing = 1 << 2
+	};
+
 	namespace detail
 	{
 		using namespace Lookup;
@@ -140,7 +148,7 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, bool whitelistedOnly = false)
+		std::variant<Form*, const RE::TESFile*> get_form_or_mod(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, const LookupOptions options)
 		{
 			Form*              form = nullptr;
 			const RE::TESFile* mod = nullptr;
@@ -171,7 +179,7 @@ namespace Forms
 					} else {
 						throw KeywordNotFoundException(editorID, false, path);
 					}
-				} else {
+				} else if (options & kCreateIfMissing) {
 					const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
 					if (auto keyword = factory ? factory->Create() : nullptr; keyword) {
 						keyword->formEditorID = editorID;
@@ -181,6 +189,9 @@ namespace Forms
 					} else {
 						throw KeywordNotFoundException(editorID, true, path);
 					}
+				} else {
+					// If creating keyword from this editorID is not allowed, then we simply fail as unknown editorID
+					throw UnknownEditorIDException(editorID, path);
 				}
 			};
 
@@ -241,6 +252,8 @@ namespace Forms
 										   throw MismatchingFormTypeException(anyForm->GetFormType(), Form::FORMTYPE, editorID, path);
 									   }
 								   } else {
+									   // If template's Form is a generic TESForm, that means caller doesn't request specific form type,
+									   // as such we'll attempt to create a keyword if options allow it.
 									   if constexpr (std::is_same_v<Form, RE::TESForm>) {
 										   form = find_or_create_keyword(editorID);
 									   } else {
@@ -255,7 +268,7 @@ namespace Forms
 				return mod;
 			}
 
-			if (whitelistedOnly && form) {
+			if (options & kWhitelistedOnly && form) {
 				const auto formType = form->GetFormType();
 				if (FormType::GetWhitelisted(formType)) {
 					return form;
@@ -267,9 +280,9 @@ namespace Forms
 			return form;
 		}
 
-		inline const RE::TESFile* get_file(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path)
+		inline const RE::TESFile* get_file(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, const LookupOptions options)
 		{
-			auto formOrMod = get_form_or_mod(dataHandler, formOrEditorID, path);
+			auto formOrMod = get_form_or_mod(dataHandler, formOrEditorID, path, options);
 
 			if (std::holds_alternative<const RE::TESFile*>(formOrMod)) {
 				return std::get<const RE::TESFile*>(formOrMod);
@@ -279,9 +292,9 @@ namespace Forms
 		}
 
 		template <class Form = RE::TESForm>
-		Form* get_form(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, bool whitelistedOnly = false)
+		Form* get_form(RE::TESDataHandler* const dataHandler, const FormOrEditorID& formOrEditorID, const Path& path, const LookupOptions options)
 		{
-			auto formOrMod = get_form_or_mod<Form>(dataHandler, formOrEditorID, path, whitelistedOnly);
+			auto formOrMod = get_form_or_mod<Form>(dataHandler, formOrEditorID, path, options);
 
 			if (std::holds_alternative<Form*>(formOrMod)) {
 				return std::get<Form*>(formOrMod);
@@ -290,7 +303,7 @@ namespace Forms
 			return nullptr;
 		}
 
-		inline bool formID_to_form(RE::TESDataHandler* const a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const Path& a_path, bool a_all = false, bool whitelistedOnly = true)
+		inline bool formID_to_form(RE::TESDataHandler* const a_dataHandler, RawFormVec& a_rawFormVec, FormVec& a_formVec, const Path& a_path, LookupOptions options)
 		{
 			if (a_rawFormVec.empty()) {
 				return true;
@@ -298,7 +311,7 @@ namespace Forms
 
 			for (auto& formOrEditorID : a_rawFormVec) {
 				try {
-					auto form = get_form_or_mod(a_dataHandler, formOrEditorID, a_path, whitelistedOnly);
+					auto form = get_form_or_mod(a_dataHandler, formOrEditorID, a_path, options);
 					a_formVec.emplace_back(form);
 				} catch (const UnknownFormIDException& e) {
 					buffered_logger::error("\t\t[{}] Filter [0x{:X}] ({}) SKIP - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
@@ -340,7 +353,7 @@ namespace Forms
 				}
 			}
 
-			return !a_all && !a_formVec.empty() || a_formVec.size() == a_rawFormVec.size();
+			return (options & kRequireAll) == 0 && a_formVec.size() == a_rawFormVec.size();
 		}
 	}
 
@@ -601,15 +614,15 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, INI::Data& 
 	auto& [formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] = rawForm;
 
 	try {
-		if (auto form = detail::get_form<Form>(dataHandler, formOrEditorID, path); form) {
+		if (auto form = detail::get_form<Form>(dataHandler, formOrEditorID, path, LookupOptions::kCreateIfMissing); form) {
 			FormFilters filterForms{};
 
-			bool validEntry = detail::formID_to_form(dataHandler, filterIDs.ALL, filterForms.ALL, path, true);
+			bool validEntry = detail::formID_to_form(dataHandler, filterIDs.ALL, filterForms.ALL, path, LookupOptions::kRequireAll);
 			if (validEntry) {
-				validEntry = detail::formID_to_form(dataHandler, filterIDs.NOT, filterForms.NOT, path);
+				validEntry = detail::formID_to_form(dataHandler, filterIDs.NOT, filterForms.NOT, path, LookupOptions::kWhitelistedOnly);
 			}
 			if (validEntry) {
-				validEntry = detail::formID_to_form(dataHandler, filterIDs.MATCH, filterForms.MATCH, path);
+				validEntry = detail::formID_to_form(dataHandler, filterIDs.MATCH, filterForms.MATCH, path, LookupOptions::kWhitelistedOnly);
 			}
 
 			FilterData filters{ strings, filterForms, level, traits, chance };

@@ -52,8 +52,8 @@ namespace ExclusiveGroups
 			FormVec match{};
 			FormVec formsNot{};
 
-			if (Forms::detail::formID_to_form(dataHandler, filterIDs.MATCH, match, path, false, false) &&
-				Forms::detail::formID_to_form(dataHandler, filterIDs.NOT, formsNot, path, false, false)) {
+			if (Forms::detail::formID_to_form(dataHandler, filterIDs.MATCH, match, path, Forms::LookupOptions::kNone) &&
+				Forms::detail::formID_to_form(dataHandler, filterIDs.NOT, formsNot, path, Forms::LookupOptions::kNone)) {
 				for (const auto& form : match) {
 					if (std::holds_alternative<RE::TESForm*>(form)) {
 						forms.insert(std::get<RE::TESForm*>(form));
