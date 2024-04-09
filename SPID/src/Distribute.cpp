@@ -170,7 +170,7 @@ namespace Distribute
 
 		if (!distributedForms.empty()) {
 			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
-			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(distributedForms, [&](Forms::DistributionSet& set) {
+			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kRegular, distributedForms, [&](Forms::DistributionSet& set) {
 				Distribute(npcData, input, set, true, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
 			});
 		}

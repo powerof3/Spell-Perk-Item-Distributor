@@ -22,6 +22,22 @@ namespace LinkedDistribution
 		kGlobal
 	};
 
+	/// <summary>
+	/// Type of the distribution that is being linked to.
+	/// </summary>
+	enum DistributionType : std::uint8_t
+	{
+		/// <summary>
+		/// Regular distribution that occurs during normal distribution pass.
+		/// </summary>
+		kRegular,
+
+		/// <summary>
+		/// Distribution that occurs when an NPC dies.
+		/// </summary>
+		kDeath
+	};
+
 	namespace INI
 	{
 		struct RawLinkedForm
@@ -40,7 +56,7 @@ namespace LinkedDistribution
 		};
 
 		using LinkedFormsVec = std::vector<RawLinkedForm>;
-		using LinkedFormsConfig = std::unordered_map<RECORD::TYPE, LinkedFormsVec>;
+		using LinkedFormsConfig = std::unordered_map<DistributionType, std::unordered_map<RECORD::TYPE, LinkedFormsVec>>;
 
 		inline LinkedFormsConfig linkedForms{};
 
@@ -70,7 +86,7 @@ namespace LinkedDistribution
 		friend Manager;  // allow Manager to later modify forms directly.
 		friend Form* detail::LookupLinkedForm(RE::TESDataHandler* const, INI::RawLinkedForm&);
 
-		using FormsMap = std::unordered_map<Path, std::unordered_map<RE::TESForm*, DataVec<Form>>>;
+		using FormsMap = std::unordered_map<DistributionType, std::unordered_map<Path, std::unordered_map<RE::TESForm*, DataVec<Form>>>>;
 
 		LinkedForms(RECORD::TYPE type) :
 			type(type)
@@ -79,13 +95,13 @@ namespace LinkedDistribution
 		RECORD::TYPE    GetType() const { return type; }
 		const FormsMap& GetForms() const { return forms; }
 
-		void LookupForms(RE::TESDataHandler* const dataHandler, INI::LinkedFormsVec& rawLinkedForms);
+		void LookupForms(RE::TESDataHandler* const, DistributionType, INI::LinkedFormsVec& rawLinkedForms);
 
 	private:
 		RECORD::TYPE type;
 		FormsMap     forms{};
 
-		void Link(Form*, Scope, const FormVec& linkedForms, const IndexOrCount&, const PercentChance&, const Path&);
+		void Link(Form*, Scope, DistributionType, const FormVec& linkedForms, const IndexOrCount&, const PercentChance&, const Path&);
 	};
 
 	class Manager : public ISingleton<Manager>
@@ -98,33 +114,29 @@ namespace LinkedDistribution
 		/// </summary>
 		/// <param name="dataHandler">A DataHandler that will perform the actual lookup.</param>
 		/// <param name="rawLinkedDistribution">A raw linked form entries that should be processed.</param>
-		void LookupLinkedForms(RE::TESDataHandler* const dataHandler, INI::LinkedFormsConfig& rawLinkedForms = INI::linkedForms);
+		void LookupLinkedForms(RE::TESDataHandler* const, INI::LinkedFormsConfig& rawLinkedForms = INI::linkedForms);
 
 		void LogLinkedFormsLookup();
 
 		/// <summary>
 		/// Calculates DistributionSet for each linked form and calls a callback for each of them.
 		/// </summary>
+		/// <param name="distributionType">Type of the distribution for which linked sets should be returned.</param>
 		/// <param name="linkedForms">A set of forms for which distribution sets should be calculated.
 		///							  This is typically distributed forms accumulated during first distribution pass.</param>
 		/// <param name="distribute">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
-		void ForEachLinkedDistributionSet(const DistributedForms& linkedForms, std::function<void(DistributionSet&)> distribute);
+		void ForEachLinkedDistributionSet(DistributionType, const DistributedForms& linkedForms, std::function<void(DistributionSet&)> distribute);
 
-		/// <summary>
-		/// Calculates DistributionSet with only DeathItems for each linked form and calls a callback for each of them.
-		/// This method is suitable for distributing items on death.
-		/// </summary>
-		/// <param name="linkedForms">A set of forms for which distribution sets should be calculated.
-		///							  This is typically distributed forms accumulated during first distribution pass.</param>
-		/// <param name="distribute">A callback to be called with each DistributionSet. This is supposed to do the actual distribution.</param>
-		void ForEachLinkedDeathDistributionSet(const DistributedForms& linkedForms, std::function<void(DistributionSet&)> distribute);
+		bool IsEmpty(DistributionType) const;
 
 	private:
 		template <class Form>
-		DataVec<Form>& LinkedFormsForForm(const DistributedForm&, Scope, LinkedForms<Form>&) const;
+		DataVec<Form>& LinkedFormsForForm(DistributionType, const DistributedForm&, Scope, LinkedForms<Form>&) const;
 
-		void ForEachLinkedDistributionSet(const DistributedForms& linkedForms, Scope, std::function<void(DistributionSet&)> distribute);
-		void ForEachLinkedDeathDistributionSet(const DistributedForms& linkedForms, Scope, std::function<void(DistributionSet&)> distribute);
+		void LookupLinkedForms(RE::TESDataHandler* const, DistributionType, INI::LinkedFormsConfig& rawLinkedForms);
+		void LogLinkedFormsLookup(DistributionType);
+
+		void ForEachLinkedDistributionSet(DistributionType, const DistributedForms& linkedForms, Scope, std::function<void(DistributionSet&)> distribute);
 
 		LinkedForms<RE::SpellItem>      spells{ RECORD::kSpell };
 		LinkedForms<RE::BGSPerk>        perks{ RECORD::kPerk };
@@ -137,18 +149,6 @@ namespace LinkedDistribution
 		LinkedForms<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
 		LinkedForms<RE::TESFaction>     factions{ RECORD::kFaction };
 		LinkedForms<RE::TESObjectARMO>  skins{ RECORD::kSkin };
-
-		LinkedForms<RE::SpellItem>      deathSpells{ RECORD::kSpell };
-		LinkedForms<RE::BGSPerk>        deathPerks{ RECORD::kPerk };
-		LinkedForms<RE::TESBoundObject> deathItems{ RECORD::kItem };
-		LinkedForms<RE::TESShout>       deathShouts{ RECORD::kShout };
-		LinkedForms<RE::TESLevSpell>    deathLevSpells{ RECORD::kLevSpell };
-		LinkedForms<RE::TESForm>        deathPackages{ RECORD::kPackage };
-		LinkedForms<RE::BGSOutfit>      deathOutfits{ RECORD::kOutfit };
-		LinkedForms<RE::BGSOutfit>      deathSleepOutfits{ RECORD::kSleepOutfit };
-		LinkedForms<RE::BGSKeyword>     deathKeywords{ RECORD::kKeyword };
-		LinkedForms<RE::TESFaction>     deathFactions{ RECORD::kFaction };
-		LinkedForms<RE::TESObjectARMO>  deathSkins{ RECORD::kSkin };
 
 		/// <summary>
 		/// Iterates over each type of LinkedForms and calls a callback with each of them.
@@ -207,9 +207,10 @@ namespace LinkedDistribution
 	}
 
 	template <class Form>
-	DataVec<Form>& Manager::LinkedFormsForForm(const DistributedForm& form, Scope scope, LinkedForms<Form>& linkedForms) const
+	DataVec<Form>& Manager::LinkedFormsForForm(DistributionType type, const DistributedForm& form, Scope scope, LinkedForms<Form>& linkedForms) const
 	{
-		if (const auto formsIt = linkedForms.forms.find(scope == kLocal ? form.second : ""); formsIt != linkedForms.forms.end()) {
+		auto& forms = linkedForms.forms[type];
+		if (const auto formsIt = forms.find(scope == kLocal ? form.second : ""); formsIt != forms.end()) {
 			if (const auto linkedFormsIt = formsIt->second.find(form.first); linkedFormsIt != formsIt->second.end()) {
 				return linkedFormsIt->second;
 			}
@@ -236,25 +237,25 @@ namespace LinkedDistribution
 	}
 
 	template <class Form>
-	void LinkedForms<Form>::LookupForms(RE::TESDataHandler* const dataHandler, INI::LinkedFormsVec& rawLinkedForms)
+	void LinkedForms<Form>::LookupForms(RE::TESDataHandler* const dataHandler, DistributionType type, INI::LinkedFormsVec& rawLinkedForms)
 	{
 		for (auto& rawForm : rawLinkedForms) {
 			if (auto form = detail::LookupLinkedForm<Form>(dataHandler, rawForm); form) {
 				auto& [formID, scope, parentFormIDs, count, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
-					Link(form, scope, parentForms, count, chance, path);
+					Link(form, scope, type, parentForms, count, chance, path);
 				}
 			}
 		}
 	}
 
 	template <class Form>
-	void LinkedForms<Form>::Link(Form* form, Scope scope, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
+	void LinkedForms<Form>::Link(Form* form, Scope scope, DistributionType type, const FormVec& linkedForms, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
 	{
 		for (const auto& linkedForm : linkedForms) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
-				auto& distributableFormsAtPath = forms[scope == kLocal ? path : ""];  // If item is global, we put it in a common map with no information about the path.
+				auto& distributableFormsAtPath = forms[type][scope == kLocal ? path : ""];  // If item is global, we put it in a common map with no information about the path.
 				auto& distributableForms = distributableFormsAtPath[std::get<RE::TESForm*>(linkedForm)];
 				// Note that we don't use Data.index here, as these linked forms don't have any leveled filters
 				// and as such do not to track their index.

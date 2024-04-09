@@ -7,6 +7,7 @@
 namespace DeathDistribution
 {
 #pragma region Parsing
+
 	namespace INI
 	{
 		enum Sections : std::uint32_t
@@ -234,19 +235,11 @@ namespace DeathDistribution
 			return true;
 		}
 	}
+
 #pragma endregion
 
-	void Manager::Register()
-	{
-		if (INI::deathConfigs.empty()) {
-			return;
-		}
 
-		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
-			scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
-			logger::info("Registered for {}", typeid(RE::TESDeathEvent).name());
-		}
-	}
+#pragma region Lookup
 
 	void Manager::LookupForms(RE::TESDataHandler* const dataHandler)
 	{
@@ -321,16 +314,16 @@ namespace DeathDistribution
 	bool Manager::IsEmpty()
 	{
 		return spells.GetForms().empty() &&
-			   perks.GetForms().empty() &&
-			   items.GetForms().empty() &&
-			   shouts.GetForms().empty() &&
-			   levSpells.GetForms().empty() &&
-			   packages.GetForms().empty() &&
-			   outfits.GetForms().empty() &&
-			   keywords.GetForms().empty() &&
-			   factions.GetForms().empty() &&
-			   sleepOutfits.GetForms().empty() &&
-			   skins.GetForms().empty();
+		       perks.GetForms().empty() &&
+		       items.GetForms().empty() &&
+		       shouts.GetForms().empty() &&
+		       levSpells.GetForms().empty() &&
+		       packages.GetForms().empty() &&
+		       outfits.GetForms().empty() &&
+		       keywords.GetForms().empty() &&
+		       factions.GetForms().empty() &&
+		       sleepOutfits.GetForms().empty() &&
+		       skins.GetForms().empty();
 	}
 
 	void Manager::LogFormsLookup()
@@ -354,6 +347,21 @@ namespace DeathDistribution
 				logger::info("Registered {}/{} {}s", added, all, recordName);
 			}
 		});
+	}
+#pragma endregion
+
+#pragma region Distribution
+
+	void Manager::Register()
+	{
+		if (INI::deathConfigs.empty()) {
+			return;
+		}
+
+		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+			scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
+			logger::info("Registered for {}", typeid(RE::TESDeathEvent).name());
+		}
 	}
 
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
@@ -389,7 +397,7 @@ namespace DeathDistribution
 				// TODO: We can now log per-NPC distributed forms.
 
 				if (!distributedForms.empty()) {
-					LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDeathDistributionSet(distributedForms, [&](Forms::DistributionSet& set) {
+					LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kDeath, distributedForms, [&](Forms::DistributionSet& set) {
 						Distribute::Distribute(npcData, input, set, true, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
 					});
 				}
@@ -398,4 +406,5 @@ namespace DeathDistribution
 
 		return RE::BSEventNotifyControl::kContinue;
 	}
+#pragma endregion
 }
