@@ -92,11 +92,12 @@ namespace LinkedDistribution
 			type(type)
 		{}
 
-		bool IsEmpty(DistributionType type) const { 
+		bool IsEmpty(DistributionType type) const
+		{
 			if (const auto it = forms.find(type); it != forms.end()) {
 				return it->second.empty();
 			}
-			return true; 
+			return true;
 		}
 
 		RECORD::TYPE    GetType() const { return type; }
