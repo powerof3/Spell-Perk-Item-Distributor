@@ -1,5 +1,6 @@
 set(sources ${sources}
 	src/Cache.cpp
+	src/DeathDistribution.cpp
 	src/Distribute.cpp
 	src/DistributeManager.cpp
 	src/DistributePCLevelMult.cpp

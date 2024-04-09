@@ -20,14 +20,12 @@ namespace Distribute
 	{
 		class Manager :
 			public ISingleton<Manager>,
-			public RE::BSTEventSink<RE::TESDeathEvent>,
 			public RE::BSTEventSink<RE::TESFormDeleteEvent>
 		{
 		public:
 			static void Register();
 
 		protected:
-			RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override;
 			RE::BSEventNotifyControl ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
 		};
 	}

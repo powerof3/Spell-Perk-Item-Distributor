@@ -1,5 +1,5 @@
 #include "LookupNPC.h"
-#include <ExclusiveGroups.h>
+#include "ExclusiveGroups.h"
 
 namespace NPC
 {

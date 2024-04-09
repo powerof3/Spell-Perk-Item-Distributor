@@ -44,6 +44,9 @@ namespace Distribute
 			return a_formData.filters.PassedFilters(a_npcData) == Filter::Result::kPass;
 		}
 
+		/// <summary>
+		/// Check that NPC doesn't already have the form that is about to be distributed.
+		/// </summary>
 		template <class Form>
 		bool has_form(RE::TESNPC* a_npc, Form* a_form)
 		{
@@ -66,15 +69,13 @@ namespace Distribute
 				return false;
 			}
 		}
-
-		void add_item(RE::Actor* a_actor, RE::TESBoundObject* a_item, std::uint32_t a_itemCount);
 	}
 
 	using namespace Forms;
 
-#pragma region Packages, Death Items
+#pragma region Packages
 	// old method (distributing one by one)
-	// for now, only packages/death items use this
+	// for now, only packages use this
 	template <class Form>
 	void for_each_form(
 		const NPCData&                           a_npcData,
@@ -221,8 +222,15 @@ namespace Distribute
 	}
 #pragma endregion
 
+	/// <summary>
+	/// Performs distribution of all configured forms to NPC described with npcData and input.
+	/// </summary>
+	/// <param name="npcData">General information about NPC that is being processed.</param>
+	/// <param name="input">Leveling information about NPC that is being processed.</param>
+	/// <param name="forms">A set of forms that should be distributed to NPC.</param>
+	/// <param name="allowOverwrites">If true, overwritable forms (like Outfits) will be to overwrite last distributed form on NPC.</param>
+	/// <param name="accumulatedForms">An optional pointer to a set that will accumulate all distributed forms.</param>
+	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, bool allowOverwrites, DistributedForms* accumulatedForms = nullptr);
 	void Distribute(NPCData& npcData, const PCLevelMult::Input& input);
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries);
-
-	void DistributeDeathItems(NPCData& npcData, const PCLevelMult::Input& input);
 }

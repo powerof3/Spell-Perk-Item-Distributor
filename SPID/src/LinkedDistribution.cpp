@@ -27,6 +27,8 @@ namespace LinkedDistribution
 
 			Scope scope = kLocal;
 
+			DistributionType distributionType = kRegular;
+
 			if (key.starts_with("Global"sv)) {
 				scope = kGlobal;
 				key.erase(0, 6);
@@ -36,11 +38,18 @@ namespace LinkedDistribution
 				return false;
 			}
 
-			std::string rawType = key.substr(6);
+			key.erase(0, 6);
+
+			if (key.starts_with("Death"sv)) {
+				distributionType = kDeath;
+				key.erase(0, 5);
+			}
+
+			std::string rawType = key;
 			auto        type = RECORD::GetType(rawType);
 
 			if (type == RECORD::kTotal) {
-				logger::warn("IGNORED: Unsupported Linked Form type: {}"sv, rawType);
+				logger::warn("IGNORED: Unsupported Linked Form type ({}): {} = {}"sv, rawType, originalKey, value);
 				return true;
 			}
 
@@ -48,14 +57,14 @@ namespace LinkedDistribution
 			const auto size = sections.size();
 
 			if (size <= kRequired) {
-				logger::warn("IGNORED: LinkedItem must have a form and at least one Form Filter: {} = {}"sv, key, value);
+				logger::warn("IGNORED: Linked Form must have a form and at least one Form Filter: {} = {}"sv, originalKey, value);
 				return true;
 			}
 
 			auto split_IDs = distribution::split_entry(sections[kLinkedForms]);
 
 			if (split_IDs.empty()) {
-				logger::warn("IGNORED: LinkedItem must have at least one Form Filter : {} = {}"sv, key, value);
+				logger::warn("IGNORED: Linked Form must have at least one parent Form to link to: {} = {}"sv, originalKey, value);
 				return true;
 			}
 
@@ -99,7 +108,7 @@ namespace LinkedDistribution
 				}
 			}
 
-			linkedForms[type].push_back(item);
+			linkedForms[distributionType][type].push_back(item);
 
 			return true;
 		}
@@ -108,18 +117,17 @@ namespace LinkedDistribution
 
 #pragma region Lookup
 
-	void Manager::LookupLinkedForms(RE::TESDataHandler* dataHandler, INI::LinkedFormsConfig& rawLinkedForms)
+	void Manager::LookupLinkedForms(RE::TESDataHandler* const dataHandler, DistributionType distributionType, INI::LinkedFormsConfig& rawLinkedForms)
 	{
 		ForEachLinkedForms([&]<class Form>(LinkedForms<Form>& forms) {
 			// If it's spells distributable we want to manually lookup forms to pick LevSpells that are added into the list.
-			if constexpr (std::is_same_v<Form, RE::SpellItem>) {
-				return;
+			if constexpr (!std::is_same_v<Form, RE::SpellItem>) {
+				forms.LookupForms(dataHandler, distributionType, rawLinkedForms[distributionType][forms.GetType()]);
 			}
-			forms.LookupForms(dataHandler, rawLinkedForms[forms.GetType()]);
 		});
 
 		// Sort out Spells and Leveled Spells into two separate lists.
-		auto& rawSpells = rawLinkedForms[RECORD::kSpell];
+		auto& rawSpells = rawLinkedForms[distributionType][RECORD::kSpell];
 
 		for (auto& rawSpell : rawSpells) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawSpell); form) {
@@ -129,14 +137,14 @@ namespace LinkedDistribution
 					continue;
 				}
 				if (const auto spell = form->As<RE::SpellItem>(); spell) {
-					spells.Link(spell, scope, parentForms, idxOrCount, chance, path);
+					spells.Link(spell, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
-					levSpells.Link(levSpell, scope, parentForms, idxOrCount, chance, path);
+					levSpells.Link(levSpell, scope, distributionType, parentForms, idxOrCount, chance, path);
 				}
 			}
 		}
 
-		auto& genericForms = rawLinkedForms[RECORD::kForm];
+		auto& genericForms = rawLinkedForms[distributionType][RECORD::kForm];
 		for (auto& rawForm : genericForms) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
 				auto& [formID, scope, parentFormIDs, idxOrCount, chance, path] = rawForm;
@@ -146,21 +154,21 @@ namespace LinkedDistribution
 				}
 				// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin or DeathItems)
 				if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
-					keywords.Link(keyword, scope, parentForms, idxOrCount, chance, path);
+					keywords.Link(keyword, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
-					spells.Link(spell, scope, parentForms, idxOrCount, chance, path);
+					spells.Link(spell, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
-					levSpells.Link(levSpell, scope, parentForms, idxOrCount, chance, path);
+					levSpells.Link(levSpell, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
-					perks.Link(perk, scope, parentForms, idxOrCount, chance, path);
+					perks.Link(perk, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else if (const auto shout = form->As<RE::TESShout>(); shout) {
-					shouts.Link(shout, scope, parentForms, idxOrCount, chance, path);
+					shouts.Link(shout, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
-					items.Link(item, scope, parentForms, idxOrCount, chance, path);
+					items.Link(item, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
-					outfits.Link(outfit, scope, parentForms, idxOrCount, chance, path);
+					outfits.Link(outfit, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
-					factions.Link(faction, scope, parentForms, idxOrCount, chance, path);
+					factions.Link(faction, scope, distributionType, parentForms, idxOrCount, chance, path);
 				} else {
 					auto type = form->GetFormType();
 					if (type == RE::FormType::Package || type == RE::FormType::FormList) {
@@ -175,7 +183,7 @@ namespace LinkedDistribution
 						} else {
 							packageIndex = std::get<Index>(idxOrCount);
 						}
-						packages.Link(form, scope, parentForms, packageIndex, chance, path);
+						packages.Link(form, scope, distributionType, parentForms, packageIndex, chance, path);
 					} else {
 						logger::warn("\t[{}] Unsupported Form type: {}", path, type);
 					}
@@ -185,8 +193,14 @@ namespace LinkedDistribution
 
 		// Remove empty linked forms
 		ForEachLinkedForms([&]<typename Form>(LinkedForms<Form>& forms) {
-			std::erase_if(forms.forms, [](const auto& pair) { return pair.second.empty(); });
+			std::erase_if(forms.forms[distributionType], [](const auto& pair) { return pair.second.empty(); });
 		});
+	}
+
+	void Manager::LookupLinkedForms(RE::TESDataHandler* dataHandler, INI::LinkedFormsConfig& rawLinkedForms)
+	{
+		LookupLinkedForms(dataHandler, kRegular, rawLinkedForms);
+		LookupLinkedForms(dataHandler, kDeath, rawLinkedForms);
 
 		// Clear INI once lookup is done
 		rawLinkedForms.clear();
@@ -195,19 +209,16 @@ namespace LinkedDistribution
 		buffered_logger::clear();
 	}
 
-	void Manager::LogLinkedFormsLookup()
+	void Manager::LogLinkedFormsLookup(DistributionType type)
 	{
-		logger::info("{:*^50}", "LINKED ITEMS");
-
-		ForEachLinkedForms([]<typename Form>(LinkedForms<Form>& linkedForms) {
-			if (linkedForms.GetForms().empty()) {
+		ForEachLinkedForms([&]<typename Form>(LinkedForms<Form>& linkedForms) {
+			if (linkedForms.forms[type].empty()) {
 				return;
 			}
-
 			std::unordered_map<RE::TESForm*, std::vector<DistributedForm>> map{};
 
 			// Iterate through the original map
-			for (const auto& pair : linkedForms.GetForms()) {
+			for (const auto& pair : linkedForms.forms[type]) {
 				const auto& path = pair.first;
 				const auto& formsMap = pair.second;
 
@@ -236,37 +247,39 @@ namespace LinkedDistribution
 			}
 		});
 	}
+
+	void Manager::LogLinkedFormsLookup()
+	{
+		if (!IsEmpty(kRegular)) {
+			logger::info("{:*^50}", "LINKED FORMS");
+
+			LogLinkedFormsLookup(kRegular);
+		}
+
+		if (!IsEmpty(kDeath)) {
+			logger::info("{:*^50}", "LINKED ON DEATH FORMS");
+
+			LogLinkedFormsLookup(kDeath);
+		}
+	}
 #pragma endregion
 
 #pragma region Distribution
-	void Manager::ForEachLinkedDistributionSet(const DistributedForms& targetForms, Scope scope, std::function<void(DistributionSet&)> performDistribution)
+	void Manager::ForEachLinkedDistributionSet(DistributionType type, const DistributedForms& targetForms, Scope scope, std::function<void(DistributionSet&)> performDistribution)
 	{
 		for (const auto& form : targetForms) {
-			auto& linkedSpells = LinkedFormsForForm(form, scope, spells);
-			auto& linkedPerks = LinkedFormsForForm(form, scope, perks);
-			auto& linkedItems = LinkedFormsForForm(form, scope, items);
-			auto& linkedShouts = LinkedFormsForForm(form, scope, shouts);
-			auto& linkedLevSpells = LinkedFormsForForm(form, scope, levSpells);
-			auto& linkedPackages = LinkedFormsForForm(form, scope, packages);
-			auto& linkedOutfits = LinkedFormsForForm(form, scope, outfits);
-			auto& linkedKeywords = LinkedFormsForForm(form, scope, keywords);
-			auto& linkedFactions = LinkedFormsForForm(form, scope, factions);
-			auto& linkedSleepOutfits = LinkedFormsForForm(form, scope, sleepOutfits);
-			auto& linkedSkins = LinkedFormsForForm(form, scope, skins);
-
 			DistributionSet linkedEntries{
-				linkedSpells,
-				linkedPerks,
-				linkedItems,
-				linkedShouts,
-				linkedLevSpells,
-				linkedPackages,
-				linkedOutfits,
-				linkedKeywords,
-				DistributionSet::empty<RE::TESBoundObject>(),  // deathItems are distributed only on death :) as such, linked items are also distributed only on death.
-				linkedFactions,
-				linkedSleepOutfits,
-				linkedSkins
+				LinkedFormsForForm(type, form, scope, spells),
+				LinkedFormsForForm(type, form, scope, perks),
+				LinkedFormsForForm(type, form, scope, items),
+				LinkedFormsForForm(type, form, scope, shouts),
+				LinkedFormsForForm(type, form, scope, levSpells),
+				LinkedFormsForForm(type, form, scope, packages),
+				LinkedFormsForForm(type, form, scope, outfits),
+				LinkedFormsForForm(type, form, scope, keywords),
+				LinkedFormsForForm(type, form, scope, factions),
+				LinkedFormsForForm(type, form, scope, sleepOutfits),
+				LinkedFormsForForm(type, form, scope, skins)
 			};
 
 			if (linkedEntries.IsEmpty()) {
@@ -277,44 +290,25 @@ namespace LinkedDistribution
 		}
 	}
 
-	void Manager::ForEachLinkedDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
+	void Manager::ForEachLinkedDistributionSet(DistributionType type, const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
 	{
-		ForEachLinkedDistributionSet(targetForms, Scope::kLocal, performDistribution);
-		ForEachLinkedDistributionSet(targetForms, Scope::kGlobal, performDistribution);
+		ForEachLinkedDistributionSet(type, targetForms, Scope::kLocal, performDistribution);
+		ForEachLinkedDistributionSet(type, targetForms, Scope::kGlobal, performDistribution);
 	}
 
-	void Manager::ForEachLinkedDeathDistributionSet(const DistributedForms& targetForms, Scope scope, std::function<void(DistributionSet&)> performDistribution)
+	bool Manager::IsEmpty(DistributionType type) const
 	{
-		for (const auto& form : targetForms) {
-			auto& linkedDeathItems = LinkedFormsForForm(form, scope, deathItems);
-
-			DistributionSet linkedEntries{
-				DistributionSet::empty<RE::SpellItem>(),
-				DistributionSet::empty<RE::BGSPerk>(),
-				DistributionSet::empty<RE::TESBoundObject>(),
-				DistributionSet::empty<RE::TESShout>(),
-				DistributionSet::empty<RE::TESLevSpell>(),
-				DistributionSet::empty<RE::TESForm>(),
-				DistributionSet::empty<RE::BGSOutfit>(),
-				DistributionSet::empty<RE::BGSKeyword>(),
-				linkedDeathItems,
-				DistributionSet::empty<RE::TESFaction>(),
-				DistributionSet::empty<RE::BGSOutfit>(),
-				DistributionSet::empty<RE::TESObjectARMO>()
-			};
-
-			if (linkedEntries.IsEmpty()) {
-				continue;
-			}
-
-			performDistribution(linkedEntries);
-		}
-	}
-
-	void Manager::ForEachLinkedDeathDistributionSet(const DistributedForms& targetForms, std::function<void(DistributionSet&)> performDistribution)
-	{
-		ForEachLinkedDeathDistributionSet(targetForms, Scope::kLocal, performDistribution);
-		ForEachLinkedDeathDistributionSet(targetForms, Scope::kGlobal, performDistribution);
+		return spells.IsEmpty(type) &&
+		       perks.IsEmpty(type) &&
+		       items.IsEmpty(type) &&
+		       shouts.IsEmpty(type) &&
+		       levSpells.IsEmpty(type) &&
+		       packages.IsEmpty(type) &&
+		       outfits.IsEmpty(type) &&
+		       keywords.IsEmpty(type) &&
+		       factions.IsEmpty(type) &&
+		       sleepOutfits.IsEmpty(type) &&
+		       skins.IsEmpty(type);
 	}
 #pragma endregion
 }

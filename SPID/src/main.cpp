@@ -17,7 +17,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			const auto tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
-			if (std::tie(shouldLookupForms, shouldLogErrors) = INI::GetConfigs(); shouldLookupForms) {
+			if (std::tie(shouldLookupForms, shouldLogErrors) = Configs::INI::GetConfigs(); shouldLookupForms) {
 				logger::info("{:*^50}", "HOOKS");
 				Distribute::Actor::Install();
 			}

@@ -78,9 +78,9 @@ struct SkillLevel
 
 struct LevelFilters
 {
-	Range<std::uint16_t>    actorLevel;
-	std::vector<SkillLevel> skillLevels;   // skill levels
-	std::vector<SkillLevel> skillWeights;  // skill weights (from Class)
+	Range<std::uint16_t>    actorLevel{};
+	std::vector<SkillLevel> skillLevels{};   // skill levels
+	std::vector<SkillLevel> skillWeights{};  // skill weights (from Class)
 };
 
 struct Traits

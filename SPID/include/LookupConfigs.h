@@ -57,36 +57,39 @@ namespace RECORD
 	}
 }
 
-namespace INI
+namespace Configs
 {
-	enum TYPE : std::uint32_t
+	namespace INI
 	{
-		kFormIDPair = 0,
-		kFormID = kFormIDPair,
-		kStrings,
-		kESP = kStrings,
-		kFilterIDs,
-		kLevel,
-		kTraits,
-		kIdxOrCount,
-		kChance
-	};
+		enum TYPE : std::uint32_t
+		{
+			kFormIDPair = 0,
+			kFormID = kFormIDPair,
+			kStrings,
+			kESP = kStrings,
+			kFilterIDs,
+			kLevel,
+			kTraits,
+			kIdxOrCount,
+			kChance
+		};
 
-	struct Data
-	{
-		FormOrEditorID          rawForm{};
-		StringFilters           stringFilters{};
-		Filters<FormOrEditorID> rawFormFilters{};
-		LevelFilters            levelFilters{};
-		Traits                  traits{};
-		IndexOrCount            idxOrCount{ RandomCount(1, 1) };
-		PercentChance           chance{ 100 };
-		std::string             path{};
-	};
+		struct Data
+		{
+			FormOrEditorID          rawForm{};
+			StringFilters           stringFilters{};
+			Filters<FormOrEditorID> rawFormFilters{};
+			LevelFilters            levelFilters{};
+			Traits                  traits{};
+			IndexOrCount            idxOrCount{ RandomCount(1, 1) };
+			PercentChance           chance{ 100 };
+			std::string             path{};
+		};
 
-	using DataVec = std::vector<Data>;
+		using DataVec = std::vector<Data>;
 
-	inline Map<RECORD::TYPE, DataVec> configs{};
+		inline Map<RECORD::TYPE, DataVec> configs{};
 
-	std::pair<bool, bool> GetConfigs();
+		std::pair<bool, bool> GetConfigs();
+	}
 }
