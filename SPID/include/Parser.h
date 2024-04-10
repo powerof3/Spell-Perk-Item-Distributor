@@ -50,7 +50,6 @@ struct DefaultKeyComponentParser
 	}
 };
 
-
 struct DistributableFormComponentParser
 {
 	template <typename Data>
@@ -163,7 +162,6 @@ struct LevelFiltersComponentParser
 		data.levelFilters = { actorLevel, skillLevels, skillWeights };
 	}
 };
-
 
 struct TraitsFilterComponentParser
 {

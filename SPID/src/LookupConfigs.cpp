@@ -56,14 +56,14 @@ namespace Configs
 			{
 				auto sanitized_value = sanitize(value);
 
-				auto data = Parse<Data, 
+				auto data = Parse<Data,
 					DefaultKeyComponentParser,
 					DistributableFormComponentParser,
 					StringFiltersComponentParser,
-					FormFiltersComponentParser, 
-					LevelFiltersComponentParser, 
-					TraitsFilterComponentParser, 
-					IndexOrCountComponentParser, 
+					FormFiltersComponentParser,
+					LevelFiltersComponentParser,
+					TraitsFilterComponentParser,
+					IndexOrCountComponentParser,
 					ChanceComponentParser>(key, sanitized_value);
 
 				data.path = path;

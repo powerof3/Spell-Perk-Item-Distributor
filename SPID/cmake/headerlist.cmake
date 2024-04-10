@@ -15,7 +15,7 @@ set(headers ${headers}
 	include/LookupFilters.h
 	include/LookupForms.h
 	include/LookupNPC.h
-	include/Parser.h
 	include/PCH.h
 	include/PCLevelMultManager.h
+	include/Parser.h
 )
