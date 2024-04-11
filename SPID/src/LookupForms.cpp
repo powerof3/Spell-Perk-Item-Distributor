@@ -14,12 +14,12 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 		if constexpr (!std::is_same_v<Form, RE::SpellItem>) {
 			const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
 
-			a_distributable.LookupForms(dataHandler, recordName, Configs::INI::configs[a_distributable.GetType()]);
+			a_distributable.LookupForms(dataHandler, recordName, Distribution::INI::configs[a_distributable.GetType()]);
 		}
 	});
 
 	// Sort out Spells and Leveled Spells into two separate lists.
-	auto& rawSpells = Configs::INI::configs[RECORD::kSpell];
+	auto& rawSpells = Distribution::INI::configs[RECORD::kSpell];
 
 	for (auto& rawSpell : rawSpells) {
 		LookupGenericForm<RE::TESForm>(dataHandler, rawSpell, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
@@ -31,7 +31,7 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 		});
 	}
 
-	auto& genericForms = Configs::INI::configs[RECORD::kForm];
+	auto& genericForms = Distribution::INI::configs[RECORD::kForm];
 
 	for (auto& rawForm : genericForms) {
 		// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin)
@@ -107,7 +107,7 @@ void LogDistributablesLookup()
 	});
 
 	// Clear INI map once lookup is done
-	Configs::INI::configs.clear();
+	Distribution::INI::configs.clear();
 
 	// Clear logger's buffer to free some memory :)
 	buffered_logger::clear();

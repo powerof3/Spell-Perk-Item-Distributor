@@ -4,7 +4,7 @@
 #include "LinkedDistribution.h"
 #include "Parser.h"
 
-namespace Configs
+namespace Distribution
 {
 	namespace INI
 	{
@@ -51,11 +51,13 @@ namespace Configs
 
 				return newValue;
 			}
+		}
 
-			std::pair<Data, std::optional<std::string>> parse_ini(const std::string& key, const std::string& value, const Path& path)
-			{
-				auto sanitized_value = sanitize(value);
+		std::optional<std::string> TryParse(const std::string& key, const std::string& value, const Path& path)
+		{
+			auto sanitized_value = detail::sanitize(value);
 
+			try {
 				auto data = Parse<Data,
 					DefaultKeyComponentParser,
 					DistributableFormComponentParser,
@@ -68,11 +70,15 @@ namespace Configs
 
 				data.path = path;
 
-				if (sanitized_value != value) {
-					return { data, sanitized_value };
-				}
-				return { data, std::nullopt };
+				configs[data.type].emplace_back(data);
+			} catch (const std::exception& e) {
+				logger::warn("\t\tFailed to parse entry [{} = {}]: {}", key, value, e.what());
 			}
+
+			if (sanitized_value != value) {
+				return sanitized_value;
+			}
+			return std::nullopt;
 		}
 
 		std::pair<bool, bool> GetConfigs()
@@ -121,16 +127,7 @@ namespace Configs
 								continue;
 							}
 
-							auto type = RECORD::GetType(key.pItem);
-							if (type == RECORD::kTotal) {
-								logger::warn("\t\tUnsupported Form type ({}): {} = {}"sv, key.pItem, key.pItem, entry);
-								continue;
-							}
-							auto [data, sanitized_str] = detail::parse_ini(key.pItem, entry, truncatedPath);
-
-							configs[type].emplace_back(data);
-
-							if (sanitized_str) {
+							if (const auto sanitized_str = TryParse(key.pItem, entry, truncatedPath)) {
 								oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
 							}
 						} catch (...) {

@@ -23,8 +23,8 @@ namespace DeathDistribution
 			kRequired = kForm
 		};
 
-		using Data = Configs::INI::Data;
-		using DataVec = Configs::INI::DataVec;
+		using Data = Distribution::INI::Data;
+		using DataVec = Distribution::INI::DataVec;
 
 		Map<RECORD::TYPE, DataVec> deathConfigs{};
 
