@@ -135,6 +135,16 @@ namespace Distribution::INI
 				return "Missing distributable form";
 			}
 		};
+
+		struct MissingComponentParserException : std::exception
+		{
+			std::string component;
+
+			const char* what() const noexcept override
+			{
+				return "Missing component parser";
+			}
+		};
 	}
 
 	namespace concepts
@@ -222,6 +232,24 @@ namespace Distribution::INI
 
 	using namespace concepts;
 
+	enum ComponentParserFlags : std::uint8_t
+	{
+		kNone = 0,
+		kRequired = 1,
+
+		// Modifiers used by Filters that support them
+
+		kAllowCombineModifier = 1 << 2,
+		kAllowExclusionModifier = 1 << 3,
+		kAllowPartialMatchModifier = 1 << 4,
+
+		kAllowAllModifiers = kAllowCombineModifier | kAllowExclusionModifier | kAllowPartialMatchModifier,
+
+		// Default modifiers suitable for FormFilters
+		kAllowFormsModifiers = kAllowCombineModifier | kAllowExclusionModifier
+	};
+
+
 	/// <summary>
 	/// Simply parses type of the record from the key.
 	/// Always returns true and doesn't prevent further parsing.
@@ -238,12 +266,14 @@ namespace Distribution::INI
 		void operator()(const std::string& entry, Data& data) const;
 	};
 
+	template <ComponentParserFlags flags = kAllowAllModifiers>
 	struct StringFiltersComponentParser
 	{
 		template <string_filterable_data Data>
 		void operator()(const std::string& entry, Data& data) const;
 	};
 
+	template <ComponentParserFlags flags = kAllowFormsModifiers>
 	struct FormFiltersComponentParser
 	{
 		template <form_filterable_data Data>
@@ -301,46 +331,71 @@ namespace Distribution::INI
 		data.rawForm = distribution::get_record(entry);
 	}
 
+	template <ComponentParserFlags flags>
 	template <string_filterable_data Data>
-	void StringFiltersComponentParser::operator()(const std::string& entry, Data& data) const
+	void StringFiltersComponentParser<flags>::operator()(const std::string& entry, Data& data) const
 	{
 		auto split_str = distribution::split_entry(entry);
 		for (auto& str : split_str) {
-			if (str.contains("+"sv)) {
-				auto strings = distribution::split_entry(str, "+");
-				data.stringFilters.ALL.insert(data.stringFilters.ALL.end(), strings.begin(), strings.end());
-
-			} else if (str.at(0) == '-') {
-				str.erase(0, 1);
-				data.stringFilters.NOT.emplace_back(str);
-
-			} else if (str.at(0) == '*') {
-				str.erase(0, 1);
-				data.stringFilters.ANY.emplace_back(str);
-
-			} else {
-				data.stringFilters.MATCH.emplace_back(str);
+			if constexpr (flags & kAllowCombineModifier) {
+				if (str.contains("+"sv)) {
+					auto strings = distribution::split_entry(str, "+");
+					data.stringFilters.ALL.insert(data.stringFilters.ALL.end(), strings.begin(), strings.end());
+					break;
+				}
 			}
+			if constexpr (flags & kAllowExclusionModifier) {
+				if (str.at(0) == '-') {
+					str.erase(0, 1);
+					data.stringFilters.NOT.emplace_back(str);
+					break;
+				}
+			}
+			if constexpr (flags & kAllowPartialMatchModifier) {
+				if (str.at(0) == '*') {
+					str.erase(0, 1);
+					data.stringFilters.ANY.emplace_back(str);
+					break;
+				}
+			}
+			
+			data.stringFilters.MATCH.emplace_back(str);
 		}
 	}
 
+	template <ComponentParserFlags flags>
 	template <form_filterable_data Data>
-	void FormFiltersComponentParser::operator()(const std::string& entry, Data& data) const
+	void FormFiltersComponentParser<flags>::operator()(const std::string& entry, Data& data) const
 	{
 		auto split_IDs = distribution::split_entry(entry);
-		for (auto& IDs : split_IDs) {
-			if (IDs.contains("+"sv)) {
-				auto splitIDs_ALL = distribution::split_entry(IDs, "+");
-				for (auto& IDs_ALL : splitIDs_ALL) {
-					data.formFilters.ALL.push_back(distribution::get_record(IDs_ALL));
-				}
-			} else if (IDs.at(0) == '-') {
-				IDs.erase(0, 1);
-				data.formFilters.NOT.push_back(distribution::get_record(IDs));
 
-			} else {
-				data.formFilters.MATCH.push_back(distribution::get_record(IDs));
+		if (split_IDs.empty()) {
+			if constexpr (flags & ComponentParserFlags::kRequired) {
+				throw MissingComponentParserException();
 			}
+			return;
+		}
+
+		for (auto& IDs : split_IDs) {
+			if constexpr (flags & kAllowCombineModifier) {
+				if (IDs.contains("+"sv)) {
+					auto splitIDs_ALL = distribution::split_entry(IDs, "+");
+					for (auto& IDs_ALL : splitIDs_ALL) {
+						data.formFilters.ALL.push_back(distribution::get_record(IDs_ALL));
+					}
+					break;
+				}
+			}
+
+			if constexpr (flags & kAllowExclusionModifier) {
+				if (IDs.at(0) == '-') {
+					IDs.erase(0, 1);
+					data.formFilters.NOT.push_back(distribution::get_record(IDs));
+					break;
+				}
+			}
+
+			data.formFilters.MATCH.push_back(distribution::get_record(IDs));
 		}
 	}
 

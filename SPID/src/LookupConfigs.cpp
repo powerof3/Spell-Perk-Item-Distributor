@@ -58,19 +58,22 @@ namespace Distribution
 			auto sanitized_value = detail::sanitize(value);
 
 			try {
-				auto data = Parse<Data,
-					DefaultKeyComponentParser,
-					DistributableFormComponentParser,
-					StringFiltersComponentParser,
-					FormFiltersComponentParser,
-					LevelFiltersComponentParser,
-					TraitsFilterComponentParser,
-					IndexOrCountComponentParser,
-					ChanceComponentParser>(key, sanitized_value);
+				if (auto optData = Parse<Data,
+						DefaultKeyComponentParser,
+						DistributableFormComponentParser,
+						StringFiltersComponentParser<>,
+						FormFiltersComponentParser<>,
+						LevelFiltersComponentParser,
+						TraitsFilterComponentParser,
+						IndexOrCountComponentParser,
+						ChanceComponentParser>(key, sanitized_value);
+					optData) {
+					auto& data = *optData;
 
-				data.path = path;
+					data.path = path;
 
-				configs[data.type].emplace_back(data);
+					configs[data.type].emplace_back(data);
+				}
 			} catch (const std::exception& e) {
 				logger::warn("\t\tFailed to parse entry [{} = {}]: {}", key, value, e.what());
 			}

@@ -1,6 +1,7 @@
 #include "LinkedDistribution.h"
 #include "FormData.h"
 #include "LookupConfigs.h"
+#include "Parser.h"
 
 namespace LinkedDistribution
 {
@@ -12,108 +13,85 @@ namespace LinkedDistribution
 	{
 		LinkedFormsConfig linkedConfigs{};
 
-		enum Sections : std::uint8_t
+		namespace concepts
 		{
-			kForm = 0,
-			kLinkedForms,
-			kIdxOrCount,
-			kChance,
+			template <typename Data>
+			concept linked_typed_data = Distribution::INI::concepts::typed_data<Data> && requires(Data data)
+			{
+				{
+					data.scope
+				} -> std::same_as<Scope&>;
+				{
+					data.scope = std::declval<Scope>()
+				};
+				{
+					data.distributionType
+				} -> std::same_as<DistributionType&>;
+				{
+					data.distributionType = std::declval<DistributionType>()
+				};
+			};
+		}
 
-			// Minimum required sections
-			kRequired = kLinkedForms
+		using namespace Distribution::INI;
+
+		struct LinkedKeyComponentParser
+		{
+			template <concepts::linked_typed_data Data>
+			bool operator()(const std::string& originalKey, Data& data) const
+			{
+				std::string key = originalKey;
+
+				if (key.starts_with("Global"sv)) {
+					data.scope = kGlobal;
+					key.erase(0, 6);
+				}
+
+				if (!key.starts_with("Linked"sv)) {
+					return false;
+				}
+
+				key.erase(0, 6);
+
+				if (key.starts_with("Death"sv)) {
+					data.distributionType = kDeath;
+					key.erase(0, 5);
+				}
+
+				std::string rawType = key;
+				auto        type = RECORD::GetType(rawType);
+
+				if (type == RECORD::kTotal) {
+					throw Exception::UnsupportedFormTypeException(rawType);
+				}
+				data.type = type;
+
+				return true;
+			}
 		};
 
-		bool TryParse(const std::string& originalKey, const std::string& value, const Path& path)
+		bool TryParse(const std::string& key, const std::string& value, const Path& path)
 		{
-			std::string key = originalKey;
+			try {
+				if (auto optData = Parse<RawLinkedForm,
+						LinkedKeyComponentParser,
+						DistributableFormComponentParser,
+						FormFiltersComponentParser<kRequired>,
+						IndexOrCountComponentParser,
+						ChanceComponentParser>(key, value);
+					optData) {
+					auto& data = *optData;
+					data.path = path;
 
-			Scope scope = kLocal;
-
-			DistributionType distributionType = kRegular;
-
-			if (key.starts_with("Global"sv)) {
-				scope = kGlobal;
-				key.erase(0, 6);
-			}
-
-			if (!key.starts_with("Linked"sv)) {
-				return false;
-			}
-
-			key.erase(0, 6);
-
-			if (key.starts_with("Death"sv)) {
-				distributionType = kDeath;
-				key.erase(0, 5);
-			}
-
-			std::string rawType = key;
-			auto        type = RECORD::GetType(rawType);
-
-			if (type == RECORD::kTotal) {
-				logger::warn("IGNORED: Unsupported Linked Form type ({}): {} = {}"sv, rawType, originalKey, value);
-				return true;
-			}
-
-			const auto sections = string::split(value, "|");
-			const auto size = sections.size();
-
-			if (size <= kRequired) {
-				logger::warn("IGNORED: Linked Form must have a form and at least one Form Filter: {} = {}"sv, originalKey, value);
-				return true;
-			}
-
-			auto split_IDs = distribution::split_entry(sections[kLinkedForms]);
-
-			if (split_IDs.empty()) {
-				logger::warn("IGNORED: Linked Form must have at least one parent Form to link to: {} = {}"sv, originalKey, value);
-				return true;
-			}
-
-			INI::RawLinkedForm item{};
-			item.distributionType = distributionType;
-			item.formOrEditorID = distribution::get_record(sections[kForm]);
-			item.scope = scope;
-			item.path = path;
-
-			for (auto& IDs : split_IDs) {
-				item.formIDs.MATCH.push_back(distribution::get_record(IDs));
-			}
-
-			if (type == RECORD::kPackage) {  // reuse item count for package stack index
-				item.idxOrCount = 0;
-			}
-
-			if (kIdxOrCount < size) {
-				if (type == RECORD::kPackage) {
-					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
-						item.idxOrCount = string::to_num<Index>(str);
-					}
-				} else {
-					if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
-						if (auto countPair = string::split(str, "-"); countPair.size() > 1) {
-							auto minCount = string::to_num<Count>(countPair[0]);
-							auto maxCount = string::to_num<Count>(countPair[1]);
-
-							item.idxOrCount = RandomCount(minCount, maxCount);
-						} else {
-							auto count = string::to_num<Count>(str);
-
-							item.idxOrCount = RandomCount(count, count);  // create the exact match range.
-						}
-					}
+					linkedConfigs[data.type].push_back(data);
+					return true;
 				}
+			} catch (const Exception::MissingComponentParserException& e) {
+				logger::warn("SKIPPED: Linked Form must have a form and at least one Parent Form: {} = {}"sv, key, value);
+			} catch (const std::exception& e) {
+				logger::warn("SKIPPED {}", e.what());
 			}
-
-			if (kChance < size) {
-				if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
-					item.chance = string::to_num<PercentChance>(str);
-				}
-			}
-
-			linkedConfigs[type].push_back(item);
-
-			return true;
+			return false;
 		}
 	}
 #pragma endregion
@@ -134,7 +112,7 @@ namespace LinkedDistribution
 
 		for (auto& rawSpell : rawSpells) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawSpell); form) {
-				auto& [formID, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawSpell;
+				auto& [formID, type, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawSpell;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					continue;
@@ -150,7 +128,7 @@ namespace LinkedDistribution
 		auto& genericForms = INI::linkedConfigs[RECORD::kForm];
 		for (auto& rawForm : genericForms) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
-				auto& [formID, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawForm;
+				auto& [formID, type, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					continue;

@@ -54,7 +54,7 @@ struct NotEnoughComponentsException: std::exception
 /// <param name="entry">The entry line as it was read from the file.</param>
 /// <returns></returns>
 template <typename Data, key_component_parser<Data> KeyComponentParser, component_parser<Data>... ComponentParsers>
-Data Parse(const std::string& key, const std::string& entry)
+std::optional<Data> Parse(const std::string& key, const std::string& entry)
 {
 	constexpr const size_t numberOfComponents = sizeof...(ComponentParsers);
 
@@ -78,7 +78,7 @@ Data Parse(const std::string& key, const std::string& entry)
 	Data data{};
 
 	if (!KeyComponentParser()(key, data)) {
-		return data;
+		return std::nullopt;
 	}
 
 	detail::parse_each<Data, ComponentParsers...>(data, sections, std::index_sequence_for<ComponentParsers...>());

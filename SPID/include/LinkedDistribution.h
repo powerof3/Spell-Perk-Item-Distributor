@@ -42,14 +42,17 @@ namespace LinkedDistribution
 	{
 		struct RawLinkedForm
 		{
-			FormOrEditorID formOrEditorID{};
+			FormOrEditorID rawForm{};
+
+			RECORD::TYPE type{ RECORD::kForm };
 
 			Scope scope{ kLocal };
 
 			DistributionType distributionType{ kRegular };
 
+		
 			/// Raw filters in RawLinkedForm only use MATCH, there is no meaning for ALL or NOT, so they are ignored.
-			Filters<FormOrEditorID> formIDs{};
+			RawFormFilters formFilters{};
 
 			IndexOrCount  idxOrCount{ RandomCount(1, 1) };
 			PercentChance chance{ 100 };
@@ -170,7 +173,7 @@ namespace LinkedDistribution
 		using namespace Forms::Lookup;
 
 		try {
-			return Forms::detail::get_form<Form>(dataHandler, rawForm.formOrEditorID, rawForm.path, LookupOptions::kCreateIfMissing);
+			return Forms::detail::get_form<Form>(dataHandler, rawForm.rawForm, rawForm.path, LookupOptions::kCreateIfMissing);
 		} catch (const UnknownFormIDException& e) {
 			buffered_logger::error("\t\t[{}] LinkedForm [0x{:X}] ({}) SKIP - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));
 		} catch (const UnknownPluginException& e) {
@@ -246,7 +249,7 @@ namespace LinkedDistribution
 	{
 		for (auto& rawForm : rawLinkedForms) {
 			if (auto form = detail::LookupLinkedForm<Form>(dataHandler, rawForm); form) {
-				auto& [formID, scope, distributionType, parentFormIDs, count, chance, path] = rawForm;
+				auto& [formID, type, scope, distributionType, parentFormIDs, count, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					Link(form, scope, distributionType, parentForms, count, chance, path);

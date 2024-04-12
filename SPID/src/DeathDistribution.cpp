@@ -43,19 +43,21 @@ namespace DeathDistribution
 			using namespace Distribution::INI;
 
 			try {
-				auto data = Parse<DeathData,
-					DeathKeyComponentParser,
-					DistributableFormComponentParser,
-					StringFiltersComponentParser,
-					FormFiltersComponentParser,
-					LevelFiltersComponentParser,
-					TraitsFilterComponentParser,
-					IndexOrCountComponentParser,
-					ChanceComponentParser>(key, value);
+				if (auto optData = Parse<DeathData,
+						DeathKeyComponentParser,
+						DistributableFormComponentParser,
+						StringFiltersComponentParser<>,
+						FormFiltersComponentParser<>,
+						LevelFiltersComponentParser,
+						TraitsFilterComponentParser,
+						IndexOrCountComponentParser,
+						ChanceComponentParser>(key, value);
+					optData) {
+					auto& data = *optData;
+					data.path = path;
 
-				data.path = path;
-
-				deathConfigs[data.type].emplace_back(data);
+					deathConfigs[data.type].emplace_back(data);
+				}
 			} catch (const std::exception& e) {
 				logger::warn("\t\tFailed to parse entry [{} = {}]: {}", key, value, e.what());
 			}
