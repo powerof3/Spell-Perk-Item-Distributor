@@ -63,15 +63,15 @@ namespace Distribution
 	{
 		struct Data
 		{
-			RECORD::TYPE            type{ RECORD::TYPE::kForm };
-			FormOrEditorID          rawForm{};
-			StringFilters           stringFilters{};
-			RawFormFilters          formFilters{};
-			LevelFilters            levelFilters{};
-			Traits                  traits{};
-			IndexOrCount            idxOrCount{ RandomCount(1, 1) };
-			PercentChance           chance{ 100 };
-			std::string             path{};
+			RECORD::TYPE   type{ RECORD::TYPE::kForm };
+			FormOrEditorID rawForm{};
+			StringFilters  stringFilters{};
+			RawFormFilters formFilters{};
+			LevelFilters   levelFilters{};
+			Traits         traits{};
+			IndexOrCount   idxOrCount{ RandomCount(1, 1) };
+			PercentChance  chance{ 100 };
+			std::string    path{};
 		};
 
 		using DataVec = std::vector<Data>;
@@ -79,197 +79,200 @@ namespace Distribution
 		inline Map<RECORD::TYPE, DataVec> configs{};
 
 		std::pair<bool, bool> GetConfigs();
+	}
+}
 
-		namespace Exception
+namespace Distribution::INI
+{
+	namespace Exception
+	{
+		struct UnsupportedFormTypeException : std::exception
 		{
-			struct UnsupportedFormTypeException : std::exception
+			const std::string key;
+
+			UnsupportedFormTypeException(const std::string& key) :
+				key(key)
+			{}
+
+			const char* what() const noexcept override
 			{
-				const std::string key;
+				return fmt::format("Unsupported Form type {}"sv, key).c_str();
+			}
+		};
 
-				UnsupportedFormTypeException(const std::string& key) :
-					key(key)
-				{}
+		struct InvalidIndexOrCountException : std::exception
+		{
+			const std::string entry;
 
-				const char* what() const noexcept override
-				{
-					return fmt::format("Unsupported Form type {}"sv, key).c_str();
-				}
-			};
+			InvalidIndexOrCountException(const std::string& entry) :
+				entry(entry)
+			{}
 
-			struct InvalidIndexOrCountException : std::exception
+			const char* what() const noexcept override
 			{
-				const std::string entry;
+				return fmt::format("Invalid index or count {}"sv, entry).c_str();
+			}
+		};
 
-				InvalidIndexOrCountException(const std::string& entry) :
-					entry(entry)
-				{}
+		struct InvalidChanceException : std::exception
+		{
+			const std::string entry;
 
-				const char* what() const noexcept override
-				{
-					return fmt::format("Invalid index or count {}"sv, entry).c_str();
-				}
-			};
+			InvalidChanceException(const std::string& entry) :
+				entry(entry)
+			{}
 
-			struct InvalidChanceException: std::exception
+			const char* what() const noexcept override
 			{
-				const std::string entry;
+				return fmt::format("Invalid chance {}"sv, entry).c_str();
+			}
+		};
 
-				InvalidChanceException(const std::string& entry) :
-					entry(entry)
-				{}
-
-				const char* what() const noexcept override
-				{
-					return fmt::format("Invalid chance {}"sv, entry).c_str();
-				}
-			};
-
-			struct MissingDistributableFormException : std::exception
+		struct MissingDistributableFormException : std::exception
+		{
+			const char* what() const noexcept override
 			{
-				const char* what() const noexcept override
-				{
-					return "Missing distributable form";
-				}
-			};
-		}
-
-		namespace concepts
-		{
-			template <typename Data>
-			concept typed_data = requires(Data data) {
-				{
-					data.type
-				} -> std::same_as<RECORD::TYPE&>;
-				{
-					data.type = std::declval<RECORD::TYPE>()
-				};
-			};
-
-			template <typename Data>
-			concept form_data = requires(Data data) {
-				{
-					data.rawForm
-				} -> std::same_as<FormOrEditorID&>;
-				{
-					data.rawForm = std::declval<FormOrEditorID>()
-				};
-			};
-
-			template <typename Data>
-			concept string_filterable_data = requires(Data data) {
-				{
-					data.stringFilters
-				} -> std::same_as<StringFilters&>;
-				{
-					data.stringFilters = std::declval<StringFilters>()
-				};
-			};
-
-			template <typename Data>
-			concept form_filterable_data = requires(Data data) {
-				{
-					data.formFilters
-				} -> std::same_as<RawFormFilters&>;
-				{
-					data.formFilters = std::declval<RawFormFilters>()
-				};
-			};
-
-			template <typename Data>
-			concept level_filterable_data = requires(Data data) {
-				{
-					data.levelFilters
-				} -> std::same_as<LevelFilters&>;
-				{
-					data.levelFilters = std::declval<LevelFilters>()
-				};
-			};
-
-			template <typename Data>
-			concept trait_filterable_data = requires(Data data) {
-				{
-					data.traits
-				} -> std::same_as<Traits&>;
-				{
-					data.traits = std::declval<Traits>()
-				};
-			};
-
-			template <typename Data>
-			concept countable_data = requires(Data data) {
-				{
-					data.idxOrCount
-				} -> std::same_as<IndexOrCount&>;
-				{
-					data.idxOrCount = std::declval<IndexOrCount>()
-				};
-			};
-
-			template <typename Data>
-			concept randomized_data = requires(Data data) {
-				{
-					data.chance
-				} -> std::same_as<PercentChance&>;
-				{
-					data.chance = std::declval<PercentChance>()
-				};
-			};
-		}
-
-		using namespace concepts;
-
-		/// <summary>
-		/// Simply parses type of the record from the key.
-		/// Always returns true and doesn't prevent further parsing.
-		/// </summary>
-		struct DefaultKeyComponentParser
-		{
-			template <typed_data Data>
-			bool operator()(const std::string& key, Data& data) const;
-		};
-
-		struct DistributableFormComponentParser
-		{
-			template <form_data Data>
-			void operator()(const std::string& key, Data& data) const;
-		};
-
-		struct StringFiltersComponentParser
-		{
-			template <string_filterable_data Data>
-			void operator()(const std::string& entry, Data& data) const;
-		};
-
-		struct FormFiltersComponentParser
-		{
-			template <form_filterable_data Data>
-			void operator()(const std::string& entry, Data& data) const;
-		};
-
-		struct LevelFiltersComponentParser
-		{
-			template <level_filterable_data Data>
-			void operator()(const std::string& entry, Data& data) const;
-		};
-
-		struct TraitsFilterComponentParser
-		{
-			template <trait_filterable_data Data>
-			void operator()(const std::string& entry, Data& data) const;
-		};
-
-		struct IndexOrCountComponentParser
-		{
-			template <countable_data Data>
-			void operator()(const std::string& entry, Data& data) const;
-		};
-
-		struct ChanceComponentParser
-		{
-			template <randomized_data Data>
-			void operator()(const std::string& str, Data& data) const;
+				return "Missing distributable form";
+			}
 		};
 	}
+
+	namespace concepts
+	{
+		template <typename Data>
+		concept typed_data = requires(Data data) {
+			{
+				data.type
+			} -> std::same_as<RECORD::TYPE&>;
+			{
+				data.type = std::declval<RECORD::TYPE>()
+			};
+		};
+
+		template <typename Data>
+		concept form_data = requires(Data data) {
+			{
+				data.rawForm
+			} -> std::same_as<FormOrEditorID&>;
+			{
+				data.rawForm = std::declval<FormOrEditorID>()
+			};
+		};
+
+		template <typename Data>
+		concept string_filterable_data = requires(Data data) {
+			{
+				data.stringFilters
+			} -> std::same_as<StringFilters&>;
+			{
+				data.stringFilters = std::declval<StringFilters>()
+			};
+		};
+
+		template <typename Data>
+		concept form_filterable_data = requires(Data data) {
+			{
+				data.formFilters
+			} -> std::same_as<RawFormFilters&>;
+			{
+				data.formFilters = std::declval<RawFormFilters>()
+			};
+		};
+
+		template <typename Data>
+		concept level_filterable_data = requires(Data data) {
+			{
+				data.levelFilters
+			} -> std::same_as<LevelFilters&>;
+			{
+				data.levelFilters = std::declval<LevelFilters>()
+			};
+		};
+
+		template <typename Data>
+		concept trait_filterable_data = requires(Data data) {
+			{
+				data.traits
+			} -> std::same_as<Traits&>;
+			{
+				data.traits = std::declval<Traits>()
+			};
+		};
+
+		template <typename Data>
+		concept countable_data = requires(Data data) {
+			{
+				data.idxOrCount
+			} -> std::same_as<IndexOrCount&>;
+			{
+				data.idxOrCount = std::declval<IndexOrCount>()
+			};
+		};
+
+		template <typename Data>
+		concept randomized_data = requires(Data data) {
+			{
+				data.chance
+			} -> std::same_as<PercentChance&>;
+			{
+				data.chance = std::declval<PercentChance>()
+			};
+		};
+	}
+
+	using namespace concepts;
+
+	/// <summary>
+	/// Simply parses type of the record from the key.
+	/// Always returns true and doesn't prevent further parsing.
+	/// </summary>
+	struct DefaultKeyComponentParser
+	{
+		template <typed_data Data>
+		bool operator()(const std::string& key, Data& data) const;
+	};
+
+	struct DistributableFormComponentParser
+	{
+		template <form_data Data>
+		void operator()(const std::string& entry, Data& data) const;
+	};
+
+	struct StringFiltersComponentParser
+	{
+		template <string_filterable_data Data>
+		void operator()(const std::string& entry, Data& data) const;
+	};
+
+	struct FormFiltersComponentParser
+	{
+		template <form_filterable_data Data>
+		void operator()(const std::string& entry, Data& data) const;
+	};
+
+	struct LevelFiltersComponentParser
+	{
+		template <level_filterable_data Data>
+		void operator()(const std::string& entry, Data& data) const;
+	};
+
+	struct TraitsFilterComponentParser
+	{
+		template <trait_filterable_data Data>
+		void operator()(const std::string& entry, Data& data) const;
+	};
+
+	struct IndexOrCountComponentParser
+	{
+		template <countable_data Data>
+		void operator()(const std::string& entry, Data& data) const;
+	};
+
+	struct ChanceComponentParser
+	{
+		template <randomized_data Data>
+		void operator()(const std::string& entry, Data& data) const;
+	};
 }
 
 namespace Distribution::INI
