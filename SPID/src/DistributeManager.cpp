@@ -107,6 +107,9 @@ namespace Distribute
 		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
 			timer.start();
 
+			// This iterate over all actors loaded in-memory. 
+			// lowActorHandles are the actors that do not require high precision updates.
+			// As we are in the main menu this will target most of static unique actors.
 			for (auto& actorHandle : processLists->lowActorHandles) {
 				if (const auto& actor = actorHandle.get()) {
 					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {

@@ -75,7 +75,6 @@ namespace Distribute
 								packageList.insert_after(idxIt, package);
 							}
 						}
-						return true;
 					}
 				} else if (a_packageOrList->Is(RE::FormType::FormList)) {
 					auto packageList = a_packageOrList->As<RE::BGSListForm>();
@@ -99,7 +98,6 @@ namespace Distribute
 					default:
 						break;
 					}
-					return false;
 				}
 			},
 			accumulatedForms);
