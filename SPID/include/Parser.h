@@ -12,6 +12,16 @@ namespace detail
 	}
 }
 
+template <typename ComponentParser, typename Data>
+concept component_parser = requires(ComponentParser const, const std::string& section, Data& data) {
+	{ ComponentParser()(section, data) } -> std::same_as<void>;
+};
+
+template <typename KeyComponentParser, typename Data>
+concept key_component_parser = requires(KeyComponentParser const, const std::string& key, Data& data) {
+	{ KeyComponentParser()(key, data) } -> std::same_as<bool>;
+};
+
 struct NotEnoughComponentsException: std::exception
 {
 	const size_t componentParsersCount;
@@ -24,7 +34,7 @@ struct NotEnoughComponentsException: std::exception
 
 	const char* what() const noexcept override
 	{
-		return fmt::format("Not enough components. Expected {}, but got {}"sv, componentParsersCount, entrySectionsCount).c_str();
+		return fmt::format("Too many sections. Expected at most {}, but got {}"sv, componentParsersCount, entrySectionsCount).c_str();
 	}
 };
 
@@ -38,12 +48,12 @@ struct NotEnoughComponentsException: std::exception
 /// It will also rethrow any exceptions thrown by the ComponentParsers.
 /// </summary>
 /// <typeparam name="Data">A type of the data object that will accumulate parsing results.</typeparam>
-/// <typeparam name="KeyComponentParser">A special ComponentParser that is used for parsing entry's Key.</typeparam>
+/// <typeparam name="KeyComponentParser">A special ComponentParser that is used for parsing entry's Key. It can also determine whether or not to proceed with parsing.</typeparam>
 /// <typeparam name="...ComponentParsers">A list of ComponentParsers ordered in the same way thay you expect sections to appear in the line.</typeparam>
 /// <param name="key">Key associated with the entry.</param>
 /// <param name="entry">The entry line as it was read from the file.</param>
 /// <returns></returns>
-template <typename Data, typename KeyComponentParser, typename... ComponentParsers>
+template <typename Data, key_component_parser<Data> KeyComponentParser, component_parser<Data>... ComponentParsers>
 Data Parse(const std::string& key, const std::string& entry)
 {
 	constexpr const size_t numberOfComponents = sizeof...(ComponentParsers);
@@ -67,7 +77,9 @@ Data Parse(const std::string& key, const std::string& entry)
 
 	Data data{};
 
-	KeyComponentParser()(key, data);
+	if (!KeyComponentParser()(key, data)) {
+		return data;
+	}
 
 	detail::parse_each<Data, ComponentParsers...>(data, sections, std::index_sequence_for<ComponentParsers...>());
 
