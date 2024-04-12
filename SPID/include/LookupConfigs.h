@@ -126,7 +126,7 @@ namespace Distribution::INI
 		struct MissingComponentParserException : std::exception
 		{
 			MissingComponentParserException() :
-				std::exception("Missing component parser") 
+				std::exception("Missing component parser")
 			{}
 		};
 	}
@@ -134,80 +134,88 @@ namespace Distribution::INI
 	namespace concepts
 	{
 		template <typename Data>
-		concept typed_data = requires(Data data) {
+		concept typed_data = requires(Data data)
+		{
 			{
 				data.type
-			} -> std::same_as<RECORD::TYPE&>;
+				} -> std::same_as<RECORD::TYPE&>;
 			{
 				data.type = std::declval<RECORD::TYPE>()
 			};
 		};
 
 		template <typename Data>
-		concept form_data = requires(Data data) {
+		concept form_data = requires(Data data)
+		{
 			{
 				data.rawForm
-			} -> std::same_as<FormOrEditorID&>;
+				} -> std::same_as<FormOrEditorID&>;
 			{
 				data.rawForm = std::declval<FormOrEditorID>()
 			};
 		};
 
 		template <typename Data>
-		concept string_filterable_data = requires(Data data) {
+		concept string_filterable_data = requires(Data data)
+		{
 			{
 				data.stringFilters
-			} -> std::same_as<StringFilters&>;
+				} -> std::same_as<StringFilters&>;
 			{
 				data.stringFilters = std::declval<StringFilters>()
 			};
 		};
 
 		template <typename Data>
-		concept form_filterable_data = requires(Data data) {
+		concept form_filterable_data = requires(Data data)
+		{
 			{
 				data.formFilters
-			} -> std::same_as<RawFormFilters&>;
+				} -> std::same_as<RawFormFilters&>;
 			{
 				data.formFilters = std::declval<RawFormFilters>()
 			};
 		};
 
 		template <typename Data>
-		concept level_filterable_data = requires(Data data) {
+		concept level_filterable_data = requires(Data data)
+		{
 			{
 				data.levelFilters
-			} -> std::same_as<LevelFilters&>;
+				} -> std::same_as<LevelFilters&>;
 			{
 				data.levelFilters = std::declval<LevelFilters>()
 			};
 		};
 
 		template <typename Data>
-		concept trait_filterable_data = requires(Data data) {
+		concept trait_filterable_data = requires(Data data)
+		{
 			{
 				data.traits
-			} -> std::same_as<Traits&>;
+				} -> std::same_as<Traits&>;
 			{
 				data.traits = std::declval<Traits>()
 			};
 		};
 
 		template <typename Data>
-		concept countable_data = requires(Data data) {
+		concept countable_data = requires(Data data)
+		{
 			{
 				data.idxOrCount
-			} -> std::same_as<IndexOrCount&>;
+				} -> std::same_as<IndexOrCount&>;
 			{
 				data.idxOrCount = std::declval<IndexOrCount>()
 			};
 		};
 
 		template <typename Data>
-		concept randomized_data = requires(Data data) {
+		concept randomized_data = requires(Data data)
+		{
 			{
 				data.chance
-			} -> std::same_as<PercentChance&>;
+				} -> std::same_as<PercentChance&>;
 			{
 				data.chance = std::declval<PercentChance>()
 			};
@@ -232,7 +240,6 @@ namespace Distribution::INI
 		// Default modifiers suitable for FormFilters
 		kAllowFormsModifiers = kAllowCombineModifier | kAllowExclusionModifier
 	};
-
 
 	/// <summary>
 	/// Simply parses type of the record from the key.
@@ -342,7 +349,7 @@ namespace Distribution::INI
 					break;
 				}
 			}
-			
+
 			data.stringFilters.MATCH.emplace_back(str);
 		}
 	}

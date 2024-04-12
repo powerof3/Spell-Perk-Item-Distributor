@@ -49,7 +49,6 @@ namespace LinkedDistribution
 
 			DistributionType distributionType{ kRegular };
 
-		
 			/// Raw filters in RawLinkedForm only use MATCH, there is no meaning for ALL or NOT, so they are ignored.
 			RawFormFilters formFilters{};
 

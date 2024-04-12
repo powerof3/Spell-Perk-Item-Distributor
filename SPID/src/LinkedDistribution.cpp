@@ -20,13 +20,13 @@ namespace LinkedDistribution
 			{
 				{
 					data.scope
-				} -> std::same_as<Scope&>;
+					} -> std::same_as<Scope&>;
 				{
 					data.scope = std::declval<Scope>()
 				};
 				{
 					data.distributionType
-				} -> std::same_as<DistributionType&>;
+					} -> std::same_as<DistributionType&>;
 				{
 					data.distributionType = std::declval<DistributionType>()
 				};
@@ -180,7 +180,6 @@ namespace LinkedDistribution
 			std::erase_if(forms.forms[kDeath], [](const auto& pair) { return pair.second.empty(); });
 		});
 
-		
 		// Clear INI once lookup is done
 		INI::linkedConfigs.clear();
 

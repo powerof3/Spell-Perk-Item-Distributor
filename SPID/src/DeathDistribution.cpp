@@ -37,7 +37,6 @@ namespace DeathDistribution
 
 		Map<RECORD::TYPE, DataVec> deathConfigs{};
 
-
 		bool TryParse(const std::string& key, const std::string& value, const Path& path)
 		{
 			using namespace Distribution::INI;

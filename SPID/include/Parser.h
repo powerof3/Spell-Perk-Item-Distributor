@@ -13,22 +13,28 @@ namespace detail
 }
 
 template <typename ComponentParser, typename Data>
-concept component_parser = requires(ComponentParser const, const std::string& section, Data& data) {
-	{ ComponentParser()(section, data) } -> std::same_as<void>;
+concept component_parser = requires(ComponentParser const, const std::string& section, Data& data)
+{
+	{
+		ComponentParser()(section, data)
+		} -> std::same_as<void>;
 };
 
 template <typename KeyComponentParser, typename Data>
-concept key_component_parser = requires(KeyComponentParser const, const std::string& key, Data& data) {
-	{ KeyComponentParser()(key, data) } -> std::same_as<bool>;
+concept key_component_parser = requires(KeyComponentParser const, const std::string& key, Data& data)
+{
+	{
+		KeyComponentParser()(key, data)
+		} -> std::same_as<bool>;
 };
 
-struct NotEnoughComponentsException: std::exception
+struct NotEnoughComponentsException : std::exception
 {
 	const size_t componentParsersCount;
 	const size_t entrySectionsCount;
 
 	NotEnoughComponentsException(size_t componentParsersCount, size_t entrySectionsCount) :
-		std::exception(fmt::format("Too many sections. Expected at most {}, but got {}"sv, componentParsersCount, entrySectionsCount).c_str()) ,
+		std::exception(fmt::format("Too many sections. Expected at most {}, but got {}"sv, componentParsersCount, entrySectionsCount).c_str()),
 		componentParsersCount(componentParsersCount),
 		entrySectionsCount(entrySectionsCount)
 	{}
@@ -36,10 +42,10 @@ struct NotEnoughComponentsException: std::exception
 
 /// <summary>
 /// A composable Parsing function that accepts a variadic list of functors that define structure of the entry being parsed.
-/// 
+///
 /// Number of component parsers must be at least the same as the number of sections in the entry.
 /// If there are fewer sections than component parsers, the remaining parsers will be called with an empty string.
-/// 
+///
 /// Parsing may throw and exception if there was not enough ComponentParsers to match all available entries.
 /// It will also rethrow any exceptions thrown by the ComponentParsers.
 /// </summary>
