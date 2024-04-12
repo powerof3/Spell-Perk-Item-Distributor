@@ -91,13 +91,9 @@ namespace Distribution::INI
 			const std::string key;
 
 			UnsupportedFormTypeException(const std::string& key) :
+				std::exception(fmt::format("Unsupported form type {}"sv, key).c_str()),
 				key(key)
 			{}
-
-			const char* what() const noexcept override
-			{
-				return fmt::format("Unsupported Form type {}"sv, key).c_str();
-			}
 		};
 
 		struct InvalidIndexOrCountException : std::exception
@@ -105,13 +101,9 @@ namespace Distribution::INI
 			const std::string entry;
 
 			InvalidIndexOrCountException(const std::string& entry) :
+				std::exception(fmt::format("Invalid index or count {}"sv, entry).c_str()),
 				entry(entry)
 			{}
-
-			const char* what() const noexcept override
-			{
-				return fmt::format("Invalid index or count {}"sv, entry).c_str();
-			}
 		};
 
 		struct InvalidChanceException : std::exception
@@ -119,31 +111,23 @@ namespace Distribution::INI
 			const std::string entry;
 
 			InvalidChanceException(const std::string& entry) :
+				std::exception(fmt::format("Invalid chance {}"sv, entry).c_str()),
 				entry(entry)
 			{}
-
-			const char* what() const noexcept override
-			{
-				return fmt::format("Invalid chance {}"sv, entry).c_str();
-			}
 		};
 
 		struct MissingDistributableFormException : std::exception
 		{
-			const char* what() const noexcept override
-			{
-				return "Missing distributable form";
-			}
+			MissingDistributableFormException() :
+				std::exception("Missing distributable form")
+			{}
 		};
 
 		struct MissingComponentParserException : std::exception
 		{
-			std::string component;
-
-			const char* what() const noexcept override
-			{
-				return "Missing component parser";
-			}
+			MissingComponentParserException() :
+				std::exception("Missing component parser") 
+			{}
 		};
 	}
 

@@ -87,9 +87,11 @@ namespace LinkedDistribution
 					return true;
 				}
 			} catch (const Exception::MissingComponentParserException& e) {
-				logger::warn("SKIPPED: Linked Form must have a form and at least one Parent Form: {} = {}"sv, key, value);
+				logger::warn("'{} = {}'"sv, key, value);
+				logger::warn("\t\tSKIPPED: Linked Form must have a form and at least one Parent Form"sv);
 			} catch (const std::exception& e) {
-				logger::warn("SKIPPED {}", e.what());
+				logger::warn("'{} = {}'"sv, key, value);
+				logger::warn("\t\tSKIPPED: {}"sv, e.what());
 			}
 			return false;
 		}

@@ -5,7 +5,6 @@
 
 namespace LinkedDistribution
 {
-
 	/// <summary>
 	/// Scope of a linked form determines which distributions can trigger linked forms.
 	/// </summary>

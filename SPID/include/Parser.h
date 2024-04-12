@@ -28,14 +28,10 @@ struct NotEnoughComponentsException: std::exception
 	const size_t entrySectionsCount;
 
 	NotEnoughComponentsException(size_t componentParsersCount, size_t entrySectionsCount) :
+		std::exception(fmt::format("Too many sections. Expected at most {}, but got {}"sv, componentParsersCount, entrySectionsCount).c_str()) ,
 		componentParsersCount(componentParsersCount),
 		entrySectionsCount(entrySectionsCount)
 	{}
-
-	const char* what() const noexcept override
-	{
-		return fmt::format("Too many sections. Expected at most {}, but got {}"sv, componentParsersCount, entrySectionsCount).c_str();
-	}
 };
 
 /// <summary>
@@ -56,9 +52,15 @@ struct NotEnoughComponentsException: std::exception
 template <typename Data, key_component_parser<Data> KeyComponentParser, component_parser<Data>... ComponentParsers>
 std::optional<Data> Parse(const std::string& key, const std::string& entry)
 {
+	Data data{};
+
+	if (!KeyComponentParser()(key, data)) {
+		return std::nullopt;
+	}
+
 	constexpr const size_t numberOfComponents = sizeof...(ComponentParsers);
 
-	const auto rawSections = string::split(entry, "|");
+	const auto   rawSections = string::split(entry, "|");
 	const size_t numberOfSections = rawSections.size();
 
 	if (numberOfSections > numberOfComponents) {
@@ -73,12 +75,6 @@ std::optional<Data> Parse(const std::string& key, const std::string& entry)
 	// Fill in default empty trailing sections.
 	for (size_t i = numberOfSections; i < numberOfComponents; i++) {
 		sections[i] = "";
-	}
-
-	Data data{};
-
-	if (!KeyComponentParser()(key, data)) {
-		return std::nullopt;
 	}
 
 	detail::parse_each<Data, ComponentParsers...>(data, sections, std::index_sequence_for<ComponentParsers...>());
