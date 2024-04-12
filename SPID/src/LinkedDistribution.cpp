@@ -10,6 +10,8 @@ namespace LinkedDistribution
 #pragma region Parsing
 	namespace INI
 	{
+		LinkedFormsConfig linkedConfigs{};
+
 		enum Sections : std::uint8_t
 		{
 			kForm = 0,
@@ -69,6 +71,7 @@ namespace LinkedDistribution
 			}
 
 			INI::RawLinkedForm item{};
+			item.distributionType = distributionType;
 			item.formOrEditorID = distribution::get_record(sections[kForm]);
 			item.scope = scope;
 			item.path = path;
@@ -108,7 +111,7 @@ namespace LinkedDistribution
 				}
 			}
 
-			linkedForms[distributionType][type].push_back(item);
+			linkedConfigs[type].push_back(item);
 
 			return true;
 		}
@@ -117,21 +120,21 @@ namespace LinkedDistribution
 
 #pragma region Lookup
 
-	void Manager::LookupLinkedForms(RE::TESDataHandler* const dataHandler, DistributionType distributionType, INI::LinkedFormsConfig& rawLinkedForms)
+	void Manager::LookupLinkedForms(RE::TESDataHandler* const dataHandler)
 	{
 		ForEachLinkedForms([&]<class Form>(LinkedForms<Form>& forms) {
 			// If it's spells distributable we want to manually lookup forms to pick LevSpells that are added into the list.
 			if constexpr (!std::is_same_v<Form, RE::SpellItem>) {
-				forms.LookupForms(dataHandler, distributionType, rawLinkedForms[distributionType][forms.GetType()]);
+				forms.LookupForms(dataHandler, INI::linkedConfigs[forms.GetType()]);
 			}
 		});
 
 		// Sort out Spells and Leveled Spells into two separate lists.
-		auto& rawSpells = rawLinkedForms[distributionType][RECORD::kSpell];
+		auto& rawSpells = INI::linkedConfigs[RECORD::kSpell];
 
 		for (auto& rawSpell : rawSpells) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawSpell); form) {
-				auto& [formID, scope, parentFormIDs, idxOrCount, chance, path] = rawSpell;
+				auto& [formID, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawSpell;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					continue;
@@ -144,10 +147,10 @@ namespace LinkedDistribution
 			}
 		}
 
-		auto& genericForms = rawLinkedForms[distributionType][RECORD::kForm];
+		auto& genericForms = INI::linkedConfigs[RECORD::kForm];
 		for (auto& rawForm : genericForms) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
-				auto& [formID, scope, parentFormIDs, idxOrCount, chance, path] = rawForm;
+				auto& [formID, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					continue;
@@ -193,17 +196,13 @@ namespace LinkedDistribution
 
 		// Remove empty linked forms
 		ForEachLinkedForms([&]<typename Form>(LinkedForms<Form>& forms) {
-			std::erase_if(forms.forms[distributionType], [](const auto& pair) { return pair.second.empty(); });
+			std::erase_if(forms.forms[kRegular], [](const auto& pair) { return pair.second.empty(); });
+			std::erase_if(forms.forms[kDeath], [](const auto& pair) { return pair.second.empty(); });
 		});
-	}
 
-	void Manager::LookupLinkedForms(RE::TESDataHandler* dataHandler, INI::LinkedFormsConfig& rawLinkedForms)
-	{
-		LookupLinkedForms(dataHandler, kRegular, rawLinkedForms);
-		LookupLinkedForms(dataHandler, kDeath, rawLinkedForms);
-
+		
 		// Clear INI once lookup is done
-		rawLinkedForms.clear();
+		INI::linkedConfigs.clear();
 
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();
@@ -211,38 +210,33 @@ namespace LinkedDistribution
 
 	void Manager::LogLinkedFormsLookup(DistributionType type)
 	{
-		ForEachLinkedForms([&]<typename Form>(LinkedForms<Form>& linkedForms) {
-			if (linkedForms.forms[type].empty()) {
+		ForEachLinkedForms([&]<typename Form>(LinkedForms<Form>& linkedConfigs) {
+			if (linkedConfigs.forms[type].empty()) {
 				return;
 			}
 			std::unordered_map<RE::TESForm*, std::vector<DistributedForm>> map{};
 
 			// Iterate through the original map
-			for (const auto& pair : linkedForms.forms[type]) {
-				const auto& path = pair.first;
-				const auto& formsMap = pair.second;
-
-				for (const auto& pair : formsMap) {
-					const auto  key = pair.first;
-					const auto& values = pair.second;
+			for (const auto& [path, formsMap] : linkedConfigs.forms[type]) {
+				for (const auto& [key, values] : formsMap) {
 					for (const auto& value : values) {
 						map[value.form].emplace_back(key, path);
 					}
 				}
 			}
 
-			const auto& recordName = RECORD::GetTypeName(linkedForms.GetType());
+			const auto& recordName = RECORD::GetTypeName(linkedConfigs.GetType());
 			logger::info("Linked {}s: ", recordName);
 
-			for (const auto& [form, linkedForms] : map) {
+			for (const auto& [form, linkedConfigs] : map) {
 				logger::info("\t{}", describe(form));
 
-				const auto lastItemIndex = linkedForms.size() - 1;
+				const auto lastItemIndex = linkedConfigs.size() - 1;
 				for (int i = 0; i < lastItemIndex; ++i) {
-					const auto& linkedItem = linkedForms[i];
+					const auto& linkedItem = linkedConfigs[i];
 					logger::info("\t├─── {}", describe(linkedItem));
 				}
-				const auto& lastLinkedItem = linkedForms[lastItemIndex];
+				const auto& lastLinkedItem = linkedConfigs[lastItemIndex];
 				logger::info("\t└─── {}", describe(lastLinkedItem));
 			}
 		});
