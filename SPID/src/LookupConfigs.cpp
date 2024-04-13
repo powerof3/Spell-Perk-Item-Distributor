@@ -53,10 +53,9 @@ namespace Distribution
 			}
 		}
 
-		std::optional<std::string> TryParse(const std::string& key, const std::string& value, const Path& path)
+		void TryParse(const std::string& key, const std::string& value, const Path& path)
 		{
-			auto sanitized_value = detail::sanitize(value);
-
+		
 			try {
 				if (auto optData = Parse<Data,
 						DefaultKeyComponentParser,
@@ -66,7 +65,7 @@ namespace Distribution
 						LevelFiltersComponentParser,
 						TraitsFilterComponentParser,
 						IndexOrCountComponentParser,
-						ChanceComponentParser>(key, sanitized_value);
+						ChanceComponentParser>(key, value);
 					optData) {
 					auto& data = *optData;
 
@@ -77,11 +76,6 @@ namespace Distribution
 			} catch (const std::exception& e) {
 				logger::warn("\t\tFailed to parse entry [{} = {}]: {}", key, value, e.what());
 			}
-
-			if (sanitized_value != value) {
-				return sanitized_value;
-			}
-			return std::nullopt;
 		}
 
 		std::pair<bool, bool> GetConfigs()
@@ -118,20 +112,25 @@ namespace Distribution
 
 					for (auto& [key, entry] : *values) {
 						try {
-							if (ExclusiveGroups::INI::TryParse(key.pItem, entry, truncatedPath)) {
+
+							auto sanitized_str = detail::sanitize(entry);
+
+							if (ExclusiveGroups::INI::TryParse(key.pItem, sanitized_str, truncatedPath)) {
 								continue;
 							}
 
-							if (LinkedDistribution::INI::TryParse(key.pItem, entry, truncatedPath)) {
+							if (LinkedDistribution::INI::TryParse(key.pItem, sanitized_str, truncatedPath)) {
 								continue;
 							}
 
-							if (DeathDistribution::INI::TryParse(key.pItem, entry, truncatedPath)) {
+							if (DeathDistribution::INI::TryParse(key.pItem, sanitized_str, truncatedPath)) {
 								continue;
 							}
 
-							if (const auto sanitized_str = TryParse(key.pItem, entry, truncatedPath)) {
-								oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
+							TryParse(key.pItem, sanitized_str, truncatedPath);
+
+							if (sanitized_str != entry) {
+								oldFormatMap.emplace(key, std::make_pair(entry, sanitized_str));
 							}
 						} catch (...) {
 							logger::warn("\t\tFailed to parse entry [{} = {}]"sv, key.pItem, entry);
