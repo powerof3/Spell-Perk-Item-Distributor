@@ -81,7 +81,7 @@ namespace Distribute
 		const NPCData&                           a_npcData,
 		Forms::DataVec<Form>&                    forms,
 		const PCLevelMult::Input&                a_input,
-		std::function<bool(Form*, IndexOrCount)> a_callback,
+		std::function<void(Form*, IndexOrCount)> a_callback,
 		DistributedForms*                        accumulatedForms = nullptr)
 	{
 		for (auto& formData : forms) {

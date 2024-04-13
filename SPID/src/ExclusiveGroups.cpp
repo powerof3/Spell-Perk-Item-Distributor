@@ -1,44 +1,65 @@
 #include "ExclusiveGroups.h"
 #include "FormData.h"
+#include "LookupConfigs.h"
+#include "Parser.h"
 
 namespace ExclusiveGroups
 {
-	bool INI::TryParse(const std::string& a_key, const std::string& a_value, const Path& a_path)
+	namespace concepts
 	{
-		if (a_key != "ExclusiveGroup") {
-			return false;
+		template <typename Data>
+		concept named_data = requires(Data data) {
+								 {
+									 data.name
+									 } -> std::same_as<std::string&>;
+								 {
+									 data.name = std::declval<std::string>()
+								 };
+							 };
+	}
+
+	using namespace concepts;
+	using namespace Distribution::INI;
+
+	struct ExclusiveGroupKeyComponentParser
+	{
+		template <typename Data>
+		bool operator()(const std::string& key, Data& data) const
+		{
+			return key == "ExclusiveGroup";
 		}
+	};
 
-		const auto sections = string::split(a_value, "|");
-		const auto size = sections.size();
-
-		if (size < 2) {
-			logger::warn("IGNORED: ExclusiveGroup must have a name and at least one Form Filter: {} = {}"sv, a_key, a_value);
-			return true;
+	struct ExclusiveGroupNameComponentParser
+	{
+		template <named_data Data>
+		void operator()(const std::string& entry, Data& data) const
+		{
+			data.name = entry;
 		}
+	};
 
-		auto split_IDs = distribution::split_entry(sections[1]);
-
-		if (split_IDs.empty()) {
-			logger::warn("ExclusiveGroup must have at least one Form Filter : {} = {}"sv, a_key, a_value);
-			return true;
-		}
-
-		RawExclusiveGroup group{};
-		group.name = sections[0];
-		group.path = a_path;
-
-		for (auto& IDs : split_IDs) {
-			if (IDs.at(0) == '-') {
-				IDs.erase(0, 1);
-				group.formIDs.NOT.push_back(distribution::get_record(IDs));
+	bool INI::TryParse(const std::string& key, const std::string& value, const Path& path)
+	{
+		try {
+			if (auto optData = Parse<RawExclusiveGroup,
+					ExclusiveGroupKeyComponentParser,
+					ExclusiveGroupNameComponentParser,
+					FormFiltersComponentParser<kRequired | kAllowExclusionModifier>>(key, value);
+				optData) {
+				auto& data = *optData;
+				data.path = path;
+				exclusiveGroups.emplace_back(data);
 			} else {
-				group.formIDs.MATCH.push_back(distribution::get_record(IDs));
+				return false;
 			}
+		} catch (const Exception::MissingComponentParserException& e) {
+			logger::warn("\t'{} = {}'"sv, key, value);
+			logger::warn("\t\tSKIPPED: Exclusive Group must have a name and at least one Form"sv);
+		} catch (const std::exception& e) {
+			logger::warn("\t'{} = {}'"sv, key, value);
+			logger::warn("\t\tSKIPPED: {}"sv, e.what());
 		}
-
-		exclusiveGroups.emplace_back(group);
-
 		return true;
 	}
 
@@ -51,7 +72,6 @@ namespace ExclusiveGroups
 			auto&   forms = groups[name];
 			FormVec match{};
 			FormVec formsNot{};
-
 			if (Forms::detail::formID_to_form(dataHandler, filterIDs.MATCH, match, path, Forms::LookupOptions::kNone) &&
 				Forms::detail::formID_to_form(dataHandler, filterIDs.NOT, formsNot, path, Forms::LookupOptions::kNone)) {
 				for (const auto& form : match) {

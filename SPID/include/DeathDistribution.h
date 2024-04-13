@@ -26,7 +26,6 @@ namespace DeathDistribution
 		///
 		/// As a result this method configures Manager with discovered valid On Death Distributable Forms.
 		/// </summary>
-		/// <param name="dataHandler">A DataHandler that will perform the actual lookup.</param>
 		void LookupForms(RE::TESDataHandler* const dataHandler);
 
 		void LogFormsLookup();

@@ -2,8 +2,9 @@
 #include "DeathDistribution.h"
 #include "ExclusiveGroups.h"
 #include "LinkedDistribution.h"
+#include "Parser.h"
 
-namespace Configs
+namespace Distribution
 {
 	namespace INI
 	{
@@ -50,203 +51,29 @@ namespace Configs
 
 				return newValue;
 			}
+		}
 
-			std::pair<Data, std::optional<std::string>> parse_ini(const RECORD::TYPE& typeHint, const std::string& a_value, const Path& a_path)
-			{
-				Data data{};
+		void TryParse(const std::string& key, const std::string& value, const Path& path)
+		{
+			try {
+				if (auto optData = Parse<Data,
+						DefaultKeyComponentParser,
+						DistributableFormComponentParser,
+						StringFiltersComponentParser<>,
+						FormFiltersComponentParser<>,
+						LevelFiltersComponentParser,
+						TraitsFilterComponentParser,
+						IndexOrCountComponentParser,
+						ChanceComponentParser>(key, value);
+					optData) {
+					auto& data = *optData;
 
-				auto       sanitized_value = sanitize(a_value);
-				const auto sections = string::split(sanitized_value, "|");
+					data.path = path;
 
-				const auto size = sections.size();
-
-				//[FORMID/ESP] / EDITORID
-				if (kFormID < size) {
-					data.rawForm = distribution::get_record(sections[kFormID]);
+					configs[data.type].emplace_back(data);
 				}
-
-				//KEYWORDS
-				if (kStrings < size) {
-					StringFilters filters;
-
-					auto split_str = distribution::split_entry(sections[kStrings]);
-					for (auto& str : split_str) {
-						if (str.contains("+"sv)) {
-							auto strings = distribution::split_entry(str, "+");
-							data.stringFilters.ALL.insert(data.stringFilters.ALL.end(), strings.begin(), strings.end());
-
-						} else if (str.at(0) == '-') {
-							str.erase(0, 1);
-							data.stringFilters.NOT.emplace_back(str);
-
-						} else if (str.at(0) == '*') {
-							str.erase(0, 1);
-							data.stringFilters.ANY.emplace_back(str);
-
-						} else {
-							data.stringFilters.MATCH.emplace_back(str);
-						}
-					}
-				}
-
-				//FILTER FORMS
-				if (kFilterIDs < size) {
-					auto split_IDs = distribution::split_entry(sections[kFilterIDs]);
-					for (auto& IDs : split_IDs) {
-						if (IDs.contains("+"sv)) {
-							auto splitIDs_ALL = distribution::split_entry(IDs, "+");
-							for (auto& IDs_ALL : splitIDs_ALL) {
-								data.rawFormFilters.ALL.push_back(distribution::get_record(IDs_ALL));
-							}
-						} else if (IDs.at(0) == '-') {
-							IDs.erase(0, 1);
-							data.rawFormFilters.NOT.push_back(distribution::get_record(IDs));
-
-						} else {
-							data.rawFormFilters.MATCH.push_back(distribution::get_record(IDs));
-						}
-					}
-				}
-
-				//LEVEL
-				Range<std::uint16_t>    actorLevel;
-				std::vector<SkillLevel> skillLevels;
-				std::vector<SkillLevel> skillWeights;
-				if (kLevel < size) {
-					auto split_levels = distribution::split_entry(sections[kLevel]);
-					for (auto& levels : split_levels) {
-						if (levels.contains('(')) {
-							//skill(min/max)
-							const auto isWeightFilter = levels.starts_with('w');
-							auto       sanitizedLevel = string::remove_non_alphanumeric(levels);
-							if (isWeightFilter) {
-								sanitizedLevel.erase(0, 1);
-							}
-							//skill min max
-							if (auto skills = string::split(sanitizedLevel, " "); !skills.empty()) {
-								if (auto type = string::to_num<std::uint32_t>(skills[0]); type < 18) {
-									auto minLevel = string::to_num<std::uint8_t>(skills[1]);
-									if (skills.size() > 2) {
-										auto maxLevel = string::to_num<std::uint8_t>(skills[2]);
-										if (isWeightFilter) {
-											skillWeights.push_back({ type, Range(minLevel, maxLevel) });
-										} else {
-											skillLevels.push_back({ type, Range(minLevel, maxLevel) });
-										}
-									} else {
-										if (isWeightFilter) {
-											// Single value is treated as exact match.
-											skillWeights.push_back({ type, Range(minLevel) });
-										} else {
-											skillLevels.push_back({ type, Range(minLevel) });
-										}
-									}
-								}
-							}
-						} else {
-							if (auto actor_level = string::split(levels, "/"); actor_level.size() > 1) {
-								auto minLevel = string::to_num<std::uint16_t>(actor_level[0]);
-								auto maxLevel = string::to_num<std::uint16_t>(actor_level[1]);
-
-								actorLevel = Range(minLevel, maxLevel);
-							} else {
-								auto level = string::to_num<std::uint16_t>(levels);
-
-								actorLevel = Range(level);
-							}
-						}
-					}
-				}
-				data.levelFilters = { actorLevel, skillLevels, skillWeights };
-
-				//TRAITS
-				if (kTraits < size) {
-					auto split_traits = distribution::split_entry(sections[kTraits], "/");
-					for (auto& trait : split_traits) {
-						switch (string::const_hash(trait)) {
-						case "M"_h:
-						case "-F"_h:
-							data.traits.sex = RE::SEX::kMale;
-							break;
-						case "F"_h:
-						case "-M"_h:
-							data.traits.sex = RE::SEX::kFemale;
-							break;
-						case "U"_h:
-							data.traits.unique = true;
-							break;
-						case "-U"_h:
-							data.traits.unique = false;
-							break;
-						case "S"_h:
-							data.traits.summonable = true;
-							break;
-						case "-S"_h:
-							data.traits.summonable = false;
-							break;
-						case "C"_h:
-							data.traits.child = true;
-							break;
-						case "-C"_h:
-							data.traits.child = false;
-							break;
-						case "L"_h:
-							data.traits.leveled = true;
-							break;
-						case "-L"_h:
-							data.traits.leveled = false;
-							break;
-						case "T"_h:
-							data.traits.teammate = true;
-							break;
-						case "-T"_h:
-							data.traits.teammate = false;
-							break;
-						default:
-							break;
-						}
-					}
-				}
-
-				//ITEMCOUNT/INDEX
-				if (typeHint == RECORD::kPackage) {  // reuse item count for package stack index
-					data.idxOrCount = 0;
-				}
-
-				if (kIdxOrCount < size) {
-					if (typeHint == RECORD::kPackage) {  // If it's a package, then we only expect a single number.
-						if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
-							data.idxOrCount = string::to_num<Index>(str);
-						}
-					} else {
-						if (const auto& str = sections[kIdxOrCount]; distribution::is_valid_entry(str)) {
-							if (auto countPair = string::split(str, "-"); countPair.size() > 1) {
-								auto minCount = string::to_num<Count>(countPair[0]);
-								auto maxCount = string::to_num<Count>(countPair[1]);
-
-								data.idxOrCount = RandomCount(minCount, maxCount);
-							} else {
-								auto count = string::to_num<Count>(str);
-
-								data.idxOrCount = RandomCount(count, count);  // create the exact match range.
-							}
-						}
-					}
-				}
-
-				//CHANCE
-				if (kChance < size) {
-					if (const auto& str = sections[kChance]; distribution::is_valid_entry(str)) {
-						data.chance = string::to_num<PercentChance>(str);
-					}
-				}
-
-				data.path = a_path;
-
-				if (sanitized_value != a_value) {
-					return { data, sanitized_value };
-				}
-				return { data, std::nullopt };
+			} catch (const std::exception& e) {
+				logger::warn("\t\tFailed to parse entry [{} = {}]: {}", key, value, e.what());
 			}
 		}
 
@@ -284,29 +111,24 @@ namespace Configs
 
 					for (auto& [key, entry] : *values) {
 						try {
-							if (ExclusiveGroups::INI::TryParse(key.pItem, entry, truncatedPath)) {
+							auto sanitized_str = detail::sanitize(entry);
+
+							if (ExclusiveGroups::INI::TryParse(key.pItem, sanitized_str, truncatedPath)) {
 								continue;
 							}
 
-							if (LinkedDistribution::INI::TryParse(key.pItem, entry, truncatedPath)) {
+							if (LinkedDistribution::INI::TryParse(key.pItem, sanitized_str, truncatedPath)) {
 								continue;
 							}
 
-							if (DeathDistribution::INI::TryParse(key.pItem, entry, truncatedPath)) {
+							if (DeathDistribution::INI::TryParse(key.pItem, sanitized_str, truncatedPath)) {
 								continue;
 							}
 
-							auto type = RECORD::GetType(key.pItem);
-							if (type == RECORD::kTotal) {
-								logger::warn("\t\tUnsupported Form type ({}): {} = {}"sv, key.pItem, key.pItem, entry);
-								continue;
-							}
-							auto [data, sanitized_str] = detail::parse_ini(type, entry, truncatedPath);
+							TryParse(key.pItem, sanitized_str, truncatedPath);
 
-							configs[type].emplace_back(data);
-
-							if (sanitized_str) {
-								oldFormatMap.emplace(key, std::make_pair(entry, *sanitized_str));
+							if (sanitized_str != entry) {
+								oldFormatMap.emplace(key, std::make_pair(entry, sanitized_str));
 							}
 						} catch (...) {
 							logger::warn("\t\tFailed to parse entry [{} = {}]"sv, key.pItem, entry);
