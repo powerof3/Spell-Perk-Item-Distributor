@@ -55,7 +55,6 @@ namespace Distribution
 
 		void TryParse(const std::string& key, const std::string& value, const Path& path)
 		{
-		
 			try {
 				if (auto optData = Parse<Data,
 						DefaultKeyComponentParser,
@@ -112,7 +111,6 @@ namespace Distribution
 
 					for (auto& [key, entry] : *values) {
 						try {
-
 							auto sanitized_str = detail::sanitize(entry);
 
 							if (ExclusiveGroups::INI::TryParse(key.pItem, sanitized_str, truncatedPath)) {

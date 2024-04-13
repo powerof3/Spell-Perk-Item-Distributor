@@ -1,7 +1,7 @@
 #include "ExclusiveGroups.h"
 #include "FormData.h"
-#include "Parser.h"
 #include "LookupConfigs.h"
+#include "Parser.h"
 
 namespace ExclusiveGroups
 {
@@ -9,15 +9,15 @@ namespace ExclusiveGroups
 	{
 		template <typename Data>
 		concept named_data = requires(Data data) {
-			{
-				data.name
-			} -> std::same_as<std::string&>;
-			{
-				data.name = std::declval<std::string>()
-			};
-		};
+								 {
+									 data.name
+									 } -> std::same_as<std::string&>;
+								 {
+									 data.name = std::declval<std::string>()
+								 };
+							 };
 	}
-	
+
 	using namespace concepts;
 	using namespace Distribution::INI;
 
