@@ -353,7 +353,7 @@ namespace Forms
 				}
 			}
 
-			return (options & kRequireAll) == 0 && a_formVec.size() == a_rawFormVec.size();
+			return (options & kRequireAll) == 0 || a_formVec.size() == a_rawFormVec.size();
 		}
 	}
 
