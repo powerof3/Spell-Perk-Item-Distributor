@@ -11,6 +11,7 @@ AlignTrailingComments: 'true'
 AllowAllArgumentsOnNextLine: 'false'
 AllowAllConstructorInitializersOnNextLine: 'false'
 AllowAllParametersOfDeclarationOnNextLine: 'false'
+RequiresExpressionIndentation: OuterScope
 AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: 'false'
 AllowShortEnumsOnASingleLine: 'true'

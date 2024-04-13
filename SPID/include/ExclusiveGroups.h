@@ -10,8 +10,8 @@ namespace ExclusiveGroups
 			std::string name{};
 
 			/// Raw filters in RawExclusiveGroup only use NOT and MATCH, there is no meaning for ALL, so it's ignored.
-			Filters<FormOrEditorID> formIDs{};
-			Path                    path{};
+			RawFormFilters formFilters{};
+			Path           path{};
 		};
 
 		using ExclusiveGroupsVec = std::vector<RawExclusiveGroup>;

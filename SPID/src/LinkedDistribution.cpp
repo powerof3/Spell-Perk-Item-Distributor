@@ -78,22 +78,21 @@ namespace LinkedDistribution
 						DistributableFormComponentParser,
 						FormFiltersComponentParser<kRequired>,
 						IndexOrCountComponentParser,
-						ChanceComponentParser>(key, value);
-					optData) {
+						ChanceComponentParser>(key, value)) {
 					auto& data = *optData;
 					data.path = path;
-
 					linkedConfigs[data.type].push_back(data);
-					return true;
+				} else {
+					return false;
 				}
 			} catch (const Exception::MissingComponentParserException& e) {
-				logger::warn("'{} = {}'"sv, key, value);
+				logger::warn("\t'{} = {}'"sv, key, value);
 				logger::warn("\t\tSKIPPED: Linked Form must have a form and at least one Parent Form"sv);
 			} catch (const std::exception& e) {
-				logger::warn("'{} = {}'"sv, key, value);
+				logger::warn("]t'{} = {}'"sv, key, value);
 				logger::warn("\t\tSKIPPED: {}"sv, e.what());
 			}
-			return false;
+			return true;
 		}
 	}
 #pragma endregion

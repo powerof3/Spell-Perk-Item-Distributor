@@ -56,6 +56,8 @@ namespace DeathDistribution
 					data.path = path;
 
 					deathConfigs[data.type].emplace_back(data);
+				} else {
+					return false;
 				}
 			} catch (const std::exception& e) {
 				logger::warn("\t\tFailed to parse entry [{} = {}]: {}", key, value, e.what());
