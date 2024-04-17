@@ -329,21 +329,21 @@ namespace Distribution::INI
 				if (str.contains("+"sv)) {
 					auto strings = distribution::split_entry(str, "+");
 					data.stringFilters.ALL.insert(data.stringFilters.ALL.end(), strings.begin(), strings.end());
-					break;
+					continue;
 				}
 			}
 			if constexpr (flags & kAllowExclusionModifier) {
 				if (str.at(0) == '-') {
 					str.erase(0, 1);
 					data.stringFilters.NOT.emplace_back(str);
-					break;
+					continue;
 				}
 			}
 			if constexpr (flags & kAllowPartialMatchModifier) {
 				if (str.at(0) == '*') {
 					str.erase(0, 1);
 					data.stringFilters.ANY.emplace_back(str);
-					break;
+					continue;
 				}
 			}
 
@@ -371,7 +371,7 @@ namespace Distribution::INI
 					for (auto& IDs_ALL : splitIDs_ALL) {
 						data.formFilters.ALL.push_back(distribution::get_record(IDs_ALL));
 					}
-					break;
+					continue;
 				}
 			}
 
@@ -379,7 +379,7 @@ namespace Distribution::INI
 				if (IDs.at(0) == '-') {
 					IDs.erase(0, 1);
 					data.formFilters.NOT.push_back(distribution::get_record(IDs));
-					break;
+					continue;
 				}
 			}
 
