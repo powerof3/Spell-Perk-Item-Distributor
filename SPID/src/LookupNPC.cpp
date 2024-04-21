@@ -146,6 +146,11 @@ namespace NPC
 				const auto location = a_form->As<RE::BGSLocation>();
 				return actor->GetEditorLocation() == location;
 			}
+		case RE::FormType::Perk:
+			{
+				const auto perk = a_form->As<RE::BGSPerk>();
+				return actor->HasPerk(perk);
+			}
 		case RE::FormType::FormList:
 			{
 				bool result = false;
