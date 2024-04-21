@@ -24,6 +24,12 @@ namespace Distribute
 			},
 			accumulatedForms);
 
+		for_each_form<RE::BGSPerk>(
+			npcData, forms.perks, input, [&](const std::vector<RE::BGSPerk*>& a_perks) {
+				npc->AddPerks(a_perks, 1);
+			},
+			accumulatedForms);
+
 		for_each_form<RE::SpellItem>(
 			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& a_spells) {
 				npc->GetSpellList()->AddSpells(a_spells);
@@ -33,12 +39,6 @@ namespace Distribute
 		for_each_form<RE::TESLevSpell>(
 			npcData, forms.levSpells, input, [&](const std::vector<RE::TESLevSpell*>& a_levSpells) {
 				npc->GetSpellList()->AddLevSpells(a_levSpells);
-			},
-			accumulatedForms);
-
-		for_each_form<RE::BGSPerk>(
-			npcData, forms.perks, input, [&](const std::vector<RE::BGSPerk*>& a_perks) {
-				npc->AddPerks(a_perks, 1);
 			},
 			accumulatedForms);
 
