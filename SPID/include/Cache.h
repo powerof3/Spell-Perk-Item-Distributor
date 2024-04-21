@@ -13,7 +13,8 @@ namespace FormType
 		RE::FormType::FormList,
 		RE::FormType::Spell,
 		RE::FormType::Armor,
-		RE::FormType::Location
+		RE::FormType::Location,
+		RE::FormType::Perk
 	};
 
 	bool GetWhitelisted(RE::FormType a_type);
