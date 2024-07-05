@@ -1,6 +1,9 @@
 name: Scripted maintenance
 
-on: push
+on:
+  push:
+    tags-ignore:
+    - '**'
 
 jobs:
   maintenance:
