@@ -1,6 +1,7 @@
 {
   "name": "spid-common",
   "version-string": "1",
+  "builtin-baseline": "c4467cb686f92671f0172aa8299a77d908175b4e",
   "dependencies": [
     "clib-util",
     "mergemapper",
