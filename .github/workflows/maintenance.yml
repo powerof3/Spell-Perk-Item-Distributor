@@ -2,7 +2,7 @@ name: Scripted maintenance
 
 on:
   push:
-    tags-ignore:
+    branches:
     - '**'
 
 jobs:
