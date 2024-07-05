@@ -104,10 +104,10 @@ namespace Distribute
 
 		for_each_form<RE::BGSOutfit>(
 			npcData, forms.outfits, input, [&](auto* a_outfit) {
-				return npcData.GetActor()->SetDefaultOutfit(a_outfit, false); // Having true here causes infinite loading. It seems that it works either way.
+				return npcData.GetActor()->SetDefaultOutfit(a_outfit, false);  // Having true here causes infinite loading. It seems that it works either way.
 			},
 			accumulatedForms);
-		
+
 		for_each_form<RE::BGSOutfit>(
 			npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
 				return npcData.GetActor()->SetSleepOutfit(a_outfit, false);
