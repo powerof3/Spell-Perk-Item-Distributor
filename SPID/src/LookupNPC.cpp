@@ -226,6 +226,16 @@ namespace NPC
 		return teammate;
 	}
 
+	bool Data::IsDead() const
+	{
+		return actor && actor->IsDead() || StartsDead();
+	}
+
+	bool Data::StartsDead() const
+	{
+		return actor && (actor->formFlags & RE::Actor::RecordFlags::kStartsDead);
+	}
+
 	RE::TESRace* Data::GetRace() const
 	{
 		return race;

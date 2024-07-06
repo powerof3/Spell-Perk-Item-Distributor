@@ -181,6 +181,8 @@ namespace DeathDistribution
 
 #pragma region Distribution
 
+	static RE::BGSKeyword* SPID_Dead = nullptr;
+
 	void Manager::Register()
 	{
 		if (INI::deathConfigs.empty()) {
@@ -191,6 +193,56 @@ namespace DeathDistribution
 			scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
 			logger::info("Registered for {}", typeid(RE::TESDeathEvent).name());
 		}
+
+		// Create tag keywords
+		if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
+			if (SPID_Dead = factory->Create(); SPID_Dead) {
+				SPID_Dead->formEditorID = "SPID_Dead";
+			}
+		}
+
+		assert(SPID_Dead);
+	}
+
+	void Manager::Distribute(NPCData& data)
+	{
+		assert(data.IsDead());
+
+		// We mark NPCs that were processed by Death Distribution with SPID_Dead keyword,
+		// to ensure that NPCs who received Death Distribution once won't get another Death Distribution 
+		// (which might happen if cell or game is reloaded with dead NPC laying there)
+		if (data.GetNPC()->HasKeyword(SPID_Dead))
+			return;
+
+		data.GetNPC()->AddKeyword(SPID_Dead);
+
+		const auto input = PCLevelMult::Input{ data.GetActor(), data.GetNPC(), false };
+
+		DistributedForms distributedForms{};
+
+		Forms::DistributionSet entries{
+			spells.GetForms(),
+			perks.GetForms(),
+			items.GetForms(),
+			shouts.GetForms(),
+			levSpells.GetForms(),
+			packages.GetForms(),
+			outfits.GetForms(),
+			keywords.GetForms(),
+			factions.GetForms(),
+			sleepOutfits.GetForms(),
+			skins.GetForms()
+		};
+
+		Distribute::Distribute(data, input, entries, false, &distributedForms);
+
+		if (!distributedForms.empty()) {
+			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kDeath, distributedForms, [&](Forms::DistributionSet& set) {
+				Distribute::Distribute(data, input, set, true, &distributedForms);
+			});
+		}
+
+		// TODO: Log death distribution
 	}
 
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
@@ -203,33 +255,8 @@ namespace DeathDistribution
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				auto       npcData = NPCData(actor, npc);
-				const auto input = PCLevelMult::Input{ actor, npc, false };
-
-				DistributedForms distributedForms{};
-
-				Forms::DistributionSet entries{
-					spells.GetForms(),
-					perks.GetForms(),
-					items.GetForms(),
-					shouts.GetForms(),
-					levSpells.GetForms(),
-					packages.GetForms(),
-					outfits.GetForms(),
-					keywords.GetForms(),
-					factions.GetForms(),
-					sleepOutfits.GetForms(),
-					skins.GetForms()
-				};
-
-				Distribute::Distribute(npcData, input, entries, false, &distributedForms);
-				// TODO: We can now log per-NPC distributed forms.
-
-				if (!distributedForms.empty()) {
-					LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kDeath, distributedForms, [&](Forms::DistributionSet& set) {
-						Distribute::Distribute(npcData, input, set, true, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
-					});
-				}
+				auto npcData = NPCData(actor, npc);
+				Distribute(npcData);
 			}
 		}
 

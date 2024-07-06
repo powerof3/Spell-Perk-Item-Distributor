@@ -231,6 +231,13 @@ namespace Distribute
 	/// <param name="allowOverwrites">If true, overwritable forms (like Outfits) will be to overwrite last distributed form on NPC.</param>
 	/// <param name="accumulatedForms">An optional pointer to a set that will accumulate all distributed forms.</param>
 	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, bool allowOverwrites, DistributedForms* accumulatedForms = nullptr);
-	void Distribute(NPCData& npcData, const PCLevelMult::Input& input);
+
+	/// <summary>
+	/// Invokes appropriate distribution for given NPC. 
+	/// 
+	/// When NPC is dead a Death Distribution will be invoked, otherwise a normal distribution takes place.
+	/// </summary>
+	/// <param name="npcData">General information about NPC that is being processed.</param>
+	/// <param name="onlyLeveledEntries"> Flag indicating that distribution is invoked by a leveling event and only entries with LevelFilters needs to be processed.</param>
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries);
 }

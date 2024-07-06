@@ -17,7 +17,6 @@ namespace RECORD
 		kPackage,
 		kOutfit,
 		kKeyword,
-		kDeathItem,
 		kFaction,
 		kSleepOutfit,
 		kSkin,
@@ -37,7 +36,6 @@ namespace RECORD
 			"Package"sv,
 			"Outfit"sv,
 			"Keyword"sv,
-			"DeathItem"sv,
 			"Faction"sv,
 			"SleepOutfit"sv,
 			"Skin"sv

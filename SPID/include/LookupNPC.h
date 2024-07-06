@@ -30,6 +30,8 @@ namespace NPC
 		[[nodiscard]] bool          IsChild() const;
 		[[nodiscard]] bool          IsLeveled() const;
 		[[nodiscard]] bool          IsTeammate() const;
+		[[nodiscard]] bool          IsDead() const;
+		[[nodiscard]] bool          StartsDead() const;
 
 		[[nodiscard]] RE::TESRace* GetRace() const;
 

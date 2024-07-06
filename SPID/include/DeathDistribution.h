@@ -1,5 +1,6 @@
 #pragma once
 #include "FormData.h"
+#include "LookupNPC.h"
 
 namespace DeathDistribution
 {
@@ -31,6 +32,14 @@ namespace DeathDistribution
 		void LogFormsLookup();
 
 		bool IsEmpty();
+
+		/// <summary>
+		/// Performs Death Distribution on a given NPC.
+		/// 
+		/// NPC passed to this method must be Dead in order to be processed.
+		/// </summary>
+		/// <param name=""></param>
+		void Distribute(NPCData&);
 
 	private:
 		Distributables<RE::SpellItem>      spells{ RECORD::kSpell };

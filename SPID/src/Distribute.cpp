@@ -2,6 +2,7 @@
 
 #include "DistributeManager.h"
 #include "LinkedDistribution.h"
+#include "DeathDistribution.h"
 
 namespace Distribute
 {
@@ -133,9 +134,10 @@ namespace Distribute
 
 	void Distribute(NPCData& npcData, const PCLevelMult::Input& input)
 	{
-		if (input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input)) {
+		assert(!npcData.IsDead());  // Dead NPCs are handled by Death Distribution.
+		
+		if (input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input))
 			return;
-		}
 
 		Forms::DistributionSet entries{
 			Forms::spells.GetForms(input.onlyPlayerLevelEntries),
@@ -159,14 +161,18 @@ namespace Distribute
 		if (!distributedForms.empty()) {
 			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kRegular, distributedForms, [&](Forms::DistributionSet& set) {
-				Distribute(npcData, input, set, true, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
+				Distribute(npcData, input, set, true, &distributedForms);
 			});
 		}
 	}
 
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
 	{
-		const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
-		Distribute(npcData, input);
+		if (npcData.IsDead()) { // Perform Death distribution for NPCs that are loaded dead, but haven't been processed by on death distribution.
+			DeathDistribution::Manager::GetSingleton()->Distribute(npcData);
+		} else {
+			const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
+			Distribute(npcData, input);
+		}
 	}
 }
