@@ -134,8 +134,6 @@ namespace Distribute
 
 	void Distribute(NPCData& npcData, const PCLevelMult::Input& input)
 	{
-		assert(!npcData.IsDead());  // Dead NPCs are handled by Death Distribution.
-		
 		if (input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input))
 			return;
 
@@ -156,7 +154,6 @@ namespace Distribute
 		DistributedForms distributedForms{};
 
 		Distribute(npcData, input, entries, false, &distributedForms);
-		// TODO: We can now log per-NPC distributed forms.
 
 		if (!distributedForms.empty()) {
 			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
@@ -168,11 +165,11 @@ namespace Distribute
 
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
 	{
-		if (npcData.IsDead()) { // Perform Death distribution for NPCs that are loaded dead, but haven't been processed by on death distribution.
+		const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
+		Distribute(npcData, input);
+
+		if (npcData.IsDead()) {  // If NPC is already dead, perform the On Death Distribution.
 			DeathDistribution::Manager::GetSingleton()->Distribute(npcData);
-		} else {
-			const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
-			Distribute(npcData, input);
-		}
+		} 
 	}
 }

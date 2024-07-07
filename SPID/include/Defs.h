@@ -91,6 +91,7 @@ struct Traits
 	std::optional<bool>    child{};
 	std::optional<bool>    leveled{};
 	std::optional<bool>    teammate{};
+	std::optional<bool>    startsDead{};
 };
 
 using Path = std::string;
