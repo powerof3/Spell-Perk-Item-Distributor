@@ -1,6 +1,7 @@
 #include "Distribute.h"
 
 #include "DistributeManager.h"
+#include "OutfitManager.h"
 #include "LinkedDistribution.h"
 #include "DeathDistribution.h"
 
@@ -103,13 +104,15 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-		for_each_form<RE::BGSOutfit>(
+		if (!for_first_form<RE::BGSOutfit>(
 			npcData, forms.outfits, input, [&](auto* a_outfit) {
-				return npcData.GetActor()->SetDefaultOutfit(a_outfit, false);  // Having true here causes infinite loading. It seems that it works either way.
+				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit);
 			},
-			accumulatedForms);
-
-		for_each_form<RE::BGSOutfit>(
+			accumulatedForms)) {
+			return Outfits::Manager::GetSingleton()->ResetDefaultOutfit(npcData.GetActor());
+		}
+		
+		for_first_form<RE::BGSOutfit>(
 			npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
 				return npcData.GetActor()->SetSleepOutfit(a_outfit, false);
 			},
@@ -121,7 +124,7 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-		for_each_form<RE::TESObjectARMO>(
+		for_first_form<RE::TESObjectARMO>(
 			npcData, forms.skins, input, [&](auto* a_skin) {
 				if (npc->skin != a_skin) {
 					npc->skin = a_skin;

@@ -1,4 +1,5 @@
 #include "DistributeManager.h"
+#include "OutfitManager.h"
 #include "DeathDistribution.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
@@ -92,6 +93,7 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 		DeathDistribution::Manager::Register();
+		Outfits::Manager::Register();
 
 		DoInitialDistribution();
 
