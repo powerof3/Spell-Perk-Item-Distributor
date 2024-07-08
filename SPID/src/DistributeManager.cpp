@@ -95,7 +95,8 @@ namespace Distribute
 		DeathDistribution::Manager::Register();
 		Outfits::Manager::Register();
 
-		DoInitialDistribution();
+		// TODO: No initial distribution. Check Packages distribution and see if those work as intended.
+		//DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();

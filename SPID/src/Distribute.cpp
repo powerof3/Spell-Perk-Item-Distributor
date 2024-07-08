@@ -109,7 +109,7 @@ namespace Distribute
 				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit);
 			},
 			accumulatedForms)) {
-			return Outfits::Manager::GetSingleton()->ResetDefaultOutfit(npcData.GetActor());
+			Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), npcData.GetNPC()->defaultOutfit);
 		}
 		
 		for_first_form<RE::BGSOutfit>(
@@ -164,6 +164,8 @@ namespace Distribute
 				Distribute(npcData, input, set, true, &distributedForms);
 			});
 		}
+
+		LogDistribution(distributedForms, npcData);
 	}
 
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
@@ -174,5 +176,22 @@ namespace Distribute
 		if (npcData.IsDead()) {  // If NPC is already dead, perform the On Death Distribution.
 			DeathDistribution::Manager::GetSingleton()->Distribute(npcData);
 		} 
+	}
+
+	void LogDistribution(const DistributedForms& forms, NPCData& npcData)
+	{
+		std::map<std::string_view, std::vector<DistributedForm>> results;
+
+		for (const auto& form : forms) {
+			results[RE::FormTypeToString(form.first->GetFormType())].push_back(form);
+		}
+
+		logger::info("Distribution for {}", *npcData.GetActor());
+		for (const auto& pair : results) {
+			logger::info("\t{}", pair.first);
+			for (const auto& form : pair.second) {
+				logger::info("\t\t{} @ {}", *form.first, form.second);
+			}
+		}
 	}
 }

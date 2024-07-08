@@ -100,27 +100,25 @@ namespace Outfits
 			return false;
 		}
 
-		auto* npc = actor->GetActorBase();
-
 		if (auto previous = outfits.find(actor); previous != outfits.end()) {
-			if (previous->second == outfit) {
-				return true; // if the new default outfit is the same as previous one, we can skip the rest, because it is already equipped.
-			}
-			npc->defaultOutfit = previous->second; // restore reference to the previous default outfit, so that actor->SetDefaultOutfit would properly clean up.
-		} else if (outfit == npc->defaultOutfit) {
-			return true; // if there is no previously distributed outfit and the new default outfit is the same as the original default outfit, we can also skip.
-		}
-		
-		// Otherwise we want to set the new default outfit and add it to our tracker map.
-		if (actor->SetDefaultOutfit(outfit, false)) { // Having true here causes infinite loading. It seems that it works either way.
+			return false;
+		} else {
 			outfits[actor] = outfit;
 			return true;
 		}
-
-		return false;
 	}
 
-	void Manager::ResetDefaultOutfit(RE::Actor* actor)
+	void Manager::ApplyDefaultOutfit(RE::Actor* actor) {
+		auto* npc = actor->GetActorBase();
+
+		if (auto previous = outfits.find(actor); previous != outfits.end()) {
+			if (previous->second != npc->defaultOutfit) {
+				actor->SetDefaultOutfit(previous->second, false);  // Having true here causes infinite loading. It seems that it works either way.
+			}
+		}
+	}
+
+	void Manager::ResetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* previous)
 	{
 		if (!actor) {
 			return;
@@ -129,13 +127,13 @@ namespace Outfits
 		auto* npc = actor->GetActorBase();
 		auto  restore = npc->defaultOutfit;  // TODO: Probably need to add another outfit entry to keep reference to an outfit that was equipped before the previous one got distributed.
 
-		if (auto previous = outfits.find(actor); previous != outfits.end()) {
-			auto previousOutfit = previous->second;
-			outfits.erase(previous); // remove cached outfit as it's no longer needed.
+		if (previous) {
+			auto previousOutfit = previous;
+			outfits.erase(actor); // remove cached outfit as it's no longer needed.
 			if (previousOutfit == npc->defaultOutfit) {
 				return;
 			}
-			npc->defaultOutfit = previous->second; // restore reference to the previous default outfit, so that actor->SetDefaultOutfit would properly clean up.
+			npc->defaultOutfit = previous; // restore reference to the previous default outfit, so that actor->SetDefaultOutfit would properly clean up.
 		}
 
 		actor->SetDefaultOutfit(restore, false); // Having true here causes infinite loading. It seems that it works either way.
@@ -148,10 +146,11 @@ namespace Outfits
 		auto*   manager = Manager::GetSingleton();
 		std::uint32_t loadedCount = 0;
 
-		auto& outfits = manager->outfits;
+		std::unordered_map<RE::Actor*, RE::BGSOutfit*> cachedOutfits;
+		auto&                                          outfits = manager->outfits;
 		
 		std::uint32_t type, version, length;
-		outfits.clear();
+
 		bool definitionsChanged = false;
 		while (a_interface->GetNextRecordInfo(type, version, length)) {
 			if (type == Data::recordType) {
@@ -162,7 +161,7 @@ namespace Outfits
 #ifndef NDEBUG
 							logger::info("\tLoaded outfit {} for actor {}", *outfit, *actor);
 #endif
-							outfits[actor] = outfit;
+							cachedOutfits[actor] = outfit;
 							++loadedCount;
 						}
 					}
@@ -171,6 +170,43 @@ namespace Outfits
 		}
 
 		logger::info("Loaded {} distributed outfits", loadedCount);
+
+		
+		auto keys1 = outfits | std::views::keys;
+		auto keys2 = cachedOutfits | std::views::keys;
+
+		std::set<RE::Actor*> newActors(keys1.begin(), keys1.end());
+		std::set<RE::Actor*> cachedActors(keys2.begin(), keys2.end());
+
+		std::unordered_set<RE::Actor*> actors;
+
+		std::set_union(newActors.begin(), newActors.end(), cachedActors.begin(), cachedActors.end(), std::inserter(actors, actors.begin()));
+
+		for (const auto& actor : actors) {
+			if (const auto it = outfits.find(actor); it != outfits.end()) {
+				if (const auto cit = cachedOutfits.find(actor); cit != cachedOutfits.end()) {
+					if (it->second != cit->second) {
+						manager->ResetDefaultOutfit(actor, cit->second);
+					}
+				} else {
+					manager->ApplyDefaultOutfit(actor);
+				}
+			} else {
+				if (const auto cit = cachedOutfits.find(actor); cit != cachedOutfits.end()) {
+					manager->ResetDefaultOutfit(actor, cit->second);
+				}
+			}
+		}
+		// TODO: Reset outfits if needed.
+		// 1) if nothing is in manager->outfits for given actor, but something is in cachedOutfits
+		//		then Reset outfit
+		// 2) if something is in manager->outfits for given actor and nothing in cachedOutfits
+		//		it should be stored and equipped
+		// 3) if something is in both sets we should compare two outfits, and
+		// 3.1) if they are the same
+		//			do nothing, just store in the set (no equip or reset)
+		// 3.2) if they are not the same
+		//			reset the cached outfit and equip a new one.
 	}
 
 	void Manager::Save(SKSE::SerializationInterface* a_interface)

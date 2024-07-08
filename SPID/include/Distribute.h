@@ -242,4 +242,6 @@ namespace Distribute
 	/// <param name="npcData">General information about NPC that is being processed.</param>
 	/// <param name="onlyLeveledEntries"> Flag indicating that distribution is invoked by a leveling event and only entries with LevelFilters needs to be processed.</param>
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries);
+
+	void LogDistribution(const DistributedForms& forms, NPCData& npcData);
 }

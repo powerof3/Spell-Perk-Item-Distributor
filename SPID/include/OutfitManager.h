@@ -43,7 +43,8 @@ namespace Outfits
 		/// and properly removes it from the NPC, then restores defaultOutfit that was used before the distribution.
 		/// </summary>
 		/// <param name="Actor">Target Actor for whom the outfit should be reset.</param>
-		void ResetDefaultOutfit(RE::Actor*);
+		/// <param name="previous">Previously loaded outfit that needs to be unequipped.</param>
+		void ResetDefaultOutfit(RE::Actor*, RE::BGSOutfit* previous);
 
 	private:
 		static void Load(SKSE::SerializationInterface*);
@@ -51,6 +52,8 @@ namespace Outfits
 		static void Revert(SKSE::SerializationInterface*);
 
 		bool isLoadingGame = false;
+
+		void ApplyDefaultOutfit(RE::Actor*);
 
 		/// Map of Actor -> Outfit associations.
 		std::unordered_map<RE::Actor*, RE::BGSOutfit*> outfits;

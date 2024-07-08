@@ -242,6 +242,7 @@ namespace DeathDistribution
 			});
 		}
 
+		Distribute::LogDistribution(distributedForms, data);
 		// TODO: Log death distribution
 	}
 
