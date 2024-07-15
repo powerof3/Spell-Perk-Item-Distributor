@@ -48,8 +48,8 @@ namespace Outfits
 	namespace Data
 	{
 		constexpr std::uint32_t recordType = 'OTFT';
-		
-		template<typename T>
+
+		template <typename T>
 		bool Load(SKSE::SerializationInterface* interface, T*& output)
 		{
 			RE::FormID id = 0;
@@ -58,7 +58,7 @@ namespace Outfits
 				return false;
 			}
 
-			if (!id) { // If ID was 0 it means we don't have the outfit stored in this record.
+			if (!id) {  // If ID was 0 it means we don't have the outfit stored in this record.
 				output = nullptr;
 				return true;
 			}
@@ -70,7 +70,7 @@ namespace Outfits
 			if (const auto form = RE::TESForm::LookupByID<T>(id); form) {
 				output = form;
 				return true;
-			} 
+			}
 
 			return false;
 		}
@@ -177,16 +177,16 @@ namespace Outfits
 	{
 		logger::info("{:*^30}", "LOADING");
 
-		auto*   manager = Manager::GetSingleton();
+		auto* manager = Manager::GetSingleton();
 
 		std::unordered_map<RE::Actor*, OutfitReplacement> loadedReplacements;
-		auto&                                         newReplacements = manager->replacements;
-		
+		auto&                                             newReplacements = manager->replacements;
+
 		std::uint32_t type, version, length;
 
 		while (a_interface->GetNextRecordInfo(type, version, length)) {
 			if (type == Data::recordType) {
-				RE::Actor* actor;
+				RE::Actor*     actor;
 				RE::BGSOutfit* original;
 				RE::BGSOutfit* distributed;
 				if (Data::Load(a_interface, actor, original, distributed)) {
@@ -213,12 +213,12 @@ namespace Outfits
 
 		std::uint32_t revertedCount = 0;
 		for (const auto& it : loadedReplacements) {
-			const auto&  actor = it.first;
+			const auto& actor = it.first;
 			const auto& replacement = it.second;
 
 			if (auto newIt = newReplacements.find(actor); newIt != newReplacements.end()) {
-				if (newIt->second.UsesOriginalOutfit()) { // If new replacement uses original outfit
-					if (!replacement.UsesOriginalOutfit() && replacement.distributed == actor->GetActorBase()->defaultOutfit) { // but previous one doesn't and NPC still wears the distributed outfit
+				if (newIt->second.UsesOriginalOutfit()) {                                                                        // If new replacement uses original outfit
+					if (!replacement.UsesOriginalOutfit() && replacement.distributed == actor->GetActorBase()->defaultOutfit) {  // but previous one doesn't and NPC still wears the distributed outfit
 #ifndef NDEBUG
 						logger::info("\tReverting Outfit Replacement for {}", *actor);
 						logger::info("\t\t{}", replacement);
@@ -227,12 +227,12 @@ namespace Outfits
 							++revertedCount;
 						}
 					}
-				} else { // If new replacement
+				} else {                                            // If new replacement
 					newIt->second.original = replacement.original;  // if there was a previous distribution we want to forward original outfit from there to new distribution.
 				}
-				
-			} else { // If there is no new distribution, we want to keep the old one, assuming that whatever outfit is stored in this replacement is what NPC still wears in this save file
-				newReplacements[actor] = replacement; 
+
+			} else {  // If there is no new distribution, we want to keep the old one, assuming that whatever outfit is stored in this replacement is what NPC still wears in this save file
+				newReplacements[actor] = replacement;
 			}
 		}
 

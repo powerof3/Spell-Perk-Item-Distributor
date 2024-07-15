@@ -235,8 +235,8 @@ namespace Distribute
 	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, bool allowOverwrites, DistributedForms* accumulatedForms = nullptr);
 
 	/// <summary>
-	/// Invokes appropriate distribution for given NPC. 
-	/// 
+	/// Invokes appropriate distribution for given NPC.
+	///
 	/// When NPC is dead a Death Distribution will be invoked, otherwise a normal distribution takes place.
 	/// </summary>
 	/// <param name="npcData">General information about NPC that is being processed.</param>

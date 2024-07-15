@@ -9,7 +9,7 @@ namespace Outfits
 
 		/// <summary>
 		/// Sets given outfit as default outfit for the actor.
-		/// 
+		///
 		/// This method also makes sure to properly remove previously distributed outfit.
 		/// </summary>
 		/// <param name="Actor">Target Actor for whom the outfit will be set.</param>
@@ -18,7 +18,7 @@ namespace Outfits
 
 		/// <summary>
 		/// Indicates that given actor didn't receive any distributed outfit and will be using the original one.
-		/// 
+		///
 		/// This method helps distinguish cases when there was no outfit distribution for the actor vs when we're reloading the save and replacements cache was cleared.
 		/// </summary>
 		void UseOriginalOutfit(RE::Actor*);
@@ -39,7 +39,8 @@ namespace Outfits
 			OutfitReplacement() = default;
 			OutfitReplacement(RE::BGSOutfit* original) :
 				original(original), distributed(nullptr) {}
-			OutfitReplacement(RE::BGSOutfit* original, RE::BGSOutfit* distributed): original(original), distributed(distributed) {}
+			OutfitReplacement(RE::BGSOutfit* original, RE::BGSOutfit* distributed) :
+				original(original), distributed(distributed) {}
 
 			bool UsesOriginalOutfit() const
 			{
@@ -67,7 +68,7 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 	{
 		if (replacement.UsesOriginalOutfit()) {
 			return fmt::format_to(a_ctx.out(), "NO REPLACEMENT (Uses {})", *replacement.original);
-		} else if (replacement.original && replacement.distributed){
+		} else if (replacement.original && replacement.distributed) {
 			return fmt::format_to(a_ctx.out(), "{} -> {}", *replacement.original, *replacement.distributed);
 		} else {
 			return fmt::format_to(a_ctx.out(), "INVALID REPLACEMENT");

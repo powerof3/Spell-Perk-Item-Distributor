@@ -1,9 +1,9 @@
 #include "Distribute.h"
 
-#include "DistributeManager.h"
-#include "OutfitManager.h"
-#include "LinkedDistribution.h"
 #include "DeathDistribution.h"
+#include "DistributeManager.h"
+#include "LinkedDistribution.h"
+#include "OutfitManager.h"
 
 namespace Distribute
 {
@@ -105,13 +105,13 @@ namespace Distribute
 			accumulatedForms);
 
 		if (!for_first_form<RE::BGSOutfit>(
-			npcData, forms.outfits, input, [&](auto* a_outfit) {
-				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit, allowOverwrites);
-			},
-			accumulatedForms)) {
+				npcData, forms.outfits, input, [&](auto* a_outfit) {
+					return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit, allowOverwrites);
+				},
+				accumulatedForms)) {
 			Outfits::Manager::GetSingleton()->UseOriginalOutfit(npcData.GetActor());
 		}
-		
+
 		for_first_form<RE::BGSOutfit>(
 			npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
 				if (npc->sleepOutfit != a_outfit) {
@@ -179,7 +179,7 @@ namespace Distribute
 
 		if (npcData.IsDead()) {  // If NPC is already dead, perform the On Death Distribution.
 			DeathDistribution::Manager::GetSingleton()->Distribute(npcData);
-		} 
+		}
 	}
 
 	void LogDistribution(const DistributedForms& forms, NPCData& npcData)

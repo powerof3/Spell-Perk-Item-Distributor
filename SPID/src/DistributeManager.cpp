@@ -1,8 +1,8 @@
 #include "DistributeManager.h"
-#include "OutfitManager.h"
 #include "DeathDistribution.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
+#include "OutfitManager.h"
 
 namespace Distribute
 {
@@ -53,7 +53,7 @@ namespace Distribute
 			static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
 			{
 				func(a_this, a_buf);
-				
+
 				if (const auto npc = a_this->GetActorBase()) {
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {

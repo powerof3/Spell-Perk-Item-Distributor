@@ -209,7 +209,7 @@ namespace DeathDistribution
 		assert(data.IsDead());
 
 		// We mark NPCs that were processed by Death Distribution with SPID_Dead keyword,
-		// to ensure that NPCs who received Death Distribution once won't get another Death Distribution 
+		// to ensure that NPCs who received Death Distribution once won't get another Death Distribution
 		// (which might happen if cell or game is reloaded with dead NPC laying there)
 		if (data.GetNPC()->HasKeyword(SPID_Dead))
 			return;

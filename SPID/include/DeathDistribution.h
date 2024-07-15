@@ -35,7 +35,7 @@ namespace DeathDistribution
 
 		/// <summary>
 		/// Performs Death Distribution on a given NPC.
-		/// 
+		///
 		/// NPC passed to this method must be Dead in order to be processed.
 		/// </summary>
 		/// <param name=""></param>
