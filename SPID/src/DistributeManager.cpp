@@ -27,11 +27,13 @@ namespace Distribute
 
 	namespace Actor
 	{
-		// FF actor/outfit distribution
+		// General distribution
+		// FF actors distribution
 		struct ShouldBackgroundClone
 		{
 			static bool thunk(RE::Character* a_this)
 			{
+				logger::info("ShouldBackgroundClone({})", *a_this);
 				if (const auto npc = a_this->GetActorBase()) {
 					detail::distribute_on_load(a_this, npc);
 				}
@@ -45,16 +47,20 @@ namespace Distribute
 		};
 
 		// Post distribution
+		// Fixes weird behavior with leveled npcs?
 		struct InitLoadGame
 		{
 			static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
 			{
 				func(a_this, a_buf);
-
+				
 				if (const auto npc = a_this->GetActorBase()) {
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
-						detail::distribute_on_load(a_this, npc);
+						// TODO: Test whether there are some NPCs that are getting in this branch
+						// I haven't experienced issues with ShouldBackgroundClone hook.
+						logger::info("InitLoadGame({})", *a_this);
+						// detail::distribute_on_load(a_this, npc);
 					}
 				}
 			}
@@ -66,8 +72,8 @@ namespace Distribute
 
 		void Install()
 		{
-			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
+			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 
 			logger::info("Installed actor load hooks");
 		}

@@ -106,15 +106,19 @@ namespace Distribute
 
 		if (!for_first_form<RE::BGSOutfit>(
 			npcData, forms.outfits, input, [&](auto* a_outfit) {
-				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit);
+				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit, allowOverwrites);
 			},
 			accumulatedForms)) {
-			Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), npcData.GetNPC()->defaultOutfit);
+			Outfits::Manager::GetSingleton()->UseOriginalOutfit(npcData.GetActor());
 		}
 		
 		for_first_form<RE::BGSOutfit>(
 			npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
-				return npcData.GetActor()->SetSleepOutfit(a_outfit, false);
+				if (npc->sleepOutfit != a_outfit) {
+					npc->sleepOutfit = a_outfit;
+					return true;
+				}
+				return false;
 			},
 			accumulatedForms);
 

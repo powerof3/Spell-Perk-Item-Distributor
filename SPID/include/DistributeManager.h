@@ -3,7 +3,7 @@
 namespace Distribute
 {
 	inline RE::BGSKeyword* processed{ nullptr };
-	inline RE::BGSKeyword* processedOutfit{ nullptr };
+	inline RE::BGSKeyword* processedOutfit{ nullptr }; // TODO: If OutfitManager works out we won't need this keyword.
 
 	namespace detail
 	{
