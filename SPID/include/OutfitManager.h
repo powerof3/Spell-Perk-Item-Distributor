@@ -2,7 +2,9 @@
 
 namespace Outfits
 {
-	class Manager : public ISingleton<Manager>
+	class Manager :
+		public ISingleton<Manager>,
+		public RE::BSTEventSink<RE::TESFormDeleteEvent>
 	{
 	public:
 		static void Register();
@@ -22,6 +24,9 @@ namespace Outfits
 		/// This method helps distinguish cases when there was no outfit distribution for the actor vs when we're reloading the save and replacements cache was cleared.
 		/// </summary>
 		void UseOriginalOutfit(RE::Actor*);
+
+	protected:
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
 
 	private:
 		static void Load(SKSE::SerializationInterface*);
@@ -50,7 +55,7 @@ namespace Outfits
 
 		friend fmt::formatter<Outfits::Manager::OutfitReplacement>;
 
-		std::unordered_map<RE::Actor*, OutfitReplacement> replacements;
+		std::unordered_map<RE::FormID, OutfitReplacement> replacements;
 	};
 }
 

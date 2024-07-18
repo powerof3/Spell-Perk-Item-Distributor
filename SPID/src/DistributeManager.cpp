@@ -184,7 +184,7 @@ namespace Distribute::Event
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
-			logger::info("Registered for {}", typeid(RE::TESFormDeleteEvent).name());
+			logger::info("Registered Distribution Manager for {}", typeid(RE::TESFormDeleteEvent).name());
 		}
 	}
 

@@ -95,13 +95,13 @@ namespace Outfits
 			return true;
 		}
 
-		bool Save(SKSE::SerializationInterface* a_interface, const RE::Actor* actor, const RE::BGSOutfit* original, const RE::BGSOutfit* distributed)
+		bool Save(SKSE::SerializationInterface* a_interface, const RE::FormID actorFormId, const RE::BGSOutfit* original, const RE::BGSOutfit* distributed)
 		{
 			if (!a_interface->OpenRecord(recordType, serializationVersion)) {
 				return false;
 			}
 
-			return details::Write(a_interface, actor->formID) &&
+			return details::Write(a_interface, actorFormId) &&
 			       details::Write(a_interface, original->formID) &&
 			       details::Write(a_interface, distributed ? distributed->formID : 0);
 		}
@@ -114,6 +114,19 @@ namespace Outfits
 		serializationInterface->SetSaveCallback(Save);
 		serializationInterface->SetLoadCallback(Load);
 		serializationInterface->SetRevertCallback(Revert);
+
+		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
+			logger::info("Registered Outfit Manager for {}", typeid(RE::TESFormDeleteEvent).name());
+		}
+	}
+
+	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
+	{
+		if (a_event && a_event->formID != 0) {
+			replacements.erase(a_event->formID);
+		}
+		return RE::BSEventNotifyControl::kContinue;
 	}
 
 	bool CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit)
@@ -141,7 +154,7 @@ namespace Outfits
 		auto* npc = actor->GetActorBase();
 		auto  defaultOutfit = npc->defaultOutfit;
 
-		if (!allowOverwrites && replacements.find(actor) != replacements.end()) {
+		if (!allowOverwrites && replacements.find(actor->formID) != replacements.end()) {
 			return true;
 		}
 
@@ -154,10 +167,10 @@ namespace Outfits
 
 		actor->SetDefaultOutfit(outfit, false);  // Having true here causes infinite loading. It seems that it works either way.
 
-		if (auto previous = replacements.find(actor); previous != replacements.end()) {
+		if (auto previous = replacements.find(actor->formID); previous != replacements.end()) {
 			previous->second.distributed = outfit;
 		} else if (defaultOutfit) {
-			replacements.try_emplace(actor, defaultOutfit, outfit);
+			replacements.try_emplace(actor->formID, defaultOutfit, outfit);
 		}
 
 		return true;
@@ -166,10 +179,10 @@ namespace Outfits
 	void Manager::UseOriginalOutfit(RE::Actor* actor)
 	{
 		if (auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
-			if (replacements.find(actor) != replacements.end()) {
+			if (replacements.find(actor->formID) != replacements.end()) {
 				logger::warn("Overwriting replacement for {}", *actor);
 			}
-			replacements.try_emplace(actor, npc->defaultOutfit);
+			replacements.try_emplace(actor->formID, npc->defaultOutfit);
 		}
 	}
 
@@ -207,7 +220,9 @@ namespace Outfits
 
 		logger::info("Cached {} Outfit Replacements", newReplacements.size());
 		for (const auto& pair : newReplacements) {
-			logger::info("\t{}", *pair.first);
+			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
+				logger::info("\t{}", *actor);
+			}
 			logger::info("\t\t{}", pair.second);
 		}
 
@@ -216,7 +231,7 @@ namespace Outfits
 			const auto& actor = it.first;
 			const auto& replacement = it.second;
 
-			if (auto newIt = newReplacements.find(actor); newIt != newReplacements.end()) {
+			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {
 				if (newIt->second.UsesOriginalOutfit()) {                                                                        // If new replacement uses original outfit
 					if (!replacement.UsesOriginalOutfit() && replacement.distributed == actor->GetActorBase()->defaultOutfit) {  // but previous one doesn't and NPC still wears the distributed outfit
 #ifndef NDEBUG
@@ -232,7 +247,7 @@ namespace Outfits
 				}
 
 			} else {  // If there is no new distribution, we want to keep the old one, assuming that whatever outfit is stored in this replacement is what NPC still wears in this save file
-				newReplacements[actor] = replacement;
+				newReplacements[actor->formID] = replacement;
 			}
 		}
 
@@ -245,18 +260,23 @@ namespace Outfits
 	{
 		logger::info("{:*^30}", "SAVING");
 
-		auto outfits = Manager::GetSingleton()->replacements;
+		auto replacements = Manager::GetSingleton()->replacements;
 
-		logger::info("Saving {} distributed outfits...", outfits.size());
+		logger::info("Saving {} distributed outfits...", replacements.size());
 
 		std::uint32_t savedCount = 0;
-		for (const auto& pair : outfits) {
+		for (const auto& pair : replacements) {
 			if (!Data::Save(interface, pair.first, pair.second.original, pair.second.distributed)) {
-				logger::error("Failed to save Outfit Replacement ({}) for {}", pair.second, *pair.first);
+				if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
+					logger::error("Failed to save Outfit Replacement ({}) for {}", pair.second, *actor);
+				}
+
 				continue;
 			}
 #ifndef NDEBUG
-			logger::info("\tSaved Outfit Replacement ({}) for actor {}", pair.second, *pair.first);
+			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
+				logger::info("\tSaved Outfit Replacement ({}) for actor {}", pair.second, *actor);
+			}
 #endif
 			++savedCount;
 		}
