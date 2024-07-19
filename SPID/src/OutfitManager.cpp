@@ -155,7 +155,7 @@ namespace Outfits
 		auto  defaultOutfit = npc->defaultOutfit;
 
 		if (!allowOverwrites && replacements.find(actor->formID) != replacements.end()) {
-			return true; // return true to indicate that some outfit was already set for this actor, and with overwrite disabled we won't be able to set any outfit.
+			return true;  // return true to indicate that some outfit was already set for this actor, and with overwrite disabled we won't be able to set any outfit.
 		}
 
 		if (!CanEquipOutfit(actor, outfit)) {

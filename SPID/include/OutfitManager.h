@@ -12,7 +12,7 @@ namespace Outfits
 		/// <summary>
 		/// Checks whether the actor can technically wear a given outfit.
 		/// Actor can wear an outfit when all of its components are compatible with actor's race.
-		/// 
+		///
 		/// This method doesn't validate any other logic.
 		/// </summary>
 		/// <param name="Actor">Target Actor to be tested</param>
