@@ -10,12 +10,25 @@ namespace Outfits
 		static void Register();
 
 		/// <summary>
+		/// Checks whether the actor can technically wear a given outfit.
+		/// Actor can wear an outfit when all of its components are compatible with actor's race.
+		/// 
+		/// This method doesn't validate any other logic.
+		/// </summary>
+		/// <param name="Actor">Target Actor to be tested</param>
+		/// <param name="Outfit">An outfit that needs to be equipped</param>
+		/// <returns>True if the actor can wear the outfit, false otherwise</returns>
+		bool CanEquipOutfit(const RE::Actor*, RE::BGSOutfit*);
+
+		/// <summary>
 		/// Sets given outfit as default outfit for the actor.
 		///
 		/// This method also makes sure to properly remove previously distributed outfit.
 		/// </summary>
 		/// <param name="Actor">Target Actor for whom the outfit will be set.</param>
 		/// <param name="Outfit">A new outfit to set as the default.</param>
+		/// <param name="allowOverwrites">If true, the outfit will be set even if the actor already has a distributed outfit.</param>
+		/// <returns>True if the outfit was successfully set, false otherwise.</returns>
 		bool SetDefaultOutfit(RE::Actor*, RE::BGSOutfit*, bool allowOverwrites);
 
 		/// <summary>

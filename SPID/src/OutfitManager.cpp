@@ -129,7 +129,7 @@ namespace Outfits
 		return RE::BSEventNotifyControl::kContinue;
 	}
 
-	bool CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit)
+	bool Manager::CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit)
 	{
 		const auto race = actor->GetRace();
 		for (const auto& item : outfit->outfitItems) {
@@ -155,7 +155,7 @@ namespace Outfits
 		auto  defaultOutfit = npc->defaultOutfit;
 
 		if (!allowOverwrites && replacements.find(actor->formID) != replacements.end()) {
-			return true;
+			return true; // return true to indicate that some outfit was already set for this actor, and with overwrite disabled we won't be able to set any outfit.
 		}
 
 		if (!CanEquipOutfit(actor, outfit)) {
@@ -165,7 +165,7 @@ namespace Outfits
 			return false;
 		}
 
-		actor->SetDefaultOutfit(outfit, false);  // Having true here causes infinite loading. It seems that it works either way.
+		actor->SetDefaultOutfit(outfit, false);  // Having true here causes infinite loading. It seems that equipping works either way, so we are good :)
 
 		if (auto previous = replacements.find(actor->formID); previous != replacements.end()) {
 			previous->second.distributed = outfit;
