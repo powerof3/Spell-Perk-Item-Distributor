@@ -106,7 +106,7 @@ namespace Distribute
 
 		if (!for_first_form<RE::BGSOutfit>(
 				npcData, forms.outfits, input, [&](auto* a_outfit) {
-					return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit, allowOverwrites);
+					return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit, allowOverwrites) != Outfits::ReplacementResult::Skipped; // terminate as soon as valid outfit is confirmed.
 				},
 				accumulatedForms)) {
 			Outfits::Manager::GetSingleton()->UseOriginalOutfit(npcData.GetActor());

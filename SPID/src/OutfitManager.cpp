@@ -145,24 +145,28 @@ namespace Outfits
 		return true;
 	}
 
-	bool Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool allowOverwrites)
+	ReplacementResult Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool allowOverwrites)
 	{
-		if (!actor || !outfit) {
-			return false;
+		if (!actor || !outfit) { // invalid call
+			return ReplacementResult::Skipped;
 		}
 
 		auto* npc = actor->GetActorBase();
 		auto  defaultOutfit = npc->defaultOutfit;
 
-		if (!allowOverwrites && replacements.find(actor->formID) != replacements.end()) {
-			return true;  // return true to indicate that some outfit was already set for this actor, and with overwrite disabled we won't be able to set any outfit.
+		if (auto existing = replacements.find(actor->formID); existing != replacements.end()) { // we already have tracked replacement
+			if (outfit == defaultOutfit && outfit == existing->second.distributed) { // if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
+				return ReplacementResult::Set;
+			} else if (!allowOverwrites) { // if we are trying to set any other outfit and overwrites are not allowed, we skip it, indicating overwriting status.
+				return ReplacementResult::NotOverwrittable;
+			}
 		}
 
 		if (!CanEquipOutfit(actor, outfit)) {
 #ifndef NDEBUG
 			logger::warn("Attempted to equip Outfit that can't be worn by given actor. Actor: {}; Outfit: {}", *actor, *outfit);
 #endif
-			return false;
+			return ReplacementResult::Skipped;
 		}
 
 		actor->SetDefaultOutfit(outfit, false);  // Having true here causes infinite loading. It seems that equipping works either way, so we are good :)
@@ -173,7 +177,7 @@ namespace Outfits
 			replacements.try_emplace(actor->formID, defaultOutfit, outfit);
 		}
 
-		return true;
+		return ReplacementResult::Set;
 	}
 
 	void Manager::UseOriginalOutfit(RE::Actor* actor)
@@ -202,12 +206,8 @@ namespace Outfits
 				RE::Actor*     actor;
 				RE::BGSOutfit* original;
 				RE::BGSOutfit* distributed;
-				if (Data::Load(a_interface, actor, original, distributed)) {
-					OutfitReplacement replacement(original, distributed);
-#ifndef NDEBUG
-					logger::info("\tLoaded Outfit Replacement ({}) for actor {}", replacement, *actor);
-#endif
-					loadedReplacements[actor] = replacement;
+				if (Data::Load(a_interface, actor, original, distributed); actor) {
+					loadedReplacements[actor] = {original, distributed};
 				}
 			}
 		}
@@ -236,7 +236,7 @@ namespace Outfits
 					if (!replacement.UsesOriginalOutfit() && replacement.distributed == actor->GetActorBase()->defaultOutfit) {  // but previous one doesn't and NPC still wears the distributed outfit
 #ifndef NDEBUG
 						logger::info("\tReverting Outfit Replacement for {}", *actor);
-						logger::info("\t\t{}", replacement);
+						logger::info("\t\t{:R}", replacement);
 #endif
 						if (actor->SetDefaultOutfit(replacement.original, false)) {  // Having true here causes infinite loading. It seems that it works either way.
 							++revertedCount;
@@ -275,7 +275,7 @@ namespace Outfits
 			}
 #ifndef NDEBUG
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-				logger::info("\tSaved Outfit Replacement ({}) for actor {}", pair.second, *actor);
+				logger::info("\tSaved Outfit Replacement ({}) for actor {:F}", pair.second, *actor);
 			}
 #endif
 			++savedCount;
@@ -287,7 +287,7 @@ namespace Outfits
 	void Manager::Revert(SKSE::SerializationInterface*)
 	{
 		logger::info("{:*^30}", "REVERTING");
-		Manager::GetSingleton()->replacements.clear();
-		logger::info("\tOutfit Replacements have been cleared.");
+		/*Manager::GetSingleton()->replacements.clear();
+		logger::info("\tOutfit Replacements have been cleared.");*/
 	}
 }

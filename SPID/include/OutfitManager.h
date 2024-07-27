@@ -2,6 +2,16 @@
 
 namespace Outfits
 {
+	enum class ReplacementResult
+	{
+		/// New outfit for the actor was successfully set.
+		Set,
+		/// New outfit for the actor is not valid and was skipped.
+		Skipped,
+		/// Outfit for the actor was already set and the new outfit was not allowed to overwrite it.
+		NotOverwrittable
+	};;
+
 	class Manager :
 		public ISingleton<Manager>,
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>
@@ -28,8 +38,8 @@ namespace Outfits
 		/// <param name="Actor">Target Actor for whom the outfit will be set.</param>
 		/// <param name="Outfit">A new outfit to set as the default.</param>
 		/// <param name="allowOverwrites">If true, the outfit will be set even if the actor already has a distributed outfit.</param>
-		/// <returns>True if the outfit was successfully set, false otherwise.</returns>
-		bool SetDefaultOutfit(RE::Actor*, RE::BGSOutfit*, bool allowOverwrites);
+		/// <returns>Result of the replacement.</returns>
+		ReplacementResult SetDefaultOutfit(RE::Actor*, RE::BGSOutfit*, bool allowOverwrites);
 
 		/// <summary>
 		/// Indicates that given actor didn't receive any distributed outfit and will be using the original one.
@@ -76,20 +86,40 @@ template <>
 struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 {
 	template <class ParseContext>
-	constexpr auto parse(ParseContext& a_ctx)
+	constexpr auto parse(ParseContext& ctx)
 	{
-		return a_ctx.begin();
+		auto it = ctx.begin();
+		auto end = ctx.end();
+
+		if (it != end && *it == 'R') {
+			reverse = true;
+			++it;
+		}
+
+		// Check if there are any other format specifiers
+		if (it != end && *it != '}') {
+			throw fmt::format_error("OutfitReplacement only supports Reversing format");
+		}
+
+		return it;
 	}
 
 	template <class FormatContext>
 	constexpr auto format(const Outfits::Manager::OutfitReplacement& replacement, FormatContext& a_ctx)
 	{
 		if (replacement.UsesOriginalOutfit()) {
-			return fmt::format_to(a_ctx.out(), "NO REPLACEMENT (Uses {})", *replacement.original);
+			return fmt::format_to(a_ctx.out(), "♻ {}", *replacement.original);
 		} else if (replacement.original && replacement.distributed) {
-			return fmt::format_to(a_ctx.out(), "{} -> {}", *replacement.original, *replacement.distributed);
+			if (reverse) {
+				return fmt::format_to(a_ctx.out(), "{} 🔙 {}", *replacement.original, *replacement.distributed);
+			} else {
+				return fmt::format_to(a_ctx.out(), "{} ➡️ {}", *replacement.original, *replacement.distributed);
+			}
 		} else {
 			return fmt::format_to(a_ctx.out(), "INVALID REPLACEMENT");
 		}
 	}
+
+private:
+	bool reverse = false;
 };
