@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_SpellPerkItemDistributor" CACHE STRING "")
 set(VERSION 7.2.0 CACHE STRING "")
-set(AE_VERSION 1)
-set(VR_VERSION 1)
+set(SE_VERSION 1597)
+set(AE_VERSION 16)
+set(VR_VERSION 1415)
 
 # ---- Options ----
 
@@ -53,7 +54,7 @@ else()
 	set_from_environment(Skyrim64Path)
 	set(SkyrimPath ${Skyrim64Path})
 	set(SkyrimVersion "Skyrim SSE")
-	set(VERSION ${VERSION}.0)
+	set(VERSION ${VERSION}.${SE_VERSION})
 endif()
 find_commonlib_path()
 message(
