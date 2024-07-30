@@ -145,17 +145,17 @@ namespace Outfits
 
 	ReplacementResult Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool allowOverwrites)
 	{
-		if (!actor || !outfit) { // invalid call
+		if (!actor || !outfit) {  // invalid call
 			return ReplacementResult::Skipped;
 		}
 
 		auto* npc = actor->GetActorBase();
 		auto  defaultOutfit = npc->defaultOutfit;
 
-		if (auto existing = replacements.find(actor->formID); existing != replacements.end()) { // we already have tracked replacement
-			if (outfit == defaultOutfit && outfit == existing->second.distributed) { // if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
+		if (auto existing = replacements.find(actor->formID); existing != replacements.end()) {  // we already have tracked replacement
+			if (outfit == defaultOutfit && outfit == existing->second.distributed) {             // if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
 				return ReplacementResult::Set;
-			} else if (!allowOverwrites) { // if we are trying to set any other outfit and overwrites are not allowed, we skip it, indicating overwriting status.
+			} else if (!allowOverwrites) {  // if we are trying to set any other outfit and overwrites are not allowed, we skip it, indicating overwriting status.
 				return ReplacementResult::NotOverwrittable;
 			}
 		}
@@ -195,7 +195,7 @@ namespace Outfits
 				RE::BGSOutfit* original;
 				RE::BGSOutfit* distributed;
 				if (Data::Load(a_interface, actor, original, distributed); actor) {
-					loadedReplacements[actor] = {original, distributed};
+					loadedReplacements[actor] = { original, distributed };
 				}
 			}
 		}

@@ -10,7 +10,8 @@ namespace Outfits
 		Skipped,
 		/// Outfit for the actor was already set and the new outfit was not allowed to overwrite it.
 		NotOverwrittable
-	};;
+	};
+	;
 
 	class Manager :
 		public ISingleton<Manager>,
