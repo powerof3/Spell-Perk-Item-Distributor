@@ -180,8 +180,9 @@ namespace Outfits
 
 	void Manager::Load(SKSE::SerializationInterface* a_interface)
 	{
+#ifndef NDEBUG
 		logger::info("{:*^30}", "LOADING");
-
+#endif
 		auto* manager = Manager::GetSingleton();
 
 		std::unordered_map<RE::Actor*, OutfitReplacement> loadedReplacements;
@@ -199,7 +200,7 @@ namespace Outfits
 				}
 			}
 		}
-
+#ifndef NDEBUG
 		logger::info("Loaded {} Outfit Replacements", loadedReplacements.size());
 		for (const auto& pair : loadedReplacements) {
 			logger::info("\t{}", *pair.first);
@@ -213,7 +214,7 @@ namespace Outfits
 			}
 			logger::info("\t\t{}", pair.second);
 		}
-
+#endif
 		std::uint32_t revertedCount = 0;
 		for (const auto& it : loadedReplacements) {
 			const auto& actor = it.first;
@@ -230,27 +231,30 @@ namespace Outfits
 				}
 			}
 		}
-
+#ifndef NDEBUG
 		if (revertedCount) {
 			logger::info("Reverted {} no longer existing Outfit Replacements", revertedCount);
 		}
+#endif
 	}
 
 	void Manager::Save(SKSE::SerializationInterface* interface)
 	{
+#ifndef NDEBUG
 		logger::info("{:*^30}", "SAVING");
-
+#endif
 		auto replacements = Manager::GetSingleton()->replacements;
-
+#ifndef NDEBUG
 		logger::info("Saving {} distributed outfits...", replacements.size());
-
+#endif
 		std::uint32_t savedCount = 0;
 		for (const auto& pair : replacements) {
 			if (!Data::Save(interface, pair.first, pair.second.original, pair.second.distributed)) {
+#ifndef NDEBUG
 				if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
 					logger::error("Failed to save Outfit Replacement ({}) for {}", pair.second, *actor);
 				}
-
+#endif
 				continue;
 			}
 #ifndef NDEBUG
@@ -260,7 +264,8 @@ namespace Outfits
 #endif
 			++savedCount;
 		}
-
-		logger::info("Saved {} names", savedCount);
+#ifndef NDEBUG
+		logger::info("Saved {} replacements", savedCount);
+#endif
 	}
 }

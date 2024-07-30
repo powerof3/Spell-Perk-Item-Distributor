@@ -182,6 +182,7 @@ namespace Distribute
 
 	void LogDistribution(const DistributedForms& forms, NPCData& npcData)
 	{
+#ifndef NDEBUG
 		std::map<std::string_view, std::vector<DistributedForm>> results;
 
 		for (const auto& form : forms) {
@@ -195,5 +196,6 @@ namespace Distribute
 				logger::info("\t\t{} @ {}", *form.first, form.second);
 			}
 		}
+#endif
 	}
 }
