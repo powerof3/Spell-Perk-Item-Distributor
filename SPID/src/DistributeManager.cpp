@@ -60,7 +60,7 @@ namespace Distribute
 						// TODO: Test whether there are some NPCs that are getting in this branch
 						// I haven't experienced issues with ShouldBackgroundClone hook.
 						//logger::info("InitLoadGame({})", *a_this);
-						 detail::distribute_on_load(a_this, npc);
+						detail::distribute_on_load(a_this, npc);
 					}
 				}
 			}
