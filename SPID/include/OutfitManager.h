@@ -41,13 +41,6 @@ namespace Outfits
 		/// <returns>Result of the replacement.</returns>
 		ReplacementResult SetDefaultOutfit(RE::Actor*, RE::BGSOutfit*, bool allowOverwrites);
 
-		/// <summary>
-		/// Indicates that given actor didn't receive any distributed outfit and will be using the original one.
-		///
-		/// This method helps distinguish cases when there was no outfit distribution for the actor vs when we're reloading the save and replacements cache was cleared.
-		/// </summary>
-		void UseOriginalOutfit(RE::Actor*);
-
 	protected:
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
 
@@ -69,11 +62,6 @@ namespace Outfits
 				original(original), distributed(nullptr) {}
 			OutfitReplacement(RE::BGSOutfit* original, RE::BGSOutfit* distributed) :
 				original(original), distributed(distributed) {}
-
-			bool UsesOriginalOutfit() const
-			{
-				return original && !distributed;
-			}
 		};
 
 		friend fmt::formatter<Outfits::Manager::OutfitReplacement>;
@@ -107,9 +95,7 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 	template <class FormatContext>
 	constexpr auto format(const Outfits::Manager::OutfitReplacement& replacement, FormatContext& a_ctx)
 	{
-		if (replacement.UsesOriginalOutfit()) {
-			return fmt::format_to(a_ctx.out(), "♻ {}", *replacement.original);
-		} else if (replacement.original && replacement.distributed) {
+		if (replacement.original && replacement.distributed) {
 			if (reverse) {
 				return fmt::format_to(a_ctx.out(), "{} 🔙 {}", *replacement.original, *replacement.distributed);
 			} else {

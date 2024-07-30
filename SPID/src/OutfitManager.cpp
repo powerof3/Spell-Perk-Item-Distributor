@@ -58,9 +58,8 @@ namespace Outfits
 				return false;
 			}
 
-			if (!id) {  // If ID was 0 it means we don't have the outfit stored in this record.
-				output = nullptr;
-				return true;
+			if (!id) {
+				return false;
 			}
 
 			if (!interface->ResolveFormID(id, id)) {
@@ -113,7 +112,6 @@ namespace Outfits
 		serializationInterface->SetUniqueID(serializationKey);
 		serializationInterface->SetSaveCallback(Save);
 		serializationInterface->SetLoadCallback(Load);
-		serializationInterface->SetRevertCallback(Revert);
 
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
@@ -180,16 +178,6 @@ namespace Outfits
 		return ReplacementResult::Set;
 	}
 
-	void Manager::UseOriginalOutfit(RE::Actor* actor)
-	{
-		if (auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
-			if (replacements.find(actor->formID) != replacements.end()) {
-				logger::warn("Overwriting replacement for {}", *actor);
-			}
-			replacements.try_emplace(actor->formID, npc->defaultOutfit);
-		}
-	}
-
 	void Manager::Load(SKSE::SerializationInterface* a_interface)
 	{
 		logger::info("{:*^30}", "LOADING");
@@ -230,24 +218,16 @@ namespace Outfits
 		for (const auto& it : loadedReplacements) {
 			const auto& actor = it.first;
 			const auto& replacement = it.second;
-
-			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {
-				if (newIt->second.UsesOriginalOutfit()) {                                                                        // If new replacement uses original outfit
-					if (!replacement.UsesOriginalOutfit() && replacement.distributed == actor->GetActorBase()->defaultOutfit) {  // but previous one doesn't and NPC still wears the distributed outfit
+			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {  // If we have some new replacement for this actor
+				newIt->second.original = replacement.original;                                       // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
+			} else if (replacement.distributed == actor->GetActorBase()->defaultOutfit) {            // If there is no new replacement, and an actor is currently wearing the same outfit that was distributed to them last time, we want to revert whatever outfit was in previous replacement
 #ifndef NDEBUG
-						logger::info("\tReverting Outfit Replacement for {}", *actor);
-						logger::info("\t\t{:R}", replacement);
+				logger::info("\tReverting Outfit Replacement for {}", *actor);
+				logger::info("\t\t{:R}", replacement);
 #endif
-						if (actor->SetDefaultOutfit(replacement.original, false)) {  // Having true here causes infinite loading. It seems that it works either way.
-							++revertedCount;
-						}
-					}
-				} else {                                            // If new replacement
-					newIt->second.original = replacement.original;  // if there was a previous distribution we want to forward original outfit from there to new distribution.
+				if (actor->SetDefaultOutfit(replacement.original, false)) {  // Having true here causes infinite loading. It seems that it works either way.
+					++revertedCount;
 				}
-
-			} else {  // If there is no new distribution, we want to keep the old one, assuming that whatever outfit is stored in this replacement is what NPC still wears in this save file
-				newReplacements[actor->formID] = replacement;
 			}
 		}
 
@@ -275,19 +255,12 @@ namespace Outfits
 			}
 #ifndef NDEBUG
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-				logger::info("\tSaved Outfit Replacement ({}) for actor {:F}", pair.second, *actor);
+				logger::info("\tSaved Outfit Replacement ({}) for actor {}", pair.second, *actor);
 			}
 #endif
 			++savedCount;
 		}
 
 		logger::info("Saved {} names", savedCount);
-	}
-
-	void Manager::Revert(SKSE::SerializationInterface*)
-	{
-		logger::info("{:*^30}", "REVERTING");
-		/*Manager::GetSingleton()->replacements.clear();
-		logger::info("\tOutfit Replacements have been cleared.");*/
 	}
 }
