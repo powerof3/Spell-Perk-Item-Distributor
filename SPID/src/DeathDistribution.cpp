@@ -243,7 +243,6 @@ namespace DeathDistribution
 		}
 
 		Distribute::LogDistribution(distributedForms, data);
-		// TODO: Log death distribution
 	}
 
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)

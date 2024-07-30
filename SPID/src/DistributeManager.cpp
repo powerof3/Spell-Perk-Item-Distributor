@@ -33,7 +33,7 @@ namespace Distribute
 		{
 			static bool thunk(RE::Character* a_this)
 			{
-				logger::info("ShouldBackgroundClone({})", *a_this);
+				//logger::info("ShouldBackgroundClone({})", *a_this);
 				if (const auto npc = a_this->GetActorBase()) {
 					detail::distribute_on_load(a_this, npc);
 				}
@@ -59,8 +59,8 @@ namespace Distribute
 					if (a_this->Is3DLoaded()) {
 						// TODO: Test whether there are some NPCs that are getting in this branch
 						// I haven't experienced issues with ShouldBackgroundClone hook.
-						logger::info("InitLoadGame({})", *a_this);
-						// detail::distribute_on_load(a_this, npc);
+						//logger::info("InitLoadGame({})", *a_this);
+						 detail::distribute_on_load(a_this, npc);
 					}
 				}
 			}
@@ -85,9 +85,6 @@ namespace Distribute
 		if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
 			if (processed = factory->Create(); processed) {
 				processed->formEditorID = "SPID_Processed";
-			}
-			if (processedOutfit = factory->Create(); processedOutfit) {
-				processedOutfit->formEditorID = "SPID_ProcessedOutfit";
 			}
 		}
 
