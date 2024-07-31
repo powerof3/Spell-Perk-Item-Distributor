@@ -150,7 +150,12 @@ namespace Outfits
 		}
 
 		auto* npc = actor->GetActorBase();
-		auto  defaultOutfit = npc->defaultOutfit;
+
+		if (!npc) {
+			return ReplacementResult::Skipped;
+		}
+
+		auto defaultOutfit = npc->defaultOutfit;
 
 		if (auto existing = replacements.find(actor->formID); existing != replacements.end()) {  // we already have tracked replacement
 			if (outfit == defaultOutfit && outfit == existing->second.distributed) {             // if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
@@ -219,9 +224,9 @@ namespace Outfits
 		for (const auto& it : loadedReplacements) {
 			const auto& actor = it.first;
 			const auto& replacement = it.second;
-			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {  // If we have some new replacement for this actor
-				newIt->second.original = replacement.original;                                       // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
-			} else if (replacement.distributed == actor->GetActorBase()->defaultOutfit) {            // If there is no new replacement, and an actor is currently wearing the same outfit that was distributed to them last time, we want to revert whatever outfit was in previous replacement
+			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {               // If we have some new replacement for this actor
+				newIt->second.original = replacement.original;                                                    // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
+			} else if (auto npc = actor->GetActorBase(); npc && replacement.distributed == npc->defaultOutfit) {  // If there is no new replacement, and an actor is currently wearing the same outfit that was distributed to them last time, we want to revert whatever outfit was in previous replacement
 #ifndef NDEBUG
 				logger::info("\tReverting Outfit Replacement for {}", *actor);
 				logger::info("\t\t{:R}", replacement);
