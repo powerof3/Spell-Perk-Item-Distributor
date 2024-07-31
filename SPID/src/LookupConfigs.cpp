@@ -78,11 +78,10 @@ namespace Distribution
 						} else {
 							logger::info("\t\t\tTrait '-D' is redundant, because Regular Distribution ignores Dead NPCs by default.");
 						}
-						
+
 					} else {
 						configs[data.type].emplace_back(data);
 					}
-					
 				}
 			} catch (const std::exception& e) {
 				logger::warn("\t\t[{} = {}]", key, value);

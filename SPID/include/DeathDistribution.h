@@ -14,7 +14,7 @@ namespace DeathDistribution
 
 		/// <summary>
 		/// Explicitly adds a parsed entry to the on death distributable forms.
-		/// 
+		///
 		/// This method is used when another Distribution detects a use of Starts Dead trait, which qualifies entry to become on death distributable.
 		/// </summary>
 		void AddEntry(const Distribution::INI::Data&);

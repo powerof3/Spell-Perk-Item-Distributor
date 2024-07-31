@@ -173,7 +173,7 @@ namespace Distribute
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
 	{
 		const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
-		
+
 		if (npcData.IsDead()) {  // If NPC is already dead, perform the On Death Distribution.
 			DeathDistribution::Manager::GetSingleton()->Distribute(npcData);
 		} else {
