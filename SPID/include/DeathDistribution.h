@@ -11,6 +11,13 @@ namespace DeathDistribution
 		/// </summary>
 		/// <returns>true if given entry was an on death distribuatble form. Note that returned value doesn't represent whether parsing was successful.</returns>
 		bool TryParse(const std::string& key, const std::string& value, const Path&);
+
+		/// <summary>
+		/// Explicitly adds a parsed entry to the on death distributable forms.
+		/// 
+		/// This method is used when another Distribution detects a use of Starts Dead trait, which qualifies entry to become on death distributable.
+		/// </summary>
+		void AddEntry(const Distribution::INI::Data&);
 	}
 
 	using namespace Forms;

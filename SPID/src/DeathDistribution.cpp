@@ -64,6 +64,10 @@ namespace DeathDistribution
 			}
 			return true;
 		}
+		void AddEntry(const Distribution::INI::Data& data)
+		{
+			deathConfigs[data.type].emplace_back(data);
+		}
 	}
 
 #pragma endregion

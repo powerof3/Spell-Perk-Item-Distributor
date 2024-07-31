@@ -70,10 +70,23 @@ namespace Distribution
 
 					data.path = path;
 
-					configs[data.type].emplace_back(data);
+					if (data.traits.startsDead.has_value()) {
+						logger::info("\t\t[{} = {}]", key, value);
+						if (*data.traits.startsDead) {
+							logger::info("\t\t\tEntry uses Starts Dead Trait filter and will be converted to On Death Distribution. Use 'Death{} = ...' instead of '{} = ...'", key, key);
+							DeathDistribution::INI::AddEntry(data);
+						} else {
+							logger::info("\t\t\tTrait '-D' is redundant, because Regular Distribution ignores Dead NPCs by default.");
+						}
+						
+					} else {
+						configs[data.type].emplace_back(data);
+					}
+					
 				}
 			} catch (const std::exception& e) {
-				logger::warn("\t\tFailed to parse entry [{} = {}]: {}", key, value, e.what());
+				logger::warn("\t\t[{} = {}]", key, value);
+				logger::warn("\t\t\tFailed to parse entry: {}", e.what());
 			}
 		}
 
