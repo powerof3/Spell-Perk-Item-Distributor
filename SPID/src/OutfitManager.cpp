@@ -50,7 +50,7 @@ namespace Outfits
 		constexpr std::uint32_t recordType = 'OTFT';
 
 		template <typename T>
-		bool Load(SKSE::SerializationInterface* interface, T*& output)
+		bool Load(SKSE::SerializationInterface* interface, T*& output, RE::FormID& formID)
 		{
 			RE::FormID id = 0;
 
@@ -62,9 +62,13 @@ namespace Outfits
 				return false;
 			}
 
+			formID = id; // save the originally read formID
+
 			if (!interface->ResolveFormID(id, id)) {
 				return false;
 			}
+
+			formID = id; // save the resolved formID
 
 			if (const auto form = RE::TESForm::LookupByID<T>(id); form) {
 				output = form;
@@ -76,18 +80,20 @@ namespace Outfits
 
 		bool Load(SKSE::SerializationInterface* interface, RE::Actor*& loadedActor, RE::BGSOutfit*& loadedOriginalOutfit, RE::BGSOutfit*& loadedDistributedOutfit)
 		{
-			if (!Load(interface, loadedActor)) {
-				logger::warn("Failed to load Outfit Replacement record: Corrupted actor.");
+			RE::FormID id = 0;
+
+			if (!Load(interface, loadedActor, id)) {
+				logger::warn("Failed to load Outfit Replacement record: Corrupted actor [{:08X}].", id);
 				return false;
 			}
 
-			if (!Load(interface, loadedOriginalOutfit)) {
-				logger::warn("Failed to load Outfit Replacement record: Corrupted original outfit.");
+			if (!Load(interface, loadedOriginalOutfit, id)) {
+				logger::warn("Failed to load Outfit Replacement record: Corrupted original outfit [{:08X}].", id);
 				return false;
 			}
 
-			if (!Load(interface, loadedDistributedOutfit)) {
-				logger::warn("Failed to load Outfit Replacement record: Corrupted distributed outfit.");
+			if (!Load(interface, loadedDistributedOutfit, id)) {
+				logger::warn("Failed to load Outfit Replacement record: Corrupted distributed outfit [{:08X}].", id);
 				return false;
 			}
 
@@ -172,7 +178,7 @@ namespace Outfits
 			return ReplacementResult::Skipped;
 		}
 
-		actor->SetDefaultOutfit(outfit, false);  // Having true here causes infinite loading. It seems that equipping works either way, so we are good :)
+		SetDefaultOutfit(actor, outfit);
 
 		if (auto previous = replacements.find(actor->formID); previous != replacements.end()) {
 			previous->second.distributed = outfit;
@@ -231,7 +237,7 @@ namespace Outfits
 				logger::info("\tReverting Outfit Replacement for {}", *actor);
 				logger::info("\t\t{:R}", replacement);
 #endif
-				if (actor->SetDefaultOutfit(replacement.original, false)) {  // Having true here causes infinite loading. It seems that it works either way.
+				if (manager->SetDefaultOutfit(actor, replacement.original)) {
 					++revertedCount;
 				}
 			}
@@ -241,6 +247,21 @@ namespace Outfits
 			logger::info("Reverted {} no longer existing Outfit Replacements", revertedCount);
 		}
 #endif
+	}
+
+	bool Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit)
+	{
+		actor->SetDefaultOutfit(outfit, false);  // Having true here causes infinite loading. It seems that equipping works either way, so we are good :)
+
+		// TODO: Implement the equipment solution from po3 to avoid crashes :)
+		// With that approach nothing will be saved in the save file again, as such we'll only need to make sure that whatever was NPC's default outfit will get equipped once replacement no longer available.
+		/*
+		if (const auto npc = actor->GetActorBase(); npc) {
+			npc->defaultOutfit = outfit;
+		}
+		force_equip_outfit(actor, actor->GetActorBase());
+		*/
+		return true;
 	}
 
 	void Manager::Save(SKSE::SerializationInterface* interface)

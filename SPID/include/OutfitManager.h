@@ -50,6 +50,14 @@ namespace Outfits
 		static void Save(SKSE::SerializationInterface*);
 		static void Revert(SKSE::SerializationInterface*);
 
+		/// <summary>
+		/// This method performs the actual change of the outfit.
+		/// </summary>
+		/// <param name="actor">Actor for whom outfit should be changed</param>
+		/// <param name="outift">The outfit to be set</param>
+		/// <returns>True if the outfit was successfully set, false otherwise</returns>
+		bool SetDefaultOutfit(RE::Actor*, RE::BGSOutfit*);
+
 		struct OutfitReplacement
 		{
 			/// The one that NPC had before SPID distribution.
