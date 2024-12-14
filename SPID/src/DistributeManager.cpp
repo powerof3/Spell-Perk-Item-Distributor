@@ -1,8 +1,6 @@
 #include "DistributeManager.h"
-#include "DeathDistribution.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
-#include "OutfitManager.h"
 
 namespace Distribute
 {
@@ -37,7 +35,6 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					detail::distribute_on_load(a_this, npc);
 				}
-
 				return func(a_this);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -95,8 +92,6 @@ namespace Distribute
 		logger::info("{:*^50}", "EVENTS");
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
-		DeathDistribution::Manager::Register();
-		Outfits::Manager::Register();
 
 		// TODO: No initial distribution. Check Packages distribution and see if those work as intended.
 		//DoInitialDistribution();

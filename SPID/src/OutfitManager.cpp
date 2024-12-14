@@ -53,6 +53,7 @@ namespace Outfits
 		bool Load(SKSE::SerializationInterface* interface, T*& output, RE::FormID& formID)
 		{
 			RE::FormID id = 0;
+			output = nullptr;
 
 			if (!details::Read(interface, id)) {
 				return false;
@@ -62,13 +63,13 @@ namespace Outfits
 				return false;
 			}
 
-			formID = id; // save the originally read formID
+			formID = id;  // save the originally read formID
 
 			if (!interface->ResolveFormID(id, id)) {
 				return false;
 			}
 
-			formID = id; // save the resolved formID
+			formID = id;  // save the resolved formID
 
 			if (const auto form = RE::TESForm::LookupByID<T>(id); form) {
 				output = form;
@@ -78,9 +79,10 @@ namespace Outfits
 			return false;
 		}
 
-		bool Load(SKSE::SerializationInterface* interface, RE::Actor*& loadedActor, RE::BGSOutfit*& loadedOriginalOutfit, RE::BGSOutfit*& loadedDistributedOutfit)
+		bool Load(SKSE::SerializationInterface* interface, RE::Actor*& loadedActor, RE::BGSOutfit*& loadedOriginalOutfit, RE::BGSOutfit*& loadedDistributedOutfit, RE::FormID& failedDistributedOutfitFormID)
 		{
 			RE::FormID id = 0;
+			failedDistributedOutfitFormID = 0;
 
 			if (!Load(interface, loadedActor, id)) {
 				logger::warn("Failed to load Outfit Replacement record: Corrupted actor [{:08X}].", id);
@@ -93,6 +95,7 @@ namespace Outfits
 			}
 
 			if (!Load(interface, loadedDistributedOutfit, id)) {
+				failedDistributedOutfitFormID = id;
 				logger::warn("Failed to load Outfit Replacement record: Corrupted distributed outfit [{:08X}].", id);
 				return false;
 			}
@@ -131,22 +134,6 @@ namespace Outfits
 			replacements.erase(a_event->formID);
 		}
 		return RE::BSEventNotifyControl::kContinue;
-	}
-
-	bool Manager::CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit)
-	{
-		const auto race = actor->GetRace();
-		for (const auto& item : outfit->outfitItems) {
-			if (const auto armor = item->As<RE::TESObjectARMO>()) {
-				if (!std::any_of(armor->armorAddons.begin(), armor->armorAddons.end(), [&](const auto& arma) {
-						return arma && arma->IsValidRace(race);
-					})) {
-					return false;
-				}
-			}
-		}
-
-		return true;
 	}
 
 	ReplacementResult Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool allowOverwrites)
@@ -189,6 +176,67 @@ namespace Outfits
 		return ReplacementResult::Set;
 	}
 
+	bool Manager::CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit)
+	{
+		const auto race = actor->GetRace();
+		for (const auto& item : outfit->outfitItems) {
+			if (const auto armor = item->As<RE::TESObjectARMO>()) {
+				if (!std::any_of(armor->armorAddons.begin(), armor->armorAddons.end(), [&](const auto& arma) {
+						return arma && arma->IsValidRace(race);
+					})) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	void Manager::AddWornOutfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
+	{
+		bool equippedItems = false;
+		if (const auto invChanges = actor->GetInventoryChanges()) {
+			if (const auto entryLists = invChanges->entryList) {
+				const auto formID = a_outfit->GetFormID();
+
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->extraLists) {
+						for (const auto& xList : *entryList->extraLists) {
+							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+							if (outfitItem && outfitItem->id == formID) {
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
+								equippedItems = true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (equippedItems) {
+			actor->currentProcess->Update3DModel(actor);
+		}
+	}
+
+	bool Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit)
+	{
+		if (!actor || !outfit) {
+			return false;
+		}
+
+		const auto npc = actor->GetActorBase();
+		if (!npc || npc->defaultOutfit == outfit) {
+			return false;
+		}
+		actor->RemoveOutfitItems(npc->defaultOutfit);
+		npc->SetDefaultOutfit(outfit);
+		actor->InitInventoryIfRequired();
+		if (!actor->IsDisabled()) {
+			AddWornOutfit(actor, outfit);
+		}
+		return true;
+	}
+
 	void Manager::Load(SKSE::SerializationInterface* a_interface)
 	{
 #ifndef NDEBUG
@@ -200,39 +248,53 @@ namespace Outfits
 		auto&                                             newReplacements = manager->replacements;
 
 		std::uint32_t type, version, length;
-
+		int           total = 0;
 		while (a_interface->GetNextRecordInfo(type, version, length)) {
 			if (type == Data::recordType) {
 				RE::Actor*     actor;
 				RE::BGSOutfit* original;
 				RE::BGSOutfit* distributed;
-				if (Data::Load(a_interface, actor, original, distributed); actor) {
-					loadedReplacements[actor] = { original, distributed };
+				RE::FormID     failedDistributedOutfitFormID;
+				total++;
+				if (Data::Load(a_interface, actor, original, distributed, failedDistributedOutfitFormID); actor) {
+					if (distributed) {
+						loadedReplacements[actor] = { original, distributed };
+					} else {
+						loadedReplacements[actor] = { original, failedDistributedOutfitFormID };
+					}
 				}
 			}
 		}
 #ifndef NDEBUG
-		logger::info("Loaded {} Outfit Replacements", loadedReplacements.size());
+		logger::info("Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
 		for (const auto& pair : loadedReplacements) {
 			logger::info("\t{}", *pair.first);
 			logger::info("\t\t{}", pair.second);
 		}
 
-		logger::info("Cached {} Outfit Replacements", newReplacements.size());
+		logger::info("Current {} Outfit Replacements", newReplacements.size());
 		for (const auto& pair : newReplacements) {
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
 				logger::info("\t{}", *actor);
 			}
 			logger::info("\t\t{}", pair.second);
 		}
+
+		logger::info("Merging...");
 #endif
 		std::uint32_t revertedCount = 0;
+		std::uint32_t updatedCount = 0;
 		for (const auto& it : loadedReplacements) {
 			const auto& actor = it.first;
 			const auto& replacement = it.second;
-			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {               // If we have some new replacement for this actor
-				newIt->second.original = replacement.original;                                                    // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
-			} else if (auto npc = actor->GetActorBase(); npc && replacement.distributed == npc->defaultOutfit) {  // If there is no new replacement, and an actor is currently wearing the same outfit that was distributed to them last time, we want to revert whatever outfit was in previous replacement
+			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {  // If we have some new replacement for this actor
+				newIt->second.original = replacement.original; // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
+				++updatedCount;
+#ifndef NDEBUG
+				logger::info("\tUpdating Outfit Replacement for {}", *actor);
+				logger::info("\t\t{}", newIt->second);
+#endif
+			} else if (auto npc = actor->GetActorBase(); !replacement.distributed || npc && replacement.distributed == npc->defaultOutfit) {  // If the replacement is not valid or there is no new replacement, and an actor is currently wearing the same outfit that was distributed to them last time, we want to revert whatever outfit was in previous replacement
 #ifndef NDEBUG
 				logger::info("\tReverting Outfit Replacement for {}", *actor);
 				logger::info("\t\t{:R}", replacement);
@@ -246,22 +308,10 @@ namespace Outfits
 		if (revertedCount) {
 			logger::info("Reverted {} no longer existing Outfit Replacements", revertedCount);
 		}
-#endif
-	}
-
-	bool Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit)
-	{
-		actor->SetDefaultOutfit(outfit, false);  // Having true here causes infinite loading. It seems that equipping works either way, so we are good :)
-
-		// TODO: Implement the equipment solution from po3 to avoid crashes :)
-		// With that approach nothing will be saved in the save file again, as such we'll only need to make sure that whatever was NPC's default outfit will get equipped once replacement no longer available.
-		/*
-		if (const auto npc = actor->GetActorBase(); npc) {
-			npc->defaultOutfit = outfit;
+		if (updatedCount) {
+			logger::info("Updated {} existing Outfit Replacements", updatedCount);
 		}
-		force_equip_outfit(actor, actor->GetActorBase());
-		*/
-		return true;
+#endif
 	}
 
 	void Manager::Save(SKSE::SerializationInterface* interface)

@@ -58,6 +58,9 @@ namespace Outfits
 		/// <returns>True if the outfit was successfully set, false otherwise</returns>
 		bool SetDefaultOutfit(RE::Actor*, RE::BGSOutfit*);
 
+		/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
+		void AddWornOutfit(RE::Actor*, const RE::BGSOutfit*);
+
 		struct OutfitReplacement
 		{
 			/// The one that NPC had before SPID distribution.
@@ -66,11 +69,14 @@ namespace Outfits
 			/// The one that SPID distributed.
 			RE::BGSOutfit* distributed;
 
+			/// FormID of the outfit that was meant to be distributed, but was not recognized during loading (most likely source plugin is no longer active).
+			RE::FormID unrecognizedDistributedFormID;
+
 			OutfitReplacement() = default;
-			OutfitReplacement(RE::BGSOutfit* original) :
-				original(original), distributed(nullptr) {}
+			OutfitReplacement(RE::BGSOutfit* original, RE::FormID unrecognizedDistributedFormID) :
+				original(original), distributed(nullptr), unrecognizedDistributedFormID(unrecognizedDistributedFormID) {}
 			OutfitReplacement(RE::BGSOutfit* original, RE::BGSOutfit* distributed) :
-				original(original), distributed(distributed) {}
+				original(original), distributed(distributed), unrecognizedDistributedFormID(0) {}
 		};
 
 		friend fmt::formatter<Outfits::Manager::OutfitReplacement>;
@@ -110,6 +116,8 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 			} else {
 				return fmt::format_to(a_ctx.out(), "{} ➡️ {}", *replacement.original, *replacement.distributed);
 			}
+		} else if (replacement.original) {
+			return fmt::format_to(a_ctx.out(), "{} 🔙 CORRUPTED [{}:{:08X}]", *replacement.original, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
 		} else {
 			return fmt::format_to(a_ctx.out(), "INVALID REPLACEMENT");
 		}
