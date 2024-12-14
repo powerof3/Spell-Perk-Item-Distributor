@@ -288,7 +288,7 @@ namespace Outfits
 			const auto& actor = it.first;
 			const auto& replacement = it.second;
 			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {  // If we have some new replacement for this actor
-				newIt->second.original = replacement.original; // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
+				newIt->second.original = replacement.original;                                       // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
 				++updatedCount;
 #ifndef NDEBUG
 				logger::info("\tUpdating Outfit Replacement for {}", *actor);
