@@ -171,7 +171,7 @@ namespace fmt
 		}
 
 		template <class FormatContext>
-		constexpr auto format(const Form& form, FormatContext& a_ctx)
+		constexpr auto format(const Form& form, FormatContext& a_ctx) const
 		{
 			const auto name = std::string(form.GetName());
 			const auto edid = editorID::get_editorID(&form);
@@ -197,7 +197,7 @@ namespace fmt
 		}
 
 		template <class FormatContext>
-		constexpr auto format(const RE::Actor& actor, FormatContext& a_ctx)
+		constexpr auto format(const RE::Actor& actor, FormatContext& a_ctx) const
 		{
 			const auto& form = static_cast<const RE::TESForm&>(actor);
 			if (auto npc = actor.GetActorBase(); npc) {

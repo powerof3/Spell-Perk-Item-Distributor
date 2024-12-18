@@ -107,15 +107,15 @@ namespace PCLevelMult
 	void Manager::DumpDistributedEntries()
 	{
 		ReadLocker lock(_lock);
-		for (auto& [playerID, npcFormIDs] : _cache) {
+		for (const auto& [playerID, npcFormIDs] : _cache) {
 			logger::info("PlayerID : {:X}", playerID);
-			for (auto& [npcFormID, levelMap] : npcFormIDs) {
+			for (const auto& [npcFormID, levelMap] : npcFormIDs) {
 				logger::info("\tNPC : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
-				for (auto& [level, distFormMap] : levelMap.entries) {
+				for (const auto& [level, distFormMap] : levelMap.entries) {
 					logger::info("\t\tLevel : {}", level);
-					for (auto& [formType, formIDSet] : distFormMap.distributedEntries) {
+					for (const auto& [formType, formIDSet] : distFormMap.distributedEntries) {
 						logger::info("\t\t\tDist FormType : {}", formType);
-						for (auto& formID : formIDSet) {
+						for (const auto& formID : formIDSet) {
 							logger::info("\t\t\t\tDist FormID : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(formID)), formID);
 						}
 					}
@@ -209,7 +209,7 @@ namespace PCLevelMult
 
 	std::uint64_t Manager::get_game_playerID()
 	{
-		return RE::BGSSaveLoadManager::GetSingleton()->currentPlayerID & 0xFFFFFFFF;
+		return RE::BGSSaveLoadManager::GetSingleton()->currentCharacterID & 0xFFFFFFFF;
 	}
 
 	void Manager::remap_player_ids(std::uint64_t a_oldID, std::uint64_t a_newID)

@@ -108,7 +108,7 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 	}
 
 	template <class FormatContext>
-	constexpr auto format(const Outfits::Manager::OutfitReplacement& replacement, FormatContext& a_ctx)
+	constexpr auto format(const Outfits::Manager::OutfitReplacement& replacement, FormatContext& a_ctx) const
 	{
 		if (replacement.original && replacement.distributed) {
 			if (reverse) {
