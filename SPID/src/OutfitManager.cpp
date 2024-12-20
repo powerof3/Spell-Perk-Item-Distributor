@@ -213,8 +213,14 @@ namespace Outfits
 			}
 		}
 
-		if (equippedItems) {
-			actor->currentProcess->Update3DModel(actor);
+		if (equippedItems && actor->Is3DLoaded()) {
+			// dispatching updating 3D model (presumably) to the main thread.
+			// There was a crash when trying to update 3D model for some users, so this is an attempt to fix it.
+			// Additionally, an extra check ensures that update of the model is only called when said model is already loaded.
+			SKSE::GetTaskInterface()->AddTask([actor]() {
+				actor->currentProcess->Update3DModel(actor);	
+			});
+			
 		}
 	}
 
