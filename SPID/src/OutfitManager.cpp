@@ -142,25 +142,47 @@ namespace Outfits
 			return ReplacementResult::Skipped;
 		}
 
-		auto* npc = actor->GetActorBase();
+		const auto npc = actor->GetActorBase();
 
 		if (!npc) {
 			return ReplacementResult::Skipped;
 		}
 
-		auto defaultOutfit = npc->defaultOutfit;
+		const auto defaultOutfit = npc->defaultOutfit;
 
+#ifndef NDEBUG
+		logger::info("Evaluating outfit for {}", *actor);
+		logger::info("\tNew Outfit: {}", *outfit);
+		if (defaultOutfit) {
+			logger::info("\tCurrent Outfit: {}", *defaultOutfit);
+		} else {
+			logger::info("\tCurrent Outfit: None");
+		}
+#endif
 		if (auto existing = replacements.find(actor->formID); existing != replacements.end()) {  // we already have tracked replacement
+#ifndef NDEBUG
+			logger::info("\tFound existing replacement {}", existing->second);
+#endif
 			if (outfit == defaultOutfit && outfit == existing->second.distributed) {             // if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
+#ifndef NDEBUG
+				logger::info("\tExisting replacement is already set");
+#endif
 				return ReplacementResult::Set;
 			} else if (!allowOverwrites) {  // if we are trying to set any other outfit and overwrites are not allowed, we skip it, indicating overwriting status.
+#ifndef NDEBUG
+				logger::info("\tOverwriting outfit is not allowed");
+#endif
 				return ReplacementResult::NotOverwrittable;
 			}
 		}
 
+		// TODO: Try to not equip outfit right away. Only store the replacement. The actual distribution will happen in Load3D hook here
+		// For dynamic distributions such as On Death Distribution, we can use a boolean parameter "forceEquip" to equip the outfit right away.
+		// This will add proper support for linked distribution where one outfit should be distributed immediately after another one.
+
 		if (!CanEquipOutfit(actor, outfit)) {
 #ifndef NDEBUG
-			logger::warn("Attempted to equip Outfit that can't be worn by given actor. Actor: {}; Outfit: {}", *actor, *outfit);
+			logger::warn("\tAttempted to equip Outfit {} that can't be worn by given actor.", *outfit);
 #endif
 			return ReplacementResult::Skipped;
 		}
@@ -169,8 +191,14 @@ namespace Outfits
 
 		if (auto previous = replacements.find(actor->formID); previous != replacements.end()) {
 			previous->second.distributed = outfit;
+#ifndef NDEBUG
+			logger::warn("\tUpdated replacement {}", previous->second);
+#endif
 		} else if (defaultOutfit) {
 			replacements.try_emplace(actor->formID, defaultOutfit, outfit);
+#ifndef NDEBUG
+			logger::warn("\tAdded replacement {}", OutfitReplacement(defaultOutfit, outfit));
+#endif
 		}
 
 		return ReplacementResult::Set;
@@ -194,7 +222,6 @@ namespace Outfits
 
 	void Manager::AddWornOutfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
 	{
-		bool equippedItems = false;
 		if (const auto invChanges = actor->GetInventoryChanges()) {
 			if (const auto entryLists = invChanges->entryList) {
 				const auto formID = a_outfit->GetFormID();
@@ -204,22 +231,14 @@ namespace Outfits
 						for (const auto& xList : *entryList->extraLists) {
 							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 							if (outfitItem && outfitItem->id == formID) {
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, true);
-								equippedItems = true;
+								// queueEquip causes random crashes, probably when the equipping is executed.
+								// forceEquip seems to do the job.
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, false, true);
 							}
 						}
 					}
 				}
 			}
-		}
-
-		if (equippedItems && actor->Is3DLoaded()) {
-			// dispatching updating 3D model (presumably) to the main thread.
-			// There was a crash when trying to update 3D model for some users, so this is an attempt to fix it.
-			// Additionally, an extra check ensures that update of the model is only called when said model is already loaded.
-			SKSE::GetTaskInterface()->AddTask([actor]() {
-				actor->currentProcess->Update3DModel(actor);
-			});
 		}
 	}
 
@@ -228,7 +247,9 @@ namespace Outfits
 		if (!actor || !outfit) {
 			return false;
 		}
-
+#ifndef NDEBUG
+		logger::info("\tEquipping Outfit {}", *outfit);
+#endif
 		const auto npc = actor->GetActorBase();
 		if (!npc || npc->defaultOutfit == outfit) {
 			return false;
@@ -291,7 +312,9 @@ namespace Outfits
 		std::uint32_t updatedCount = 0;
 		for (const auto& it : loadedReplacements) {
 			const auto& actor = it.first;
+			const auto npc = actor->GetActorBase();
 			const auto& replacement = it.second;
+			logger::info("\t\tActual outfit on NPC: {}", *(npc->defaultOutfit));
 			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {  // If we have some new replacement for this actor
 				newIt->second.original = replacement.original;                                       // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
 				++updatedCount;
@@ -299,7 +322,7 @@ namespace Outfits
 				logger::info("\tUpdating Outfit Replacement for {}", *actor);
 				logger::info("\t\t{}", newIt->second);
 #endif
-			} else if (auto npc = actor->GetActorBase(); !replacement.distributed || npc && replacement.distributed == npc->defaultOutfit) {  // If the replacement is not valid or there is no new replacement, and an actor is currently wearing the same outfit that was distributed to them last time, we want to revert whatever outfit was in previous replacement
+			} else if (!replacement.distributed || replacement.distributed == npc->defaultOutfit) {  // If the replacement is not valid or there is no new replacement, and an actor is currently wearing the same outfit that was distributed to them last time, we want to revert whatever outfit was in previous replacement
 #ifndef NDEBUG
 				logger::info("\tReverting Outfit Replacement for {}", *actor);
 				logger::info("\t\t{:R}", replacement);
