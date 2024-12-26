@@ -28,14 +28,15 @@ namespace NPC
 		return formID == a_formID;
 	}
 
-	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
+	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc, bool isDying = false) :
 		npc(a_npc),
 		actor(a_actor),
 		race(a_actor->GetRace()),
 		name(a_actor->GetName()),
 		level(a_npc->GetLevel()),
 		child(a_actor->IsChild() || race && race->formEditorID.contains("RaceChild")),
-		leveled(a_actor->IsLeveled())
+		leveled(a_actor->IsLeveled()),
+		dying(isDying)
 	{
 		npc->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
 			keywords.emplace(a_keyword->GetFormEditorID());
@@ -229,6 +230,11 @@ namespace NPC
 	bool Data::IsDead() const
 	{
 		return actor && actor->IsDead() || StartsDead();
+	}
+
+	bool Data::IsDying() const
+	{
+		return isDying;
 	}
 
 	bool Data::StartsDead() const

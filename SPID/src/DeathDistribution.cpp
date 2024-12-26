@@ -206,7 +206,7 @@ namespace DeathDistribution
 
 	void Manager::Distribute(NPCData& data)
 	{
-		assert(data.IsDead());
+		assert(data.IsDead() || data.IsDying());
 
 		// We mark NPCs that were processed by Death Distribution with SPID_Dead keyword,
 		// to ensure that NPCs who received Death Distribution once won't get another Death Distribution
@@ -255,7 +255,7 @@ namespace DeathDistribution
 			const auto actor = a_event->actorDying->As<RE::Actor>();
 			const auto npc = actor ? actor->GetActorBase() : nullptr;
 			if (actor && npc) {
-				auto npcData = NPCData(actor, npc);
+				auto npcData = NPCData(actor, npc, true);
 				Distribute(npcData);
 			}
 		}
