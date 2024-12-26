@@ -211,10 +211,10 @@ namespace DeathDistribution
 
 			// TODO: Death Distribution should hook ShouldBackgroundClone to perform distribution of NPCs that are loaded dead.
 			// This will allow to decouple regular distribution from death distribution completely. Just for aesthetics :)
-			// 
-			// Current challenge is that hooks are called in the reverse order of their installation, 
+			//
+			// Current challenge is that hooks are called in the reverse order of their installation,
 			// so this would require also refactoring existing MessageHandler to this new system with specialized Manager::HandleMessage.
-			// 
+			//
 			// stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 			// logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
 
@@ -232,7 +232,7 @@ namespace DeathDistribution
 			break;
 		}
 	}
-	
+
 	void Manager::Distribute(NPCData& data)
 	{
 		assert(data.IsDead() || data.IsDying());

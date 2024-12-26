@@ -410,7 +410,7 @@ namespace Outfits
 	{
 		if (!outfit) {
 			return false;
-		}	
+		}
 
 		if (auto existing = initialOutfits.find(npc->formID); existing != initialOutfits.end()) {
 			return existing->second == outfit;

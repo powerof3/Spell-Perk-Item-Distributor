@@ -9,13 +9,13 @@ namespace Outfits
 	{
 	public:
 		void HandleMessage(SKSE::MessagingInterface::Message*);
-		
+
 		// TODO: This method should check both initial and distributed outfits in SPID 8 or something.
 		/// <summary>
 		/// Checks whether the NPC uses specified outfit as the default outfit.
-		/// 
-		/// This method checks initial outfit which was set in the plugins. 
-		/// Outfits distributed on top of the initial outfits won't be recognized in SPID 7. 
+		///
+		/// This method checks initial outfit which was set in the plugins.
+		/// Outfits distributed on top of the initial outfits won't be recognized in SPID 7.
 		/// There should be a way to handle both of them in the future.
 		/// </summary>
 		/// <param name="NPC">Target NPC to be tested</param>
@@ -39,7 +39,7 @@ namespace Outfits
 		///
 		/// SetDefaultOutfit does not apply outfits immediately, it only registers them within the manager.
 		/// ApplyOutfit must be called afterwards to actually equip the outfit.
-		/// 
+		///
 		/// For actors that are loading as usual ApplyOutfit will be called automatically during their Load3D.
 		/// For Death Distribution, ApplyOutfit will be called automatically during the event processing.
 		/// For other runtime distributions, ApplyOutfit should be called manually.
@@ -52,9 +52,9 @@ namespace Outfits
 
 		/// <summary>
 		/// Applies tracked outfit replacement for given actor.
-		/// 
+		///
 		/// SetDefaultOutfit does not apply outfits immediately, it only registers them within the manager.
-		/// 
+		///
 		/// For actors that are loading as usual ApplyOutfit will be called automatically during their Load3D.
 		/// For Death Distribution, ApplyOutfit will be called automatically during the event processing.
 		/// For other runtime distributions, ApplyOutfit should be called manually.
@@ -114,7 +114,7 @@ namespace Outfits
 
 		/// <summary>
 		/// Map of Actor's FormID and corresponding Outfit Replacements that are being tracked by the manager.
-		/// 
+		///
 		/// This map is serialized in a co-save and is used to clean up no longer distributed outfits when loading a previous save.
 		/// Latest distribution replacements always take priority over the ones stored in the save file.
 		/// </summary>
@@ -122,18 +122,18 @@ namespace Outfits
 
 		/// <summary>
 		/// Map of NPC's FormID and corresponding initial Outfit that is set in loaded plugins.
-		/// 
+		///
 		/// This map is used for filtering during distribution to be able to provide consistent filtering behavior.
 		/// Once the Manager applies new outfit, all filters that use initial outfit of this NPC will stop working,
 		/// the reason is that distributed outfits are baked into the save, and are loaded as part of NPC.
-		/// 
+		///
 		/// The map is constructed with TESNPC::LoadGame hook, at which point defaultOutfit hasn't been loaded yet from the save.
 		/// </summary>
 		std::unordered_map<RE::FormID, RE::BGSOutfit*> initialOutfits;
 
 		/// <summary>
 		/// Flag indicating whether there is a loading of a save file in progress.
-		/// 
+		///
 		/// This flag is used to defer equipping outfits in Load3D hook, until after LoadGame event is processed.
 		/// By doing so we can properly handle state of the outfits and determine if anything needs to be equipped.
 		/// Among other things, this allows to avoid re-equipping looted outfits On Death Distribution after relaunching the game.

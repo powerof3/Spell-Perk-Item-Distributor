@@ -33,21 +33,21 @@ namespace NPC
 
 		/// <summary>
 		/// Flag indicating whether given NPC is dead.
-		/// 
+		///
 		/// IsDead returns true when either NPC starts dead or has already died. See IsDying for more details.
 		/// </summary>
-		[[nodiscard]] bool          IsDead() const;
-		
+		[[nodiscard]] bool IsDead() const;
+
 		/// <summary>
 		/// Flag indicating whether given NPC is currently dying.
-		/// 
-		/// This is detected with RE::TESDeathEvent. 
+		///
+		/// This is detected with RE::TESDeathEvent.
 		/// It is called twice for each dying Actor, first when they are dying and second when they are dead.
 		/// When IsDying is true, IsDead will remain false.
 		/// Once actor IsDead IsDying will be false.
 		/// </summary>
-		[[nodiscard]] bool          IsDying() const;
-		[[nodiscard]] bool          StartsDead() const;
+		[[nodiscard]] bool IsDying() const;
+		[[nodiscard]] bool StartsDead() const;
 
 		[[nodiscard]] RE::TESRace* GetRace() const;
 
