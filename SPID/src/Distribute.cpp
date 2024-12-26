@@ -34,7 +34,9 @@ namespace Distribute
 
 		for_each_form<RE::SpellItem>(
 			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& a_spells) {
-				npc->GetSpellList()->AddSpells(a_spells);
+				for (auto& spell : a_spells) {
+					npcData.GetActor()->AddSpell(spell); // Adding spells one by one to actor properly applies them. This solves On Death distribution issue #60
+				}
 			},
 			accumulatedForms);
 
