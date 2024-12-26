@@ -30,6 +30,7 @@ namespace NPC
 		[[nodiscard]] bool          IsChild() const;
 		[[nodiscard]] bool          IsLeveled() const;
 		[[nodiscard]] bool          IsTeammate() const;
+
 		/// <summary>
 		/// Flag indicating whether given NPC is dead.
 		/// 

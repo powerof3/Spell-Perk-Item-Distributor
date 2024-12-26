@@ -28,7 +28,7 @@ namespace NPC
 		return formID == a_formID;
 	}
 
-	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc, bool isDying = false) :
+	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc, bool isDying) :
 		npc(a_npc),
 		actor(a_actor),
 		race(a_actor->GetRace()),
@@ -234,7 +234,7 @@ namespace NPC
 
 	bool Data::IsDying() const
 	{
-		return isDying;
+		return dying;
 	}
 
 	bool Data::StartsDead() const

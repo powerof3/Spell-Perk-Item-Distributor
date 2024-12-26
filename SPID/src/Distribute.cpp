@@ -7,7 +7,7 @@
 
 namespace Distribute
 {
-	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, bool allowOverwrites, DistributedForms* accumulatedForms)
+	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms)
 	{
 		const auto npc = npcData.GetNPC();
 
@@ -106,7 +106,7 @@ namespace Distribute
 
 		for_first_form<RE::BGSOutfit>(
 			npcData, forms.outfits, input, [&](auto* a_outfit) {
-				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit, allowOverwrites) != Outfits::ReplacementResult::Skipped;  // terminate as soon as valid outfit is confirmed.
+				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit);  // terminate as soon as valid outfit is confirmed.
 			},
 			accumulatedForms);
 
@@ -158,12 +158,12 @@ namespace Distribute
 
 		DistributedForms distributedForms{};
 
-		Distribute(npcData, input, entries, false, &distributedForms);
+		Distribute(npcData, input, entries, &distributedForms);
 
 		if (!distributedForms.empty()) {
 			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kRegular, distributedForms, [&](Forms::DistributionSet& set) {
-				Distribute(npcData, input, set, true, &distributedForms);
+				Distribute(npcData, input, set, &distributedForms);
 			});
 		}
 

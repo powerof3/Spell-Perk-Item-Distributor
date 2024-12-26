@@ -40,11 +40,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
 			if (shouldDistribute = Lookup::LookupForms(); shouldDistribute) {
-				DeathDistribution::Manager::Register();
 				Distribute::Setup();
 			}
-
-			Outfits::Manager::Register();  // Regardless of distribution, we register outfits manager to handle save/load events. It should revert all previously distributed outfits even if no _DISTR files are present.
 
 			if (shouldLogErrors) {
 				const auto error = std::format("[SPID] Errors found when reading configs. Check {}.log in {} for more info\n", Version::PROJECT, SKSE::log::log_directory()->string());
@@ -70,6 +67,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	default:
 		break;
 	}
+	DeathDistribution::Manager::GetSingleton()->HandleMessage(a_message);
+	Outfits::Manager::GetSingleton()->HandleMessage(a_message);
 }
 
 #ifdef SKYRIM_AE

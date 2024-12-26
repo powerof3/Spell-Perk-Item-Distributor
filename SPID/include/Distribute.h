@@ -230,9 +230,8 @@ namespace Distribute
 	/// <param name="npcData">General information about NPC that is being processed.</param>
 	/// <param name="input">Leveling information about NPC that is being processed.</param>
 	/// <param name="forms">A set of forms that should be distributed to NPC.</param>
-	/// <param name="allowOverwrites">If true, overwritable forms (like Outfits) will use last distributed form on NPC. If false, then the first form will be used.</param>
 	/// <param name="accumulatedForms">An optional pointer to a set that will accumulate all distributed forms.</param>
-	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, bool allowOverwrites, DistributedForms* accumulatedForms = nullptr);
+	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms = nullptr);
 
 	/// <summary>
 	/// Invokes appropriate distribution for given NPC.

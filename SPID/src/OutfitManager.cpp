@@ -2,6 +2,8 @@
 
 namespace Outfits
 {
+#pragma region Serialization
+
 	constexpr std::uint32_t serializationKey = 'SPID';
 	constexpr std::uint32_t serializationVersion = 1;
 
@@ -115,154 +117,6 @@ namespace Outfits
 		}
 	}
 
-	void Manager::Register()
-	{
-		const auto serializationInterface = SKSE::GetSerializationInterface();
-		serializationInterface->SetUniqueID(serializationKey);
-		serializationInterface->SetSaveCallback(Save);
-		serializationInterface->SetLoadCallback(Load);
-
-		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
-			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
-			logger::info("Registered Outfit Manager for {}", typeid(RE::TESFormDeleteEvent).name());
-		}
-	}
-
-	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
-	{
-		if (a_event && a_event->formID != 0) {
-			replacements.erase(a_event->formID);
-		}
-		return RE::BSEventNotifyControl::kContinue;
-	}
-
-	ReplacementResult Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool allowOverwrites)
-	{
-		if (!actor || !outfit) {  // invalid call
-			return ReplacementResult::Skipped;
-		}
-
-		const auto npc = actor->GetActorBase();
-
-		if (!npc) {
-			return ReplacementResult::Skipped;
-		}
-
-		const auto defaultOutfit = npc->defaultOutfit;
-
-#ifndef NDEBUG
-		logger::info("Evaluating outfit for {}", *actor);
-		logger::info("\tNew Outfit: {}", *outfit);
-		if (defaultOutfit) {
-			logger::info("\tCurrent Outfit: {}", *defaultOutfit);
-		} else {
-			logger::info("\tCurrent Outfit: None");
-		}
-#endif
-		if (auto existing = replacements.find(actor->formID); existing != replacements.end()) {  // we already have tracked replacement
-#ifndef NDEBUG
-			logger::info("\tFound existing replacement {}", existing->second);
-#endif
-			if (outfit == defaultOutfit && outfit == existing->second.distributed) {             // if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
-#ifndef NDEBUG
-				logger::info("\tExisting replacement is already set");
-#endif
-				return ReplacementResult::Set;
-			} else if (!allowOverwrites) {  // if we are trying to set any other outfit and overwrites are not allowed, we skip it, indicating overwriting status.
-#ifndef NDEBUG
-				logger::info("\tOverwriting outfit is not allowed");
-#endif
-				return ReplacementResult::NotOverwrittable;
-			}
-		}
-
-		// TODO: Try to not equip outfit right away. Only store the replacement. The actual distribution will happen in Load3D hook here
-		// For dynamic distributions such as On Death Distribution, we can use a boolean parameter "forceEquip" to equip the outfit right away.
-		// This will add proper support for linked distribution where one outfit should be distributed immediately after another one.
-
-		if (!CanEquipOutfit(actor, outfit)) {
-#ifndef NDEBUG
-			logger::warn("\tAttempted to equip Outfit {} that can't be worn by given actor.", *outfit);
-#endif
-			return ReplacementResult::Skipped;
-		}
-
-		SetDefaultOutfit(actor, outfit);
-
-		if (auto previous = replacements.find(actor->formID); previous != replacements.end()) {
-			previous->second.distributed = outfit;
-#ifndef NDEBUG
-			logger::warn("\tUpdated replacement {}", previous->second);
-#endif
-		} else if (defaultOutfit) {
-			replacements.try_emplace(actor->formID, defaultOutfit, outfit);
-#ifndef NDEBUG
-			logger::warn("\tAdded replacement {}", OutfitReplacement(defaultOutfit, outfit));
-#endif
-		}
-
-		return ReplacementResult::Set;
-	}
-
-	bool Manager::CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit)
-	{
-		const auto race = actor->GetRace();
-		for (const auto& item : outfit->outfitItems) {
-			if (const auto armor = item->As<RE::TESObjectARMO>()) {
-				if (!std::any_of(armor->armorAddons.begin(), armor->armorAddons.end(), [&](const auto& arma) {
-						return arma && arma->IsValidRace(race);
-					})) {
-					return false;
-				}
-			}
-		}
-
-		return true;
-	}
-
-	void Manager::AddWornOutfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
-	{
-		if (const auto invChanges = actor->GetInventoryChanges()) {
-			if (const auto entryLists = invChanges->entryList) {
-				const auto formID = a_outfit->GetFormID();
-
-				for (const auto& entryList : *entryLists) {
-					if (entryList && entryList->object && entryList->extraLists) {
-						for (const auto& xList : *entryList->extraLists) {
-							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
-							if (outfitItem && outfitItem->id == formID) {
-								// queueEquip causes random crashes, probably when the equipping is executed.
-								// forceEquip seems to do the job.
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, false, true);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	bool Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit)
-	{
-		if (!actor || !outfit) {
-			return false;
-		}
-#ifndef NDEBUG
-		logger::info("\tEquipping Outfit {}", *outfit);
-#endif
-		const auto npc = actor->GetActorBase();
-		if (!npc || npc->defaultOutfit == outfit) {
-			return false;
-		}
-		actor->RemoveOutfitItems(npc->defaultOutfit);
-		npc->SetDefaultOutfit(outfit);
-		actor->InitInventoryIfRequired();
-		if (!actor->IsDisabled()) {
-			AddWornOutfit(actor, outfit);
-		}
-		return true;
-	}
-
 	void Manager::Load(SKSE::SerializationInterface* a_interface)
 	{
 #ifndef NDEBUG
@@ -312,9 +166,8 @@ namespace Outfits
 		std::uint32_t updatedCount = 0;
 		for (const auto& it : loadedReplacements) {
 			const auto& actor = it.first;
-			const auto npc = actor->GetActorBase();
+			const auto  npc = actor->GetActorBase();
 			const auto& replacement = it.second;
-			logger::info("\t\tActual outfit on NPC: {}", *(npc->defaultOutfit));
 			if (auto newIt = newReplacements.find(actor->formID); newIt != newReplacements.end()) {  // If we have some new replacement for this actor
 				newIt->second.original = replacement.original;                                       // we want to forward original outfit from the previous replacement to the new one. (so that a chain of outfits like this A->B->C becomes A->C and we'll be able to revert to the very first outfit)
 				++updatedCount;
@@ -327,7 +180,7 @@ namespace Outfits
 				logger::info("\tReverting Outfit Replacement for {}", *actor);
 				logger::info("\t\t{:R}", replacement);
 #endif
-				if (manager->SetDefaultOutfit(actor, replacement.original)) {
+				if (manager->ApplyOutfit(actor, replacement.original)) {
 					++revertedCount;
 				}
 			}
@@ -339,6 +192,7 @@ namespace Outfits
 		if (updatedCount) {
 			logger::info("Updated {} existing Outfit Replacements", updatedCount);
 		}
+		logger::info("{:*^30}", "RUNTIME");  // continue runtime logging section
 #endif
 	}
 
@@ -372,4 +226,217 @@ namespace Outfits
 		logger::info("Saved {} replacements", savedCount);
 #endif
 	}
+#pragma endregion
+
+#pragma region Hooks
+	struct Load3D
+	{
+		static RE::NiAVObject* thunk(RE::Character* a_this, bool a_backgroundLoading)
+		{
+#ifndef NDEBUG
+			logger::info("Load3D({})", *a_this);
+#endif
+			const auto manager = Manager::GetSingleton();
+			if (!manager->isLoadingGame) {
+				manager->ApplyOutfit(a_this);
+			}
+
+			return func(a_this, a_backgroundLoading);
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+
+		static inline constexpr std::size_t index{ 0 };
+		static inline constexpr std::size_t size{ 0x6A };
+	};
+
+	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
+	{
+		switch (message->type) {
+		case SKSE::MessagingInterface::kDataLoaded:
+			{
+				const auto serializationInterface = SKSE::GetSerializationInterface();
+				serializationInterface->SetUniqueID(serializationKey);
+				serializationInterface->SetSaveCallback(Save);
+				serializationInterface->SetLoadCallback(Load);
+
+				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+					scripts->AddEventSink<RE::TESFormDeleteEvent>(this);
+					logger::info("Outfit Manager: Registered for {}.", typeid(RE::TESFormDeleteEvent).name());
+				}
+
+				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+					scripts->AddEventSink<RE::TESDeathEvent>(this);
+					logger::info("Outfit Manager: Registered for {}.", typeid(RE::TESDeathEvent).name());
+				}
+
+				stl::write_vfunc<RE::Character, Load3D>();
+				logger::info("Outfit Manager: Installed Load3D hook.");
+			}
+			break;
+		case SKSE::MessagingInterface::kPreLoadGame:
+			isLoadingGame = true;
+			break;
+		case SKSE::MessagingInterface::kPostLoadGame:
+			isLoadingGame = false;
+			break;
+		default:
+			break;
+		}
+	}
+
+	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
+	{
+		if (a_event && a_event->formID != 0) {
+			replacements.erase(a_event->formID);
+		}
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
+	{
+		//logger::info("Outfits: {} {}", a_event->dead ? "Dead" : "Dying", *(a_event->actorDying->As<RE::Actor>()));
+
+		if (!a_event || a_event->dead) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+
+		if (const auto actor = a_event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
+			ApplyOutfit(actor);
+		}
+
+		return RE::BSEventNotifyControl::kContinue;
+	}
+#pragma endregion
+
+#pragma region Outfit Management
+	bool Manager::SetDefaultOutfit(RE::Actor* actor, RE::BGSOutfit* outfit)
+	{
+		if (!actor || !outfit) {  // invalid call
+			return false;
+		}
+
+		const auto npc = actor->GetActorBase();
+
+		if (!npc) {
+			return false;
+		}
+
+		const auto defaultOutfit = npc->defaultOutfit;
+
+#ifndef NDEBUG
+		logger::info("Evaluating outfit for {}", *actor);
+		if (defaultOutfit) {
+			logger::info("\tCurrent Outfit: {}", *defaultOutfit);
+		} else {
+			logger::info("\tCurrent Outfit: None");
+		}
+		logger::info("\tNew Outfit: {}", *outfit);
+#endif
+		if (auto existing = replacements.find(actor->formID); existing != replacements.end()) {  // we already have tracked replacement
+#ifndef NDEBUG
+			logger::info("\tFound existing replacement {}", existing->second);
+#endif
+			if (outfit == defaultOutfit && outfit == existing->second.distributed) {  // if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
+#ifndef NDEBUG
+				logger::info("\tExisting replacement is already set");
+#endif
+				return true;
+			}
+		}
+
+		if (!CanEquipOutfit(actor, outfit)) {
+#ifndef NDEBUG
+			logger::warn("\tAttempted to equip Outfit {} that can't be worn by given actor.", *outfit);
+#endif
+			return false;
+		}
+
+		if (auto previous = replacements.find(actor->formID); previous != replacements.end()) {
+			previous->second.distributed = outfit;
+#ifndef NDEBUG
+			logger::warn("\tUpdated replacement {}", previous->second);
+#endif
+		} else if (defaultOutfit) {
+			replacements.try_emplace(actor->formID, defaultOutfit, outfit);
+#ifndef NDEBUG
+			logger::warn("\tAdded replacement {}", OutfitReplacement(defaultOutfit, outfit));
+#endif
+		}
+
+		return true;
+	}
+
+	bool Manager::ApplyOutfit(RE::Actor* actor)
+	{
+		if (!actor)
+			return false;
+
+		if (const auto replacement = replacements.find(actor->formID); replacement != replacements.end()) {
+			if (replacement->second.distributed) {
+				return ApplyOutfit(actor, replacement->second.distributed);
+			}
+		}
+
+		return false;
+	}
+
+	bool Manager::CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit)
+	{
+		const auto race = actor->GetRace();
+		for (const auto& item : outfit->outfitItems) {
+			if (const auto armor = item->As<RE::TESObjectARMO>()) {
+				if (!std::any_of(armor->armorAddons.begin(), armor->armorAddons.end(), [&](const auto& arma) {
+						return arma && arma->IsValidRace(race);
+					})) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	void Manager::AddWornOutfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
+	{
+		if (const auto invChanges = actor->GetInventoryChanges()) {
+			if (const auto entryLists = invChanges->entryList) {
+				const auto formID = a_outfit->GetFormID();
+
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->extraLists) {
+						for (const auto& xList : *entryList->extraLists) {
+							const auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+							if (outfitItem && outfitItem->id == formID) {
+								// queueEquip causes random crashes, probably when the equipping is executed.
+								// forceEquip seems to do the job.
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, false, true);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	bool Manager::ApplyOutfit(RE::Actor* actor, RE::BGSOutfit* outfit)
+	{
+		if (!actor || !outfit) {
+			return false;
+		}
+#ifndef NDEBUG
+		logger::info("\tEquipping Outfit {}", *outfit);
+#endif
+		const auto npc = actor->GetActorBase();
+		if (!npc || npc->defaultOutfit == outfit) {
+			return false;
+		}
+		actor->RemoveOutfitItems(npc->defaultOutfit);
+		npc->SetDefaultOutfit(outfit);
+		actor->InitInventoryIfRequired();
+		if (!actor->IsDisabled()) {
+			AddWornOutfit(actor, outfit);
+		}
+		return true;
+	}
+#pragma endregion
 }
