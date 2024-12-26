@@ -9,6 +9,19 @@ namespace Outfits
 	{
 	public:
 		void HandleMessage(SKSE::MessagingInterface::Message*);
+		
+		// TODO: This method should check both initial and distributed outfits in SPID 8 or something.
+		/// <summary>
+		/// Checks whether the NPC uses specified outfit as the default outfit.
+		/// 
+		/// This method checks initial outfit which was set in the plugins. 
+		/// Outfits distributed on top of the initial outfits won't be recognized in SPID 7. 
+		/// There should be a way to handle both of them in the future.
+		/// </summary>
+		/// <param name="NPC">Target NPC to be tested</param>
+		/// <param name="Outfit">An outfit that needs to be checked</param>
+		/// <returns>True if specified outfit was used as the default outift by the NPC</returns>
+		bool HasDefaultOutfit(RE::TESNPC*, RE::BGSOutfit*) const;
 
 		/// <summary>
 		/// Checks whether the actor can technically wear a given outfit.
@@ -19,7 +32,7 @@ namespace Outfits
 		/// <param name="Actor">Target Actor to be tested</param>
 		/// <param name="Outfit">An outfit that needs to be equipped</param>
 		/// <returns>True if the actor can wear the outfit, false otherwise</returns>
-		bool CanEquipOutfit(const RE::Actor*, RE::BGSOutfit*);
+		bool CanEquipOutfit(const RE::Actor*, RE::BGSOutfit*) const;
 
 		/// <summary>
 		/// Sets given outfit as default outfit for the actor.
@@ -51,7 +64,7 @@ namespace Outfits
 		/// </summary>
 		/// <param name="actor">Actor for whom outfit should be changed</param>
 		/// <returns>True if the outfit was successfully set, false otherwise</returns>
-		bool ApplyOutfit(RE::Actor*);
+		bool ApplyOutfit(RE::Actor*) const;
 
 	protected:
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
@@ -71,10 +84,10 @@ namespace Outfits
 		/// <param name="actor">Actor for whom outfit should be changed</param>
 		/// <param name="outift">The outfit to be set</param>
 		/// <returns>True if the outfit was successfully set, false otherwise</returns>
-		bool ApplyOutfit(RE::Actor*, RE::BGSOutfit*);
+		bool ApplyOutfit(RE::Actor*, RE::BGSOutfit*) const;
 
 		/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
-		void AddWornOutfit(RE::Actor*, const RE::BGSOutfit*);
+		void AddWornOutfit(RE::Actor*, const RE::BGSOutfit*) const;
 
 		struct OutfitReplacement
 		{
@@ -88,13 +101,14 @@ namespace Outfits
 			RE::FormID unrecognizedDistributedFormID;
 
 			OutfitReplacement() = default;
-			OutfitReplacement(RE::BGSOutfit* original, RE::FormID unrecognizedDistributedFormID) :
+			OutfitReplacement(RE::BGSOutfit* original, RE::FormID unrecognizedDistributedFormID = 0) :
 				original(original), distributed(nullptr), unrecognizedDistributedFormID(unrecognizedDistributedFormID) {}
 			OutfitReplacement(RE::BGSOutfit* original, RE::BGSOutfit* distributed) :
 				original(original), distributed(distributed), unrecognizedDistributedFormID(0) {}
 		};
 
 		friend struct Load3D;
+		friend struct LoadGame;
 
 		friend fmt::formatter<Outfits::Manager::OutfitReplacement>;
 
@@ -105,6 +119,17 @@ namespace Outfits
 		/// Latest distribution replacements always take priority over the ones stored in the save file.
 		/// </summary>
 		std::unordered_map<RE::FormID, OutfitReplacement> replacements;
+
+		/// <summary>
+		/// Map of NPC's FormID and corresponding initial Outfit that is set in loaded plugins.
+		/// 
+		/// This map is used for filtering during distribution to be able to provide consistent filtering behavior.
+		/// Once the Manager applies new outfit, all filters that use initial outfit of this NPC will stop working,
+		/// the reason is that distributed outfits are baked into the save, and are loaded as part of NPC.
+		/// 
+		/// The map is constructed with TESNPC::LoadGame hook, at which point defaultOutfit hasn't been loaded yet from the save.
+		/// </summary>
+		std::unordered_map<RE::FormID, RE::BGSOutfit*> initialOutfits;
 
 		/// <summary>
 		/// Flag indicating whether there is a loading of a save file in progress.

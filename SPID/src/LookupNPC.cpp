@@ -1,5 +1,6 @@
 #include "LookupNPC.h"
 #include "ExclusiveGroups.h"
+#include "OutfitManager.h"
 
 namespace NPC
 {
@@ -130,6 +131,7 @@ namespace NPC
 		case RE::FormType::Race:
 			return GetRace() == a_form;
 		case RE::FormType::Outfit:
+			return Outfits::Manager::GetSingleton()->HasDefaultOutfit(npc, a_form->As<RE::BGSOutfit>());
 			return npc->defaultOutfit == a_form;
 		case RE::FormType::NPC:
 			return npc == a_form || std::ranges::any_of(IDs, [&](const auto& ID) { return ID == a_form->GetFormID(); });

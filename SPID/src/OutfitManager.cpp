@@ -87,18 +87,18 @@ namespace Outfits
 			failedDistributedOutfitFormID = 0;
 
 			if (!Load(interface, loadedActor, id)) {
-				logger::warn("Failed to load Outfit Replacement record: Corrupted actor [{:08X}].", id);
+				logger::warn("Failed to load Outfit Replacement record: Unknown actor [{:08X}].", id);
 				return false;
 			}
 
 			if (!Load(interface, loadedOriginalOutfit, id)) {
-				logger::warn("Failed to load Outfit Replacement record: Corrupted original outfit [{:08X}].", id);
+				logger::warn("Failed to load Outfit Replacement record: Unknown original outfit [{:08X}].", id);
 				return false;
 			}
 
 			if (!Load(interface, loadedDistributedOutfit, id)) {
 				failedDistributedOutfitFormID = id;
-				logger::warn("Failed to load Outfit Replacement record: Corrupted distributed outfit [{:08X}].", id);
+				logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
 				return false;
 			}
 
@@ -229,12 +229,13 @@ namespace Outfits
 #pragma endregion
 
 #pragma region Hooks
+	/// This hook appliues pending outfit replacements before loading 3D model. Outfit Replacements are created by SetDefaultOutfit.
 	struct Load3D
 	{
 		static RE::NiAVObject* thunk(RE::Character* a_this, bool a_backgroundLoading)
 		{
 #ifndef NDEBUG
-			logger::info("Load3D({})", *a_this);
+			//logger::info("Load3D({})", *a_this);
 #endif
 			const auto manager = Manager::GetSingleton();
 			if (!manager->isLoadingGame) {
@@ -247,6 +248,27 @@ namespace Outfits
 
 		static inline constexpr std::size_t index{ 0 };
 		static inline constexpr std::size_t size{ 0x6A };
+	};
+
+	/// This hook builds a map of initialOutfits for all NPCs that have different outfit in the save.
+	struct LoadGame
+	{
+		static void thunk(RE::TESNPC* npc, RE::BGSLoadFormBuffer* a_buf)
+		{
+#ifndef NDEBUG
+			//logger::info("LoadGame({})", *npc);
+#endif
+			auto initialOutfit = npc->defaultOutfit;
+			func(npc, a_buf);
+			if (initialOutfit && initialOutfit != npc->defaultOutfit) {
+				Manager::GetSingleton()->initialOutfits.try_emplace(npc->formID, initialOutfit);
+			}
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+
+		static inline constexpr std::size_t index{ 0 };
+		static inline constexpr std::size_t size{ 0xF };
 	};
 
 	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
@@ -271,6 +293,9 @@ namespace Outfits
 
 				stl::write_vfunc<RE::Character, Load3D>();
 				logger::info("Outfit Manager: Installed Load3D hook.");
+
+				stl::write_vfunc<RE::TESNPC, LoadGame>();
+				logger::info("Outfit Manager: Installed LoadGame hook.");
 			}
 			break;
 		case SKSE::MessagingInterface::kPreLoadGame:
@@ -288,6 +313,7 @@ namespace Outfits
 	{
 		if (a_event && a_event->formID != 0) {
 			replacements.erase(a_event->formID);
+			initialOutfits.erase(a_event->formID);
 		}
 		return RE::BSEventNotifyControl::kContinue;
 	}
@@ -366,7 +392,7 @@ namespace Outfits
 		return true;
 	}
 
-	bool Manager::ApplyOutfit(RE::Actor* actor)
+	bool Manager::ApplyOutfit(RE::Actor* actor) const
 	{
 		if (!actor)
 			return false;
@@ -380,7 +406,20 @@ namespace Outfits
 		return false;
 	}
 
-	bool Manager::CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit)
+	bool Manager::HasDefaultOutfit(RE::TESNPC* npc, RE::BGSOutfit* outfit) const
+	{
+		if (!outfit) {
+			return false;
+		}	
+
+		if (auto existing = initialOutfits.find(npc->formID); existing != initialOutfits.end()) {
+			return existing->second == outfit;
+		}
+
+		return npc->defaultOutfit == outfit;
+	}
+
+	bool Manager::CanEquipOutfit(const RE::Actor* actor, RE::BGSOutfit* outfit) const
 	{
 		const auto race = actor->GetRace();
 		for (const auto& item : outfit->outfitItems) {
@@ -396,7 +435,7 @@ namespace Outfits
 		return true;
 	}
 
-	void Manager::AddWornOutfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit)
+	void Manager::AddWornOutfit(RE::Actor* actor, const RE::BGSOutfit* a_outfit) const
 	{
 		if (const auto invChanges = actor->GetInventoryChanges()) {
 			if (const auto entryLists = invChanges->entryList) {
@@ -418,7 +457,7 @@ namespace Outfits
 		}
 	}
 
-	bool Manager::ApplyOutfit(RE::Actor* actor, RE::BGSOutfit* outfit)
+	bool Manager::ApplyOutfit(RE::Actor* actor, RE::BGSOutfit* outfit) const
 	{
 		if (!actor || !outfit) {
 			return false;
