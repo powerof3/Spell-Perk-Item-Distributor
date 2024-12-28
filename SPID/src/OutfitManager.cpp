@@ -203,7 +203,7 @@ namespace Outfits
 #ifndef NDEBUG
 		logger::info("{:*^30}", "SAVING");
 #endif
-		auto manager = Manager::GetSingleton();
+		auto        manager = Manager::GetSingleton();
 		ReadLocker  lock(manager->_lock);
 		const auto& replacements = manager->replacements;
 #ifndef NDEBUG
@@ -370,12 +370,12 @@ namespace Outfits
 #ifndef NDEBUG
 			logger::info("\tFound existing replacement {}", existing->second);
 #endif
-			// If we have an existing replacement and actor is already dead, 
+			// If we have an existing replacement and actor is already dead,
 			// then we don't want to set new outfit to avoid sudden changes that player might not expect.
-			// But only if the outfit was already given to them. 
+			// But only if the outfit was already given to them.
 			// This will allow to apply initial outfit to the dead actor in case new mod was added or something.
-			// 
-			// TODO: Consider tracking looting state of the outfit? 
+			//
+			// TODO: Consider tracking looting state of the outfit?
 			// e.g. if an actor still wears all parts of the outfit, then allow to change it.
 			// This might be unexpected, since dead NPCs are supposed to have their outfit locked.
 			if (actor->IsDead()) {

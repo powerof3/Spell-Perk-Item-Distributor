@@ -39,7 +39,6 @@ namespace PCLevelMult
 		void          SetNewGameStarted();
 
 	private:
-
 		enum class LEVEL_CAP_STATE
 		{
 			kNotHit = 0,
