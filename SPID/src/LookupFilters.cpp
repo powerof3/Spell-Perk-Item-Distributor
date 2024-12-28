@@ -166,6 +166,9 @@ namespace Filter
 		if (traits.teammate && a_npcData.IsTeammate() != *traits.teammate) {
 			return Result::kFail;
 		}
+		if (traits.startsDead && a_npcData.IsDead() != *traits.startsDead) {
+			return Result::kFail;
+		}
 
 		return Result::kPass;
 	}

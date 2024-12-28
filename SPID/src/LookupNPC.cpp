@@ -1,5 +1,6 @@
 #include "LookupNPC.h"
 #include "ExclusiveGroups.h"
+#include "OutfitManager.h"
 
 namespace NPC
 {
@@ -28,14 +29,15 @@ namespace NPC
 		return formID == a_formID;
 	}
 
-	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc) :
+	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc, bool isDying) :
 		npc(a_npc),
 		actor(a_actor),
 		race(a_actor->GetRace()),
 		name(a_actor->GetName()),
 		level(a_npc->GetLevel()),
 		child(a_actor->IsChild() || race && race->formEditorID.contains("RaceChild")),
-		leveled(a_actor->IsLeveled())
+		leveled(a_actor->IsLeveled()),
+		dying(isDying)
 	{
 		npc->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
 			keywords.emplace(a_keyword->GetFormEditorID());
@@ -129,6 +131,7 @@ namespace NPC
 		case RE::FormType::Race:
 			return GetRace() == a_form;
 		case RE::FormType::Outfit:
+			return Outfits::Manager::GetSingleton()->HasDefaultOutfit(npc, a_form->As<RE::BGSOutfit>());
 			return npc->defaultOutfit == a_form;
 		case RE::FormType::NPC:
 			return npc == a_form || std::ranges::any_of(IDs, [&](const auto& ID) { return ID == a_form->GetFormID(); });
@@ -224,6 +227,21 @@ namespace NPC
 	bool Data::IsTeammate() const
 	{
 		return teammate;
+	}
+
+	bool Data::IsDead() const
+	{
+		return actor && actor->IsDead() || StartsDead();
+	}
+
+	bool Data::IsDying() const
+	{
+		return dying;
+	}
+
+	bool Data::StartsDead() const
+	{
+		return actor && (actor->formFlags & RE::Actor::RecordFlags::kStartsDead);
 	}
 
 	RE::TESRace* Data::GetRace() const

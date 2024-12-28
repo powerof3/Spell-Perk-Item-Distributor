@@ -17,7 +17,6 @@ namespace RECORD
 		kPackage,
 		kOutfit,
 		kKeyword,
-		kDeathItem,
 		kFaction,
 		kSleepOutfit,
 		kSkin,
@@ -37,7 +36,6 @@ namespace RECORD
 			"Package"sv,
 			"Outfit"sv,
 			"Keyword"sv,
-			"DeathItem"sv,
 			"Faction"sv,
 			"SleepOutfit"sv,
 			"Skin"sv
@@ -483,6 +481,12 @@ namespace Distribution::INI
 			case "-T"_h:
 				data.traits.teammate = false;
 				break;
+			case "D"_h:
+				data.traits.startsDead = true;
+				break;
+			case "-D"_h:
+				data.traits.startsDead = false;
+				break;
 			default:
 				break;
 			}
@@ -516,7 +520,7 @@ namespace Distribution::INI
 					data.idxOrCount = RandomCount(count, count);  // create the exact match range.
 				}
 			}
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 			throw InvalidIndexOrCountException(entry);
 		}
 	}

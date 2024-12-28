@@ -181,55 +181,115 @@ namespace DeathDistribution
 
 #pragma region Distribution
 
-	void Manager::Register()
+	static RE::BGSKeyword* SPID_Dead = nullptr;
+
+	struct ShouldBackgroundClone
 	{
-		if (INI::deathConfigs.empty()) {
+		static bool thunk(RE::Character* a_this)
+		{
+			logger::info("Death: ShouldBackgroundClone({})", *a_this);
+			return func(a_this);
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+
+		static inline constexpr std::size_t index{ 0 };
+		static inline constexpr std::size_t size{ 0x6D };
+	};
+
+	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
+	{
+		switch (message->type) {
+		case SKSE::MessagingInterface::kDataLoaded:
+			if (INI::deathConfigs.empty()) {
+				return;
+			}
+
+			if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+				scripts->AddEventSink<RE::TESDeathEvent>(this);
+				logger::info("Death Distribution: Registered for {}.", typeid(RE::TESDeathEvent).name());
+			}
+
+			// TODO: Death Distribution should hook ShouldBackgroundClone to perform distribution of NPCs that are loaded dead.
+			// This will allow to decouple regular distribution from death distribution completely. Just for aesthetics :)
+			//
+			// Current challenge is that hooks are called in the reverse order of their installation,
+			// so this would require also refactoring existing MessageHandler to this new system with specialized Manager::HandleMessage.
+			//
+			// stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
+			// logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
+
+			// Create tag keywords
+			if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
+				if (SPID_Dead = factory->Create(); SPID_Dead) {
+					SPID_Dead->formEditorID = "SPID_Dead";
+					logger::info("Death Distribution: Created SPID_Dead keyword.");
+				}
+			}
+
+			assert(SPID_Dead);
+			break;
+		default:
+			break;
+		}
+	}
+
+	void Manager::Distribute(NPCData& data)
+	{
+		assert(data.IsDead() || data.IsDying());
+
+		// TODO: Test that we actually hit that log warning. Doesn't seem like it's possible, and keyword can be removed.
+		// We mark NPCs that were processed by Death Distribution with SPID_Dead keyword,
+		// to ensure that NPCs who received Death Distribution once won't get another Death Distribution
+		// (which might happen if cell or game is reloaded with dead NPC laying there)
+		if (data.GetNPC()->HasKeyword(SPID_Dead)) {
+			logger::warn("NPC {} already processed by Death Distribution", *(data.GetActor()));
 			return;
 		}
 
-		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
-			scripts->AddEventSink<RE::TESDeathEvent>(GetSingleton());
-			logger::info("Registered for {}", typeid(RE::TESDeathEvent).name());
+		data.GetNPC()->AddKeyword(SPID_Dead);
+
+		const auto input = PCLevelMult::Input{ data.GetActor(), data.GetNPC(), false };
+
+		DistributedForms distributedForms{};
+
+		Forms::DistributionSet entries{
+			spells.GetForms(),
+			perks.GetForms(),
+			items.GetForms(),
+			shouts.GetForms(),
+			levSpells.GetForms(),
+			packages.GetForms(),
+			outfits.GetForms(),
+			keywords.GetForms(),
+			factions.GetForms(),
+			sleepOutfits.GetForms(),
+			skins.GetForms()
+		};
+
+		Distribute::Distribute(data, input, entries, &distributedForms);
+
+		if (!distributedForms.empty()) {
+			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kDeath, distributedForms, [&](Forms::DistributionSet& set) {
+				Distribute::Distribute(data, input, set, &distributedForms);
+			});
 		}
+
+		Distribute::LogDistribution(distributedForms, data);
 	}
 
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
 	{
-		constexpr auto is_NPC = [](auto&& a_ref) {
-			return a_ref && !a_ref->IsPlayerRef();
-		};
+		// TODO: Make it header for Distribution output (e.g. "On Death Distribution for actor {}")
+		//logger::info("Death: {} {}", a_event->dead ? "Dead" : "Dying", *(a_event->actorDying->As<RE::Actor>()));
 
-		if (a_event && a_event->dead && is_NPC(a_event->actorDying)) {
-			const auto actor = a_event->actorDying->As<RE::Actor>();
-			const auto npc = actor ? actor->GetActorBase() : nullptr;
-			if (actor && npc) {
-				auto       npcData = NPCData(actor, npc);
-				const auto input = PCLevelMult::Input{ actor, npc, false };
+		if (!a_event || a_event->dead) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
 
-				DistributedForms distributedForms{};
-
-				Forms::DistributionSet entries{
-					spells.GetForms(),
-					perks.GetForms(),
-					items.GetForms(),
-					shouts.GetForms(),
-					levSpells.GetForms(),
-					packages.GetForms(),
-					outfits.GetForms(),
-					keywords.GetForms(),
-					factions.GetForms(),
-					sleepOutfits.GetForms(),
-					skins.GetForms()
-				};
-
-				Distribute::Distribute(npcData, input, entries, false, &distributedForms);
-				// TODO: We can now log per-NPC distributed forms.
-
-				if (!distributedForms.empty()) {
-					LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kDeath, distributedForms, [&](Forms::DistributionSet& set) {
-						Distribute::Distribute(npcData, input, set, true, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
-					});
-				}
+		if (const auto actor = a_event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
+			if (const auto npc = actor->GetActorBase(); npc) {
+				auto npcData = NPCData(actor, npc, true);
+				Distribute(npcData);
 			}
 		}
 

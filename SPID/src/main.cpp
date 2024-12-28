@@ -1,6 +1,8 @@
+#include "DeathDistribution.h"
 #include "DistributeManager.h"
 #include "LookupConfigs.h"
 #include "LookupForms.h"
+#include "OutfitManager.h"
 #include "PCLevelMultManager.h"
 
 bool shouldLookupForms{ false };
@@ -65,6 +67,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	default:
 		break;
 	}
+	DeathDistribution::Manager::GetSingleton()->HandleMessage(a_message);
+	Outfits::Manager::GetSingleton()->HandleMessage(a_message);
 }
 
 #ifdef SKYRIM_AE
@@ -135,7 +139,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
 	logger::info("Game version : {}", a_skse->RuntimeVersion().string());
 
-	SKSE::Init(a_skse);
+	SKSE::Init(a_skse, false);
 
 	SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
 

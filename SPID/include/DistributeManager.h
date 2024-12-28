@@ -3,7 +3,6 @@
 namespace Distribute
 {
 	inline RE::BGSKeyword* processed{ nullptr };
-	inline RE::BGSKeyword* processedOutfit{ nullptr };
 
 	namespace detail
 	{

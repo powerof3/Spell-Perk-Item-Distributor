@@ -1,11 +1,13 @@
 #include "Distribute.h"
 
+#include "DeathDistribution.h"
 #include "DistributeManager.h"
 #include "LinkedDistribution.h"
+#include "OutfitManager.h"
 
 namespace Distribute
 {
-	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, bool allowOverwrites, DistributedForms* accumulatedForms)
+	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms)
 	{
 		const auto npc = npcData.GetNPC();
 
@@ -32,7 +34,9 @@ namespace Distribute
 
 		for_each_form<RE::SpellItem>(
 			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& a_spells) {
-				npc->GetSpellList()->AddSpells(a_spells);
+				for (auto& spell : a_spells) {
+					npcData.GetActor()->AddSpell(spell);  // Adding spells one by one to actor properly applies them. This solves On Death distribution issue #60
+				}
 			},
 			accumulatedForms);
 
@@ -102,18 +106,13 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-		for_each_form<RE::BGSOutfit>(
+		for_first_form<RE::BGSOutfit>(
 			npcData, forms.outfits, input, [&](auto* a_outfit) {
-				if (npc->defaultOutfit != a_outfit && (allowOverwrites || !npc->HasKeyword(processedOutfit))) {
-					npc->AddKeyword(processedOutfit);
-					npc->defaultOutfit = a_outfit;
-					return true;
-				}
-				return false;
+				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit);  // terminate as soon as valid outfit is confirmed.
 			},
 			accumulatedForms);
 
-		for_each_form<RE::BGSOutfit>(
+		for_first_form<RE::BGSOutfit>(
 			npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
 				if (npc->sleepOutfit != a_outfit) {
 					npc->sleepOutfit = a_outfit;
@@ -129,7 +128,7 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-		for_each_form<RE::TESObjectARMO>(
+		for_first_form<RE::TESObjectARMO>(
 			npcData, forms.skins, input, [&](auto* a_skin) {
 				if (npc->skin != a_skin) {
 					npc->skin = a_skin;
@@ -142,9 +141,8 @@ namespace Distribute
 
 	void Distribute(NPCData& npcData, const PCLevelMult::Input& input)
 	{
-		if (input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input)) {
+		if (input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input))
 			return;
-		}
 
 		Forms::DistributionSet entries{
 			Forms::spells.GetForms(input.onlyPlayerLevelEntries),
@@ -162,20 +160,48 @@ namespace Distribute
 
 		DistributedForms distributedForms{};
 
-		Distribute(npcData, input, entries, false, &distributedForms);
-		// TODO: We can now log per-NPC distributed forms.
+		Distribute(npcData, input, entries, &distributedForms);
 
 		if (!distributedForms.empty()) {
 			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kRegular, distributedForms, [&](Forms::DistributionSet& set) {
-				Distribute(npcData, input, set, true, nullptr);  // TODO: Accumulate forms here? to log what was distributed.
+				Distribute(npcData, input, set, &distributedForms);
 			});
 		}
+
+		LogDistribution(distributedForms, npcData);
 	}
 
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
 	{
 		const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
+
+		// We always do the normal distribution even for Dead NPCs,
+		// if Distributable Form is only meant to be distributed while NPC is alive, the entry must contain -D filter.
 		Distribute(npcData, input);
+
+		// TODO: This will be moved to DeathDistribution's own hook.
+		if (npcData.IsDead()) {  // If NPC is already dead, perform the On Death Distribution.
+			DeathDistribution::Manager::GetSingleton()->Distribute(npcData);
+		}
+	}
+
+	void LogDistribution(const DistributedForms& forms, NPCData& npcData)
+	{
+#ifndef NDEBUG
+		std::map<std::string_view, std::vector<DistributedForm>> results;
+
+		for (const auto& form : forms) {
+			results[RE::FormTypeToString(form.first->GetFormType())].push_back(form);
+		}
+
+		logger::info("Distribution for {}", *npcData.GetActor());
+		for (const auto& pair : results) {
+			logger::info("\t{}", pair.first);
+			for (const auto& form : pair.second) {
+				logger::info("\t\t{} @ {}", *form.first, form.second);
+			}
+		}
+#endif
 	}
 }

@@ -98,22 +98,24 @@ namespace Distribute
 
 #pragma region Outfits, Sleep Outfits, Skins
 	template <class Form>
-	void for_each_form(
+	bool for_first_form(
 		const NPCData&             a_npcData,
 		Forms::DataVec<Form>&      forms,
 		const PCLevelMult::Input&  a_input,
 		std::function<bool(Form*)> a_callback,
 		DistributedForms*          accumulatedForms = nullptr)
 	{
-		for (auto& formData : forms) {  // Vector is reversed in FinishLookupForms
+		for (auto& formData : forms) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form)) {
 				if (accumulatedForms) {
 					accumulatedForms->insert({ formData.form, formData.path });
 				}
 				++formData.npcCount;
-				break;
+				return true;
 			}
 		}
+
+		return false;
 	}
 #pragma endregion
 
@@ -228,9 +230,17 @@ namespace Distribute
 	/// <param name="npcData">General information about NPC that is being processed.</param>
 	/// <param name="input">Leveling information about NPC that is being processed.</param>
 	/// <param name="forms">A set of forms that should be distributed to NPC.</param>
-	/// <param name="allowOverwrites">If true, overwritable forms (like Outfits) will be to overwrite last distributed form on NPC.</param>
 	/// <param name="accumulatedForms">An optional pointer to a set that will accumulate all distributed forms.</param>
-	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, bool allowOverwrites, DistributedForms* accumulatedForms = nullptr);
-	void Distribute(NPCData& npcData, const PCLevelMult::Input& input);
+	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms = nullptr);
+
+	/// <summary>
+	/// Invokes appropriate distribution for given NPC.
+	///
+	/// When NPC is dead a Death Distribution will be invoked, otherwise a normal distribution takes place.
+	/// </summary>
+	/// <param name="npcData">General information about NPC that is being processed.</param>
+	/// <param name="onlyLeveledEntries"> Flag indicating that distribution is invoked by a leveling event and only entries with LevelFilters needs to be processed.</param>
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries);
+
+	void LogDistribution(const DistributedForms& forms, NPCData& npcData);
 }

@@ -1,5 +1,4 @@
 #include "DistributeManager.h"
-#include "DeathDistribution.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
 
@@ -26,15 +25,16 @@ namespace Distribute
 
 	namespace Actor
 	{
-		// FF actor/outfit distribution
+		// General distribution
+		// FF actors distribution
 		struct ShouldBackgroundClone
 		{
 			static bool thunk(RE::Character* a_this)
 			{
+				//logger::info("Distribute: ShouldBackgroundClone({})", *a_this);
 				if (const auto npc = a_this->GetActorBase()) {
 					detail::distribute_on_load(a_this, npc);
 				}
-
 				return func(a_this);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -44,6 +44,7 @@ namespace Distribute
 		};
 
 		// Post distribution
+		// Fixes weird behavior with leveled npcs?
 		struct InitLoadGame
 		{
 			static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
@@ -53,6 +54,9 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
+						// TODO: Test whether there are some NPCs that are getting in this branch
+						// I haven't experienced issues with ShouldBackgroundClone hook.
+						//logger::info("InitLoadGame({})", *a_this);
 						detail::distribute_on_load(a_this, npc);
 					}
 				}
@@ -65,8 +69,8 @@ namespace Distribute
 
 		void Install()
 		{
-			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 			stl::write_vfunc<RE::Character, InitLoadGame>();
+			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 
 			logger::info("Installed actor load hooks");
 		}
@@ -79,9 +83,6 @@ namespace Distribute
 			if (processed = factory->Create(); processed) {
 				processed->formEditorID = "SPID_Processed";
 			}
-			if (processedOutfit = factory->Create(); processedOutfit) {
-				processedOutfit->formEditorID = "SPID_ProcessedOutfit";
-			}
 		}
 
 		if (Forms::GetTotalLeveledEntries() > 0) {
@@ -91,9 +92,9 @@ namespace Distribute
 		logger::info("{:*^50}", "EVENTS");
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
-		DeathDistribution::Manager::Register();
 
-		DoInitialDistribution();
+		// TODO: No initial distribution. Check Packages distribution and see if those work as intended.
+		//DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();
@@ -134,7 +135,7 @@ namespace Distribute
 		logger::info("{:*^50}", "MAIN MENU DISTRIBUTION");
 
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
-			if (a_distributable && a_distributable.GetType() != RECORD::kDeathItem) {
+			if (a_distributable) {
 				logger::info("{}", RECORD::GetTypeName(a_distributable.GetType()));
 
 				auto& forms = a_distributable.GetForms();
@@ -175,7 +176,7 @@ namespace Distribute::Event
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
-			logger::info("Registered for {}", typeid(RE::TESFormDeleteEvent).name());
+			logger::info("Registered Distribution Manager for {}", typeid(RE::TESFormDeleteEvent).name());
 		}
 	}
 

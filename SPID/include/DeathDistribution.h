@@ -1,14 +1,15 @@
 #pragma once
 #include "FormData.h"
+#include "LookupNPC.h"
 
 namespace DeathDistribution
 {
 	namespace INI
 	{
 		/// <summary>
-		/// Checks whether given entry is an on death distribuatble form and attempts to parse it.
+		/// Checks whether given entry is an On Death Distributable Form and attempts to parse it.
 		/// </summary>
-		/// <returns>true if given entry was an on death distribuatble form. Note that returned value doesn't represent whether parsing was successful.</returns>
+		/// <returns>True if given entry was an On Death Distribuatble Form. Note that returned value doesn't represent whether parsing was successful.</returns>
 		bool TryParse(const std::string& key, const std::string& value, const Path&);
 	}
 
@@ -19,7 +20,7 @@ namespace DeathDistribution
 		public RE::BSTEventSink<RE::TESDeathEvent>
 	{
 	public:
-		static void Register();
+		void HandleMessage(SKSE::MessagingInterface::Message*);
 
 		/// <summary>
 		/// Does a forms lookup similar to what Filters do.
@@ -31,6 +32,14 @@ namespace DeathDistribution
 		void LogFormsLookup();
 
 		bool IsEmpty();
+
+		/// <summary>
+		/// Performs Death Distribution on a given NPC.
+		///
+		/// NPC passed to this method must be Dead in order to be processed.
+		/// </summary>
+		/// <param name=""></param>
+		void Distribute(NPCData&);
 
 	private:
 		Distributables<RE::SpellItem>      spells{ RECORD::kSpell };
@@ -46,7 +55,7 @@ namespace DeathDistribution
 		Distributables<RE::TESObjectARMO>  skins{ RECORD::kSkin };
 
 		/// <summary>
-		/// Iterates over each type of LinkedForms and calls a callback with each of them.
+		/// Iterates over each type of On Death Distributable Form and calls a callback with each of them.
 		/// </summary>
 		template <typename Func, typename... Args>
 		void ForEachDistributable(Func&& func, Args&&... args);

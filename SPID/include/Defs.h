@@ -91,6 +91,7 @@ struct Traits
 	std::optional<bool>    child{};
 	std::optional<bool>    leveled{};
 	std::optional<bool>    teammate{};
+	std::optional<bool>    startsDead{};
 };
 
 using Path = std::string;
@@ -153,4 +154,57 @@ inline std::ostream& operator<<(std::ostream& os, RE::TESForm* form)
 	   << "]";
 
 	return os;
+}
+
+namespace fmt
+{
+	// Produces formatted strings for all Forms like this:
+	// DefaultAshPile2 "Ash Pile" [ACTI:00000022]
+	// defaultBlankTrigger [ACTI:00000F55]
+	template <typename Form>
+	struct formatter<Form, std::enable_if_t<std::is_base_of<RE::TESForm, Form>::value, char>> : fmt::formatter<std::string>
+	{
+		template <class ParseContext>
+		constexpr auto parse(ParseContext& a_ctx)
+		{
+			return a_ctx.begin();
+		}
+
+		template <class FormatContext>
+		constexpr auto format(const Form& form, FormatContext& a_ctx) const
+		{
+			const auto name = std::string(form.GetName());
+			const auto edid = editorID::get_editorID(&form);
+			if (name.empty() && edid.empty()) {
+				return fmt::format_to(a_ctx.out(), "[{}:{:08X}]", form.GetFormType(), form.formID);
+			} else if (name.empty()) {
+				return fmt::format_to(a_ctx.out(), "{} [{}:{:08X}]", edid, form.GetFormType(), form.formID);
+			} else if (edid.empty()) {
+				return fmt::format_to(a_ctx.out(), "{:?} [{}:{:08X}]", name, form.GetFormType(), form.formID);
+			}
+			return fmt::format_to(a_ctx.out(), "{} {:?} [{}:{:08X}]", edid, name, form.GetFormType(), form.formID);
+		}
+	};
+
+	// Does the same as generic formatter, but also includes a Base NPC info.
+	template <>
+	struct formatter<RE::Actor>
+	{
+		template <class ParseContext>
+		constexpr auto parse(ParseContext& a_ctx)
+		{
+			return a_ctx.begin();
+		}
+
+		template <class FormatContext>
+		constexpr auto format(const RE::Actor& actor, FormatContext& a_ctx) const
+		{
+			const auto& form = static_cast<const RE::TESForm&>(actor);
+			if (auto npc = actor.GetActorBase(); npc) {
+				return fmt::format_to(a_ctx.out(), "{} (Base: {})", form, *npc);
+			}
+			return fmt::format_to(a_ctx.out(), "{}", form);
+		}
+	};
+
 }
