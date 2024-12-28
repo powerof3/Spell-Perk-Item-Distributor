@@ -1,5 +1,4 @@
 #pragma once
-#include "RE/F/FormTypes.h"
 
 namespace RECORD
 {
