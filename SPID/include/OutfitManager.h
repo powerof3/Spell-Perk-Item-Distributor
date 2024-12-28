@@ -113,6 +113,11 @@ namespace Outfits
 		friend fmt::formatter<Outfits::Manager::OutfitReplacement>;
 
 		/// <summary>
+		/// Lock for replacements.
+		/// </summary>
+		mutable Lock _lock;
+
+		/// <summary>
 		/// Map of Actor's FormID and corresponding Outfit Replacements that are being tracked by the manager.
 		///
 		/// This map is serialized in a co-save and is used to clean up no longer distributed outfits when loading a previous save.

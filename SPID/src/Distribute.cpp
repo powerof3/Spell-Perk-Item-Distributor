@@ -175,8 +175,12 @@ namespace Distribute
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
 	{
 		const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
+
+		// We always do the normal distribution even for Dead NPCs,
+		// if Distributable Form is only meant to be distributed while NPC is alive, the entry must contain -D filter.
 		Distribute(npcData, input);
 
+		// TODO: This will be moved to DeathDistribution's own hook.
 		if (npcData.IsDead()) {  // If NPC is already dead, perform the On Death Distribution.
 			DeathDistribution::Manager::GetSingleton()->Distribute(npcData);
 		}

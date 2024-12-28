@@ -124,6 +124,8 @@ namespace Outfits
 #endif
 		auto* manager = Manager::GetSingleton();
 
+		ReadLocker lock(manager->_lock);
+
 		std::unordered_map<RE::Actor*, OutfitReplacement> loadedReplacements;
 		auto&                                             newReplacements = manager->replacements;
 
@@ -201,7 +203,9 @@ namespace Outfits
 #ifndef NDEBUG
 		logger::info("{:*^30}", "SAVING");
 #endif
-		auto replacements = Manager::GetSingleton()->replacements;
+		auto manager = Manager::GetSingleton();
+		ReadLocker  lock(manager->_lock);
+		const auto& replacements = manager->replacements;
 #ifndef NDEBUG
 		logger::info("Saving {} distributed outfits...", replacements.size());
 #endif
@@ -232,17 +236,19 @@ namespace Outfits
 	/// This hook appliues pending outfit replacements before loading 3D model. Outfit Replacements are created by SetDefaultOutfit.
 	struct Load3D
 	{
-		static RE::NiAVObject* thunk(RE::Character* a_this, bool a_backgroundLoading)
+		static RE::NiAVObject* thunk(RE::Character* actor, bool a_backgroundLoading)
 		{
 #ifndef NDEBUG
-			//logger::info("Load3D({})", *a_this);
+			logger::info("Load3D({}); Background: {}", *actor, a_backgroundLoading);
 #endif
-			const auto manager = Manager::GetSingleton();
-			if (!manager->isLoadingGame) {
-				manager->ApplyOutfit(a_this);
+			if (!Manager::GetSingleton()->isLoadingGame) {
+				// Wrapping in a task maybe possibly perhaps would fix the crash in issue #67
+				SKSE::GetTaskInterface()->AddTask([actor]() {
+					Manager::GetSingleton()->ApplyOutfit(actor);
+				});
 			}
 
-			return func(a_this, a_backgroundLoading);
+			return func(actor, a_backgroundLoading);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
@@ -311,6 +317,7 @@ namespace Outfits
 
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
 	{
+		WriteLocker lock(_lock);
 		if (a_event && a_event->formID != 0) {
 			replacements.erase(a_event->formID);
 			initialOutfits.erase(a_event->formID);
@@ -358,35 +365,58 @@ namespace Outfits
 		}
 		logger::info("\tNew Outfit: {}", *outfit);
 #endif
+		WriteLocker lock(_lock);
 		if (auto existing = replacements.find(actor->formID); existing != replacements.end()) {  // we already have tracked replacement
 #ifndef NDEBUG
 			logger::info("\tFound existing replacement {}", existing->second);
 #endif
-			if (outfit == defaultOutfit && outfit == existing->second.distributed) {  // if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
+			// If we have an existing replacement and actor is already dead, 
+			// then we don't want to set new outfit to avoid sudden changes that player might not expect.
+			// But only if the outfit was already given to them. 
+			// This will allow to apply initial outfit to the dead actor in case new mod was added or something.
+			// 
+			// TODO: Consider tracking looting state of the outfit? 
+			// e.g. if an actor still wears all parts of the outfit, then allow to change it.
+			// This might be unexpected, since dead NPCs are supposed to have their outfit locked.
+			if (actor->IsDead()) {
+#ifndef NDEBUG
+				logger::info("\tDead NPCs can't change the outfit");
+#endif
+				return false;
+			}
+
+			// if the outfit we are trying to set is already the default one and we have a replacement for it, then we confirm that it was set.
+			if (outfit == defaultOutfit && outfit == existing->second.distributed) {
 #ifndef NDEBUG
 				logger::info("\tExisting replacement is already set");
 #endif
 				return true;
 			}
-		}
 
-		if (!CanEquipOutfit(actor, outfit)) {
+			if (!CanEquipOutfit(actor, outfit)) {
 #ifndef NDEBUG
-			logger::warn("\tAttempted to equip Outfit {} that can't be worn by given actor.", *outfit);
+				logger::warn("\tAttempted to equip Outfit {} that can't be worn by given actor.", *outfit);
 #endif
-			return false;
-		}
+				return false;
+			}
+			existing->second.distributed = outfit;
+#ifndef NDEBUG
+			logger::warn("\tUpdated replacement {}", existing->second);
+#endif
+		} else {
+			if (!CanEquipOutfit(actor, outfit)) {
+#ifndef NDEBUG
+				logger::warn("\tAttempted to equip Outfit {} that can't be worn by given actor.", *outfit);
+#endif
+				return false;
+			}
 
-		if (auto previous = replacements.find(actor->formID); previous != replacements.end()) {
-			previous->second.distributed = outfit;
+			if (defaultOutfit) {
+				replacements.try_emplace(actor->formID, defaultOutfit, outfit);
 #ifndef NDEBUG
-			logger::warn("\tUpdated replacement {}", previous->second);
+				logger::warn("\tAdded replacement {}", OutfitReplacement(defaultOutfit, outfit));
 #endif
-		} else if (defaultOutfit) {
-			replacements.try_emplace(actor->formID, defaultOutfit, outfit);
-#ifndef NDEBUG
-			logger::warn("\tAdded replacement {}", OutfitReplacement(defaultOutfit, outfit));
-#endif
+			}
 		}
 
 		return true;
@@ -396,7 +426,7 @@ namespace Outfits
 	{
 		if (!actor)
 			return false;
-
+		ReadLocker lock(_lock);
 		if (const auto replacement = replacements.find(actor->formID); replacement != replacements.end()) {
 			if (replacement->second.distributed) {
 				return ApplyOutfit(actor, replacement->second.distributed);

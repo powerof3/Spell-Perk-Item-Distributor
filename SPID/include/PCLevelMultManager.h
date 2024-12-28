@@ -39,9 +39,6 @@ namespace PCLevelMult
 		void          SetNewGameStarted();
 
 	private:
-		using Lock = std::shared_mutex;
-		using ReadLocker = std::shared_lock<Lock>;
-		using WriteLocker = std::unique_lock<Lock>;
 
 		enum class LEVEL_CAP_STATE
 		{
