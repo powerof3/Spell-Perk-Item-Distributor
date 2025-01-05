@@ -41,11 +41,14 @@ namespace Testing
 	class Runner : public ISingleton<Runner>
 	{
 	private:
+		using Cleanup = std::function<void()>;
 		using Test = std::function<TestResult()>;
 		using TestSuite = std::map<std::string, Test>;
 		using TestModule = std::map<std::string, TestSuite>;
 		
 		TestModule tests;
+
+		std::map<std::string, Cleanup> cleanup;
 
 		static std::pair<int, int> RunModule(std::string moduleName, TestSuite& tests)
 		{
@@ -61,6 +64,10 @@ namespace Testing
 				total++;
 			}
 
+			if (const auto& cleanup = GetSingleton()->cleanup.find(moduleName); cleanup != GetSingleton()->cleanup.end()) {
+				cleanup->second();
+			}
+
 			logger::critical("Completed {}: {}/{} tests passed", moduleName, success, total);
 			return { success, total };
 		}
@@ -71,6 +78,11 @@ namespace Testing
 			auto runner = GetSingleton();
 			auto& module = runner->tests[moduleName];
 			return module.try_emplace(testName, test).second;
+		}
+
+		static bool RegisterCleanup(const char* moduleName, Cleanup cleanup)
+		{
+			return GetSingleton()->cleanup.try_emplace(moduleName, cleanup).second;
 		}
 
 		static void Run() {
@@ -106,8 +118,13 @@ namespace Testing
 	}
 }
 
-#define TEST(name)                                                                                                        \
-	inline ::Testing::TestResult test##name();                                                                           \
+#define CLEANUP                                                                                                   \
+	inline void cleanupAfterTests();                                                                              \
+	static bool cleanupAfterTests_registered = ::Testing::Runner::RegisterCleanup(moduleName, cleanupAfterTests); \
+	inline void cleanupAfterTests()
+
+#define TEST(name)                                                                                                     \
+	inline ::Testing::TestResult test##name();                                                                         \
 	static bool                  test##name##_registered = ::Testing::Runner::Register(moduleName, #name, test##name); \
 	inline ::Testing::TestResult test##name##()
 
@@ -116,7 +133,7 @@ namespace Testing
 #define FAIL(msg) return ::Testing::TestResult::Fail(msg);
 
 #define ASSERT(expr, msg) \
-	if (!(expr))     \
+	if (!(expr))          \
 		return ::Testing::TestResult::Fail(msg);
 
 #define EXPECT(expr, msg) \

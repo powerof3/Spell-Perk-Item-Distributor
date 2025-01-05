@@ -582,7 +582,7 @@ namespace Outfits
 				if (isDying) {  // On Death Dying Distribution
 					return &wornReplacements.try_emplace(actor->formID, G).first->second;
 				} else if (isDead) {  // Regular/Death Dead Distribution
-					if (actor->HasOutfitItems(existing->second.distributed)) {
+					if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit && actor->HasOutfitItems(npc->defaultOutfit)) {
 						return &wornReplacements.try_emplace(actor->formID, G).first->second;
 					}  // In both On Death and Regular Distributions if Worn outfit was already looted, we don't allow changing it.
 				} else {  // Regular Alive Distribution
@@ -600,13 +600,10 @@ namespace Outfits
 					if (G.isDeathOutfit) {  // On Death Dead Distribution
 						W.isDeathOutfit = true;
 					}  // Regular Dead Distribution (just forwards the outfit)
-					return &W;
 				} else {  // Regular Alive Distribution
 					if (!W.isFinalOutfit) {
 						RevertOutfit(actor, W);
 						wornReplacements.erase(existing);
-					} else {
-						return &W;
 					}
 				}
 			} else {
