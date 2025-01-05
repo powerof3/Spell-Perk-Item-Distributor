@@ -29,6 +29,9 @@ namespace NPC
 		return formID == a_formID;
 	}
 
+	Data::Data(RE::Actor* actor, bool isDying) :
+		Data(actor, actor->GetActorBase(), isDying = false) {}
+
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc, bool isDying) :
 		npc(a_npc),
 		actor(a_actor),
@@ -132,7 +135,6 @@ namespace NPC
 			return GetRace() == a_form;
 		case RE::FormType::Outfit:
 			return Outfits::Manager::GetSingleton()->HasDefaultOutfit(npc, a_form->As<RE::BGSOutfit>());
-			return npc->defaultOutfit == a_form;
 		case RE::FormType::NPC:
 			return npc == a_form || std::ranges::any_of(IDs, [&](const auto& ID) { return ID == a_form->GetFormID(); });
 		case RE::FormType::VoiceType:
@@ -231,7 +233,12 @@ namespace NPC
 
 	bool Data::IsDead() const
 	{
-		return actor && actor->IsDead() || StartsDead();
+		return IsDead(actor);
+	}
+
+	bool Data::IsDead(const RE::Actor* actor)
+	{
+		return actor && actor->IsDead() || StartsDead(actor);
 	}
 
 	bool Data::IsDying() const
@@ -240,6 +247,11 @@ namespace NPC
 	}
 
 	bool Data::StartsDead() const
+	{
+		return StartsDead(actor);
+	}
+
+	bool Data::StartsDead(const RE::Actor* actor)
 	{
 		return actor && (actor->formFlags & RE::Actor::RecordFlags::kStartsDead);
 	}

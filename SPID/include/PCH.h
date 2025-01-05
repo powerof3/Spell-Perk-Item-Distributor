@@ -80,6 +80,13 @@ namespace stl
 		T::func = trampoline.write_call<5>(a_src, T::thunk);
 	}
 
+	template <class T>
+	void write_thunk_call()
+	{
+		const REL::Relocation<std::uintptr_t> rel{ T::relocation, T::offset };
+		write_thunk_call<T>(rel.address());
+	}
+
 	template <class F, class T>
 	void write_vfunc()
 	{

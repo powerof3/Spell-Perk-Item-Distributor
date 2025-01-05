@@ -4,6 +4,10 @@
 #include "LookupForms.h"
 #include "OutfitManager.h"
 #include "PCLevelMultManager.h"
+#ifndef NDEBUG
+#include "Testing.h"
+#include "OutfitManagerTests.h"
+#endif
 
 bool shouldLookupForms{ false };
 bool shouldLogErrors{ false };
@@ -39,6 +43,10 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
+#ifndef NDEBUG
+			Testing::Run();
+#endif
+
 			if (shouldDistribute = Lookup::LookupForms(); shouldDistribute) {
 				Distribute::Setup();
 			}
@@ -67,8 +75,10 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	default:
 		break;
 	}
-	DeathDistribution::Manager::GetSingleton()->HandleMessage(a_message);
+	// The order at which managers handle messages is important, 
+	// since they need to register for events in specific order to work properly (e.g. Death event must be handled first by Death Manager, and then by Outfit Manager)
 	Outfits::Manager::GetSingleton()->HandleMessage(a_message);
+	DeathDistribution::Manager::GetSingleton()->HandleMessage(a_message);
 }
 
 #ifdef SKYRIM_AE

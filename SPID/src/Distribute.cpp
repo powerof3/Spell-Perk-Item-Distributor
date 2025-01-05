@@ -7,7 +7,7 @@
 
 namespace Distribute
 {
-	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms)
+	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms, OutfitDistributor distributeOutfit)
 	{
 		const auto npc = npcData.GetNPC();
 
@@ -32,6 +32,9 @@ namespace Distribute
 			},
 			accumulatedForms);
 
+		// Note: Abilities are persisted, so that once applied they stick on NPCs.
+		// Maybe one day we should add a system similar to outfits :)
+		// or at least implement RemoveSpell calls for all previous abilities.
 		for_each_form<RE::SpellItem>(
 			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& a_spells) {
 				for (auto& spell : a_spells) {
@@ -106,11 +109,15 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-		for_first_form<RE::BGSOutfit>(
-			npcData, forms.outfits, input, [&](auto* a_outfit) {
-				return Outfits::Manager::GetSingleton()->SetDefaultOutfit(npcData.GetActor(), a_outfit);  // terminate as soon as valid outfit is confirmed.
+		// TODO: Pass isFinal from DistributableForm
+		bool isFinal = false;
+		if (!for_first_form<RE::BGSOutfit>(
+			npcData, forms.outfits, input, [&](auto* outfit) {
+				return distributeOutfit(npcData, outfit, isFinal);  // terminate as soon as valid outfit is confirmed.
 			},
-			accumulatedForms);
+			accumulatedForms)) {
+			distributeOutfit(npcData, nullptr, false);  // if no outfit was found, distribute default outfit.
+		}
 
 		for_first_form<RE::BGSOutfit>(
 			npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
@@ -160,12 +167,12 @@ namespace Distribute
 
 		DistributedForms distributedForms{};
 
-		Distribute(npcData, input, entries, &distributedForms);
+		Distribute(npcData, input, entries, &distributedForms, Outfits::SetDefaultOutfit);
 
 		if (!distributedForms.empty()) {
 			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kRegular, distributedForms, [&](Forms::DistributionSet& set) {
-				Distribute(npcData, input, set, &distributedForms);
+				Distribute(npcData, input, set, &distributedForms, Outfits::SetDefaultOutfit);
 			});
 		}
 
@@ -179,11 +186,6 @@ namespace Distribute
 		// We always do the normal distribution even for Dead NPCs,
 		// if Distributable Form is only meant to be distributed while NPC is alive, the entry must contain -D filter.
 		Distribute(npcData, input);
-
-		// TODO: This will be moved to DeathDistribution's own hook.
-		if (npcData.IsDead()) {  // If NPC is already dead, perform the On Death Distribution.
-			DeathDistribution::Manager::GetSingleton()->Distribute(npcData);
-		}
 	}
 
 	void LogDistribution(const DistributedForms& forms, NPCData& npcData)

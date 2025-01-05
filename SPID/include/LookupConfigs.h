@@ -233,7 +233,7 @@ namespace Distribution::INI
 
 	constexpr ComponentParserFlags operator|(ComponentParserFlags lhs, ComponentParserFlags rhs)
 	{
-		return ComponentParserFlags(std::uint8_t(lhs) | std::uint8_t(rhs));
+		return static_cast<ComponentParserFlags>(static_cast<std::uint8_t>(lhs) | static_cast<std::uint8_t>(rhs));
 	}
 
 	/// <summary>

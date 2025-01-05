@@ -224,6 +224,8 @@ namespace Distribute
 	}
 #pragma endregion
 
+	using OutfitDistributor = std::function<bool(const NPCData&, RE::BGSOutfit*, bool isFinal)>;
+
 	/// <summary>
 	/// Performs distribution of all configured forms to NPC described with npcData and input.
 	/// </summary>
@@ -231,7 +233,8 @@ namespace Distribute
 	/// <param name="input">Leveling information about NPC that is being processed.</param>
 	/// <param name="forms">A set of forms that should be distributed to NPC.</param>
 	/// <param name="accumulatedForms">An optional pointer to a set that will accumulate all distributed forms.</param>
-	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms = nullptr);
+	/// <param name="outfitDistributor">A function to be called to distribute outfits.</param>
+	void Distribute(NPCData&, const PCLevelMult::Input&, Forms::DistributionSet& forms, DistributedForms* accumulatedForms, OutfitDistributor);
 
 	/// <summary>
 	/// Invokes appropriate distribution for given NPC.

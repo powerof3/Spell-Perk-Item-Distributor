@@ -7,6 +7,7 @@ namespace NPC
 
 	struct Data
 	{
+		Data(RE::Actor* a_actor, bool isDying = false);
 		Data(RE::Actor* a_actor, RE::TESNPC* a_npc, bool isDying = false);
 		~Data() = default;
 
@@ -37,6 +38,7 @@ namespace NPC
 		/// IsDead returns true when either NPC starts dead or has already died. See IsDying for more details.
 		/// </summary>
 		[[nodiscard]] bool IsDead() const;
+		[[nodiscard]] static bool IsDead(const RE::Actor*);
 
 		/// <summary>
 		/// Flag indicating whether given NPC is currently dying.
@@ -47,7 +49,9 @@ namespace NPC
 		/// Once actor IsDead IsDying will be false.
 		/// </summary>
 		[[nodiscard]] bool IsDying() const;
+
 		[[nodiscard]] bool StartsDead() const;
+		[[nodiscard]] static bool StartsDead(const RE::Actor*);
 
 		[[nodiscard]] RE::TESRace* GetRace() const;
 

@@ -4,6 +4,7 @@
 #include "LookupNPC.h"
 #include "PCLevelMultManager.h"
 #include "Parser.h"
+#include "OutfitManager.h"
 
 namespace DeathDistribution
 {
@@ -181,14 +182,20 @@ namespace DeathDistribution
 
 #pragma region Distribution
 
-	static RE::BGSKeyword* SPID_Dead = nullptr;
-
 	struct ShouldBackgroundClone
 	{
-		static bool thunk(RE::Character* a_this)
+		static bool thunk(RE::Character* actor)
 		{
-			logger::info("Death: ShouldBackgroundClone({})", *a_this);
-			return func(a_this);
+#ifndef NDEBUG
+			logger::info("Distribute: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+#endif
+			if (const auto npc = actor->GetActorBase()) {
+				auto npcData = NPCData(actor, npc);
+				if (npcData.IsDead()) {
+					Manager::GetSingleton()->Distribute(npcData);
+				}
+			}
+			return func(actor);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
@@ -205,28 +212,12 @@ namespace DeathDistribution
 			}
 
 			if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
-				scripts->AddEventSink<RE::TESDeathEvent>(this);
+				scripts->PrependEventSink<RE::TESDeathEvent>(this);
 				logger::info("Death Distribution: Registered for {}.", typeid(RE::TESDeathEvent).name());
 			}
 
-			// TODO: Death Distribution should hook ShouldBackgroundClone to perform distribution of NPCs that are loaded dead.
-			// This will allow to decouple regular distribution from death distribution completely. Just for aesthetics :)
-			//
-			// Current challenge is that hooks are called in the reverse order of their installation,
-			// so this would require also refactoring existing MessageHandler to this new system with specialized Manager::HandleMessage.
-			//
-			// stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			// logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
-
-			// Create tag keywords
-			if (const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>()) {
-				if (SPID_Dead = factory->Create(); SPID_Dead) {
-					SPID_Dead->formEditorID = "SPID_Dead";
-					logger::info("Death Distribution: Created SPID_Dead keyword.");
-				}
-			}
-
-			assert(SPID_Dead);
+			 stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
+			 logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
 			break;
 		default:
 			break;
@@ -236,17 +227,6 @@ namespace DeathDistribution
 	void Manager::Distribute(NPCData& data)
 	{
 		assert(data.IsDead() || data.IsDying());
-
-		// TODO: Test that we actually hit that log warning. Doesn't seem like it's possible, and keyword can be removed.
-		// We mark NPCs that were processed by Death Distribution with SPID_Dead keyword,
-		// to ensure that NPCs who received Death Distribution once won't get another Death Distribution
-		// (which might happen if cell or game is reloaded with dead NPC laying there)
-		if (data.GetNPC()->HasKeyword(SPID_Dead)) {
-			logger::warn("NPC {} already processed by Death Distribution", *(data.GetActor()));
-			return;
-		}
-
-		data.GetNPC()->AddKeyword(SPID_Dead);
 
 		const auto input = PCLevelMult::Input{ data.GetActor(), data.GetNPC(), false };
 
@@ -266,11 +246,11 @@ namespace DeathDistribution
 			skins.GetForms()
 		};
 
-		Distribute::Distribute(data, input, entries, &distributedForms);
+		Distribute::Distribute(data, input, entries, &distributedForms, Outfits::SetDeathOutfit);
 
 		if (!distributedForms.empty()) {
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kDeath, distributedForms, [&](Forms::DistributionSet& set) {
-				Distribute::Distribute(data, input, set, &distributedForms);
+				Distribute::Distribute(data, input, set, &distributedForms, Outfits::SetDeathOutfit);
 			});
 		}
 
@@ -280,7 +260,7 @@ namespace DeathDistribution
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
 	{
 		// TODO: Make it header for Distribution output (e.g. "On Death Distribution for actor {}")
-		//logger::info("Death: {} {}", a_event->dead ? "Dead" : "Dying", *(a_event->actorDying->As<RE::Actor>()));
+		logger::info("Death: {} {}", a_event->dead ? "Dead" : "Dying", *(a_event->actorDying->As<RE::Actor>()));
 
 		if (!a_event || a_event->dead) {
 			return RE::BSEventNotifyControl::kContinue;

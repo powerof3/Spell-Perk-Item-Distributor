@@ -29,13 +29,13 @@ namespace Distribute
 		// FF actors distribution
 		struct ShouldBackgroundClone
 		{
-			static bool thunk(RE::Character* a_this)
+			static bool thunk(RE::Character* actor)
 			{
-				//logger::info("Distribute: ShouldBackgroundClone({})", *a_this);
-				if (const auto npc = a_this->GetActorBase()) {
-					detail::distribute_on_load(a_this, npc);
+				logger::debug("Distribute: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+				if (const auto npc = actor->GetActorBase()) {
+					detail::distribute_on_load(actor, npc);
 				}
-				return func(a_this);
+				return func(actor);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 
@@ -69,7 +69,7 @@ namespace Distribute
 
 		void Install()
 		{
-			stl::write_vfunc<RE::Character, InitLoadGame>();
+			//stl::write_vfunc<RE::Character, InitLoadGame>();
 			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
 
 			logger::info("Installed actor load hooks");
