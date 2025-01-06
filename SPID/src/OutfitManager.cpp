@@ -595,7 +595,6 @@ namespace Outfits
 				auto& W = existing->second;
 				if (isDying) {               // On Death Dying Distribution
 					W.isDeathOutfit = true;  // Persist current outfit as Death Outfit
-					return &W;
 				} else if (NPCData::IsDead(actor)) {
 					if (G.isDeathOutfit) {  // On Death Dead Distribution
 						W.isDeathOutfit = true;
@@ -609,7 +608,7 @@ namespace Outfits
 			} else {
 				if (isDying || NPCData::IsDead(actor)) {  // Persist default outfit
 					if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
-						return &wornReplacements.try_emplace(actor->formID, npc->defaultOutfit, npc->defaultOutfit, G.isDeathOutfit, false, false).first->second;
+						wornReplacements.try_emplace(actor->formID, npc->defaultOutfit, npc->defaultOutfit, G.isDeathOutfit, false, false).first->second;
 					}
 				}
 			}
@@ -633,6 +632,15 @@ namespace Outfits
 			// When there is no pending replacement and outfit is null we store it to indicate that Outfit distribution failed to this actor,
 			// During ResolveWornOutfit, such empty replacement will indicate whether or not we want to lock in on a dead NPC's current outfit.
 			if (!outfit) {
+				// We also allow final flag to be set (but not reset)
+				if (isFinalOutfit && !G.isFinalOutfit) {
+					G.isFinalOutfit = isFinalOutfit;
+				}
+				// And same for death outfit flag: regular forward can become death outfit, but not the other way around.
+				if (isDeathOutfit && !G.isDeathOutfit) {
+					G.isDeathOutfit = isDeathOutfit;
+				}
+
 				return &G;
 			}
 			if (isDeathOutfit) { // On Death Distribution

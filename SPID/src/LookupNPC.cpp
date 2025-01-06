@@ -30,7 +30,7 @@ namespace NPC
 	}
 
 	Data::Data(RE::Actor* actor, bool isDying) :
-		Data(actor, actor->GetActorBase(), isDying = false) {}
+		Data(actor, actor->GetActorBase(), isDying) {}
 
 	Data::Data(RE::Actor* a_actor, RE::TESNPC* a_npc, bool isDying) :
 		npc(a_npc),
