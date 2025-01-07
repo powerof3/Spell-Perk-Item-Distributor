@@ -6,11 +6,11 @@ namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword)
 	{
-		if (a_npc->IsPlayer() || a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
+		if (a_npc->IsPlayer() || a_npc->IsDeleted()) {
 			return false;
 		}
 
-		a_npc->AddKeyword(a_keyword);
+		//a_npc->AddKeyword(a_keyword);
 
 		return true;
 	}
