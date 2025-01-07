@@ -24,6 +24,38 @@ namespace RECORD
 		kTotal
 	};
 
+	enum TRAITS : std::uint8_t
+	{
+		Final = 1 << 0,
+	};
+
+	constexpr TRAITS operator|(TRAITS lhs, TRAITS rhs)
+	{
+		return static_cast<TRAITS>(static_cast<std::uint8_t>(lhs) | static_cast<std::uint8_t>(rhs));
+	}
+
+	constexpr TRAITS operator~(TRAITS t)
+	{
+		return static_cast<TRAITS>(~static_cast<std::uint8_t>(t));
+	}
+
+	constexpr TRAITS operator&(TRAITS lhs, TRAITS rhs)
+	{
+		return static_cast<TRAITS>(static_cast<std::uint8_t>(lhs) & static_cast<std::uint8_t>(rhs));
+	}
+
+	constexpr TRAITS& operator|=(TRAITS& lhs, TRAITS rhs)
+	{
+		lhs = lhs | rhs;
+		return lhs;
+	}
+
+	constexpr TRAITS& operator&=(TRAITS& lhs, TRAITS rhs)
+	{
+		lhs = lhs & rhs;
+		return lhs;
+	}
+
 	namespace detail
 	{
 		inline static constexpr std::array names{
@@ -61,6 +93,7 @@ namespace Distribution
 	{
 		struct Data
 		{
+			RECORD::TRAITS  recordTraits{};
 			RECORD::TYPE   type{ RECORD::TYPE::kForm };
 			FormOrEditorID rawForm{};
 			StringFilters  stringFilters{};
@@ -133,13 +166,11 @@ namespace Distribution::INI
 	{
 		template <typename Data>
 		concept typed_data = requires(Data data) {
-								 {
-									 data.type
-									 } -> std::same_as<RECORD::TYPE&>;
-								 {
-									 data.type = std::declval<RECORD::TYPE>()
-								 };
-							 };
+			{ data.type } -> std::same_as<RECORD::TYPE&>;
+			{ data.type = std::declval<RECORD::TYPE>() };
+			{ data.recordTraits } -> std::same_as<RECORD::TRAITS&>;
+			{ data.recordTraits = std::declval<RECORD::TRAITS>() };
+		};
 
 		template <typename Data>
 		concept form_data = requires(Data data) {
@@ -296,8 +327,15 @@ namespace Distribution::INI
 	using namespace Exception;
 
 	template <typed_data Data>
-	bool DefaultKeyComponentParser::operator()(const std::string& key, Data& data) const
+	bool DefaultKeyComponentParser::operator()(const std::string& originalKey, Data& data) const
 	{
+		std::string key = originalKey;
+
+		if (key.starts_with("Final"sv)) {
+			data.recordTraits = RECORD::TRAITS::Final;
+			key.erase(0, 5);
+		}
+
 		auto type = RECORD::GetType(key);
 		if (type == RECORD::kTotal) {
 			throw UnsupportedFormTypeException(key);

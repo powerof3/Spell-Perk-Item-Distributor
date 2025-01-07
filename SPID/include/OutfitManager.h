@@ -165,7 +165,7 @@ namespace Outfits
 		/// <param name="isDying">Flag indicating whether this method is called during Death Event</param>
 		/// <returns>Pointer to a worn outfit replacement that needs to be applied. If resolution does not require updating the outfit then nullptr is returned.</returns>
 		[[nodiscard]] const OutfitReplacement* const ResolveWornOutfit(RE::Actor*, bool isDying);
-		[[nodiscard]] const OutfitReplacement* const ResolveWornOutfit(RE::Actor*, const OutfitReplacementMap::iterator pending, bool isDying);
+		[[nodiscard]] const OutfitReplacement* const ResolveWornOutfit(RE::Actor*, OutfitReplacementMap::iterator& pending, bool isDying);
 
 		/// Resolves the outfit that is a candiate for equipping.
 		const OutfitReplacement* const ResolvePendingOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
@@ -218,7 +218,6 @@ namespace Outfits
 
 		static void Load(SKSE::SerializationInterface* interface);
 		static void Save(SKSE::SerializationInterface* interface);
-		static void Revert(SKSE::SerializationInterface* interface);
 
 		static bool LoadReplacement(SKSE::SerializationInterface*, std::uint32_t version, RE::FormID& actorFormID, OutfitReplacement&);
 		static bool SaveReplacement(SKSE::SerializationInterface*, const RE::FormID& actorFormID, const OutfitReplacement&);

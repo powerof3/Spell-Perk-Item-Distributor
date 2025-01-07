@@ -22,11 +22,11 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 	auto& rawSpells = Distribution::INI::configs[RECORD::kSpell];
 
 	for (auto& rawSpell : rawSpells) {
-		LookupGenericForm<RE::TESForm>(dataHandler, rawSpell, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
+		LookupGenericForm<RE::TESForm>(dataHandler, rawSpell, [&](bool isValid, auto form, const bool& isFinal, const auto& idxOrCount, const auto& filters, const auto& path) {
 			if (const auto spell = form->As<RE::SpellItem>(); spell) {
-				spells.EmplaceForm(isValid, spell, idxOrCount, filters, path);
+				spells.EmplaceForm(isValid, spell, isFinal, idxOrCount, filters, path);
 			} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
-				levSpells.EmplaceForm(isValid, levSpell, idxOrCount, filters, path);
+				levSpells.EmplaceForm(isValid, levSpell, isFinal, idxOrCount, filters, path);
 			}
 		});
 	}
@@ -35,23 +35,23 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 
 	for (auto& rawForm : genericForms) {
 		// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin)
-		LookupGenericForm<RE::TESForm>(dataHandler, rawForm, [&](bool isValid, auto form, const auto& idxOrCount, const auto& filters, const auto& path) {
+		LookupGenericForm<RE::TESForm>(dataHandler, rawForm, [&](bool isValid, auto form, const bool& isFinal, const auto& idxOrCount, const auto& filters, const auto& path) {
 			if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
-				keywords.EmplaceForm(isValid, keyword, idxOrCount, filters, path);
+				keywords.EmplaceForm(isValid, keyword, isFinal, idxOrCount, filters, path);
 			} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
-				spells.EmplaceForm(isValid, spell, idxOrCount, filters, path);
+				spells.EmplaceForm(isValid, spell, isFinal, idxOrCount, filters, path);
 			} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
-				levSpells.EmplaceForm(isValid, levSpell, idxOrCount, filters, path);
+				levSpells.EmplaceForm(isValid, levSpell, isFinal, idxOrCount, filters, path);
 			} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
-				perks.EmplaceForm(isValid, perk, idxOrCount, filters, path);
+				perks.EmplaceForm(isValid, perk, isFinal, idxOrCount, filters, path);
 			} else if (const auto shout = form->As<RE::TESShout>(); shout) {
-				shouts.EmplaceForm(isValid, shout, idxOrCount, filters, path);
+				shouts.EmplaceForm(isValid, shout, isFinal, idxOrCount, filters, path);
 			} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
-				items.EmplaceForm(isValid, item, idxOrCount, filters, path);
+				items.EmplaceForm(isValid, item, isFinal, idxOrCount, filters, path);
 			} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
-				outfits.EmplaceForm(isValid, outfit, idxOrCount, filters, path);
+				outfits.EmplaceForm(isValid, outfit, isFinal, idxOrCount, filters, path);
 			} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
-				factions.EmplaceForm(isValid, faction, idxOrCount, filters, path);
+				factions.EmplaceForm(isValid, faction, isFinal, idxOrCount, filters, path);
 			} else {
 				auto type = form->GetFormType();
 				if (type == RE::FormType::Package || type == RE::FormType::FormList) {
@@ -66,7 +66,7 @@ bool LookupDistributables(RE::TESDataHandler* const dataHandler)
 					} else {
 						packageIndex = std::get<Index>(idxOrCount);
 					}
-					packages.EmplaceForm(isValid, form, packageIndex, filters, path);
+					packages.EmplaceForm(isValid, form, isFinal, packageIndex, filters, path);
 				} else {
 					logger::warn("\t[{}] Unsupported Form type: {}", path, type);
 				}

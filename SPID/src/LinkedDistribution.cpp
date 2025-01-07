@@ -32,6 +32,7 @@ namespace LinkedDistribution
 																						 };
 		}
 
+		
 		using namespace Distribution::INI;
 
 		struct LinkedKeyComponentParser
@@ -39,6 +40,9 @@ namespace LinkedDistribution
 			template <concepts::linked_typed_data Data>
 			bool operator()(const std::string& originalKey, Data& data) const
 			{
+				// Preferred order of keywords to sound more natural :) presumably.
+				// LinkedFinalOutfit
+				// GlobalLinkedFinalDeathOutfit
 				std::string key = originalKey;
 
 				if (key.starts_with("Global"sv)) {
@@ -52,16 +56,20 @@ namespace LinkedDistribution
 
 				key.erase(0, 6);
 
+				if (key.starts_with("Final"sv)) {
+					data.recordTraits = RECORD::TRAITS::Final;
+					key.erase(0, 5);
+				}
+
 				if (key.starts_with("Death"sv)) {
 					data.distributionType = kDeath;
 					key.erase(0, 5);
 				}
 
-				std::string rawType = key;
-				auto        type = RECORD::GetType(rawType);
+				auto type = RECORD::GetType(key);
 
 				if (type == RECORD::kTotal) {
-					throw Exception::UnsupportedFormTypeException(rawType);
+					throw Exception::UnsupportedFormTypeException(key);
 				}
 				data.type = type;
 
@@ -80,6 +88,11 @@ namespace LinkedDistribution
 						ChanceComponentParser>(key, value)) {
 					auto& data = *optData;
 					data.path = path;
+					if (data.recordTraits & RECORD::TRAITS::Final && data.type != RECORD::TYPE::kOutfit) {
+						data.recordTraits &= ~RECORD::TRAITS::Final;
+						logger::info("\t\t[{} = {}]", key, value);
+						logger::info("\t\t\tFinal modifier can only be applied to Outfits.");
+					}
 					linkedConfigs[data.type].push_back(data);
 				} else {
 					return false;
@@ -112,15 +125,16 @@ namespace LinkedDistribution
 
 		for (auto& rawSpell : rawSpells) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawSpell); form) {
-				auto& [formID, type, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawSpell;
+				auto& [formID, recordTraits, type, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawSpell;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					continue;
 				}
+				bool isFinal = recordTraits & RECORD::TRAITS::Final;
 				if (const auto spell = form->As<RE::SpellItem>(); spell) {
-					spells.Link(spell, scope, distributionType, parentForms, idxOrCount, chance, path);
+					spells.Link(spell, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
-					levSpells.Link(levSpell, scope, distributionType, parentForms, idxOrCount, chance, path);
+					levSpells.Link(levSpell, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				}
 			}
 		}
@@ -128,28 +142,30 @@ namespace LinkedDistribution
 		auto& genericForms = INI::linkedConfigs[RECORD::kForm];
 		for (auto& rawForm : genericForms) {
 			if (auto form = detail::LookupLinkedForm(dataHandler, rawForm); form) {
-				auto& [formID, type, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawForm;
+				auto& [formID, recordTraits, type, scope, distributionType, parentFormIDs, idxOrCount, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (!Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
 					continue;
 				}
+
+				bool isFinal = recordTraits & RECORD::TRAITS::Final;
 				// Add to appropriate list. (Note that type inferring doesn't recognize SleepOutfit, Skin or DeathItems)
 				if (const auto keyword = form->As<RE::BGSKeyword>(); keyword) {
-					keywords.Link(keyword, scope, distributionType, parentForms, idxOrCount, chance, path);
+					keywords.Link(keyword, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else if (const auto spell = form->As<RE::SpellItem>(); spell) {
-					spells.Link(spell, scope, distributionType, parentForms, idxOrCount, chance, path);
+					spells.Link(spell, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else if (const auto levSpell = form->As<RE::TESLevSpell>(); levSpell) {
-					levSpells.Link(levSpell, scope, distributionType, parentForms, idxOrCount, chance, path);
+					levSpells.Link(levSpell, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else if (const auto perk = form->As<RE::BGSPerk>(); perk) {
-					perks.Link(perk, scope, distributionType, parentForms, idxOrCount, chance, path);
+					perks.Link(perk, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else if (const auto shout = form->As<RE::TESShout>(); shout) {
-					shouts.Link(shout, scope, distributionType, parentForms, idxOrCount, chance, path);
+					shouts.Link(shout, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else if (const auto item = form->As<RE::TESBoundObject>(); item) {
-					items.Link(item, scope, distributionType, parentForms, idxOrCount, chance, path);
+					items.Link(item, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else if (const auto outfit = form->As<RE::BGSOutfit>(); outfit) {
-					outfits.Link(outfit, scope, distributionType, parentForms, idxOrCount, chance, path);
+					outfits.Link(outfit, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else if (const auto faction = form->As<RE::TESFaction>(); faction) {
-					factions.Link(faction, scope, distributionType, parentForms, idxOrCount, chance, path);
+					factions.Link(faction, scope, distributionType, isFinal, parentForms, idxOrCount, chance, path);
 				} else {
 					auto type = form->GetFormType();
 					if (type == RE::FormType::Package || type == RE::FormType::FormList) {
@@ -164,7 +180,7 @@ namespace LinkedDistribution
 						} else {
 							packageIndex = std::get<Index>(idxOrCount);
 						}
-						packages.Link(form, scope, distributionType, parentForms, packageIndex, chance, path);
+						packages.Link(form, scope, distributionType, isFinal, parentForms, packageIndex, chance, path);
 					} else {
 						logger::warn("\t[{}] Unsupported Form type: {}", path, type);
 					}

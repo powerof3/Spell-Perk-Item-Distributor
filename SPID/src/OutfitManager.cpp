@@ -165,29 +165,6 @@ namespace Outfits
 		       details::Write(interface, replacement.isSuspended);
 	}
 
-	void Manager::Revert(SKSE::SerializationInterface* interface)
-	{
-#ifndef NDEBUG
-		logger::info("{:*^30}", "REVERTING");
-#endif
-		return; // TODO: Revert is not needed here
-		auto manager = Manager::GetSingleton();
-		{
-			ReadLocker lock(manager->_lock);
-
-			for (const auto& pair : manager->wornReplacements) {
-				if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-					manager->RevertOutfit(actor, pair.second);
-				}
-			}
-		}
-		{
-			WriteLocker lock(manager->_lock);
-			manager->wornReplacements.clear();
-		}
-
-	}
-
 	void Manager::Load(SKSE::SerializationInterface* interface)
 	{
 #ifndef NDEBUG
@@ -198,8 +175,6 @@ namespace Outfits
 		auto manager = Manager::GetSingleton();
 
 		WriteLocker lock(manager->_lock);
-
-		auto& newReplacements = manager->pendingReplacements;
 
 		std::uint32_t type, version, length;
 		int           total = 0;
@@ -224,6 +199,8 @@ namespace Outfits
 			}
 		}
 
+		auto& pendingReplacements = manager->pendingReplacements;
+
 #ifndef NDEBUG
 		logger::info("Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
 		for (const auto& pair : loadedReplacements) {
@@ -231,24 +208,29 @@ namespace Outfits
 			logger::info("\t\t{}", pair.second);
 		}
 
-		logger::info("Current {} Outfit Replacements", newReplacements.size());
-		for (const auto& pair : newReplacements) {
+		logger::info("Current {} Outfit Replacements", pendingReplacements.size());
+		for (const auto& pair : pendingReplacements) {
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
 				logger::info("\t{}", *actor);
 			}
 			logger::info("\t\t{}", pair.second);
 		}
 
-		logger::info("Merging...");
+		logger::info("Applying resolved outfits...");
 #endif
-		auto& pendingReplacements = manager->pendingReplacements;
+		
 
 		int appliedCount = 0;
 		int revertedCount = 0;
 
-		for (auto it = newReplacements.begin(); it != newReplacements.end(); it++) {
+		// We don't increment iterator here, since ResolveWornOutfit will be erasing each pending entry
+		for (auto it = pendingReplacements.begin(); it != pendingReplacements.end();) {
 			if (auto actor = RE::TESForm::LookupByID<RE::Actor>(it->first); actor) {
 				if (auto resolved = manager->ResolveWornOutfit(actor, it, false); resolved) {
+#ifndef NDEBUG
+					logger::info("\t{}", *actor);
+					logger::info("\t\t{}", *resolved);
+#endif
 					manager->ApplyOutfit(actor, resolved->distributed);
 				}
 			}
@@ -327,7 +309,7 @@ namespace Outfits
 		static void thunk(RE::TESNPC* npc, RE::BGSLoadFormBuffer* a_buf)
 		{
 #ifndef NDEBUG
-			logger::info("LoadGame({})", *npc);
+			//logger::info("LoadGame({})", *npc);
 #endif
 			auto initialOutfit = npc->defaultOutfit;
 			func(npc, a_buf);
@@ -423,7 +405,6 @@ namespace Outfits
 				serializationInterface->SetUniqueID(serializationKey);
 				serializationInterface->SetSaveCallback(Save);
 				serializationInterface->SetLoadCallback(Load);
-				serializationInterface->SetRevertCallback(Revert);
 
 				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 					scripts->AddEventSink<RE::TESFormDeleteEvent>(this);
@@ -532,22 +513,20 @@ namespace Outfits
 
 	const Manager::OutfitReplacement* const Manager::ResolveWornOutfit(RE::Actor* actor, bool isDying)
 	{
-		if (const auto pending = pendingReplacements.find(actor->formID); pending != pendingReplacements.end()) {
+		if (auto pending = pendingReplacements.find(actor->formID); pending != pendingReplacements.end()) {
 			return ResolveWornOutfit(actor, pending, isDying);
 		}
-		// Pending replacements should always be resolved prior to resolving worn outfit.
-		// Failing to do so leads to an undefined behavior,
-		// where we're trying to resolve worn outfit for NPC that never got any distribution.
-		assert(false);
+		
+		// When no pendingReplacements found, we assume that there was no 
 		return nullptr;
 	}
 
-	const Manager::OutfitReplacement* const Manager::ResolveWornOutfit(RE::Actor* actor, const OutfitReplacementMap::iterator pending, bool isDying)
+	const Manager::OutfitReplacement* const Manager::ResolveWornOutfit(RE::Actor* actor, OutfitReplacementMap::iterator& pending, bool isDying)
 	{
 		// W and G are named according to the Resolution Table.
 		const bool isDead = NPCData::IsDead(actor);
 		const auto G = pending->second;
-		pendingReplacements.erase(pending);
+		pendingReplacements.erase(pending++);
 
 		assert(!isDying || G.isDeathOutfit);            // If actor is dying then outfit must be from On Death Distribution, otherwise there is a mistake in the code.
 		assert(!G.isDeathOutfit || isDying || isDead);  // If outfit is death outfit then actor must be dying or dead, otherwise there is a mistake in the code.
@@ -700,6 +679,11 @@ namespace Outfits
 #endif
 				return false;
 			}
+		} else if (!npc->defaultOutfit) { // If NPC don't have an outfit, most likely
+#ifndef NDEBUG
+			logger::warn("\tAttempted to track Outfit for actor that doesn't have one.");
+#endif
+			return false;
 		}
 
 		if (auto replacement = ResolvePendingOutfit(data, outfit, isDeathOutfit, isFinalOutfit); replacement) {

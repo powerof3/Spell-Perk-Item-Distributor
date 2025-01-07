@@ -110,9 +110,8 @@ namespace Distribute
 			accumulatedForms);
 
 		// TODO: Pass isFinal from DistributableForm
-		bool isFinal = false;
 		if (!for_first_form<RE::BGSOutfit>(
-			npcData, forms.outfits, input, [&](auto* outfit) {
+			npcData, forms.outfits, input, [&](auto* outfit, bool isFinal) {
 				return distributeOutfit(npcData, outfit, isFinal);  // terminate as soon as valid outfit is confirmed.
 			},
 			accumulatedForms)) {
@@ -120,7 +119,7 @@ namespace Distribute
 		}
 
 		for_first_form<RE::BGSOutfit>(
-			npcData, forms.sleepOutfits, input, [&](auto* a_outfit) {
+			npcData, forms.sleepOutfits, input, [&](auto* a_outfit, bool isFinal) {
 				if (npc->sleepOutfit != a_outfit) {
 					npc->sleepOutfit = a_outfit;
 					return true;
@@ -136,7 +135,7 @@ namespace Distribute
 			accumulatedForms);
 
 		for_first_form<RE::TESObjectARMO>(
-			npcData, forms.skins, input, [&](auto* a_skin) {
+			npcData, forms.skins, input, [&](auto* a_skin, bool isFinal) {
 				if (npc->skin != a_skin) {
 					npc->skin = a_skin;
 					return true;

@@ -363,6 +363,8 @@ namespace Forms
 	{
 		std::uint32_t index{ 0 };
 
+		bool isFinal{ false };
+
 		Form*        form{ nullptr };
 		IndexOrCount idxOrCount{ RandomCount(1, 1) };
 		FilterData   filters{};
@@ -436,7 +438,7 @@ namespace Forms
 		DataVec<Form>& GetForms();
 
 		void LookupForms(RE::TESDataHandler*, std::string_view a_type, Distribution::INI::DataVec&);
-		void EmplaceForm(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path&);
+		void EmplaceForm(bool isValid, Form*, const bool& isFinal, const IndexOrCount&, const FilterData&, const Path&);
 
 		// Init formsWithLevels and formsNoLevels
 		void FinishLookupForms();
@@ -493,7 +495,7 @@ namespace Forms
 	/// <param name="rawForm">A raw form entry that needs to be looked up.</param>
 	/// <param name="callback">A callback to be called with validated data after successful lookup.</param>
 	template <class Form = RE::TESForm*>
-	void LookupGenericForm(RE::TESDataHandler* const dataHandler, Distribution::INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback);
+	void LookupGenericForm(RE::TESDataHandler* const dataHandler, Distribution::INI::Data& rawForm, std::function<void(bool isValid, Form*, const bool& isFinal, const IndexOrCount&, const FilterData&, const Path& path)> callback);
 }
 
 template <class Form>
@@ -553,8 +555,8 @@ Forms::DataVec<Form>& Forms::Distributables<Form>::GetForms(bool a_onlyLevelEntr
 template <class Form>
 void Forms::Distributables<Form>::LookupForm(RE::TESDataHandler* dataHandler, Distribution::INI::Data& rawForm)
 {
-	Forms::LookupGenericForm<Form>(dataHandler, rawForm, [&](bool isValid, Form* form, const auto& idxOrCount, const auto& filters, const auto& path) {
-		EmplaceForm(isValid, form, idxOrCount, filters, path);
+	Forms::LookupGenericForm<Form>(dataHandler, rawForm, [&](bool isValid, Form* form, const bool& isFinal, const auto& idxOrCount, const auto& filters, const auto& path) {
+		EmplaceForm(isValid, form, isFinal, idxOrCount, filters, path);
 	});
 }
 
@@ -575,10 +577,10 @@ void Forms::Distributables<Form>::LookupForms(RE::TESDataHandler* dataHandler, s
 }
 
 template <class Form>
-void Forms::Distributables<Form>::EmplaceForm(bool isValid, Form* form, const IndexOrCount& idxOrCount, const FilterData& filters, const Path& path)
+void Forms::Distributables<Form>::EmplaceForm(bool isValid, Form* form, const bool& isFinal, const IndexOrCount& idxOrCount, const FilterData& filters, const Path& path)
 {
 	if (isValid) {
-		forms.emplace_back(forms.size(), form, idxOrCount, filters, path);
+		forms.emplace_back(forms.size(), isFinal, form, idxOrCount, filters, path);
 	}
 	lookupCount++;
 }
@@ -607,9 +609,9 @@ void Forms::Distributables<Form>::FinishLookupForms()
 }
 
 template <class Form>
-void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, Distribution::INI::Data& rawForm, std::function<void(bool isValid, Form*, const IndexOrCount&, const FilterData&, const Path& path)> callback)
+void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, Distribution::INI::Data& rawForm, std::function<void(bool isValid, Form*, const bool& isFinal, const IndexOrCount&, const FilterData&, const Path& path)> callback)
 {
-	auto& [type, formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] = rawForm;
+	auto& [recordTraits, type, formOrEditorID, strings, filterIDs, level, traits, idxOrCount, chance, path] = rawForm;
 
 	try {
 		if (auto form = detail::get_form<Form>(dataHandler, formOrEditorID, path, LookupOptions::kCreateIfMissing); form) {
@@ -624,7 +626,7 @@ void Forms::LookupGenericForm(RE::TESDataHandler* const dataHandler, Distributio
 			}
 
 			FilterData filters{ strings, filterForms, level, traits, chance };
-			callback(validEntry, form, idxOrCount, filters, path);
+			callback(validEntry, form, recordTraits & RECORD::TRAITS::Final, idxOrCount, filters, path);
 		}
 	} catch (const Lookup::UnknownFormIDException& e) {
 		buffered_logger::error("\t[{}] [0x{:X}] ({}) FAIL - formID doesn't exist", e.path, e.formID, e.modName.value_or(""));

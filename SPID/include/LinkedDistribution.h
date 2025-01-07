@@ -43,6 +43,7 @@ namespace LinkedDistribution
 		{
 			FormOrEditorID rawForm{};
 
+			RECORD::TRAITS recordTraits{};
 			RECORD::TYPE type{ RECORD::kForm };
 
 			Scope scope{ kLocal };
@@ -71,9 +72,6 @@ namespace LinkedDistribution
 	using namespace Forms;
 
 	class Manager;
-
-	template <class Form>
-	struct LinkedForms;
 
 	namespace detail
 	{
@@ -110,7 +108,7 @@ namespace LinkedDistribution
 		RECORD::TYPE type;
 		FormsMap     forms{};
 
-		void Link(Form*, Scope, DistributionType, const FormVec& linkedConfigs, const IndexOrCount&, const PercentChance&, const Path&);
+		void Link(Form*, Scope, DistributionType, bool isFinal, const FormVec& linkedConfigs, const IndexOrCount&, const PercentChance&, const Path&);
 	};
 
 	class Manager : public ISingleton<Manager>
@@ -247,17 +245,17 @@ namespace LinkedDistribution
 	{
 		for (auto& rawForm : rawLinkedForms) {
 			if (auto form = detail::LookupLinkedForm<Form>(dataHandler, rawForm); form) {
-				auto& [formID, type, scope, distributionType, parentFormIDs, count, chance, path] = rawForm;
+				auto& [formID, recordTraits, type, scope, distributionType, parentFormIDs, count, chance, path] = rawForm;
 				FormVec parentForms{};
 				if (Forms::detail::formID_to_form(dataHandler, parentFormIDs.MATCH, parentForms, path, LookupOptions::kNone)) {
-					Link(form, scope, distributionType, parentForms, count, chance, path);
+					Link(form, scope, distributionType, recordTraits & RECORD::TRAITS::Final, parentForms, count, chance, path);
 				}
 			}
 		}
 	}
 
 	template <class Form>
-	void LinkedForms<Form>::Link(Form* form, Scope scope, DistributionType distributionType, const FormVec& linkedConfigs, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
+	void LinkedForms<Form>::Link(Form* form, Scope scope, DistributionType distributionType, bool isFinal, const FormVec& linkedConfigs, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
 	{
 		for (const auto& linkedForm : linkedConfigs) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
@@ -265,7 +263,7 @@ namespace LinkedDistribution
 				auto& distributableForms = distributableFormsAtPath[std::get<RE::TESForm*>(linkedForm)];
 				// Note that we don't use Data.index here, as these linked forms don't have any leveled filters
 				// and as such do not to track their index.
-				distributableForms.emplace_back(0, form, idxOrCount, FilterData({}, {}, {}, {}, chance), path);
+				distributableForms.emplace_back(0, isFinal, form, idxOrCount, FilterData({}, {}, {}, {}, chance), path);
 			}
 		}
 	}
