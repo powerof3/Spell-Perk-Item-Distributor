@@ -208,7 +208,7 @@ namespace Outfits
 			logger::info("\t\t{}", pair.second);
 		}
 
-		logger::info("Current {} Outfit Replacements", pendingReplacements.size());
+		logger::info("Pending {} Outfit Replacements", pendingReplacements.size());
 		for (const auto& pair : pendingReplacements) {
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
 				logger::info("\t{}", *actor);
@@ -218,10 +218,6 @@ namespace Outfits
 
 		logger::info("Applying resolved outfits...");
 #endif
-		
-
-		int appliedCount = 0;
-		int revertedCount = 0;
 
 		// We don't increment iterator here, since ResolveWornOutfit will be erasing each pending entry
 		for (auto it = pendingReplacements.begin(); it != pendingReplacements.end();) {
@@ -235,10 +231,6 @@ namespace Outfits
 				}
 			}
 		}
-
-#ifndef NDEBUG
-		logger::info("{:*^30}", "RUNTIME");  // TODO: Fix this to appear when expected continue runtime logging section
-#endif
 	}
 
 	void Manager::Save(SKSE::SerializationInterface* interface)
@@ -279,13 +271,32 @@ namespace Outfits
 #pragma endregion
 
 #pragma region Hooks
+	struct ShouldBackgroundClone
+	{
+		static bool thunk(RE::Character* actor)
+		{
+			logger::debug("Outfits: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+			auto manager = Manager::GetSingleton();
+
+			if (!manager->pendingReplacements.contains(actor->formID)) {
+				manager->SetOutfit(actor, nullptr, NPCData::IsDead(actor), false);
+			}
+
+			return func(actor);
+		}
+		static inline REL::Relocation<decltype(thunk)> func;
+
+		static inline constexpr std::size_t index{ 0 };
+		static inline constexpr std::size_t size{ 0x6D };
+	};
+
 	/// This hook applies pending outfit replacements before loading 3D model. Outfit Replacements are created by SetDefaultOutfit.
 	struct Load3D
 	{
 		static RE::NiAVObject* thunk(RE::Character* actor, bool a_backgroundLoading)
 		{
 #ifndef NDEBUG
-			logger::info("Load3D({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
+			logger::info("Outfits: Load3D({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
 #endif
 			const auto manager = Manager::GetSingleton();
 
@@ -314,6 +325,7 @@ namespace Outfits
 			auto initialOutfit = npc->defaultOutfit;
 			func(npc, a_buf);
 			if (initialOutfit && initialOutfit != npc->defaultOutfit) {
+				logger::info("{} loaded outfit {}, originally it was {}", *npc, *npc->defaultOutfit, *initialOutfit);
 				Manager::GetSingleton()->initialOutfits.try_emplace(npc->formID, initialOutfit);
 			}
 		}
@@ -365,7 +377,7 @@ namespace Outfits
 		static inline constexpr std::size_t offset = OFFSET(0, 0x4B);
 	};
 
-	struct SetOutfit
+	struct SetOutfitActor
 	{
 		static bool thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool isSleepOutfit)
 		{
@@ -416,6 +428,9 @@ namespace Outfits
 					logger::info("Outfit Manager: Registered for {}.", typeid(RE::TESDeathEvent).name());
 				}
 
+				stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
+				logger::info("Outfit Manager: Installed ShouldBackgroundClone hook.");
+
 				stl::write_vfunc<RE::Character, Load3D>();
 				logger::info("Outfit Manager: Installed Load3D hook.");
 
@@ -427,6 +442,9 @@ namespace Outfits
 
 				stl::write_thunk_call<ResetReference>();
 				logger::info("Outfit Manager: Installed ResetReference hook.");
+
+				stl::write_thunk_call<SetOutfitActor>();
+				logger::info("Outfit Manager: Installed SetOutfit hook.");
 			}
 			break;
 		case SKSE::MessagingInterface::kPreLoadGame:
@@ -517,7 +535,9 @@ namespace Outfits
 			return ResolveWornOutfit(actor, pending, isDying);
 		}
 		
-		// When no pendingReplacements found, we assume that there was no 
+		// For all valid actors that support outfits there must be a pendingReplacement, 
+		// if there is none, that means we're missing an indicator that this actor didn't get an outfit.
+		assert(!actor || !actor->GetActorBase() || !actor->GetActorBase()->defaultOutfit);
 		return nullptr;
 	}
 
@@ -679,7 +699,7 @@ namespace Outfits
 #endif
 				return false;
 			}
-		} else if (!npc->defaultOutfit) { // If NPC don't have an outfit, most likely
+		} else if (!defaultOutfit) { // If NPC don't have an outfit, most likely
 #ifndef NDEBUG
 			logger::warn("\tAttempted to track Outfit for actor that doesn't have one.");
 #endif

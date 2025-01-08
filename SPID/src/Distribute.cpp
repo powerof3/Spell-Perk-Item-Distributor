@@ -36,16 +36,16 @@ namespace Distribute
 		// Maybe one day we should add a system similar to outfits :)
 		// or at least implement RemoveSpell calls for all previous abilities.
 		for_each_form<RE::SpellItem>(
-			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& a_spells) {
-				for (auto& spell : a_spells) {
+			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& spells) {
+				for (auto& spell : spells) {
 					npcData.GetActor()->AddSpell(spell);  // Adding spells one by one to actor properly applies them. This solves On Death distribution issue #60
 				}
 			},
 			accumulatedForms);
 
 		for_each_form<RE::TESLevSpell>(
-			npcData, forms.levSpells, input, [&](const std::vector<RE::TESLevSpell*>& a_levSpells) {
-				npc->GetSpellList()->AddLevSpells(a_levSpells);
+			npcData, forms.levSpells, input, [&](const std::vector<RE::TESLevSpell*>& levSpells) {
+				npc->GetSpellList()->AddLevSpells(levSpells);
 			},
 			accumulatedForms);
 
@@ -109,14 +109,11 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-		// TODO: Pass isFinal from DistributableForm
-		if (!for_first_form<RE::BGSOutfit>(
+		for_first_form<RE::BGSOutfit>(
 			npcData, forms.outfits, input, [&](auto* outfit, bool isFinal) {
 				return distributeOutfit(npcData, outfit, isFinal);  // terminate as soon as valid outfit is confirmed.
 			},
-			accumulatedForms)) {
-			distributeOutfit(npcData, nullptr, false);  // if no outfit was found, distribute default outfit.
-		}
+			accumulatedForms);
 
 		for_first_form<RE::BGSOutfit>(
 			npcData, forms.sleepOutfits, input, [&](auto* a_outfit, bool isFinal) {

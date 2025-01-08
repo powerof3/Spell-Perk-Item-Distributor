@@ -206,11 +206,12 @@ namespace Outfits
 		bool isLoadingGame = false;
 
 		// Make sure hooks can access private members
+		friend struct ShouldBackgroundClone;
 		friend struct Load3D;
 		friend struct LoadGame;
 		friend struct Resurrect;
 		friend struct ResetReference;
-		friend struct SetOutfit;
+		friend struct SetOutfitActor;
 
 		friend struct TestsHelper;
 
@@ -284,12 +285,16 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 				return fmt::format_to(a_ctx.out(), "{} {}➡️ {}", *replacement.original, flags, *replacement.distributed);
 			}
 		} else if (replacement.original) {
-			if (reverse) {
-				return fmt::format_to(a_ctx.out(), "{} 🔙{} CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
-			} else if (replacement.isDeathOutfit) {
-				return fmt::format_to(a_ctx.out(), "{} {}➡ CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+			if (replacement.unrecognizedDistributedFormID > 0) {
+				if (reverse) {
+					return fmt::format_to(a_ctx.out(), "{} 🔙{} CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+				} else if (replacement.isDeathOutfit) {
+					return fmt::format_to(a_ctx.out(), "{} {}➡ CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+				} else {
+					return fmt::format_to(a_ctx.out(), "{} {}➡️ CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+				}
 			} else {
-				return fmt::format_to(a_ctx.out(), "{} {}➡️ CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+				return fmt::format_to(a_ctx.out(), "🔄️ {}", *replacement.original);
 			}
 		} else {
 			return fmt::format_to(a_ctx.out(), "INVALID REPLACEMENT");
