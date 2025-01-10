@@ -79,7 +79,7 @@ namespace Outfits
 		struct OutfitReplacement
 		{
 			/// The one that NPC had before SPID distribution.
-			RE::BGSOutfit* original;
+			RE::BGSOutfit* previous;
 
 			/// The one that SPID distributed.
 			RE::BGSOutfit* distributed;
@@ -103,7 +103,7 @@ namespace Outfits
 			/// Such replacements are used to "lock" the actor to their current outfit,
 			/// so that future attempts to replace an outfit will be ignored.
 			/// Refer to the Outfit Resolution table, specifically "Persist" action.
-			bool IsIdentity() const { return original == distributed; }
+			bool IsIdentity() const { return previous == distributed; }
 
 			/// Flag indicating whether the replacement wasn't properly loaded and is now corrupted.
 			///
@@ -112,15 +112,15 @@ namespace Outfits
 			bool IsCorrupted() const { return !distributed; }
 
 			OutfitReplacement() = default;
-			OutfitReplacement(RE::BGSOutfit* original, RE::FormID unrecognizedDistributedFormID = 0) :
-				original(original),
+			OutfitReplacement(RE::BGSOutfit* previous, RE::FormID unrecognizedDistributedFormID = 0) :
+				previous(previous),
 				distributed(nullptr),
 				isDeathOutfit(false),
 				isFinalOutfit(false),
 				isSuspended(false),
 				unrecognizedDistributedFormID(unrecognizedDistributedFormID) {}
-			OutfitReplacement(RE::BGSOutfit* original, RE::BGSOutfit* distributed, bool isDeathOutfit, bool isFinalOutfit, bool isSuspended) :
-				original(original),
+			OutfitReplacement(RE::BGSOutfit* previous, RE::BGSOutfit* distributed, bool isDeathOutfit, bool isFinalOutfit, bool isSuspended) :
+				previous(previous),
 				distributed(distributed),
 				isDeathOutfit(isDeathOutfit),
 				isFinalOutfit(isFinalOutfit),
@@ -138,7 +138,9 @@ namespace Outfits
 		/// <param name="actor">Actor for whom outfit should be changed</param>
 		/// <param name="outift">The outfit to be set</param>
 		/// <returns>True if the outfit was successfully set, false otherwise</returns>
-		bool ApplyOutfit(RE::Actor*, RE::BGSOutfit*) const;
+		//bool ApplyOutfit(RE::Actor*, RE::BGSOutfit*) const;
+
+		bool SwapOutfit(RE::Actor*, RE::BGSOutfit* worn, RE::BGSOutfit* toWear) const;
 
 		/// <summary>
 		/// Performs the actual reversion of the outfit.
@@ -174,7 +176,7 @@ namespace Outfits
 		bool SetOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
 
 		/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
-		void AddWornOutfit(RE::Actor*, const RE::BGSOutfit*) const;
+		void AddWornOutfit(RE::Actor*, RE::BGSOutfit*) const;
 
 		/// Lock for replacements.
 		mutable Lock _lock;
@@ -220,7 +222,8 @@ namespace Outfits
 		static void Load(SKSE::SerializationInterface* interface);
 		static void Save(SKSE::SerializationInterface* interface);
 
-		static bool LoadReplacement(SKSE::SerializationInterface*, std::uint32_t version, RE::FormID& actorFormID, OutfitReplacement&);
+		static bool LoadReplacementV1(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);
+		static bool LoadReplacementV2(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);
 		static bool SaveReplacement(SKSE::SerializationInterface*, const RE::FormID& actorFormID, const OutfitReplacement&);
 	};
 
@@ -273,28 +276,28 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 			flags += "⏸️";
 		}
 
-		if (replacement.original && replacement.distributed) {
+		if (replacement.previous && replacement.distributed) {
 			if (replacement.IsIdentity()) {
-				return fmt::format_to(a_ctx.out(), "🔄️ {}", *replacement.original);
+				return fmt::format_to(a_ctx.out(), "🔄️ {}", *replacement.previous);
 			}
 			if (reverse) {
-				return fmt::format_to(a_ctx.out(), "{} 🔙{} {}", *replacement.original, flags, *replacement.distributed);
+				return fmt::format_to(a_ctx.out(), "{} 🔙{} {}", *replacement.previous, flags, *replacement.distributed);
 			} else if (replacement.isDeathOutfit) {
-				return fmt::format_to(a_ctx.out(), "{} {}➡ {}", *replacement.original, flags, *replacement.distributed);
+				return fmt::format_to(a_ctx.out(), "{} {}➡ {}", *replacement.previous, flags, *replacement.distributed);
 			} else {
-				return fmt::format_to(a_ctx.out(), "{} {}➡️ {}", *replacement.original, flags, *replacement.distributed);
+				return fmt::format_to(a_ctx.out(), "{} {}➡️ {}", *replacement.previous, flags, *replacement.distributed);
 			}
-		} else if (replacement.original) {
+		} else if (replacement.previous) {
 			if (replacement.unrecognizedDistributedFormID > 0) {
 				if (reverse) {
-					return fmt::format_to(a_ctx.out(), "{} 🔙{} CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+					return fmt::format_to(a_ctx.out(), "{} 🔙{} CORRUPTED [{}:{:08X}]", *replacement.previous, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
 				} else if (replacement.isDeathOutfit) {
-					return fmt::format_to(a_ctx.out(), "{} {}➡ CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+					return fmt::format_to(a_ctx.out(), "{} {}➡ CORRUPTED [{}:{:08X}]", *replacement.previous, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
 				} else {
-					return fmt::format_to(a_ctx.out(), "{} {}➡️ CORRUPTED [{}:{:08X}]", *replacement.original, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+					return fmt::format_to(a_ctx.out(), "{} {}➡️ CORRUPTED [{}:{:08X}]", *replacement.previous, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
 				}
 			} else {
-				return fmt::format_to(a_ctx.out(), "🔄️ {}", *replacement.original);
+				return fmt::format_to(a_ctx.out(), "🔄️ {}", *replacement.previous);
 			}
 		} else {
 			return fmt::format_to(a_ctx.out(), "INVALID REPLACEMENT");

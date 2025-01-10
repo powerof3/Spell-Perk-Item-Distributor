@@ -48,9 +48,9 @@ using Map = ankerl::unordered_dense::map<K, D>;
 template <class K>
 using Set = ankerl::unordered_dense::set<K>;
 
-using Lock = std::shared_mutex;
-using ReadLocker = std::shared_lock<Lock>;
-using WriteLocker = std::unique_lock<Lock>;
+using Lock = RE::BSReadWriteLock;
+using ReadLocker = RE::BSReadLockGuard;
+using WriteLocker = RE::BSWriteLockGuard ;
 
 struct string_hash
 {
