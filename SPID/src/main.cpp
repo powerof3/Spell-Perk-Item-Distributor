@@ -43,10 +43,6 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
-#ifndef NDEBUG
-			Testing::Run();
-#endif
-
 			if (shouldDistribute = Lookup::LookupForms(); shouldDistribute) {
 				Distribute::Setup();
 			}
@@ -75,10 +71,21 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	default:
 		break;
 	}
-	// The order at which managers handle messages is important, 
+	// The order at which managers handle messages is important,
 	// since they need to register for events in specific order to work properly (e.g. Death event must be handled first by Death Manager, and then by Outfit Manager)
 	Outfits::Manager::GetSingleton()->HandleMessage(a_message);
 	DeathDistribution::Manager::GetSingleton()->HandleMessage(a_message);
+
+	// Run tests after all hooks.
+	switch (a_message->type) {
+	case SKSE::MessagingInterface::kDataLoaded:
+		{
+#ifndef NDEBUG
+			Testing::Run();
+#endif
+		}
+		break;
+	}
 }
 
 #ifdef SKYRIM_AE

@@ -396,6 +396,11 @@ namespace Outfits
 			const auto manager = Manager::GetSingleton();
 			manager->RestoreOutfit(actor);
 			func(actor, resetInventory, attach3D);
+			ReadLocker lock(manager->_lock);
+			if (const auto it = manager->wornReplacements.find(actor->formID); it != manager->wornReplacements.end()) {
+				manager->ApplyOutfit(actor, it->second.distributed);
+			}
+
 #ifndef NDEBUG
 			logger::info("Resurrect({}); IsDead: {}, ResetInventory: {}, Attach3D: {}", *(actor->As<RE::Actor>()), actor->IsDead(), resetInventory, attach3D);
 #endif

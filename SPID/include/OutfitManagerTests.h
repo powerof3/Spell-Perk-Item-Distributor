@@ -2,22 +2,24 @@
 #include "OutfitManager.h"
 #include "Testing.h"
 
-#define SETUP(A, W, isWd, isWf, G, L)                                                  \
-	auto           manager = Outfits::Manager();                                       \
-	RE::Actor*     actor = TestsHelper::Get##A##();                                    \
-	RE::BGSOutfit* original = actor->GetActorBase()->defaultOutfit;                    \
-	RE::BGSOutfit* worn = TestsHelper::Get##W##Outfit();                               \
-	RE::BGSOutfit* wears = worn;                                                       \
-	RE::BGSOutfit* gets = TestsHelper::Get##G##Outfit();                               \
-	RE::BGSOutfit* links = TestsHelper::Get##L##Outfit();                              \
-	auto&          wornReplacements = TestsHelper::GetWornReplacements(manager);       \
-	auto&          pendingReplacements = TestsHelper::GetPendingReplacements(manager); \
-	bool           isLooted = false;                                                   \
-	if (worn) {                                                                        \
-		TestsHelper::ApplyOutfit(manager, actor, worn);                                \
-		wornReplacements[actor->GetFormID()] = { worn, isWd, isWf, false };            \
-	} else {                                                                           \
-		actor->AddWornOutfit(original, false);                                         \
+#define SETUP(A, W, isWd, isWf, G, L)                                         \
+	auto  manager = Outfits::Manager::GetSingleton();                         \
+	auto& wornReplacements = TestsHelper::GetWornReplacements(manager);       \
+	auto& pendingReplacements = TestsHelper::GetPendingReplacements(manager); \
+	wornReplacements.clear();                                                 \
+	pendingReplacements.clear();                                              \
+	RE::Actor*     actor = TestsHelper::Get##A##();                           \
+	RE::BGSOutfit* original = actor->GetActorBase()->defaultOutfit;           \
+	RE::BGSOutfit* worn = TestsHelper::Get##W##Outfit();                      \
+	RE::BGSOutfit* wears = worn;                                              \
+	RE::BGSOutfit* gets = TestsHelper::Get##G##Outfit();                      \
+	RE::BGSOutfit* links = TestsHelper::Get##L##Outfit();                     \
+	bool           isLooted = false;                                          \
+	if (worn) {                                                               \
+		TestsHelper::ApplyOutfit(manager, actor, worn);                       \
+		wornReplacements[actor->GetFormID()] = { worn, isWd, isWf, false };   \
+	} else {                                                                  \
+		actor->AddWornOutfit(original, false);                                \
 	}																				
 
 // Terms from the Table https://docs.google.com/spreadsheets/d/1JEhAql7hUURYC63k_fScZ9u8OWni6gN9jHzytNQt-m8/edit?usp=sharing
@@ -33,13 +35,14 @@
 
 #define EXPECT_NONE(replacement) ASSERT(!replacement, "Expected no outfit replacement to occur");
 
-#define EXPECT_ORIGINAL(outfit)                                                                                           \
-	{                                                                                                                     \
-		auto it = wornReplacements.find(actor->formID);                                                                   \
-		ASSERT(it == wornReplacements.end(), "Expected to have no Worn Replacement for actor");                           \
-		auto actual = actor->GetActorBase()->defaultOutfit;                                                               \
-		ASSERT(actual == outfit, fmt::format("Expected actor to wear original outfit {}, but got {}", *outfit, *actual)); \
-		PASS;                                                                                                             \
+#define EXPECT_ORIGINAL(outfit)                                                                                                                                        \
+	{                                                                                                                                                                  \
+		auto it = wornReplacements.find(actor->formID);                                                                                                                \
+		ASSERT(it == wornReplacements.end(), "Expected to have no Worn Replacement for actor");                                                                        \
+		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                            \
+		ASSERT(actual == outfit, fmt::format("Expected actor to wear original outfit {}, but got {}", *outfit, *actual));                                              \
+		ASSERT(isLooted || TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from deafult outfit {}, but they don't have it", *outfit)); \
+		PASS;                                                                                                                                                          \
 	}
 
 #define EXPECT_WORN(replacement, outfit, d, f)                                                                                                                     \
@@ -62,6 +65,8 @@
 #define LOOT         \
 	isLooted = true; \
 	TestsHelper::Loot(actor);
+
+#define RESURRECT actor->Resurrect(true, true);
 
 #define EXPECT_WORN_FIND(outfit, d, f)                                                                                                                             \
 	{                                                                                                                                                              \
@@ -88,18 +93,18 @@ namespace Outfits
 	struct TestsHelper
 	{
 		// Exposes private members through firend TestsHelper;
-		static auto& GetWornReplacements(Manager& manager) { return manager.wornReplacements; }
+		static auto& GetWornReplacements(Manager* manager) { return manager->wornReplacements; }
 
-		static auto& GetPendingReplacements(Manager& manager) { return manager.pendingReplacements; }
+		static auto& GetPendingReplacements(Manager* manager) { return manager->pendingReplacements; }
 
-		static bool ApplyOutfit(Manager& manager, RE::Actor* actor, RE::BGSOutfit* outfit)
+		static bool ApplyOutfit(Manager* manager, RE::Actor* actor, RE::BGSOutfit* outfit)
 		{
-			return manager.ApplyOutfit(actor, outfit);
+			return manager->ApplyOutfit(actor, outfit);
 		}
 
-		static auto* ResolveAndApplyWornOutfit(Manager& manager, RE::Actor* actor, bool isDying)
+		static auto* ResolveAndApplyWornOutfit(Manager* manager, RE::Actor* actor, bool isDying)
 		{
-			auto* replacement = manager.ResolveWornOutfit(actor, isDying);
+			auto* replacement = manager->ResolveWornOutfit(actor, isDying);
 			if (replacement) {
 				ApplyOutfit(manager, actor, replacement->distributed);
 			}
@@ -188,7 +193,7 @@ namespace Outfits
 				TEST(B05NoWearsNoGetsNoLinksIgnore)
 				{
 					SETUP(Alive, None, Regular, NotFinal, None, None);
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -197,7 +202,7 @@ namespace Outfits
 				TEST(B06NoWearsGetsNoLinksUpdate)
 				{
 					SETUP(Alive, None, Regular, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, NotFinal);
 				}
@@ -205,7 +210,7 @@ namespace Outfits
 				TEST(B07NoWearsFinalGetsNoLinksUpdate)
 				{
 					SETUP(Alive, None, Regular, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, Final);
 				}
@@ -213,8 +218,8 @@ namespace Outfits
 				TEST(B08NoWearsGetsLinksOverwrite)
 				{
 					SETUP(Alive, None, Regular, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, links, Regular, NotFinal);
 				}
@@ -222,8 +227,8 @@ namespace Outfits
 				TEST(B09NoWearsFinalGetsLinksUpdate)
 				{
 					SETUP(Alive, None, Regular, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, Final);
 				}
@@ -231,7 +236,7 @@ namespace Outfits
 				TEST(B10WearsNoGetsNoLinksRevert)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, None, None);
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -240,7 +245,7 @@ namespace Outfits
 				TEST(B11FinalWearsNoGetsNoLinksForward)
 				{
 					SETUP(Alive, Guard, Regular, Final, None, None);
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -249,7 +254,7 @@ namespace Outfits
 				TEST(B12WearsGetsNoLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, NotFinal);
 				}
@@ -257,7 +262,7 @@ namespace Outfits
 				TEST(B13WearsFinalGetsNoLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, Final);
 				}
@@ -265,7 +270,7 @@ namespace Outfits
 				TEST(B14FinalWearsGetsNoLinksForward)
 				{
 					SETUP(Alive, Guard, Regular, Final, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -274,7 +279,7 @@ namespace Outfits
 				TEST(B15FinalWearsFinalGetsNoLinksForward)
 				{
 					SETUP(Alive, Guard, Regular, Final, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -283,8 +288,8 @@ namespace Outfits
 				TEST(B16WearsGetsLinksOverwrite)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, links, Regular, NotFinal);
 				}
@@ -292,8 +297,8 @@ namespace Outfits
 				TEST(B17WearsFinalGetsLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, Final);
 				}
@@ -301,8 +306,8 @@ namespace Outfits
 				TEST(B18FinalWearsGetsLinksForward)
 				{
 					SETUP(Alive, Guard, Regular, Final, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -311,8 +316,8 @@ namespace Outfits
 				TEST(B19FinalWearsFinalGetsLinksForward)
 				{
 					SETUP(Alive, Guard, Regular, Final, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -331,7 +336,7 @@ namespace Outfits
 				TEST(B35NoWearsNoGetsNoLinksPersist)
 				{
 					SETUP(Dead, None, Regular, NotFinal, None, None);
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(original, Regular, NotFinal);
@@ -340,7 +345,7 @@ namespace Outfits
 				TEST(B36NoWearsGetsNoLinksUpdate)
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, NotFinal);
 				}
@@ -348,7 +353,7 @@ namespace Outfits
 				TEST(B37NoWearsFinalGetsNoLinksUpdate)
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, Final);
 				}
@@ -356,8 +361,8 @@ namespace Outfits
 				TEST(B38NoWearsGetsLinksOverwrite)
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, links, Regular, NotFinal);
 				}
@@ -365,8 +370,8 @@ namespace Outfits
 				TEST(B39NoWearsFinalGetsLinksUpdate)
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Regular, Final);
 				}
@@ -375,7 +380,7 @@ namespace Outfits
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, None);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -385,7 +390,7 @@ namespace Outfits
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, None);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -395,8 +400,8 @@ namespace Outfits
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -406,8 +411,8 @@ namespace Outfits
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -416,7 +421,7 @@ namespace Outfits
 				TEST(B44WearsNoGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, None, None);
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -426,7 +431,7 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, None, None);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -435,7 +440,7 @@ namespace Outfits
 				TEST(B46FinalWearsNoGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, Final, None, None);
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -444,7 +449,7 @@ namespace Outfits
 				TEST(B47WearsGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -453,7 +458,7 @@ namespace Outfits
 				TEST(B48WearsFinalGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -463,7 +468,7 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, None);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -473,7 +478,7 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, None);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -482,7 +487,7 @@ namespace Outfits
 				TEST(B51FinalWearsGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, Final, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -491,7 +496,7 @@ namespace Outfits
 				TEST(B52FinalWearsFinalGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, Final, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -500,8 +505,8 @@ namespace Outfits
 				TEST(B53WearsGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -510,8 +515,8 @@ namespace Outfits
 				TEST(B54WearsFinalGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -521,8 +526,8 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, Hunter);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -532,8 +537,8 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, Hunter);
 					LOOT;
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -542,8 +547,8 @@ namespace Outfits
 				TEST(B57FinalWearsGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, Final, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -552,8 +557,8 @@ namespace Outfits
 				TEST(B58FinalWearsFinalGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Regular, Final, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, Final);
@@ -562,7 +567,7 @@ namespace Outfits
 				TEST(B59DeathWearsNoGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, None, None);
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -571,7 +576,7 @@ namespace Outfits
 				TEST(B60FinalDeathWearsNoGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, None, None);
-					manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -580,7 +585,7 @@ namespace Outfits
 				TEST(B61DeathWearsGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -589,7 +594,7 @@ namespace Outfits
 				TEST(B62DeathWearsFinalGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -598,7 +603,7 @@ namespace Outfits
 				TEST(B63FinalDeathWearsGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -607,7 +612,7 @@ namespace Outfits
 				TEST(B64FinalDeathWearsFinalGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, Elven, None);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -616,8 +621,8 @@ namespace Outfits
 				TEST(B65DeathWearsGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -626,8 +631,8 @@ namespace Outfits
 				TEST(B66DeathWearsFinalGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -636,8 +641,8 @@ namespace Outfits
 				TEST(B67FinalDeathWearsGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -646,8 +651,8 @@ namespace Outfits
 				TEST(B68FinalDeathWearsFinalGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, Elven, Hunter);
-					manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-					manager.SetDefaultOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -664,7 +669,7 @@ namespace Outfits
 				TEST(J20NoWearsNoGetsNoLinksPersist)
 				{
 					SETUP(Alive, None, Regular, NotFinal, None, None);
-					manager.SetDeathOutfit(NPCData(actor, true), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(original, Death, NotFinal);
@@ -673,7 +678,7 @@ namespace Outfits
 				TEST(J21NoWearsGetsNoLinksUpdate)
 				{
 					SETUP(Alive, None, Regular, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, NotFinal);
 				}
@@ -681,7 +686,7 @@ namespace Outfits
 				TEST(J22NoWearsFinalGetsNoLinksUpdate)
 				{
 					SETUP(Alive, None, Regular, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -689,8 +694,8 @@ namespace Outfits
 				TEST(J23NoWearsGetsLinksOverwrite)
 				{
 					SETUP(Alive, None, Regular, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor, true), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, links, Death, NotFinal);
 				}
@@ -698,8 +703,8 @@ namespace Outfits
 				TEST(J24NoWearsFinalGetsLinksUpdate)
 				{
 					SETUP(Alive, None, Regular, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor, true), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor, true), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -707,7 +712,7 @@ namespace Outfits
 				TEST(J25WearsNoGetsNoLinksPersist)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, None, None);
-					manager.SetDeathOutfit(NPCData(actor, true), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -716,7 +721,7 @@ namespace Outfits
 				TEST(J26FinalWearsNoGetsNoLinksPersist)
 				{
 					SETUP(Alive, Guard, Regular, Final, None, None);
-					manager.SetDeathOutfit(NPCData(actor, true), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -725,7 +730,7 @@ namespace Outfits
 				TEST(J27WearsGetsNoLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, NotFinal);
 				}
@@ -733,7 +738,7 @@ namespace Outfits
 				TEST(J28WearsFinalGetsNoLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -741,7 +746,7 @@ namespace Outfits
 				TEST(J29FinalWearsGetsNoLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, Final, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, NotFinal);
 				}
@@ -749,7 +754,7 @@ namespace Outfits
 				TEST(J30FinalWearsFinalGetsNoLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, Final, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -757,8 +762,8 @@ namespace Outfits
 				TEST(J31WearsGetsLinksOverwrite)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor, true), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, links, Death, NotFinal);
 				}
@@ -766,8 +771,8 @@ namespace Outfits
 				TEST(J32WearsFinalGetsLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor, true), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor, true), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -775,8 +780,8 @@ namespace Outfits
 				TEST(J33FinalWearsGetsLinksOverwrite)
 				{
 					SETUP(Alive, Guard, Regular, Final, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor, true), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, links, Death, NotFinal);
 				}
@@ -784,8 +789,8 @@ namespace Outfits
 				TEST(J34FinalWearsFinalGetsLinksUpdate)
 				{
 					SETUP(Alive, Guard, Regular, Final, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor, true), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor, true), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor, true), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor, true), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, true);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -803,7 +808,7 @@ namespace Outfits
 				TEST(J35NoWearsNoGetsNoLinksPersist)
 				{
 					SETUP(Dead, None, Regular, NotFinal, None, None);
-					manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(original, Death, NotFinal);
@@ -812,7 +817,7 @@ namespace Outfits
 				TEST(J36NoWearsGetsNoLinksUpdate)
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, NotFinal);
 				}
@@ -820,7 +825,7 @@ namespace Outfits
 				TEST(J37NoWearsFinalGetsNoLinksUpdate)
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -828,8 +833,8 @@ namespace Outfits
 				TEST(J38NoWearsGetsLinksOverwrite)
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, links, Death, NotFinal);
 				}
@@ -837,8 +842,8 @@ namespace Outfits
 				TEST(J39NoWearsFinalGetsLinksUpdate)
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -847,7 +852,7 @@ namespace Outfits
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, None);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -857,7 +862,7 @@ namespace Outfits
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, None);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -867,8 +872,8 @@ namespace Outfits
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -878,8 +883,8 @@ namespace Outfits
 				{
 					SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_ORIGINAL(original);
@@ -888,7 +893,7 @@ namespace Outfits
 				TEST(J44WearsNoGetsNoLinksPersist)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, None, None);
-					manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -898,7 +903,7 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, None, None);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -907,7 +912,7 @@ namespace Outfits
 				TEST(J46FinalWearsNoGetsNoLinksPersist)
 				{
 					SETUP(Dead, Guard, Regular, Final, None, None);
-					manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -916,7 +921,7 @@ namespace Outfits
 				TEST(J47WearsGetsNoLinksUpdate)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, NotFinal);
 				}
@@ -924,7 +929,7 @@ namespace Outfits
 				TEST(J48WearsFinalGetsNoLinksUpdsate)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -933,7 +938,7 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, None);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -943,7 +948,7 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, None);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -952,7 +957,7 @@ namespace Outfits
 				TEST(J51FinalWearsGetsNoLinksUpdate)
 				{
 					SETUP(Dead, Guard, Regular, Final, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, NotFinal);
 				}
@@ -960,7 +965,7 @@ namespace Outfits
 				TEST(J52FinalWearsFinalGetsNoLinksUpdate)
 				{
 					SETUP(Dead, Guard, Regular, Final, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -968,8 +973,8 @@ namespace Outfits
 				TEST(J53WearsGetsLinksOverwrite)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, links, Death, NotFinal);
 				}
@@ -977,8 +982,8 @@ namespace Outfits
 				TEST(J54WearsFinalGetsLinksUpdate)
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -987,8 +992,8 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, Hunter);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -998,8 +1003,8 @@ namespace Outfits
 				{
 					SETUP(Dead, Guard, Regular, NotFinal, Elven, Hunter);
 					LOOT;
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Regular, NotFinal);
@@ -1008,8 +1013,8 @@ namespace Outfits
 				TEST(J57FinalWearsGetsLinksOverwrite)
 				{
 					SETUP(Dead, Guard, Regular, Final, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, links, Death, NotFinal);
 				}
@@ -1017,8 +1022,8 @@ namespace Outfits
 				TEST(J58FinalWearsFinalGetsLinksUpdate)
 				{
 					SETUP(Dead, Guard, Regular, Final, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_WORN(replacement, gets, Death, Final);
 				}
@@ -1026,7 +1031,7 @@ namespace Outfits
 				TEST(J59DeathWearsNoGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, None, None);
-					manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -1035,7 +1040,7 @@ namespace Outfits
 				TEST(J60FinalDeathWearsNoGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, None, None);
-					manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -1044,7 +1049,7 @@ namespace Outfits
 				TEST(J61DeathWearsGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -1053,7 +1058,7 @@ namespace Outfits
 				TEST(J62DeathWearsFinalGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -1062,7 +1067,7 @@ namespace Outfits
 				TEST(J63FinalDeathWearsGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -1071,7 +1076,7 @@ namespace Outfits
 				TEST(J64FinalDeathWearsFinalGetsNoLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, Elven, None);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -1080,8 +1085,8 @@ namespace Outfits
 				TEST(J65DeathWearsGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -1090,8 +1095,8 @@ namespace Outfits
 				TEST(J66DeathWearsFinalGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Death, NotFinal, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, NotFinal);
@@ -1100,8 +1105,8 @@ namespace Outfits
 				TEST(J67FinalDeathWearsGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -1110,8 +1115,8 @@ namespace Outfits
 				TEST(J68FinalDeathWearsFinalGetsLinksForward)
 				{
 					SETUP(Dead, Guard, Death, Final, Elven, Hunter);
-					manager.SetDeathOutfit(NPCData(actor), gets, Final);
-					manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+					manager->SetDeathOutfit(NPCData(actor), gets, Final);
+					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
 					EXPECT_WORN_FIND(wears, Death, Final);
@@ -1132,8 +1137,8 @@ namespace Outfits
 			TEST(B35_J44EmptyDeathDistributionOnTopOfEmptyRegular)
 			{
 				SETUP(Dead, None, Regular, NotFinal, None, None);
-				manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
-				manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+				manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+				manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 				auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 				EXPECT_NONE(replacement);
 				EXPECT_WORN_FIND(original, Death, NotFinal);
@@ -1142,8 +1147,8 @@ namespace Outfits
 			TEST(B35_J47DeathDistributionOnTopOfEmptyRegular)
 			{
 				SETUP(Dead, None, Regular, NotFinal, Elven, None);
-				manager.SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
-				manager.SetDeathOutfit(NPCData(actor), gets, NotFinal);
+				manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
+				manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 				auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 				EXPECT_WORN(replacement, gets, Death, NotFinal);
 			}
@@ -1151,8 +1156,8 @@ namespace Outfits
 			TEST(B36_J44EmptyDeathDistributionOnTopOfRegular)
 			{
 				SETUP(Dead, None, Regular, NotFinal, Elven, None);
-				manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-				manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+				manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+				manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 				auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 				EXPECT_WORN(replacement, gets, Death, NotFinal);
 			}
@@ -1160,8 +1165,8 @@ namespace Outfits
 			TEST(B36_J47DeathDistributionOnTopOfRegular)
 			{
 				SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
-				manager.SetDefaultOutfit(NPCData(actor), gets, NotFinal);
-				manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+				manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+				manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 				auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 				EXPECT_WORN(replacement, links, Death, NotFinal);
 			}
@@ -1169,8 +1174,8 @@ namespace Outfits
 			TEST(B37_J44EmptyDeathDistributionOnTopOfFinalRegular)
 			{
 				SETUP(Dead, None, Regular, NotFinal, Elven, None);
-				manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-				manager.SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
+				manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+				manager->SetDeathOutfit(NPCData(actor), nullptr, NotFinal);
 				auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 				EXPECT_WORN(replacement, gets, Death, Final);
 			}
@@ -1178,10 +1183,58 @@ namespace Outfits
 			TEST(B37_J51DeathDistributionOnTopOfFinalRegular)
 			{
 				SETUP(Dead, None, Regular, NotFinal, Elven, Hunter);
-				manager.SetDefaultOutfit(NPCData(actor), gets, Final);
-				manager.SetDeathOutfit(NPCData(actor), links, NotFinal);
+				manager->SetDefaultOutfit(NPCData(actor), gets, Final);
+				manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 				auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 				EXPECT_WORN(replacement, links, Death, NotFinal);
+			}
+		}
+
+		namespace Resurrection
+		{
+			constexpr static const char* moduleName = "OutfitManager.Resurrection";
+
+			CLEANUP
+			{
+				TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
+			}
+
+			TEST(B69ResurrectNoWears) 
+			{
+				SETUP(Dead, None, Regular, NotFinal, None, None);
+				RESURRECT;
+				// for some reason resurrect's resetInventory doesn't equip the outfit.
+				// I've checked in-game the outfit is equipped automatically, but in this test it does not :(
+				actor->AddWornOutfit(original, false);
+				EXPECT_ORIGINAL(original);
+			}
+
+			TEST(B70ResurrectWears)
+			{
+				SETUP(Dead, Guard, Regular, NotFinal, None, None);
+				RESURRECT;
+				EXPECT_WORN_FIND(wears, Regular, NotFinal);
+			}
+
+			TEST(B71ResurrectFinalWears)
+			{
+				SETUP(Dead, Guard, Regular, Final, None, None);
+				RESURRECT;
+				EXPECT_WORN_FIND(wears, Regular, Final);
+			}
+
+			TEST(B72ResurrectDeathWears)
+			{
+				SETUP(Dead, Guard, Death, NotFinal, None, None);
+				RESURRECT;
+				EXPECT_WORN_FIND(wears, Regular, NotFinal);
+			}
+
+			TEST(B73ResurrectFinalDeathWears)
+			{
+				SETUP(Dead, Guard, Death, Final, None, None);
+				RESURRECT;
+				EXPECT_WORN_FIND(wears, Regular, Final);
 			}
 		}
 	}

@@ -105,4 +105,4 @@ namespace stl
 #include "Defs.h"
 #include "Version.h"
 
-#define LOG_HEADER(name) logger::info("{} {:*<100}", name, "");
+#define LOG_HEADER(name) logger::info("*** {} {:*<100}", name, "");
