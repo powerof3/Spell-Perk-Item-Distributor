@@ -86,7 +86,7 @@ namespace Testing
 		}
 
 		static void Run() {
-			logger::info("{:*^50}", "SELF TESTING");
+			LOG_HEADER("SELF TESTING");
 			std::pair<int, int> counter = { 0, 0 };
 			spdlog::set_level(spdlog::level::critical);  // silence all logging coming from the test.
 			for (auto& [module, tests] : GetSingleton()->tests) {

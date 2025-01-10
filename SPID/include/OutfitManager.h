@@ -78,10 +78,7 @@ namespace Outfits
 	private:
 		struct OutfitReplacement
 		{
-			/// The one that NPC had before SPID distribution.
-			RE::BGSOutfit* previous;
-
-			/// The one that SPID distributed.
+			/// The outfit that the actor was given and is currently worn.
 			RE::BGSOutfit* distributed;
 
 			/// FormID of the outfit that was meant to be distributed, but was not recognized during loading (most likely source plugin is no longer active).
@@ -98,13 +95,6 @@ namespace Outfits
 			/// Replacement is marked as suspended when SPID detect an explicit call to SetOutfit
 			bool isSuspended;
 
-			/// Flag indicating whether the replacement points to the same original outfit.
-			///
-			/// Such replacements are used to "lock" the actor to their current outfit,
-			/// so that future attempts to replace an outfit will be ignored.
-			/// Refer to the Outfit Resolution table, specifically "Persist" action.
-			bool IsIdentity() const { return previous == distributed; }
-
 			/// Flag indicating whether the replacement wasn't properly loaded and is now corrupted.
 			///
 			/// This can happen when the distributed outfit was removed from the game.
@@ -112,15 +102,13 @@ namespace Outfits
 			bool IsCorrupted() const { return !distributed; }
 
 			OutfitReplacement() = default;
-			OutfitReplacement(RE::BGSOutfit* previous, RE::FormID unrecognizedDistributedFormID = 0) :
-				previous(previous),
+			OutfitReplacement(RE::FormID unrecognizedDistributedFormID) :
 				distributed(nullptr),
 				isDeathOutfit(false),
 				isFinalOutfit(false),
 				isSuspended(false),
 				unrecognizedDistributedFormID(unrecognizedDistributedFormID) {}
-			OutfitReplacement(RE::BGSOutfit* previous, RE::BGSOutfit* distributed, bool isDeathOutfit, bool isFinalOutfit, bool isSuspended) :
-				previous(previous),
+			OutfitReplacement(RE::BGSOutfit* distributed, bool isDeathOutfit, bool isFinalOutfit, bool isSuspended) :
 				distributed(distributed),
 				isDeathOutfit(isDeathOutfit),
 				isFinalOutfit(isFinalOutfit),
@@ -138,9 +126,7 @@ namespace Outfits
 		/// <param name="actor">Actor for whom outfit should be changed</param>
 		/// <param name="outift">The outfit to be set</param>
 		/// <returns>True if the outfit was successfully set, false otherwise</returns>
-		//bool ApplyOutfit(RE::Actor*, RE::BGSOutfit*) const;
-
-		bool SwapOutfit(RE::Actor*, RE::BGSOutfit* worn, RE::BGSOutfit* toWear) const;
+		bool ApplyOutfit(RE::Actor*, RE::BGSOutfit*) const;
 
 		/// <summary>
 		/// Performs the actual reversion of the outfit.
@@ -276,31 +262,22 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 			flags += "⏸️";
 		}
 
-		if (replacement.previous && replacement.distributed) {
-			if (replacement.IsIdentity()) {
-				return fmt::format_to(a_ctx.out(), "🔄️ {}", *replacement.previous);
-			}
+		if (replacement.distributed) {
 			if (reverse) {
-				return fmt::format_to(a_ctx.out(), "{} 🔙{} {}", *replacement.previous, flags, *replacement.distributed);
-			} else if (replacement.isDeathOutfit) {
-				return fmt::format_to(a_ctx.out(), "{} {}➡ {}", *replacement.previous, flags, *replacement.distributed);
+				return fmt::format_to(a_ctx.out(), "🔙{} {}", flags, *replacement.distributed);
 			} else {
-				return fmt::format_to(a_ctx.out(), "{} {}➡️ {}", *replacement.previous, flags, *replacement.distributed);
-			}
-		} else if (replacement.previous) {
-			if (replacement.unrecognizedDistributedFormID > 0) {
-				if (reverse) {
-					return fmt::format_to(a_ctx.out(), "{} 🔙{} CORRUPTED [{}:{:08X}]", *replacement.previous, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
-				} else if (replacement.isDeathOutfit) {
-					return fmt::format_to(a_ctx.out(), "{} {}➡ CORRUPTED [{}:{:08X}]", *replacement.previous, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
-				} else {
-					return fmt::format_to(a_ctx.out(), "{} {}➡️ CORRUPTED [{}:{:08X}]", *replacement.previous, flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
-				}
-			} else {
-				return fmt::format_to(a_ctx.out(), "🔄️ {}", *replacement.previous);
+				return fmt::format_to(a_ctx.out(), "{}➡️ {}", flags, *replacement.distributed);
 			}
 		} else {
-			return fmt::format_to(a_ctx.out(), "INVALID REPLACEMENT");
+			if (replacement.unrecognizedDistributedFormID > 0) {
+				if (reverse) {
+					return fmt::format_to(a_ctx.out(), "🔙{} CORRUPTED [{}:{:08X}]", flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+				} else {
+					return fmt::format_to(a_ctx.out(), "{}➡️ CORRUPTED [{}:{:08X}]", flags, RE::FormType::Outfit, replacement.unrecognizedDistributedFormID);
+				}
+			} else {
+				return fmt::format_to(a_ctx.out(), "🔄️ Use Default");
+			}
 		}
 	}
 

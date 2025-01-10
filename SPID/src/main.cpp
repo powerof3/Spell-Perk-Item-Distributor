@@ -18,20 +18,20 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	switch (a_message->type) {
 	case SKSE::MessagingInterface::kPostLoad:
 		{
-			logger::info("{:*^50}", "DEPENDENCIES");
+			LOG_HEADER("DEPENDENCIES");
 
 			const auto tweaks = GetModuleHandle(L"po3_Tweaks");
 			logger::info("powerofthree's Tweaks (po3_tweaks) detected : {}", tweaks != nullptr);
 
 			if (std::tie(shouldLookupForms, shouldLogErrors) = Distribution::INI::GetConfigs(); shouldLookupForms) {
-				logger::info("{:*^50}", "HOOKS");
+				LOG_HEADER("HOOKS");
 				Distribute::Actor::Install();
 			}
 		}
 		break;
 	case SKSE::MessagingInterface::kPostPostLoad:
 		{
-			logger::info("{:*^50}", "MERGES");
+			LOG_HEADER("MERGES");
 			MergeMapperPluginAPI::GetMergeMapperInterface001();  // Request interface
 			if (g_mergeMapperInterface) {                        // Use Interface
 				const auto version = g_mergeMapperInterface->GetBuildNumber();

@@ -89,7 +89,7 @@ namespace Distribute
 			PlayerLeveledActor::Install();
 		}
 
-		logger::info("{:*^50}", "EVENTS");
+		LOG_HEADER("EVENTS");
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
@@ -132,7 +132,7 @@ namespace Distribute
 	{
 		using namespace Forms;
 
-		logger::info("{:*^50}", "MAIN MENU DISTRIBUTION");
+		LOG_HEADER("MAIN MENU DISTRIBUTION");
 
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
 			if (a_distributable) {

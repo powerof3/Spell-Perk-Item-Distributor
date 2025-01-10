@@ -238,13 +238,13 @@ namespace LinkedDistribution
 	void Manager::LogLinkedFormsLookup()
 	{
 		if (!IsEmpty(kRegular)) {
-			logger::info("{:*^50}", "LINKED FORMS");
+			LOG_HEADER("LINKED FORMS");
 
 			LogLinkedFormsLookup(kRegular);
 		}
 
 		if (!IsEmpty(kDeath)) {
-			logger::info("{:*^50}", "LINKED ON DEATH FORMS");
+			LOG_HEADER("LINKED ON DEATH FORMS");
 
 			LogLinkedFormsLookup(kDeath);
 		}

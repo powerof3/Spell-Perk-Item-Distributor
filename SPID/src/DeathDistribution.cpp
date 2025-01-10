@@ -176,7 +176,7 @@ namespace DeathDistribution
 
 		using namespace Forms;
 
-		logger::info("{:*^50}", "ON DEATH");
+		LOG_HEADER("ON DEATH");
 
 		ForEachDistributable([]<typename Form>(Distributables<Form>& a_distributable) {
 			const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());

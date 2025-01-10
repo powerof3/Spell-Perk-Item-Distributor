@@ -104,7 +104,7 @@ namespace ExclusiveGroups
 			return;
 		}
 
-		logger::info("{:*^50}", "EXCLUSIVE GROUPS");
+		LOG_HEADER("EXCLUSIVE GROUPS");
 
 		for (const auto& [group, forms] : groups) {
 			logger::info("Adding '{}' exclusive group", group);

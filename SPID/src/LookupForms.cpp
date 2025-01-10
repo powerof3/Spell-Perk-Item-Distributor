@@ -92,7 +92,7 @@ void LogDistributablesLookup()
 {
 	using namespace Forms;
 
-	logger::info("{:*^50}", "PROCESSING");
+	LOG_HEADER("PROCESSING");
 
 	ForEachDistributable([]<typename Form>(Distributables<Form>& a_distributable) {
 		const auto& recordName = RECORD::GetTypeName(a_distributable.GetType());
@@ -149,7 +149,7 @@ void LogDeathFormsLookup()
 bool Lookup::LookupForms()
 {
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-		logger::info("{:*^50}", "LOOKUP");
+		LOG_HEADER("LOOKUP");
 
 		Timer timer;
 

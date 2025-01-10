@@ -85,7 +85,7 @@ namespace Distribution
 
 		std::pair<bool, bool> GetConfigs()
 		{
-			logger::info("{:*^50}", "INI");
+			LOG_HEADER("INI");
 
 			std::vector<std::string> files = distribution::get_configs(R"(Data\)", "_DISTR"sv);
 
