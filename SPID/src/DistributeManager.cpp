@@ -10,7 +10,7 @@ namespace Distribute
 			return false;
 		}
 
-		//a_npc->AddKeyword(a_keyword);
+		a_npc->AddKeyword(a_keyword);
 
 		return true;
 	}

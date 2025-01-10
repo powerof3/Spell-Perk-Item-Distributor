@@ -10,6 +10,7 @@ namespace Distribute
 	void Distribute(NPCData& npcData, const PCLevelMult::Input& input, Forms::DistributionSet& forms, DistributedForms* accumulatedForms, OutfitDistributor distributeOutfit)
 	{
 		const auto npc = npcData.GetNPC();
+		const auto actor = npcData.GetActor();
 
 		for_each_form<RE::BGSKeyword>(
 			npcData, forms.keywords, input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
@@ -38,7 +39,7 @@ namespace Distribute
 		for_each_form<RE::SpellItem>(
 			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& spells) {
 				for (auto& spell : spells) {
-					npcData.GetActor()->AddSpell(spell);  // Adding spells one by one to actor properly applies them. This solves On Death distribution issue #60
+					actor->AddSpell(spell);  // Adding spells one by one to actor properly applies them. This solves On Death distribution issue #60
 				}
 			},
 			accumulatedForms);
@@ -125,12 +126,24 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-		for_each_form<RE::TESBoundObject>(
-			npcData, forms.items, input, [&](std::map<RE::TESBoundObject*, Count>& a_objects) {
-				return npc->AddObjectsToContainer(a_objects, npc);
-			},
-			accumulatedForms);
-
+		// This is a quick fix for items being added multiple times during every ShouldBackgroundClone call on the same actor (when going in and out of a cell)
+		// SPID_Processed keyword does not block the entire distribution, but only extra items.
+		// All other things are not additive, so they won't stack.
+		// This workaround can be removed when/if the per-actor item distribution manager is implemented (since it will take care of continuity).
+		if (!npc->HasKeyword(processed)) {
+			for_each_form<RE::TESBoundObject>(
+				npcData, forms.items, input, [&](std::map<RE::TESBoundObject*, Count>& a_objects) {
+					// TODO: Per-actor item distribution. Would require similar manager as in outfits :) but would be cool, right?
+					// adding objects to actors directly put them in extra data changes, so these items are baked into the save.
+					// to mitiage it, we would need
+					/*for (auto object : a_objects) {
+					actor->AddObjectToContainer(object.first, nullptr, object.second, actor);
+				}
+				return true;*/
+					return npc->AddObjectsToContainer(a_objects, npc);
+				},
+				accumulatedForms);
+		}
 		for_first_form<RE::TESObjectARMO>(
 			npcData, forms.skins, input, [&](auto* a_skin, bool isFinal) {
 				if (npc->skin != a_skin) {
