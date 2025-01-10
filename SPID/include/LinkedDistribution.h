@@ -44,7 +44,7 @@ namespace LinkedDistribution
 			FormOrEditorID rawForm{};
 
 			RECORD::TRAITS recordTraits{};
-			RECORD::TYPE type{ RECORD::kForm };
+			RECORD::TYPE   type{ RECORD::kForm };
 
 			Scope scope{ kLocal };
 

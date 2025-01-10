@@ -5,8 +5,8 @@
 #include "OutfitManager.h"
 #include "PCLevelMultManager.h"
 #ifndef NDEBUG
-#include "Testing.h"
-#include "OutfitManagerTests.h"
+#	include "OutfitManagerTests.h"
+#	include "Testing.h"
 #endif
 
 bool shouldLookupForms{ false };

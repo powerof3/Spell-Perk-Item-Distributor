@@ -99,11 +99,11 @@ namespace Distribute
 #pragma region Outfits, Sleep Outfits, Skins
 	template <class Form>
 	bool for_first_form(
-		const NPCData&             a_npcData,
-		Forms::DataVec<Form>&      forms,
-		const PCLevelMult::Input&  a_input,
-		std::function<bool(Form*,bool isFinal)> a_callback,
-		DistributedForms*          accumulatedForms = nullptr)
+		const NPCData&                           a_npcData,
+		Forms::DataVec<Form>&                    forms,
+		const PCLevelMult::Input&                a_input,
+		std::function<bool(Form*, bool isFinal)> a_callback,
+		DistributedForms*                        accumulatedForms = nullptr)
 	{
 		for (auto& formData : forms) {
 			if (!a_npcData.HasMutuallyExclusiveForm(formData.form) && detail::passed_filters(a_npcData, a_input, formData) && a_callback(formData.form, formData.isFinal)) {

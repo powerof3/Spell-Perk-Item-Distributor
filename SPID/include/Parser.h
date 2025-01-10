@@ -14,17 +14,17 @@ namespace detail
 
 template <typename ComponentParser, typename Data>
 concept component_parser = requires(ComponentParser const, const std::string& section, Data& data) {
-							   {
-								   ComponentParser()(section, data)
-								   } -> std::same_as<void>;
-						   };
+	{
+		ComponentParser()(section, data)
+	} -> std::same_as<void>;
+};
 
 template <typename KeyComponentParser, typename Data>
 concept key_component_parser = requires(KeyComponentParser const, const std::string& key, Data& data) {
-								   {
-									   KeyComponentParser()(key, data)
-									   } -> std::same_as<bool>;
-							   };
+	{
+		KeyComponentParser()(key, data)
+	} -> std::same_as<bool>;
+};
 
 struct NotEnoughComponentsException : std::exception
 {

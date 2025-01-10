@@ -45,7 +45,7 @@ namespace Testing
 		using Test = std::function<TestResult()>;
 		using TestSuite = std::map<std::string, Test>;
 		using TestModule = std::map<std::string, TestSuite>;
-		
+
 		TestModule tests;
 
 		std::map<std::string, Cleanup> cleanup;
@@ -71,11 +71,11 @@ namespace Testing
 			logger::critical("Completed {}: {}/{} tests passed", moduleName, success, total);
 			return { success, total };
 		}
+
 	public:
-		
 		static bool Register(const char* moduleName, const char* testName, Test test)
 		{
-			auto runner = GetSingleton();
+			auto  runner = GetSingleton();
 			auto& module = runner->tests[moduleName];
 			return module.try_emplace(testName, test).second;
 		}
@@ -85,7 +85,8 @@ namespace Testing
 			return GetSingleton()->cleanup.try_emplace(moduleName, cleanup).second;
 		}
 
-		static void Run() {
+		static void Run()
+		{
 			LOG_HEADER("SELF TESTING");
 			std::pair<int, int> counter = { 0, 0 };
 			spdlog::set_level(spdlog::level::critical);  // silence all logging coming from the test.
@@ -104,7 +105,6 @@ namespace Testing
 				abort();
 			}
 		}
-		
 	};
 
 	inline void Run() { Runner::Run(); }

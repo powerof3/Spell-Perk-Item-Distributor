@@ -17,22 +17,21 @@ namespace LinkedDistribution
 		{
 			template <typename Data>
 			concept linked_typed_data = Distribution::INI::concepts::typed_data<Data> && requires(Data data) {
-																							 {
-																								 data.scope
-																								 } -> std::same_as<Scope&>;
-																							 {
-																								 data.scope = std::declval<Scope>()
-																							 };
-																							 {
-																								 data.distributionType
-																								 } -> std::same_as<DistributionType&>;
-																							 {
-																								 data.distributionType = std::declval<DistributionType>()
-																							 };
-																						 };
+				{
+					data.scope
+				} -> std::same_as<Scope&>;
+				{
+					data.scope = std::declval<Scope>()
+				};
+				{
+					data.distributionType
+				} -> std::same_as<DistributionType&>;
+				{
+					data.distributionType = std::declval<DistributionType>()
+				};
+			};
 		}
 
-		
 		using namespace Distribution::INI;
 
 		struct LinkedKeyComponentParser

@@ -2,9 +2,9 @@
 #include "Distribute.h"
 #include "LinkedDistribution.h"
 #include "LookupNPC.h"
+#include "OutfitManager.h"
 #include "PCLevelMultManager.h"
 #include "Parser.h"
-#include "OutfitManager.h"
 
 namespace DeathDistribution
 {
@@ -36,7 +36,7 @@ namespace DeathDistribution
 					throw Distribution::INI::Exception::UnsupportedFormTypeException(key);
 				}
 				data.type = type;
-				
+
 				return true;
 			}
 		};
@@ -228,8 +228,8 @@ namespace DeathDistribution
 				logger::info("Death Distribution: Registered for {}.", typeid(RE::TESDeathEvent).name());
 			}
 
-			 stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			 logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
+			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
+			logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
 			break;
 		default:
 			break;

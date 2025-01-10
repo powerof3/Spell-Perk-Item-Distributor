@@ -20,7 +20,7 @@
 		wornReplacements[actor->GetFormID()] = { worn, isWd, isWf, false };   \
 	} else {                                                                  \
 		actor->AddWornOutfit(original, false);                                \
-	}																				
+	}
 
 // Terms from the Table https://docs.google.com/spreadsheets/d/1JEhAql7hUURYC63k_fScZ9u8OWni6gN9jHzytNQt-m8/edit?usp=sharing
 #define Death true
@@ -28,38 +28,38 @@
 #define Final true
 #define NotFinal false
 
-#define CHECK(replacement, d, f)                                                                                                                                     \
-	ASSERT(replacement, "Expected to have a replacement")                                                                                                            \
-	ASSERT(replacement->isDeathOutfit == d, fmt::format("Expected replacement to be {} outfit", d ? "Death" : "Regular"))                                            \
+#define CHECK(replacement, d, f)                                                                                          \
+	ASSERT(replacement, "Expected to have a replacement")                                                                 \
+	ASSERT(replacement->isDeathOutfit == d, fmt::format("Expected replacement to be {} outfit", d ? "Death" : "Regular")) \
 	ASSERT(replacement->isFinalOutfit == f, fmt::format("Expected replacement to be {} outfit", f ? "Final" : "NOT Final"))
 
 #define EXPECT_NONE(replacement) ASSERT(!replacement, "Expected no outfit replacement to occur");
 
-#define EXPECT_ORIGINAL(outfit)                                                                                                                                        \
-	{                                                                                                                                                                  \
-		auto it = wornReplacements.find(actor->formID);                                                                                                                \
-		ASSERT(it == wornReplacements.end(), "Expected to have no Worn Replacement for actor");                                                                        \
-		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                            \
-		ASSERT(actual == outfit, fmt::format("Expected actor to wear original outfit {}, but got {}", *outfit, *actual));                                              \
+#define EXPECT_ORIGINAL(outfit)                                                                                                                                                    \
+	{                                                                                                                                                                              \
+		auto it = wornReplacements.find(actor->formID);                                                                                                                            \
+		ASSERT(it == wornReplacements.end(), "Expected to have no Worn Replacement for actor");                                                                                    \
+		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                                        \
+		ASSERT(actual == outfit, fmt::format("Expected actor to wear original outfit {}, but got {}", *outfit, *actual));                                                          \
 		ASSERT(isLooted || TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from deafult outfit {}, but they don't have it", *outfit)); \
-		PASS;                                                                                                                                                          \
+		PASS;                                                                                                                                                                      \
 	}
 
-#define EXPECT_WORN(replacement, outfit, d, f)                                                                                                                     \
-	{                                                                                                                                                              \
-		ASSERT(replacement, "Expected to have a Worn Replacement for actor");                                                                                      \
-		auto distributed = replacement->distributed;                                                                                                               \
-		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                        \
-		ASSERT(distributed == outfit, fmt::format("Expected Worn Replacement to have distributed {}, but got {}", *outfit, *distributed));                         \
-		ASSERT(actual == original, fmt::format("Expected NPC's defaultOutfit to be unchanged {}, but got {}", *original, *actual));                                \
-		if (isLooted) {                                                                                                                                            \
-			ASSERT(!actor->HasOutfitItems(outfit), fmt::format("Expected actor to have no items from outfit {}, but they have it", *outfit));                      \
-		} else {                                                                                                                                                   \
-			ASSERT(outfit == actual || !actor->HasOutfitItems(actual), fmt::format("Expected actor to NOT have any items from default outfit {}, but they have it", *actual));         \
-			ASSERT(TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from outfit {}, but they don't have it", *outfit)); \
-		}                                                                                                                                                          \
-		CHECK(replacement, d, f);                                                                                                                                  \
-		PASS;                                                                                                                                                      \
+#define EXPECT_WORN(replacement, outfit, d, f)                                                                                                                                 \
+	{                                                                                                                                                                          \
+		ASSERT(replacement, "Expected to have a Worn Replacement for actor");                                                                                                  \
+		auto distributed = replacement->distributed;                                                                                                                           \
+		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                                    \
+		ASSERT(distributed == outfit, fmt::format("Expected Worn Replacement to have distributed {}, but got {}", *outfit, *distributed));                                     \
+		ASSERT(actual == original, fmt::format("Expected NPC's defaultOutfit to be unchanged {}, but got {}", *original, *actual));                                            \
+		if (isLooted) {                                                                                                                                                        \
+			ASSERT(!actor->HasOutfitItems(outfit), fmt::format("Expected actor to have no items from outfit {}, but they have it", *outfit));                                  \
+		} else {                                                                                                                                                               \
+			ASSERT(outfit == actual || !actor->HasOutfitItems(actual), fmt::format("Expected actor to NOT have any items from default outfit {}, but they have it", *actual)); \
+			ASSERT(TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from outfit {}, but they don't have it", *outfit));             \
+		}                                                                                                                                                                      \
+		CHECK(replacement, d, f);                                                                                                                                              \
+		PASS;                                                                                                                                                                  \
 	}
 
 #define LOOT         \
@@ -68,22 +68,22 @@
 
 #define RESURRECT actor->Resurrect(true, true);
 
-#define EXPECT_WORN_FIND(outfit, d, f)                                                                                                                             \
-	{                                                                                                                                                              \
-		auto it = wornReplacements.find(actor->formID);                                                                                                            \
-		ASSERT(it != wornReplacements.end(), "Expected to have a Worn Replacement for actor");                                                                     \
-		auto distributed = it->second.distributed;                                                                                                                 \
-		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                        \
-		ASSERT(distributed == outfit, fmt::format("Expected Worn Replacement to have distributed {}, but got {}", *outfit, *distributed));                         \
-		ASSERT(actual == original, fmt::format("Expected NPC's defaultOutfit to be unchanged {}, but got {}", *original, *actual));                                \
-		if (isLooted) {                                                                                                                                            \
-			ASSERT(!actor->HasOutfitItems(outfit), fmt::format("Expected actor to have no items from outfit {}, but they have it", *outfit));                      \
-		} else {                                                                                                                                                   \
-			ASSERT(outfit == actual || !actor->HasOutfitItems(actual), fmt::format("Expected actor to NOT have any items from default outfit {}, but they have it", *actual));         \
-			ASSERT(TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from outfit {}, but they don't have it", *outfit)); \
-		}                                                                                                                                                          \
-		CHECK((&it->second), d, f);                                                                                                                                \
-		PASS;                                                                                                                                                      \
+#define EXPECT_WORN_FIND(outfit, d, f)                                                                                                                                         \
+	{                                                                                                                                                                          \
+		auto it = wornReplacements.find(actor->formID);                                                                                                                        \
+		ASSERT(it != wornReplacements.end(), "Expected to have a Worn Replacement for actor");                                                                                 \
+		auto distributed = it->second.distributed;                                                                                                                             \
+		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                                    \
+		ASSERT(distributed == outfit, fmt::format("Expected Worn Replacement to have distributed {}, but got {}", *outfit, *distributed));                                     \
+		ASSERT(actual == original, fmt::format("Expected NPC's defaultOutfit to be unchanged {}, but got {}", *original, *actual));                                            \
+		if (isLooted) {                                                                                                                                                        \
+			ASSERT(!actor->HasOutfitItems(outfit), fmt::format("Expected actor to have no items from outfit {}, but they have it", *outfit));                                  \
+		} else {                                                                                                                                                               \
+			ASSERT(outfit == actual || !actor->HasOutfitItems(actual), fmt::format("Expected actor to NOT have any items from default outfit {}, but they have it", *actual)); \
+			ASSERT(TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from outfit {}, but they don't have it", *outfit));             \
+		}                                                                                                                                                                      \
+		CHECK((&it->second), d, f);                                                                                                                                            \
+		PASS;                                                                                                                                                                  \
 	}
 
 namespace Outfits
@@ -136,10 +136,11 @@ namespace Outfits
 					}
 				}
 			}
-			return itemsCount == 0; // check that we visited all items from the outfit.
+			return itemsCount == 0;  // check that we visited all items from the outfit.
 		}
 
-		static void Loot(RE::Actor* actor) {
+		static void Loot(RE::Actor* actor)
+		{
 			actor->RemoveOutfitItems(nullptr);
 		}
 
@@ -153,17 +154,19 @@ namespace Outfits
 
 		static RE::BGSOutfit* GetNoneOutfit() { return nullptr; }
 
-		static RE::Actor* GetAlive() { 
+		static RE::Actor* GetAlive()
+		{
 			auto actor = GetForm<RE::Actor>(0x198B0);
 			actor->Resurrect(true, true);
-			return actor; 
+			return actor;
 		}
 
-		static RE::Actor* GetDead() { 
+		static RE::Actor* GetDead()
+		{
 			auto actor = GetForm<RE::Actor>(0x198B0);
 			actor->ResetInventory(false);
-			actor->KillImmediate();                      
-			return actor; 
+			actor->KillImmediate();
+			return actor;
 		}
 	};
 
@@ -1199,7 +1202,7 @@ namespace Outfits
 				TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
 			}
 
-			TEST(B69ResurrectNoWears) 
+			TEST(B69ResurrectNoWears)
 			{
 				SETUP(Dead, None, Regular, NotFinal, None, None);
 				RESURRECT;

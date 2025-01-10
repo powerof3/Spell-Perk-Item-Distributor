@@ -37,7 +37,7 @@ namespace NPC
 		///
 		/// IsDead returns true when either NPC starts dead or has already died. See IsDying for more details.
 		/// </summary>
-		[[nodiscard]] bool IsDead() const;
+		[[nodiscard]] bool        IsDead() const;
 		[[nodiscard]] static bool IsDead(const RE::Actor*);
 
 		/// <summary>
@@ -50,7 +50,7 @@ namespace NPC
 		/// </summary>
 		[[nodiscard]] bool IsDying() const;
 
-		[[nodiscard]] bool StartsDead() const;
+		[[nodiscard]] bool        StartsDead() const;
 		[[nodiscard]] static bool StartsDead(const RE::Actor*);
 
 		[[nodiscard]] RE::TESRace* GetRace() const;

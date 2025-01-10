@@ -50,7 +50,7 @@ using Set = ankerl::unordered_dense::set<K>;
 
 using Lock = RE::BSReadWriteLock;
 using ReadLocker = RE::BSReadLockGuard;
-using WriteLocker = RE::BSWriteLockGuard ;
+using WriteLocker = RE::BSWriteLockGuard;
 
 struct string_hash
 {

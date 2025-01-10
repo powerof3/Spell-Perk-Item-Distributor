@@ -93,8 +93,8 @@ namespace Outfits
 
 	bool Manager::LoadReplacementV1(SKSE::SerializationInterface* interface, RE::FormID& loadedActorFormID, Manager::OutfitReplacement& loadedReplacement)
 	{
-		RE::FormID id = 0;
-		RE::FormID failedDistributedOutfitFormID = 0;
+		RE::FormID     id = 0;
+		RE::FormID     failedDistributedOutfitFormID = 0;
 		RE::BGSOutfit* distributed;
 
 		if (!details::Load(interface, loadedActorFormID)) {
@@ -129,7 +129,6 @@ namespace Outfits
 				if (npc->defaultOutfit == distributed) {
 					npc->defaultOutfit = original;
 				}
-
 			}
 			isDeathOutfit = NPCData::IsDead(loadedActor);
 		}
@@ -196,7 +195,7 @@ namespace Outfits
 		return details::Write(interface, actorFormID) &&
 		       details::Write(interface, replacement.distributed ? replacement.distributed->formID : 0) &&
 		       details::Write(interface, replacement.isDeathOutfit) &&
-		       details::Write(interface, replacement.isFinalOutfit)&&
+		       details::Write(interface, replacement.isFinalOutfit) &&
 		       details::Write(interface, replacement.isSuspended);
 	}
 
@@ -206,7 +205,7 @@ namespace Outfits
 		LOG_HEADER("LOADING");
 		std::unordered_map<RE::Actor*, OutfitReplacement> loadedReplacements;
 #endif
-		
+
 		auto manager = Manager::GetSingleton();
 
 		WriteLocker lock(manager->_lock);
@@ -216,7 +215,7 @@ namespace Outfits
 
 		while (interface->GetNextRecordInfo(type, version, length)) {
 			if (type == recordType) {
-				RE::FormID actorFormID;
+				RE::FormID        actorFormID;
 				OutfitReplacement loadedReplacement;
 				total++;
 				bool loaded = false;
@@ -239,7 +238,6 @@ namespace Outfits
 						} else {
 							manager->RevertOutfit(actor, loadedReplacement);
 						}
-
 					}
 				}
 			}
@@ -293,7 +291,6 @@ namespace Outfits
 		std::uint32_t savedCount = 0;
 #endif
 
-		
 		for (const auto& pair : replacements) {
 			if (!SaveReplacement(interface, pair.first, pair.second)) {
 #ifndef NDEBUG
@@ -386,7 +383,7 @@ namespace Outfits
 
 	/// This hook is used to track when NPCs come back to life to clear the isDeathOutfit flag and restore general outfit behavior,
 	/// as alive NPCs are allowed to change their outfits (even if looted).
-	/// 
+	///
 	/// Note: recycleactor console command also triggers resurrect when needed.
 	/// Note: NPCs who Start Dead cannot be resurrected.
 	struct Resurrect
@@ -411,7 +408,7 @@ namespace Outfits
 		static inline constexpr std::size_t size{ 0xAB };
 	};
 
-	/// This hook is used to clear outfit replacements info since the actor will be completely reset, 
+	/// This hook is used to clear outfit replacements info since the actor will be completely reset,
 	/// thus eligible for a fresh distribution.
 	struct ResetReference
 	{
@@ -426,7 +423,7 @@ namespace Outfits
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline constexpr REL::ID relocation = RELOCATION_ID(0, 22038); // TODO: Find relocation for SE
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 22038);  // TODO: Find relocation for SE
 		static inline constexpr std::size_t offset = OFFSET(0, 0x4B);
 	};
 
@@ -435,32 +432,32 @@ namespace Outfits
 		static bool thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
 		{
 			// TODO: Figure out how to handle outfit overwrite from other sources.
-//				auto       manager = Manager::GetSingleton();
-//				ReadLocker lock(manager->_lock);
-//
-//				manager->SetOutfit(actor, outfit, NPCData::IsDead(actor), false);
-//				if (auto it = manager->wornReplacements.find(actor->formID); it != manager->wornReplacements.end()) {
-//					auto& replacement = it->second;
-//					bool  wasSuspensed = replacement.isSuspended;
-//					//replacement.isSuspended = replacement.original != outfit;
-//#ifndef NDEBUG
-//					if (replacement.isSuspended) {
-//						logger::info("Suspending outfit replacement for {}", *actor);
-//					}
-//#endif
-//					if (wasSuspensed && !replacement.isSuspended) {
-//#ifndef NDEBUG
-//						logger::info("Resuming outfit replacement for {}", *actor);
-//#endif
-//						manager->ApplyOutfit(actor, replacement.distributed);
-//					}
-//
-//				}
+			//				auto       manager = Manager::GetSingleton();
+			//				ReadLocker lock(manager->_lock);
+			//
+			//				manager->SetOutfit(actor, outfit, NPCData::IsDead(actor), false);
+			//				if (auto it = manager->wornReplacements.find(actor->formID); it != manager->wornReplacements.end()) {
+			//					auto& replacement = it->second;
+			//					bool  wasSuspensed = replacement.isSuspended;
+			//					//replacement.isSuspended = replacement.original != outfit;
+			//#ifndef NDEBUG
+			//					if (replacement.isSuspended) {
+			//						logger::info("Suspending outfit replacement for {}", *actor);
+			//					}
+			//#endif
+			//					if (wasSuspensed && !replacement.isSuspended) {
+			//#ifndef NDEBUG
+			//						logger::info("Resuming outfit replacement for {}", *actor);
+			//#endif
+			//						manager->ApplyOutfit(actor, replacement.distributed);
+			//					}
+			//
+			//				}
 
-				// 
-				//return true; //func(actor, outfit, forceUpdate);
+			//
+			//return true; //func(actor, outfit, forceUpdate);
 
-				return func(actor, outfit, forceUpdate);
+			return func(actor, outfit, forceUpdate);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
@@ -599,7 +596,7 @@ namespace Outfits
 		if (auto pending = pendingReplacements.find(actor->formID); pending != pendingReplacements.end()) {
 			return ResolveWornOutfit(actor, pending, isDying);
 		}
-		
+
 		return nullptr;
 	}
 
@@ -628,8 +625,8 @@ namespace Outfits
 							W.isDeathOutfit = G.isDeathOutfit;
 							W.isFinalOutfit = G.isFinalOutfit;
 							return &W;
-						}  // If Worn outfit is either death outfit or it was already looted, we don't allow changing it.
-					}  // Regular Dead Distribution (not allowed to overwrite anything)
+						}                      // If Worn outfit is either death outfit or it was already looted, we don't allow changing it.
+					}                          // Regular Dead Distribution (not allowed to overwrite anything)
 				} else {                       // Regular Alive Distribution
 					assert(!G.isDeathOutfit);  // When alive only regular outfits can be worn.
 					if (!W.isFinalOutfit) {
@@ -645,7 +642,7 @@ namespace Outfits
 				} else if (isDead) {  // Regular/Death Dead Distribution
 					if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit && actor->HasOutfitItems(npc->defaultOutfit)) {
 						return &wornReplacements.try_emplace(actor->formID, G).first->second;
-					}  // In both On Death and Regular Distributions if Worn outfit was already looted, we don't allow changing it.
+					}     // In both On Death and Regular Distributions if Worn outfit was already looted, we don't allow changing it.
 				} else {  // Regular Alive Distribution
 					return &wornReplacements.try_emplace(actor->formID, G).first->second;
 				}
@@ -659,7 +656,7 @@ namespace Outfits
 				} else if (NPCData::IsDead(actor)) {
 					if (G.isDeathOutfit) {  // On Death Dead Distribution
 						W.isDeathOutfit = true;
-					}  // Regular Dead Distribution (just forwards the outfit)
+					}     // Regular Dead Distribution (just forwards the outfit)
 				} else {  // Regular Alive Distribution
 					if (!W.isFinalOutfit) {
 						RevertOutfit(actor, W);
@@ -684,11 +681,11 @@ namespace Outfits
 		const bool isDying = data.IsDying();
 
 		assert(!isDeathOutfit || isDying || isDead);  // If outfit is death outfit then actor must be dying or dead, otherwise there is a mistake in the code.
-		assert(!isDying || isDeathOutfit); // If actor is dying then outfit must be from On Death Distribution, otherwise there is a mistake in the code.
+		assert(!isDying || isDeathOutfit);            // If actor is dying then outfit must be from On Death Distribution, otherwise there is a mistake in the code.
 
 		WriteLocker lock(_lock);
 		if (const auto pending = pendingReplacements.find(actor->formID); pending != pendingReplacements.end()) {
-			auto& G = pending->second; // Named according to the Resolution Table, outfit corresponds to L from that table.
+			auto& G = pending->second;  // Named according to the Resolution Table, outfit corresponds to L from that table.
 			// Null outfit in this case means that additional distribution didn't pick new outfit.
 			// When there is no pending replacement and outfit is null we store it to indicate that Outfit distribution failed to this actor,
 			// During ResolveWornOutfit, such empty replacement will indicate whether or not we want to lock in on a dead NPC's current outfit.
@@ -704,22 +701,22 @@ namespace Outfits
 
 				return &G;
 			}
-			if (isDeathOutfit) { // On Death Distribution
-				if (isDying) { // On Death Dying Distribution
+			if (isDeathOutfit) {  // On Death Distribution
+				if (isDying) {    // On Death Dying Distribution
 					if (!G.isFinalOutfit) {
 						G.distributed = outfit;
 						G.isDeathOutfit = isDeathOutfit;
 						G.isFinalOutfit = isFinalOutfit;
 					}
-				} else { // On Death Dead Distribution
+				} else {  // On Death Dead Distribution
 					// pending can be a regular outfit here (from regular distribution that occurred just before On Death Distribution)
-					if (!G.isDeathOutfit || !G.isFinalOutfit) { // overwrite any regular outfits or non-final death outfits
+					if (!G.isDeathOutfit || !G.isFinalOutfit) {  // overwrite any regular outfits or non-final death outfits
 						G.distributed = outfit;
 						G.isDeathOutfit = isDeathOutfit;
 						G.isFinalOutfit = isFinalOutfit;
 					}
 				}
-			} else { // Regular Distribution
+			} else {  // Regular Distribution
 				// In both Dead and Alive state pending replacements are allowed to overwrite non-final outfits.
 				if (!G.isFinalOutfit && !G.isDeathOutfit) {
 					G.distributed = outfit;
@@ -728,7 +725,7 @@ namespace Outfits
 				}
 			}
 			return &G;
-		} else { // If this is the first outfit in the pending queue, then we just add it.
+		} else {  // If this is the first outfit in the pending queue, then we just add it.
 			return &pendingReplacements.try_emplace(actor->formID, outfit, isDeathOutfit, isFinalOutfit, false).first->second;
 		}
 	}
@@ -788,7 +785,7 @@ namespace Outfits
 
 	void Manager::AddWornOutfit(RE::Actor* actor, RE::BGSOutfit* outfit) const
 	{
-		if (const auto invChanges = actor->GetInventoryChanges()) { // TODO: Add lock here maybe
+		if (const auto invChanges = actor->GetInventoryChanges()) {  // TODO: Add lock here maybe
 			if (!actor->HasOutfitItems(outfit)) {
 				invChanges->InitOutfitItems(outfit, actor->GetLevel());
 			}
@@ -800,7 +797,7 @@ namespace Outfits
 							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 							if (outfitItem && outfitItem->id == formID) {
 								// queueEquip causes random crashes, probably when the equipping is executed.
-								// forceEquip - actually it corresponds to the "PreventRemoval" flag in the game's function, 
+								// forceEquip - actually it corresponds to the "PreventRemoval" flag in the game's function,
 								//				which determines whether NPC/EquipItem call can unequip the item. See EquipItem Papyrus function.
 								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, false, false, false, true);
 							}
@@ -811,7 +808,7 @@ namespace Outfits
 		}
 	}
 
-	bool Manager::ApplyOutfit(RE::Actor* actor, RE::BGSOutfit* outfit) const 
+	bool Manager::ApplyOutfit(RE::Actor* actor, RE::BGSOutfit* outfit) const
 	{
 		if (!actor) {
 			return false;
