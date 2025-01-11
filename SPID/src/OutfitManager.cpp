@@ -465,66 +465,6 @@ namespace Outfits
 		static inline constexpr std::size_t offset = OFFSET(0x86, 0x86);
 	};
 
-	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
-	{
-		switch (message->type) {
-		case SKSE::MessagingInterface::kPostLoad:
-		{
-				logger::info("Outfit Manager:");
-
-				const auto serializationInterface = SKSE::GetSerializationInterface();
-				serializationInterface->SetUniqueID(serializationKey);
-				serializationInterface->SetSaveCallback(Save);
-				serializationInterface->SetLoadCallback(Load);
-				
-				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
-					scripts->AddEventSink<RE::TESFormDeleteEvent>(this);
-					logger::info("\t\tRegistered for {}.", typeid(RE::TESFormDeleteEvent).name());
-				}
-
-				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
-					scripts->AddEventSink<RE::TESDeathEvent>(this);
-					logger::info("\t\tRegistered for {}.", typeid(RE::TESDeathEvent).name());
-				}
-
-				// TODO: Test size of RAM with/without hook
-				stl::write_vfunc<RE::TESNPC, InitItemImpl>();
-				logger::info("\t\tInstalled InitItemImpl hook.");
-
-				stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-				logger::info("\t\tInstalled ShouldBackgroundClone hook.");
-
-				stl::write_vfunc<RE::Character, Load3D>();
-				logger::info("\t\tInstalled Load3D hook.");
-
-				stl::write_vfunc<RE::Character, Resurrect>();
-				logger::info("\t\tInstalled Resurrect hook.");
-
-				stl::write_thunk_call<ResetReference>();
-				logger::info("\t\tInstalled ResetReference hook.");
-
-				stl::write_thunk_call<SetOutfitActor>();
-				logger::info("\t\tInstalled SetOutfit hook.");
-
-				
-		}
-			break;
-		case SKSE::MessagingInterface::kDataLoaded:
-			{
-				logger::info("\t\tTracking {} initial outfits. (in memory size: ~ {} Kb)", initialOutfits.size(), initialOutfits.size() * 12);  // 4 bytes for formID, 8 bytes for pointer
-			}
-			break;
-		case SKSE::MessagingInterface::kPreLoadGame:
-			isLoadingGame = true;
-			break;
-		case SKSE::MessagingInterface::kPostLoadGame:
-			isLoadingGame = false;
-			break;
-		default:
-			break;
-		}
-	}
-
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
 	{
 		WriteLocker lock(_lock);
@@ -552,6 +492,63 @@ namespace Outfits
 		return RE::BSEventNotifyControl::kContinue;
 	}
 #pragma endregion
+
+	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
+	{
+		switch (message->type) {
+		case SKSE::MessagingInterface::kPostLoad:
+			{
+				logger::info("Outfit Manager:");
+
+				const auto serializationInterface = SKSE::GetSerializationInterface();
+				serializationInterface->SetUniqueID(serializationKey);
+				serializationInterface->SetSaveCallback(Save);
+				serializationInterface->SetLoadCallback(Load);
+
+				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+					scripts->AddEventSink<RE::TESFormDeleteEvent>(this);
+					logger::info("\t\tRegistered for {}.", typeid(RE::TESFormDeleteEvent).name());
+				}
+
+				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+					scripts->AddEventSink<RE::TESDeathEvent>(this);
+					logger::info("\t\tRegistered for {}.", typeid(RE::TESDeathEvent).name());
+				}
+
+				stl::write_vfunc<RE::TESNPC, InitItemImpl>();
+				logger::info("\t\tInstalled InitItemImpl hook.");
+
+				stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
+				logger::info("\t\tInstalled ShouldBackgroundClone hook.");
+
+				stl::write_vfunc<RE::Character, Load3D>();
+				logger::info("\t\tInstalled Load3D hook.");
+
+				stl::write_vfunc<RE::Character, Resurrect>();
+				logger::info("\t\tInstalled Resurrect hook.");
+
+				stl::write_thunk_call<ResetReference>();
+				logger::info("\t\tInstalled ResetReference hook.");
+
+				stl::write_thunk_call<SetOutfitActor>();
+				logger::info("\t\tInstalled SetOutfit hook.");
+			}
+			break;
+		case SKSE::MessagingInterface::kDataLoaded:
+			{
+				logger::info("\t\tTracking {} initial outfits. (in memory size: ~ {} Kb)", initialOutfits.size(), initialOutfits.size() * 12);  // 4 bytes for formID, 8 bytes for pointer
+			}
+			break;
+		case SKSE::MessagingInterface::kPreLoadGame:
+			isLoadingGame = true;
+			break;
+		case SKSE::MessagingInterface::kPostLoadGame:
+			isLoadingGame = false;
+			break;
+		default:
+			break;
+		}
+	}
 
 #pragma region Outfit Management
 	bool Manager::HasDefaultOutfit(const RE::TESNPC* npc, const RE::BGSOutfit* outfit) const
@@ -901,8 +898,12 @@ namespace Outfits
 #pragma region Hooks Handling
 	bool Manager::ProcessShouldBackgroundClone(RE::Actor* actor, std::function<bool()> funcCall)
 	{
-		ReadLocker lock(_lock);
-		if (!pendingReplacements.contains(actor->formID)) {
+		bool hasPending = false;
+		{
+			ReadLocker lock(_lock);
+			hasPending = pendingReplacements.contains(actor->formID);
+		}
+		if (!hasPending) {
 			SetOutfit(actor, nullptr, NPCData::IsDead(actor), false);
 		}
 
