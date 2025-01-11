@@ -444,7 +444,7 @@ namespace Outfits
 					return Manager::GetSingleton()->ProcessResetReference(actor, [&] { return func(a1, a2, refr, a4, a5, a6, a7, a8); });
 				}
 			}
-			return func(a1, a2, refr, a4, a5, a6, a7, a8);	
+			return func(a1, a2, refr, a4, a5, a6, a7, a8);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
@@ -877,11 +877,11 @@ namespace Outfits
 				return it->second;
 			}
 		}
-		
+
 		return nullptr;
 	}
 
-	bool Manager::IsSuspendedReplacement(const RE::Actor* actor) const 
+	bool Manager::IsSuspendedReplacement(const RE::Actor* actor) const
 	{
 		if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
 			if (const auto initialOutfit = GetInitialOutfit(actor)) {
@@ -893,7 +893,6 @@ namespace Outfits
 	}
 
 #pragma endregion
-
 
 #pragma region Hooks Handling
 	bool Manager::ProcessShouldBackgroundClone(RE::Actor* actor, std::function<bool()> funcCall)
@@ -909,7 +908,7 @@ namespace Outfits
 
 		return funcCall();
 	}
-	
+
 	RE::NiAVObject* Manager::ProcessLoad3D(RE::Actor* actor, std::function<RE::NiAVObject*()> funcCall)
 	{
 		if (!isLoadingGame) {

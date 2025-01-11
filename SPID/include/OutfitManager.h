@@ -135,7 +135,7 @@ namespace Outfits
 		void RestoreOutfit(RE::Actor*);
 
 		/// Checks whether outfit distribution for given Actor is currently suspended.
-		/// 
+		///
 		/// Distribution is suspended when current defaultOutfit of the Actor (NPC) does not match the initial outfit.
 		bool IsSuspendedReplacement(const RE::Actor*) const;
 
@@ -182,8 +182,8 @@ namespace Outfits
 		/// Map of NPC's FormID and corresponding initial Outfit that is set in loaded plugins.
 		///
 		/// It is used to determine when manual calls to SetOutfit should suspend/resume SPID-managed outfits.
-		/// When SetOutfit attempts to set an outfit that is different from the one in initialOutfits, 
-		/// any existing outfit replacement will be suspended (ignored). 
+		/// When SetOutfit attempts to set an outfit that is different from the one in initialOutfits,
+		/// any existing outfit replacement will be suspended (ignored).
 		/// An actor will only be able to resume the outfit replacement, once another call to SetOutfit is made with the initialOutfit.
 		///
 		/// The map is constructed with TESNPC::InitItemImpl hook.
