@@ -113,20 +113,23 @@ namespace Outfits
 		}
 
 		if (!details::Load(interface, distributed, id)) {
-			failedDistributedOutfitFormID = id;
 #ifndef NDEBUG
 			logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
 #endif
-			return false;
+			if (!id) {
+				return false;
+			}
+			failedDistributedOutfitFormID = id;
 		}
 
 		bool isDeathOutfit = false;
 		// For earlier version we assume that all distributed outfits on currently dead actors are death outfits.
 		if (auto loadedActor = RE::TESForm::LookupByID<RE::Actor>(loadedActorFormID); loadedActor) {
 			auto npc = loadedActor->GetActorBase();
-			if (npc && npc->defaultOutfit) {
+			if (npc) {
 				// Revert NPC's outfit back to original since we no longer need to track original defaultOutfit since we won't change it.
-				if (npc->defaultOutfit == distributed) {
+				// Note this also handles the case when distributed outfit got corrupted (which will make defaultOutfit to be NULL).
+				if (!distributed || npc->defaultOutfit == distributed) {
 					npc->defaultOutfit = original;
 				}
 			}
@@ -369,7 +372,9 @@ namespace Outfits
 			auto initialOutfit = npc->defaultOutfit;
 			func(npc, a_buf);
 			if (initialOutfit && initialOutfit != npc->defaultOutfit) {
-				logger::info("{} loaded outfit {}, originally it was {}", *npc, *npc->defaultOutfit, *initialOutfit);
+#ifndef NDEBUG
+				//logger::info("{} loaded outfit {}, originally it was {}", *npc, *npc->defaultOutfit, *initialOutfit);
+#endif
 				Manager::GetSingleton()->initialOutfits.try_emplace(npc->formID, initialOutfit);
 				// TODO: Use these to track whether external sources changed the outfit
 			}
@@ -500,8 +505,8 @@ namespace Outfits
 				stl::write_thunk_call<ResetReference>();
 				logger::info("Outfit Manager: Installed ResetReference hook.");
 
-				stl::write_thunk_call<SetOutfitActor>();
-				logger::info("Outfit Manager: Installed SetOutfit hook.");
+				//stl::write_thunk_call<SetOutfitActor>();
+				//logger::info("Outfit Manager: Installed SetOutfit hook.");
 			}
 			break;
 		case SKSE::MessagingInterface::kPreLoadGame:
