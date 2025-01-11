@@ -90,11 +90,6 @@ namespace Outfits
 			/// Flag indicating whether the distributed outfit is final and cannot be replaced with any other outfit.
 			bool isFinalOutfit;
 
-			/// Flag indicating that outfit replacement for the actor is suspended and that it should not be applied until resumed.
-			///
-			/// Replacement is marked as suspended when SPID detect an explicit call to SetOutfit
-			bool isSuspended;
-
 			/// Flag indicating whether the replacement wasn't properly loaded and is now corrupted.
 			///
 			/// This can happen when the distributed outfit was removed from the game.
@@ -106,13 +101,11 @@ namespace Outfits
 				distributed(nullptr),
 				isDeathOutfit(false),
 				isFinalOutfit(false),
-				isSuspended(false),
 				unrecognizedDistributedFormID(unrecognizedDistributedFormID) {}
-			OutfitReplacement(RE::BGSOutfit* distributed, bool isDeathOutfit, bool isFinalOutfit, bool isSuspended) :
+			OutfitReplacement(RE::BGSOutfit* distributed, bool isDeathOutfit, bool isFinalOutfit) :
 				distributed(distributed),
 				isDeathOutfit(isDeathOutfit),
 				isFinalOutfit(isFinalOutfit),
-				isSuspended(isSuspended),
 				unrecognizedDistributedFormID(0) {}
 
 			friend struct TestsHelper;
@@ -140,6 +133,14 @@ namespace Outfits
 		///
 		/// When the actor is resurrected, their previously locked outfit replacement needs to be updated to allow further outfit changes.
 		void RestoreOutfit(RE::Actor*);
+
+		/// Checks whether outfit distribution for given Actor is currently suspended.
+		/// 
+		/// Distribution is suspended when current defaultOutfit of the Actor (NPC) does not match the initial outfit.
+		bool IsSuspendedReplacement(const RE::Actor*) const;
+
+		/// Gets an outfit that was set in the plugins for the actor's ActorBase (NPC).
+		RE::BGSOutfit* GetInitialOutfit(const RE::Actor*) const;
 
 		/// <summary>
 		/// Resolves the outfit that should be worn by the actor.
@@ -180,11 +181,12 @@ namespace Outfits
 
 		/// Map of NPC's FormID and corresponding initial Outfit that is set in loaded plugins.
 		///
-		/// This map is used for filtering during distribution to be able to provide consistent filtering behavior.
-		/// Once the Manager applies new outfit, all filters that use initial outfit of this NPC will stop working,
-		/// the reason is that distributed outfits are baked into the save, and are loaded as part of NPC.
+		/// It is used to determine when manual calls to SetOutfit should suspend/resume SPID-managed outfits.
+		/// When SetOutfit attempts to set an outfit that is different from the one in initialOutfits, 
+		/// any existing outfit replacement will be suspended (ignored). 
+		/// An actor will only be able to resume the outfit replacement, once another call to SetOutfit is made with the initialOutfit.
 		///
-		/// The map is constructed with TESNPC::LoadGame hook, at which point defaultOutfit hasn't been loaded yet from the save.
+		/// The map is constructed with TESNPC::InitItemImpl hook.
 		std::unordered_map<RE::FormID, RE::BGSOutfit*> initialOutfits;
 
 		/// Flag indicating whether there is a loading of a save file in progress.
@@ -196,10 +198,18 @@ namespace Outfits
 		// Make sure hooks can access private members
 		friend struct ShouldBackgroundClone;
 		friend struct Load3D;
-		friend struct LoadGame;
+		friend struct InitItemImpl;
 		friend struct Resurrect;
 		friend struct ResetReference;
 		friend struct SetOutfitActor;
+
+		// Hooks handling.
+		bool            ProcessShouldBackgroundClone(RE::Actor*, std::function<bool()> funcCall);
+		RE::NiAVObject* ProcessLoad3D(RE::Actor*, std::function<RE::NiAVObject*()> funcCall);
+		void            ProcessInitItemImpl(RE::TESNPC*, std::function<void()> funcCall);
+		void            ProcessResurrect(RE::Actor*, std::function<void()> funcCall);
+		bool            ProcessResetReference(RE::Actor*, std::function<bool()> funcCall);
+		bool            ProcessSetOutfitActor(RE::Actor*, RE::BGSOutfit*, std::function<bool()> funcCall);
 
 		friend struct TestsHelper;
 
@@ -210,6 +220,7 @@ namespace Outfits
 
 		static bool LoadReplacementV1(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);
 		static bool LoadReplacementV2(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);
+		static bool LoadReplacementV3(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);
 		static bool SaveReplacement(SKSE::SerializationInterface*, const RE::FormID& actorFormID, const OutfitReplacement&);
 	};
 
@@ -257,9 +268,6 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 		}
 		if (replacement.isFinalOutfit) {
 			flags += "♾️";
-		}
-		if (replacement.isSuspended) {
-			flags += "⏸️";
 		}
 
 		if (replacement.distributed) {

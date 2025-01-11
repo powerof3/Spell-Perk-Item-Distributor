@@ -17,7 +17,7 @@
 	bool           isLooted = false;                                          \
 	if (worn) {                                                               \
 		TestsHelper::ApplyOutfit(manager, actor, worn);                       \
-		wornReplacements[actor->GetFormID()] = { worn, isWd, isWf, false };   \
+		wornReplacements[actor->GetFormID()] = { worn, isWd, isWf };   \
 	} else {                                                                  \
 		actor->AddWornOutfit(original, false);                                \
 	}

@@ -6,7 +6,7 @@ namespace Outfits
 #pragma region Serialization
 
 	constexpr std::uint32_t serializationKey = 'SPID';
-	constexpr std::uint32_t serializationVersion = 2;
+	constexpr std::uint32_t serializationVersion = 3;
 
 	constexpr std::uint32_t recordType = 'OTFT';
 
@@ -137,7 +137,7 @@ namespace Outfits
 		}
 
 		if (distributed) {
-			loadedReplacement = OutfitReplacement{ distributed, isDeathOutfit, false, false };
+			loadedReplacement = OutfitReplacement{ distributed, isDeathOutfit, false };
 		} else {
 			loadedReplacement = OutfitReplacement{ failedDistributedOutfitFormID };
 		}
@@ -183,10 +183,54 @@ namespace Outfits
 		}
 
 		if (distributed) {
-			loadedReplacement = OutfitReplacement{ distributed, isDeathOutfit, isFinalOutfit, isSuspended };
+			loadedReplacement = OutfitReplacement{ distributed, isDeathOutfit, isFinalOutfit };
 		} else {
 			loadedReplacement = OutfitReplacement{ failedDistributedOutfitFormID };
 		}
+		return true;
+	}
+
+	bool Manager::LoadReplacementV3(SKSE::SerializationInterface* interface, RE::FormID& loadedActorFormID, Manager::OutfitReplacement& loadedReplacement)
+	{
+		bool isDeathOutfit = false;
+		bool isFinalOutfit = false;
+
+		RE::FormID     id = 0;
+		RE::FormID     failedDistributedOutfitFormID = 0;
+		RE::BGSOutfit* distributed;
+
+		if (!details::Load(interface, loadedActorFormID)) {
+#ifndef NDEBUG
+			logger::warn("Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
+#endif
+			return false;
+		}
+
+		if (!details::Load(interface, distributed, id)) {
+#ifndef NDEBUG
+			logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
+#endif
+			if (!id) {
+				return false;
+			}
+			failedDistributedOutfitFormID = id;
+		}
+
+		if (!details::Read(interface, isDeathOutfit) ||
+			!details::Read(interface, isFinalOutfit)) {
+#ifndef NDEBUG
+			if (auto loadedActor = RE::TESForm::LookupByID<RE::Actor>(loadedActorFormID); loadedActor) {
+				logger::warn("Failed to load attributes for Outfit Replacement record. Actor: {}", *loadedActor);
+			}
+#endif
+		}
+
+		if (distributed) {
+			loadedReplacement = OutfitReplacement{ distributed, isDeathOutfit, isFinalOutfit };
+		} else {
+			loadedReplacement = OutfitReplacement{ failedDistributedOutfitFormID };
+		}
+		return true;
 	}
 
 	bool Manager::SaveReplacement(SKSE::SerializationInterface* interface, const RE::FormID& actorFormID, const OutfitReplacement& replacement)
@@ -198,8 +242,7 @@ namespace Outfits
 		return details::Write(interface, actorFormID) &&
 		       details::Write(interface, replacement.distributed ? replacement.distributed->formID : 0) &&
 		       details::Write(interface, replacement.isDeathOutfit) &&
-		       details::Write(interface, replacement.isFinalOutfit) &&
-		       details::Write(interface, replacement.isSuspended);
+		       details::Write(interface, replacement.isFinalOutfit);
 	}
 
 	void Manager::Load(SKSE::SerializationInterface* interface)
@@ -226,8 +269,11 @@ namespace Outfits
 				case 1:
 					loaded = LoadReplacementV1(interface, actorFormID, loadedReplacement);
 					break;
-				default:
+				case 2:
 					loaded = LoadReplacementV2(interface, actorFormID, loadedReplacement);
+					break;
+				default:
+					loaded = LoadReplacementV3(interface, actorFormID, loadedReplacement);
 					break;
 				}
 				if (loaded) {
@@ -322,14 +368,10 @@ namespace Outfits
 	{
 		static bool thunk(RE::Character* actor)
 		{
-			logger::debug("Outfits: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
-			auto manager = Manager::GetSingleton();
-
-			if (!manager->pendingReplacements.contains(actor->formID)) {
-				manager->SetOutfit(actor, nullptr, NPCData::IsDead(actor), false);
-			}
-
-			return func(actor);
+#ifndef NDEBUG
+			logger::info("Outfits: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+#endif
+			return Manager::GetSingleton()->ProcessShouldBackgroundClone(actor, [&] { return func(actor); });
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
@@ -345,15 +387,7 @@ namespace Outfits
 #ifndef NDEBUG
 			logger::info("Outfits: Load3D({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
 #endif
-			const auto manager = Manager::GetSingleton();
-
-			if (!manager->isLoadingGame) {
-				WriteLocker lock(manager->_lock);
-				if (const auto outfit = manager->ResolveWornOutfit(actor, false); outfit) {
-					manager->ApplyOutfit(actor, outfit->distributed);
-				}
-			}
-			return func(actor, a_backgroundLoading);
+			return Manager::GetSingleton()->ProcessLoad3D(actor, [&] { return func(actor, a_backgroundLoading); });
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
@@ -361,29 +395,19 @@ namespace Outfits
 		static inline constexpr std::size_t size{ 0x6A };
 	};
 
-	/// This hook builds a map of initialOutfits for all NPCs that have different outfit in the save.
-	struct LoadGame
+	/// This hook builds a map of initialOutfits for all NPCs that can have it.
+	/// The map is later used to determine when manual calls to SetOutfit should suspend/resume SPID-managed outfits.
+	struct InitItemImpl
 	{
-		static void thunk(RE::TESNPC* npc, RE::BGSLoadFormBuffer* a_buf)
+		static void thunk(RE::TESNPC* npc)
 		{
-#ifndef NDEBUG
-			//logger::info("LoadGame({})", *npc);
-#endif
-			auto initialOutfit = npc->defaultOutfit;
-			func(npc, a_buf);
-			if (initialOutfit && initialOutfit != npc->defaultOutfit) {
-#ifndef NDEBUG
-				//logger::info("{} loaded outfit {}, originally it was {}", *npc, *npc->defaultOutfit, *initialOutfit);
-#endif
-				Manager::GetSingleton()->initialOutfits.try_emplace(npc->formID, initialOutfit);
-				// TODO: Use these to track whether external sources changed the outfit
-			}
+			Manager::GetSingleton()->ProcessInitItemImpl(npc, [&] { func(npc); });
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
 
 		static inline constexpr std::size_t index{ 0 };
-		static inline constexpr std::size_t size{ 0xF };
+		static inline constexpr std::size_t size{ 0x13 };
 	};
 
 	/// This hook is used to track when NPCs come back to life to clear the isDeathOutfit flag and restore general outfit behavior,
@@ -395,17 +419,10 @@ namespace Outfits
 	{
 		static void thunk(RE::Character* actor, bool resetInventory, bool attach3D)
 		{
-			const auto manager = Manager::GetSingleton();
-			manager->RestoreOutfit(actor);
-			func(actor, resetInventory, attach3D);
-			ReadLocker lock(manager->_lock);
-			if (const auto it = manager->wornReplacements.find(actor->formID); it != manager->wornReplacements.end()) {
-				manager->ApplyOutfit(actor, it->second.distributed);
-			}
-
 #ifndef NDEBUG
 			logger::info("Resurrect({}); IsDead: {}, ResetInventory: {}, Attach3D: {}", *(actor->As<RE::Actor>()), actor->IsDead(), resetInventory, attach3D);
 #endif
+			return Manager::GetSingleton()->ProcessResurrect(actor, [&] { return func(actor, resetInventory, attach3D); });
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
@@ -421,92 +438,80 @@ namespace Outfits
 		{
 			if (refr) {
 				if (const auto actor = refr->As<RE::Actor>(); actor) {
-					Manager::GetSingleton()->RevertOutfit(actor);
+#ifndef NDEBUG
+					logger::info("RecycleActor({})", *(actor->As<RE::Actor>()));
+#endif
+					return Manager::GetSingleton()->ProcessResetReference(actor, [&] { return func(a1, a2, refr, a4, a5, a6, a7, a8); });
 				}
 			}
-			return func(a1, a2, refr, a4, a5, a6, a7, a8);
+			return func(a1, a2, refr, a4, a5, a6, a7, a8);	
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 22038);  // TODO: Find relocation for SE
-		static inline constexpr std::size_t offset = OFFSET(0, 0x4B);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(21556, 22038);
+		static inline constexpr std::size_t offset = OFFSET(0x4B, 0x4B);
 	};
 
+	/// This hook is used to suspend/resume outfit replacements when Papyrus function SetOutfit is called.
 	struct SetOutfitActor
 	{
 		static bool thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
 		{
-			// TODO: Figure out how to handle outfit overwrite from other sources.
-			//				auto       manager = Manager::GetSingleton();
-			//				ReadLocker lock(manager->_lock);
-			//
-			//				manager->SetOutfit(actor, outfit, NPCData::IsDead(actor), false);
-			//				if (auto it = manager->wornReplacements.find(actor->formID); it != manager->wornReplacements.end()) {
-			//					auto& replacement = it->second;
-			//					bool  wasSuspensed = replacement.isSuspended;
-			//					//replacement.isSuspended = replacement.original != outfit;
-			//#ifndef NDEBUG
-			//					if (replacement.isSuspended) {
-			//						logger::info("Suspending outfit replacement for {}", *actor);
-			//					}
-			//#endif
-			//					if (wasSuspensed && !replacement.isSuspended) {
-			//#ifndef NDEBUG
-			//						logger::info("Resuming outfit replacement for {}", *actor);
-			//#endif
-			//						manager->ApplyOutfit(actor, replacement.distributed);
-			//					}
-			//
-			//				}
-
-			//
-			//return true; //func(actor, outfit, forceUpdate);
-
-			return func(actor, outfit, forceUpdate);
+			return Manager::GetSingleton()->ProcessSetOutfitActor(actor, outfit, [&] { return func(actor, outfit, forceUpdate); });
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 54755);  // TODO: Find relocation for SE
-		static inline constexpr std::size_t offset = OFFSET(0, 0x86);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(53931, 54755);
+		static inline constexpr std::size_t offset = OFFSET(0x86, 0x86);
 	};
 
 	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
 	{
 		switch (message->type) {
-		case SKSE::MessagingInterface::kDataLoaded:
-			{
+		case SKSE::MessagingInterface::kPostLoad:
+		{
+				logger::info("Outfit Manager:");
+
 				const auto serializationInterface = SKSE::GetSerializationInterface();
 				serializationInterface->SetUniqueID(serializationKey);
 				serializationInterface->SetSaveCallback(Save);
 				serializationInterface->SetLoadCallback(Load);
-
+				
 				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 					scripts->AddEventSink<RE::TESFormDeleteEvent>(this);
-					logger::info("Outfit Manager: Registered for {}.", typeid(RE::TESFormDeleteEvent).name());
+					logger::info("\t\tRegistered for {}.", typeid(RE::TESFormDeleteEvent).name());
 				}
 
 				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 					scripts->AddEventSink<RE::TESDeathEvent>(this);
-					logger::info("Outfit Manager: Registered for {}.", typeid(RE::TESDeathEvent).name());
+					logger::info("\t\tRegistered for {}.", typeid(RE::TESDeathEvent).name());
 				}
 
+				// TODO: Test size of RAM with/without hook
+				stl::write_vfunc<RE::TESNPC, InitItemImpl>();
+				logger::info("\t\tInstalled InitItemImpl hook.");
+
 				stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-				logger::info("Outfit Manager: Installed ShouldBackgroundClone hook.");
+				logger::info("\t\tInstalled ShouldBackgroundClone hook.");
 
 				stl::write_vfunc<RE::Character, Load3D>();
-				logger::info("Outfit Manager: Installed Load3D hook.");
-
-				stl::write_vfunc<RE::TESNPC, LoadGame>();
-				logger::info("Outfit Manager: Installed LoadGame hook.");
+				logger::info("\t\tInstalled Load3D hook.");
 
 				stl::write_vfunc<RE::Character, Resurrect>();
-				logger::info("Outfit Manager: Installed Resurrect hook.");
+				logger::info("\t\tInstalled Resurrect hook.");
 
 				stl::write_thunk_call<ResetReference>();
-				logger::info("Outfit Manager: Installed ResetReference hook.");
+				logger::info("\t\tInstalled ResetReference hook.");
 
-				//stl::write_thunk_call<SetOutfitActor>();
-				//logger::info("Outfit Manager: Installed SetOutfit hook.");
+				stl::write_thunk_call<SetOutfitActor>();
+				logger::info("\t\tInstalled SetOutfit hook.");
+
+				
+		}
+			break;
+		case SKSE::MessagingInterface::kDataLoaded:
+			{
+				logger::info("\t\tTracking {} initial outfits. (in memory size: ~ {} Kb)", initialOutfits.size(), initialOutfits.size() * 12);  // 4 bytes for formID, 8 bytes for pointer
 			}
 			break;
 		case SKSE::MessagingInterface::kPreLoadGame:
@@ -671,7 +676,7 @@ namespace Outfits
 			} else {
 				if (isDying || NPCData::IsDead(actor)) {  // Persist default outfit
 					if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
-						wornReplacements.try_emplace(actor->formID, npc->defaultOutfit, G.isDeathOutfit, false, false).first->second;
+						wornReplacements.try_emplace(actor->formID, npc->defaultOutfit, G.isDeathOutfit, false).first->second;
 					}
 				}
 			}
@@ -731,7 +736,7 @@ namespace Outfits
 			}
 			return &G;
 		} else {  // If this is the first outfit in the pending queue, then we just add it.
-			return &pendingReplacements.try_emplace(actor->formID, outfit, isDeathOutfit, isFinalOutfit, false).first->second;
+			return &pendingReplacements.try_emplace(actor->formID, outfit, isDeathOutfit, isFinalOutfit).first->second;
 		}
 	}
 
@@ -745,8 +750,6 @@ namespace Outfits
 		}
 
 		const auto defaultOutfit = npc->defaultOutfit;
-
-		// TODO: Compare default outfit to initialOutfit to determine if another mode changed the outfit.
 
 		// If outfit is nullptr, we just track that distribution didn't provide any outfit for this actor.
 		if (outfit) {
@@ -804,7 +807,7 @@ namespace Outfits
 								// queueEquip causes random crashes, probably when the equipping is executed.
 								// forceEquip - actually it corresponds to the "PreventRemoval" flag in the game's function,
 								//				which determines whether NPC/EquipItem call can unequip the item. See EquipItem Papyrus function.
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, false, false, false, true);
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, false, true, false, true);
 							}
 						}
 					}
@@ -826,6 +829,13 @@ namespace Outfits
 
 		// If default outfit is nullptr, then actor can't wear any outfit at all.
 		if (!npc->defaultOutfit) {
+			return false;
+		}
+
+		if (IsSuspendedReplacement(actor)) {
+#ifndef NDEBUG
+			logger::info("\t\tSkipping outfit equip because distribution is suspended for {}", *actor);
+#endif
 			return false;
 		}
 
@@ -855,14 +865,110 @@ namespace Outfits
 
 	bool Manager::RevertOutfit(RE::Actor* actor, const OutfitReplacement& replacement) const
 	{
-		// Revert will always go back to what NPC has set.
-		auto revert = actor->GetActorBase()->defaultOutfit;
-
 #ifndef NDEBUG
 		logger::info("\tReverting Outfit Replacement for {}", *actor);
 		logger::info("\t\t{:R}", replacement);
 #endif
-		return ApplyOutfit(actor, revert);
+		return ApplyOutfit(actor, actor->GetActorBase()->defaultOutfit);
+	}
+
+	RE::BGSOutfit* Manager::GetInitialOutfit(const RE::Actor* actor) const
+	{
+		const auto npc = actor->GetActorBase();
+		if (npc) {
+			if (const auto it = initialOutfits.find(npc->formID); it != initialOutfits.end()) {
+				return it->second;
+			}
+		}
+		
+		return nullptr;
+	}
+
+	bool Manager::IsSuspendedReplacement(const RE::Actor* actor) const 
+	{
+		if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
+			if (const auto initialOutfit = GetInitialOutfit(actor)) {
+				return initialOutfit != npc->defaultOutfit;
+			}
+		}
+
+		return false;
+	}
+
+#pragma endregion
+
+
+#pragma region Hooks Handling
+	bool Manager::ProcessShouldBackgroundClone(RE::Actor* actor, std::function<bool()> funcCall)
+	{
+		ReadLocker lock(_lock);
+		if (!pendingReplacements.contains(actor->formID)) {
+			SetOutfit(actor, nullptr, NPCData::IsDead(actor), false);
+		}
+
+		return funcCall();
+	}
+	
+	RE::NiAVObject* Manager::ProcessLoad3D(RE::Actor* actor, std::function<RE::NiAVObject*()> funcCall)
+	{
+		if (!isLoadingGame) {
+			WriteLocker lock(_lock);
+			if (const auto outfit = ResolveWornOutfit(actor, false); outfit) {
+				ApplyOutfit(actor, outfit->distributed);
+			}
+		}
+
+		return funcCall();
+	}
+
+	void Manager::ProcessInitItemImpl(RE::TESNPC* npc, std::function<void()> funcCall)
+	{
+		funcCall();
+
+		if (npc->defaultOutfit) {
+#ifndef NDEBUG
+			logger::info("Tracking initial outfit for {}: {}", *npc, *npc->defaultOutfit);
+#endif
+			WriteLocker lock(_lock);
+			initialOutfits.try_emplace(npc->formID, npc->defaultOutfit);
+		}
+	}
+
+	void Manager::ProcessResurrect(RE::Actor* actor, std::function<void()> funcCall)
+	{
+		RestoreOutfit(actor);
+		funcCall();
+		ReadLocker lock(_lock);
+		if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
+			ApplyOutfit(actor, it->second.distributed);
+		}
+	}
+
+	bool Manager::ProcessResetReference(RE::Actor* actor, std::function<bool()> funcCall)
+	{
+		RevertOutfit(actor);
+		return funcCall();
+	}
+
+	bool Manager::ProcessSetOutfitActor(RE::Actor* actor, RE::BGSOutfit* outfit, std::function<bool()> funcCall)
+	{
+		ReadLocker lock(_lock);
+
+		logger::info("SetOutfit({}) was called for actor {}.", *outfit, *actor);
+		const auto initialOutfit = GetInitialOutfit(actor);
+		if (initialOutfit && initialOutfit == outfit) {
+			if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
+				logger::info("\t▶️ Resuming outfit distribution for {} as defaultOutfit has been reverted to its initial state", *actor);
+				actor->GetActorBase()->SetDefaultOutfit(outfit);  // set outfit back to original
+				return ApplyOutfit(actor, it->second.distributed);
+			}
+		}
+
+		logger::info("\t⏸️ Suspending outfit distribution for {} due to manual change of the outfit", *actor);
+		if (initialOutfit) {
+			logger::info("\tTo resume distribution SetOutfit({}) should be called for this actor", *initialOutfit);
+		}
+		return funcCall();  // if suspended, just let the game handle outfit change as usual.
 	}
 #pragma endregion
 }
