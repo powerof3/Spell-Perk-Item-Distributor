@@ -165,6 +165,8 @@ namespace Outfits
 		/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
 		void AddWornOutfit(RE::Actor*, RE::BGSOutfit*) const;
 
+		void LogWornOutfitItems(RE::Actor*) const;
+
 		/// Lock for replacements.
 		mutable Lock _lock;
 

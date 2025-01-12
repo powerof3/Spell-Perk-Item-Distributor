@@ -813,6 +813,39 @@ namespace Outfits
 		}
 	}
 
+	void Manager::LogWornOutfitItems(RE::Actor* actor) const
+	{
+		std::map<RE::BGSOutfit*, std::vector<RE::TESForm*>> items;
+		if (const auto invChanges = actor->GetInventoryChanges()) {
+			if (const auto entryLists = invChanges->entryList) {
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->extraLists) {
+						for (const auto& xList : *entryList->extraLists) {
+							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+							if (outfitItem) {
+								auto item = entryList->object;
+								if (auto outfit = RE::TESForm::LookupByID<RE::BGSOutfit>(outfitItem->id); outfit) {
+									items[outfit].push_back(item);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		for (const auto& [outfit, itemVec] : items) {
+			logger::info("\t{}", *outfit);
+			const auto lastItemIndex = itemVec.size() - 1;
+			for (int i = 0; i < lastItemIndex; ++i) {
+				const auto& item = itemVec[i];
+				logger::info("\t├─── {}", *item);
+			}
+			const auto& lastItem = itemVec[lastItemIndex];
+			logger::info("\t└─── {}", *lastItem);
+		}
+	}
+
 	bool Manager::ApplyOutfit(RE::Actor* actor, RE::BGSOutfit* outfit) const
 	{
 		if (!actor) {
@@ -829,6 +862,11 @@ namespace Outfits
 			return false;
 		}
 
+#ifndef NDEBUG
+		logger::info("Outfit items present in {} inventory BEFORE EQUIP", *actor);
+		LogWornOutfitItems(actor);
+#endif
+
 		if (IsSuspendedReplacement(actor)) {
 #ifndef NDEBUG
 			logger::info("\t\tSkipping outfit equip because distribution is suspended for {}", *actor);
@@ -844,6 +882,10 @@ namespace Outfits
 		if (!actor->IsDisabled()) {
 			AddWornOutfit(actor, outfit);
 		}
+#ifndef NDEBUG
+		logger::info("Outfit items present in {} inventory AFTER EQUIP", *actor);
+		LogWornOutfitItems(actor);
+#endif
 		return true;
 	}
 
