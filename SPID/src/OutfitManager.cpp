@@ -833,7 +833,7 @@ namespace Outfits
 				}
 			}
 		}
-		
+
 		for (const auto& [outfit, itemVec] : items) {
 			logger::info("\t{}", *outfit);
 			const auto lastItemIndex = itemVec.size() - 1;

@@ -1,4 +1,7 @@
 set(headers ${headers}
+	Testing/DistributionTests.h
+	Testing/OutfitManagerTests.h
+	Testing/Testing.h
 	include/Cache.h
 	include/DeathDistribution.h
 	include/Defs.h
@@ -16,10 +19,7 @@ set(headers ${headers}
 	include/LookupForms.h
 	include/LookupNPC.h
 	include/OutfitManager.h
-	Testing/OutfitManagerTests.h
 	include/PCH.h
 	include/PCLevelMultManager.h
 	include/Parser.h
-	Testing/Testing.h
-	Testing/DistributionTests.h
 )

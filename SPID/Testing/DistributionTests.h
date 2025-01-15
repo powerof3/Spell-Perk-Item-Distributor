@@ -15,9 +15,9 @@ namespace Distribute
 			return actor;
 		}
 
-		static RE::TESBoundObject* GetItem() 
+		static RE::TESBoundObject* GetItem()
 		{
-			auto item = GetForm<RE::TESBoundObject>(0x139B8); // Daedric mace
+			auto item = GetForm<RE::TESBoundObject>(0x139B8);  // Daedric mace
 			return item;
 		}
 
@@ -41,9 +41,7 @@ namespace Distribute
 			return itemsCount;
 		}
 
-	
-
-		static void ClearConfigs() 
+		static void ClearConfigs()
 		{
 			Forms::spells.GetForms().clear();
 			Forms::perks.GetForms().clear();
@@ -125,12 +123,12 @@ namespace Distribute
 
 			TEST(AddItemToActor)
 			{
-				auto       actor{ TestsHelper::GetActor() };
-				auto       item{ TestsHelper::GetItem() };
-				FilterData   filterData{ {}, {}, {}, {}, 100 };
-				RandomCount idxOrCount{ 1,1 };
-				bool       isFinal{ false };
-				Path       path{ "" };
+				auto        actor{ TestsHelper::GetActor() };
+				auto        item{ TestsHelper::GetItem() };
+				FilterData  filterData{ {}, {}, {}, {}, 100 };
+				RandomCount idxOrCount{ 1, 1 };
+				bool        isFinal{ false };
+				Path        path{ "" };
 				// void EmplaceForm(bool isValid, Form*, const bool& isFinal, const IndexOrCount&, const FilterData&, const Path&);
 				Forms::items.EmplaceForm(true, item, isFinal, idxOrCount, filterData, path);
 				TestsHelper::Distribute(actor);

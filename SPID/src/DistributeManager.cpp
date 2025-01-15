@@ -9,7 +9,7 @@ namespace Distribute
 		if (a_npc->IsPlayer() || a_npc->IsDeleted()) {
 			return false;
 		}
-		
+
 		return true;
 	}
 
