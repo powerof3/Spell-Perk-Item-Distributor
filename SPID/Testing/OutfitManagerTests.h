@@ -331,7 +331,7 @@ namespace Outfits
 			{
 				constexpr static const char* moduleName = "OutfitManager.RegularDistribution.Dead";
 
-				CLEANUP
+				AFTER_ALL
 				{
 					TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
 				}
@@ -803,7 +803,7 @@ namespace Outfits
 			{
 				constexpr static const char* moduleName = "OutfitManager.DeathDistribution.Dead";
 
-				CLEANUP
+				AFTER_ALL
 				{
 					TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
 				}
@@ -1132,7 +1132,7 @@ namespace Outfits
 		{
 			constexpr static const char* moduleName = "OutfitManager.MixedDistribution.Dead";
 
-			CLEANUP
+			AFTER_ALL
 			{
 				TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
 			}
@@ -1197,7 +1197,7 @@ namespace Outfits
 		{
 			constexpr static const char* moduleName = "OutfitManager.Resurrection";
 
-			CLEANUP
+			AFTER_ALL
 			{
 				TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
 			}

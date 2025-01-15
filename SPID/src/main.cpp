@@ -6,6 +6,7 @@
 #include "PCLevelMultManager.h"
 #ifndef NDEBUG
 #	include "OutfitManagerTests.h"
+#	include "DistributionTests.h"
 #	include "Testing.h"
 #endif
 

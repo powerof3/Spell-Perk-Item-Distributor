@@ -16,9 +16,10 @@ set(headers ${headers}
 	include/LookupForms.h
 	include/LookupNPC.h
 	include/OutfitManager.h
-	include/OutfitManagerTests.h
+	Testing/OutfitManagerTests.h
 	include/PCH.h
 	include/PCLevelMultManager.h
 	include/Parser.h
-	include/Testing.h
+	Testing/Testing.h
+	Testing/DistributionTests.h
 )

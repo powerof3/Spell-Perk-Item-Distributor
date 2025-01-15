@@ -9,9 +9,7 @@ namespace Distribute
 		if (a_npc->IsPlayer() || a_npc->IsDeleted()) {
 			return false;
 		}
-
-		a_npc->AddKeyword(a_keyword);
-
+		
 		return true;
 	}
 
@@ -20,6 +18,7 @@ namespace Distribute
 		if (should_process_NPC(a_npc)) {
 			auto npcData = NPCData(a_actor, a_npc);
 			Distribute(npcData, false);
+			a_npc->AddKeyword(processed);
 		}
 	}
 
