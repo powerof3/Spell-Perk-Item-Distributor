@@ -458,7 +458,8 @@ namespace Outfits
 	/// thus eligible for a fresh distribution.
 	struct ResetReference
 	{
-		static inline constexpr REL::Relocation relocation = { RELOCATION_ID(21556, 22038), OFFSET(0x4B, 0x4B) };
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(21556, 22038);
+		static inline constexpr std::size_t offset = OFFSET(0x4B, 0x4B);
 
 		static bool thunk(std::int64_t a1, std::int64_t a2, RE::TESObjectREFR* refr, std::int64_t a4, std::int64_t a5, std::int64_t a6, int a7, int* a8)
 		{
@@ -486,9 +487,40 @@ namespace Outfits
 		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 54784);
 		static inline constexpr std::size_t offset = OFFSET(0, 0x47D5);
 
-		static bool thunk(int a1, int a2, RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
+		static bool thunk(RE::BSScript::Internal::VirtualMachine* vm, RE::VMStackID stackID, RE::Actor* actor, RE::BGSOutfit* outfit, bool isSleepOutfit)
 		{
-			return Manager::GetSingleton()->ProcessSetOutfitActor(actor, outfit, [&] { return func(a1, a2, actor, outfit, forceUpdate); });
+			if (!outfit) {
+				using PapyrusLog = void(RE::TESObjectREFR*, const char*, RE::BSScript::Internal::VirtualMachine*, RE::VMStackID, RE::BSScript::ErrorLogger::Severity);
+				REL::Relocation<PapyrusLog> writeLog{ RELOCATION_ID(0, 0x53824) }; // TODO: Find SE relocation
+				writeLog(actor, "Cannot set sleep or default outfit to None", vm, stackID, RE::BSScript::ErrorLogger::Severity::kError);
+				return;
+			}
+
+			auto npc = actor->GetActorBase();
+
+			if (isSleepOutfit) {
+				if (npc->sleepOutfit == outfit) {
+					return;
+				}
+				actor->RemoveOutfitItems(npc->sleepOutfit);
+				npc->SetSleepOutfit(outfit);
+			} else {
+
+				// TODO: Write what was needed here :)
+				if (npc->defaultOutfit == outfit) {
+					return;
+				}
+				actor->RemoveOutfitItems(npc->defaultOutfit);
+				npc->SetDefaultOutfit(outfit);
+			}
+
+			actor->InitInventoryIfRequired();
+			if ((actor->formFlags & RE::TESForm::RecordFlags::kDisabled) == 0) {
+				actor->AddWornOutfit(outfit, true);
+			}
+			
+			
+			return Manager::GetSingleton()->ProcessSetOutfitActor(actor, outfit, [&] { return func(vm, stackID, actor, outfit, isSleepOutfit); });
 		}
 
 		static inline void post_hook()
