@@ -1,11 +1,11 @@
 #include "DeathDistribution.h"
 #include "Distribute.h"
+#include "Hooking.h"
 #include "LinkedDistribution.h"
 #include "LookupNPC.h"
 #include "OutfitManager.h"
 #include "PCLevelMultManager.h"
 #include "Parser.h"
-#include "Hooking.h"
 
 namespace DeathDistribution
 {
@@ -236,7 +236,7 @@ namespace DeathDistribution
 			}
 
 			stl::install_hook<ShouldBackgroundClone>();
-			
+
 			break;
 		default:
 			break;

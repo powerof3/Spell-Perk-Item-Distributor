@@ -1,6 +1,6 @@
 #include "OutfitManager.h"
-#include "LookupNPC.h"
 #include "Hooking.h"
+#include "LookupNPC.h"
 
 namespace Outfits
 {
@@ -363,7 +363,7 @@ namespace Outfits
 #endif
 	}
 #pragma endregion
-	
+
 #pragma region Hooks
 	struct ShouldBackgroundClone
 	{
@@ -491,7 +491,7 @@ namespace Outfits
 		{
 			if (!outfit) {
 				using PapyrusLog = void(RE::TESObjectREFR*, const char*, RE::BSScript::Internal::VirtualMachine*, RE::VMStackID, RE::BSScript::ErrorLogger::Severity);
-				REL::Relocation<PapyrusLog> writeLog{ RELOCATION_ID(0, 0x53824) }; // TODO: Find SE relocation
+				REL::Relocation<PapyrusLog> writeLog{ RELOCATION_ID(0, 0x53824) };  // TODO: Find SE relocation
 				writeLog(actor, "Cannot set sleep or default outfit to None", vm, stackID, RE::BSScript::ErrorLogger::Severity::kError);
 				return;
 			}
@@ -505,7 +505,6 @@ namespace Outfits
 				actor->RemoveOutfitItems(npc->sleepOutfit);
 				npc->SetSleepOutfit(outfit);
 			} else {
-
 				// TODO: Write what was needed here :)
 				if (npc->defaultOutfit == outfit) {
 					return;
@@ -518,8 +517,7 @@ namespace Outfits
 			if ((actor->formFlags & RE::TESForm::RecordFlags::kDisabled) == 0) {
 				actor->AddWornOutfit(outfit, true);
 			}
-			
-			
+
 			return Manager::GetSingleton()->ProcessSetOutfitActor(actor, outfit, [&] { return func(vm, stackID, actor, outfit, isSleepOutfit); });
 		}
 

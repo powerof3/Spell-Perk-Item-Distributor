@@ -7,49 +7,65 @@
 /// Declraing a pre_hook function allows Hook to receive a call before the main hook will be installed.
 template <typename Hook>
 concept pre_hook = requires {
-	{ Hook::pre_hook() };
+	{
+		Hook::pre_hook()
+	};
 };
 
 /// Declraing a post_hook function allows Hook to receive a call immediately after the main hook will be installed.
 template <typename Hook>
 concept post_hook = requires {
-	{ Hook::post_hook() };
+	{
+		Hook::post_hook()
+	};
 };
 
 /// Fundamental concept for a hook.
 /// A hook must have a static thunk function that will be written to a trampoline.
 template <typename Hook>
 concept hook = requires {
-	{ Hook::thunk };
+	{
+		Hook::thunk
+	};
 };
 
 /// Optionally Hook can define a static member named func that will contain the original function to chain the call.
 /// static inline REL::Relocation<decltype(thunk)> func;
 template <typename Hook>
 concept chain_hook = requires {
-	{ Hook::func };
+	{
+		Hook::func
+	};
 };
 
 /// Basic Hook that writes a call (write_call<5>) instruction to a thunk.
 /// This also supports writing to lea instructions, which store function addresses.
 template <typename Hook>
 concept call_hook = hook<Hook> && requires {
-	{ Hook::relocation } -> std::convertible_to<REL::ID>;
-	{ Hook::offset } -> std::convertible_to<std::size_t>;
+	{
+		Hook::relocation
+	} -> std::convertible_to<REL::ID>;
+	{
+		Hook::offset
+	} -> std::convertible_to<std::size_t>;
 };
 
 /// A type that has a vtable to hook into.
 /// vtable_hook can only be used with Targets that have a vtable.
 template <typename Target>
 concept has_vtable = requires {
-	{ Target::VTABLE };
+	{
+		Target::VTABLE
+	};
 };
 
 /// Defines required fields for a valid vtable hook.
 /// Note that providing a custom vtable index is optional, if ommited `0`th table will be used by default.
 template <typename Hook>
 concept vtable_hook = hook<Hook> && requires {
-	{ Hook::index } -> std::convertible_to<std::size_t>;
+	{
+		Hook::index
+	} -> std::convertible_to<std::size_t>;
 	requires(has_vtable<typename Hook::Target>);
 };
 
@@ -57,7 +73,9 @@ concept vtable_hook = hook<Hook> && requires {
 /// Note that providing a custom vtable index is optional, if ommited `0`th table will be used by default.
 template <typename Hook>
 concept custom_vtable_index = requires {
-	{ Hook::vtable } -> std::convertible_to<std::size_t>;
+	{
+		Hook::vtable
+	} -> std::convertible_to<std::size_t>;
 };
 
 // Optional properties of a hook.
@@ -112,7 +130,7 @@ namespace stl
 	void write_thunk()
 	{
 		const REL::Relocation<std::uintptr_t> rel{ Hook::relocation, Hook::offset };
-		std::uintptr_t sourceAddress = rel.address();
+		std::uintptr_t                        sourceAddress = rel.address();
 
 		auto byteAddress = sourceAddress;
 		auto opcode = ByteAt(byteAddress);
@@ -120,14 +138,14 @@ namespace stl
 		if (opcode == 0xE8) {  // CALL instruction
 			write_thunk_call<Hook>(sourceAddress);
 		} else {
-			auto leaSize = 7;
+			auto                   leaSize = 7;
 			constexpr std::uint8_t rexw = 0x48;
-			if ((opcode & rexw) != rexw) { // REX.W Must be present for a valid 64-bit address replacement.
+			if ((opcode & rexw) != rexw) {  // REX.W Must be present for a valid 64-bit address replacement.
 				stl::report_and_fail("Invalid hook location, lea instruction must use 64-bit register (first byte should be between 0x48 and 04F)"sv);
 			}
 			opcode = ByteAt(++byteAddress);
 
-			if (opcode == 0x8D) {  // LEA instruction
+			if (opcode == 0x8D) {                  // LEA instruction
 				auto op1 = ByteAt(++byteAddress);  // Get first operand byte.
 				auto opAddress = byteAddress;
 				// Store original displacement
@@ -140,12 +158,12 @@ namespace stl
 				// write CALL on top of LEA
 				// This will fill new displacement
 				// 8D MM XX XX XX XX -> 8D E8 YY YY YY YY (where MM is the operand #1, XX is the old func, and YY is the new func)
-				write_thunk_call<Hook>(opAddress);  
+				write_thunk_call<Hook>(opAddress);
 
 				// Restore operand byte
 				// Since we overwrote first operand of lea we need to write it back
 				// 8D E8 YY YY YY YY -> 8D MM YY YY YY YY
-				REL::safe_write(opAddress, op1);       
+				REL::safe_write(opAddress, op1);
 
 				// Find original function and store it in the hook's func.
 				details::set_func<Hook>(sourceAddress + leaSize + disp);

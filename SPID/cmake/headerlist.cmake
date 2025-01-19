@@ -11,6 +11,7 @@ set(headers ${headers}
 	include/DistributePCLevelMult.h
 	include/ExclusiveGroups.h
 	include/FormData.h
+	include/Hooking.h
 	include/KeywordDependencies.h
 	include/LinkedDistribution.h
 	include/LogBuffer.h
@@ -22,5 +23,4 @@ set(headers ${headers}
 	include/PCH.h
 	include/PCLevelMultManager.h
 	include/Parser.h
-	include/Hooking.h
 )
