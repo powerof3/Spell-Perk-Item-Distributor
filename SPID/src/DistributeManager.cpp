@@ -1,6 +1,7 @@
 #include "DistributeManager.h"
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
+#include "Hooking.h"
 
 namespace Distribute
 {
@@ -28,6 +29,9 @@ namespace Distribute
 		// FF actors distribution
 		struct ShouldBackgroundClone
 		{
+			using Target = RE::Character;
+			static inline constexpr std::size_t index{ 0x6D };
+
 			static bool thunk(RE::Character* actor)
 			{
 				logger::debug("Distribute: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
@@ -37,19 +41,20 @@ namespace Distribute
 				return func(actor);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
-
-			static inline constexpr std::size_t index{ 0 };
-			static inline constexpr std::size_t size{ 0x6D };
 		};
 
 		// Post distribution
 		// Fixes weird behavior with leveled npcs?
 		struct InitLoadGame
 		{
+			using Target = RE::Character;
+			static inline constexpr std::size_t index{ 0x10 };
+
 			static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
 			{
 				func(a_this, a_buf);
 
+				logger::debug("Distribute: InitLoadGame({})", *(a_this->As<RE::Actor>()));
 				if (const auto npc = a_this->GetActorBase()) {
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
@@ -61,15 +66,12 @@ namespace Distribute
 				}
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
-
-			static inline constexpr std::size_t index{ 0 };
-			static inline constexpr std::size_t size{ 0x10 };
 		};
 
 		void Install()
 		{
-			//stl::write_vfunc<RE::Character, InitLoadGame>();
-			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
+			//stl::install_hook<InitLoadGame>();
+			stl::install_hook<ShouldBackgroundClone>();
 
 			logger::info("Installed actor load hooks");
 		}

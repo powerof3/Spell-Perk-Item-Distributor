@@ -5,6 +5,7 @@
 #include "OutfitManager.h"
 #include "PCLevelMultManager.h"
 #include "Parser.h"
+#include "Hooking.h"
 
 namespace DeathDistribution
 {
@@ -196,6 +197,9 @@ namespace DeathDistribution
 
 	struct ShouldBackgroundClone
 	{
+		using Target = RE::Character;
+		static inline constexpr std::size_t index{ 0x6D };
+
 		static bool thunk(RE::Character* actor)
 		{
 #ifndef NDEBUG
@@ -209,10 +213,13 @@ namespace DeathDistribution
 			}
 			return func(actor);
 		}
-		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline constexpr std::size_t index{ 0 };
-		static inline constexpr std::size_t size{ 0x6D };
+		static inline void post_hook()
+		{
+			logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
 	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
@@ -228,8 +235,8 @@ namespace DeathDistribution
 				logger::info("Death Distribution: Registered for {}.", typeid(RE::TESDeathEvent).name());
 			}
 
-			stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-			logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
+			stl::install_hook<ShouldBackgroundClone>();
+			
 			break;
 		default:
 			break;

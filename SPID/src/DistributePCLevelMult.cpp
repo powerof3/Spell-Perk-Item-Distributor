@@ -2,11 +2,17 @@
 #include "Distribute.h"
 #include "DistributeManager.h"
 #include "PCLevelMultManager.h"
+#include "Hooking.h"
 
 namespace Distribute::PlayerLeveledActor
 {
 	struct HandleUpdatePlayerLevel
 	{
+		// ProcessLists::HandlePlayerLevelUpdate
+		// inlined into SetLevel in AE
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(40575, 41567);
+		static inline constexpr std::size_t offset = OFFSET(0x97, 0x137);
+
 		static void thunk(RE::Actor* a_actor)
 		{
 			if (const auto npc = a_actor->GetActorBase(); npc && npc->HasKeyword(processed)) {
@@ -22,6 +28,9 @@ namespace Distribute::PlayerLeveledActor
 	// Reset previous save/character dist. entries
 	struct Revert
 	{
+		using Target = RE::Character;
+		static inline constexpr size_t index{ 0x12 };
+
 		static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
 		{
 			func(a_this, a_buf);
@@ -81,14 +90,14 @@ namespace Distribute::PlayerLeveledActor
 			}
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
-
-		static inline size_t index{ 0 };
-		static inline size_t size{ 0x12 };
 	};
 
 	// Re-add dist entries if level is valid
 	struct LoadGame
 	{
+		using Target = RE::Character;
+		static inline constexpr size_t index{ 0xF };
+
 		static void thunk(RE::Character* a_this, RE::BGSLoadFormBuffer* a_buf)
 		{
 			if (const auto npc = a_this->GetActorBase(); npc && npc->HasPCLevelMult() && npc->HasKeyword(processed)) {
@@ -153,20 +162,14 @@ namespace Distribute::PlayerLeveledActor
 			func(a_this, a_buf);
 		}
 		static inline REL::Relocation<decltype(thunk)> func;
-
-		static inline size_t index{ 0 };
-		static inline size_t size{ 0xF };
 	};
 
 	void Install()
 	{
-		// ProcessLists::HandlePlayerLevelUpdate
-		// inlined into SetLevel in AE
-		REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(40575, 41567), OFFSET(0x97, 0x137) };
-		stl::write_thunk_call<HandleUpdatePlayerLevel>(target.address());
+		stl::install_hook<HandleUpdatePlayerLevel>();
 
-		stl::write_vfunc<RE::Character, Revert>();
-		stl::write_vfunc<RE::Character, LoadGame>();
+		stl::install_hook<Revert>();
+		stl::install_hook<LoadGame>();
 
 		LOG_HEADER("HOOKS");
 		logger::info("Installed leveled distribution hooks");

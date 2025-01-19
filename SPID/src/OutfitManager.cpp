@@ -1,5 +1,6 @@
 #include "OutfitManager.h"
 #include "LookupNPC.h"
+#include "Hooking.h"
 
 namespace Outfits
 {
@@ -362,10 +363,13 @@ namespace Outfits
 #endif
 	}
 #pragma endregion
-
+	
 #pragma region Hooks
 	struct ShouldBackgroundClone
 	{
+		using Target = RE::Character;
+		static inline constexpr std::size_t index{ 0x6D };
+
 		static bool thunk(RE::Character* actor)
 		{
 #ifndef NDEBUG
@@ -373,15 +377,21 @@ namespace Outfits
 #endif
 			return Manager::GetSingleton()->ProcessShouldBackgroundClone(actor, [&] { return func(actor); });
 		}
-		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline constexpr std::size_t index{ 0 };
-		static inline constexpr std::size_t size{ 0x6D };
+		static inline void post_hook()
+		{
+			logger::info("\t\tInstalled ShouldBackgroundClone hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
 	/// This hook applies pending outfit replacements before loading 3D model. Outfit Replacements are created by SetDefaultOutfit.
 	struct Load3D
 	{
+		using Target = RE::Character;
+		static inline constexpr std::size_t index{ 0x6A };
+
 		static RE::NiAVObject* thunk(RE::Character* actor, bool a_backgroundLoading)
 		{
 #ifndef NDEBUG
@@ -389,25 +399,33 @@ namespace Outfits
 #endif
 			return Manager::GetSingleton()->ProcessLoad3D(actor, [&] { return func(actor, a_backgroundLoading); });
 		}
-		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline constexpr std::size_t index{ 0 };
-		static inline constexpr std::size_t size{ 0x6A };
+		static inline void post_hook()
+		{
+			logger::info("\t\tInstalled Load3D hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
 	/// This hook builds a map of initialOutfits for all NPCs that can have it.
 	/// The map is later used to determine when manual calls to SetOutfit should suspend/resume SPID-managed outfits.
 	struct InitItemImpl
 	{
+		using Target = RE::TESNPC;
+		static inline constexpr std::size_t index{ 0x13 };
+
 		static void thunk(RE::TESNPC* npc)
 		{
 			Manager::GetSingleton()->ProcessInitItemImpl(npc, [&] { func(npc); });
 		}
 
-		static inline REL::Relocation<decltype(thunk)> func;
+		static inline void post_hook()
+		{
+			logger::info("\t\tInstalled InitItemImpl hook.");
+		}
 
-		static inline constexpr std::size_t index{ 0 };
-		static inline constexpr std::size_t size{ 0x13 };
+		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
 	/// This hook is used to track when NPCs come back to life to clear the isDeathOutfit flag and restore general outfit behavior,
@@ -417,6 +435,9 @@ namespace Outfits
 	/// Note: NPCs who Start Dead cannot be resurrected.
 	struct Resurrect
 	{
+		using Target = RE::Character;
+		static inline constexpr std::size_t index{ 0xAB };
+
 		static void thunk(RE::Character* actor, bool resetInventory, bool attach3D)
 		{
 #ifndef NDEBUG
@@ -424,16 +445,21 @@ namespace Outfits
 #endif
 			return Manager::GetSingleton()->ProcessResurrect(actor, [&] { return func(actor, resetInventory, attach3D); });
 		}
-		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline constexpr std::size_t index{ 0 };
-		static inline constexpr std::size_t size{ 0xAB };
+		static inline void post_hook()
+		{
+			logger::info("\t\tInstalled Resurrect hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
 	/// This hook is used to clear outfit replacements info since the actor will be completely reset,
 	/// thus eligible for a fresh distribution.
 	struct ResetReference
 	{
+		static inline constexpr REL::Relocation relocation = { RELOCATION_ID(21556, 22038), OFFSET(0x4B, 0x4B) };
+
 		static bool thunk(std::int64_t a1, std::int64_t a2, RE::TESObjectREFR* refr, std::int64_t a4, std::int64_t a5, std::int64_t a6, int a7, int* a8)
 		{
 			if (refr) {
@@ -446,23 +472,31 @@ namespace Outfits
 			}
 			return func(a1, a2, refr, a4, a5, a6, a7, a8);
 		}
-		static inline REL::Relocation<decltype(thunk)> func;
 
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(21556, 22038);
-		static inline constexpr std::size_t offset = OFFSET(0x4B, 0x4B);
+		static inline void post_hook()
+		{
+			logger::info("\t\tInstalled ResetReference hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	/// This hook is used to suspend/resume outfit replacements when Papyrus function SetOutfit is called.
 	struct SetOutfitActor
 	{
-		static bool thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
-		{
-			return Manager::GetSingleton()->ProcessSetOutfitActor(actor, outfit, [&] { return func(actor, outfit, forceUpdate); });
-		}
-		static inline REL::Relocation<decltype(thunk)> func;
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 54784);
+		static inline constexpr std::size_t offset = OFFSET(0, 0x47D5);
 
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(53931, 54755);
-		static inline constexpr std::size_t offset = OFFSET(0x86, 0x86);
+		static bool thunk(int a1, int a2, RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
+		{
+			return Manager::GetSingleton()->ProcessSetOutfitActor(actor, outfit, [&] { return func(a1, a2, actor, outfit, forceUpdate); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\tInstalled SetOutfit hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
@@ -515,28 +549,12 @@ namespace Outfits
 					logger::info("\t\tRegistered for {}.", typeid(RE::TESDeathEvent).name());
 				}
 
-				stl::write_vfunc<RE::TESNPC, InitItemImpl>();
-				logger::info("\t\tInstalled InitItemImpl hook.");
-
-				stl::write_vfunc<RE::Character, ShouldBackgroundClone>();
-				logger::info("\t\tInstalled ShouldBackgroundClone hook.");
-
-				stl::write_vfunc<RE::Character, Load3D>();
-				logger::info("\t\tInstalled Load3D hook.");
-
-				stl::write_vfunc<RE::Character, Resurrect>();
-				logger::info("\t\tInstalled Resurrect hook.");
-
-				stl::write_thunk_call<ResetReference>();
-				logger::info("\t\tInstalled ResetReference hook.");
-
-				stl::write_thunk_call<SetOutfitActor>();
-				logger::info("\t\tInstalled SetOutfit hook.");
-			}
-			break;
-		case SKSE::MessagingInterface::kDataLoaded:
-			{
-				logger::info("\t\tTracking {} initial outfits. (in memory size: ~ {} Kb)", initialOutfits.size(), initialOutfits.size() * 12);  // 4 bytes for formID, 8 bytes for pointer
+				stl::install_hook<InitItemImpl>();
+				stl::install_hook<ShouldBackgroundClone>();
+				stl::install_hook<Load3D>();
+				stl::install_hook<Resurrect>();
+				stl::install_hook<ResetReference>();
+				stl::install_hook<SetOutfitActor>();
 			}
 			break;
 		case SKSE::MessagingInterface::kPreLoadGame:

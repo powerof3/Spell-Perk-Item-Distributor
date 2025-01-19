@@ -22,4 +22,5 @@ set(headers ${headers}
 	include/PCH.h
 	include/PCLevelMultManager.h
 	include/Parser.h
+	include/Hooking.h
 )

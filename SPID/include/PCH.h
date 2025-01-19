@@ -70,30 +70,7 @@ using StringSet = ankerl::unordered_dense::segmented_set<std::string, string_has
 namespace stl
 {
 	using namespace SKSE::stl;
-
-	template <class T>
-	void write_thunk_call(std::uintptr_t a_src)
-	{
-		auto& trampoline = SKSE::GetTrampoline();
-		SKSE::AllocTrampoline(14);
-
-		T::func = trampoline.write_call<5>(a_src, T::thunk);
-	}
-
-	template <class T>
-	void write_thunk_call()
-	{
-		const REL::Relocation<std::uintptr_t> rel{ T::relocation, T::offset };
-		write_thunk_call<T>(rel.address());
-	}
-
-	template <class F, class T>
-	void write_vfunc()
-	{
-		REL::Relocation<std::uintptr_t> vtbl{ F::VTABLE[T::index] };
-		T::func = vtbl.write_vfunc(T::size, T::thunk);
-	}
-}
+};
 
 #ifdef SKYRIM_AE
 #	define OFFSET(se, ae) ae
