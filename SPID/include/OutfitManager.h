@@ -118,8 +118,9 @@ namespace Outfits
 		/// </summary>
 		/// <param name="actor">Actor for whom outfit should be changed</param>
 		/// <param name="outift">The outfit to be set</param>
+		/// <param name="shouldUpdate3D">Flag indicating whether the 3D model should be updated when outfit changes</param>
 		/// <returns>True if the outfit was successfully set, false otherwise</returns>
-		bool ApplyOutfit(RE::Actor*, RE::BGSOutfit*) const;
+		bool ApplyOutfit(RE::Actor*, RE::BGSOutfit*, bool shouldUpdate3D = false) const;
 
 		/// <summary>
 		/// Performs the actual reversion of the outfit.
@@ -163,7 +164,7 @@ namespace Outfits
 		bool SetOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
 
 		/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
-		void AddWornOutfit(RE::Actor*, RE::BGSOutfit*) const;
+		void AddWornOutfit(RE::Actor*, RE::BGSOutfit*, bool shouldUpdate3D = false) const;
 
 		void LogWornOutfitItems(RE::Actor*) const;
 
@@ -211,7 +212,7 @@ namespace Outfits
 		void            ProcessInitItemImpl(RE::TESNPC*, std::function<void()> funcCall);
 		void            ProcessResurrect(RE::Actor*, std::function<void()> funcCall);
 		bool            ProcessResetReference(RE::Actor*, std::function<bool()> funcCall);
-		bool            ProcessSetOutfitActor(RE::Actor*, RE::BGSOutfit*, std::function<bool()> funcCall);
+		void            ProcessSetOutfitActor(RE::Actor*, RE::BGSOutfit*, std::function<void()> funcCall);
 
 		friend struct TestsHelper;
 
@@ -294,3 +295,4 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 private:
 	bool reverse = false;
 };
+
