@@ -121,6 +121,11 @@ namespace Distribute
 				TestsHelper::ClearConfigs();
 			}
 
+			AFTER_EACH
+			{
+				TestsHelper::GetActor()->ResetInventory(false);
+			}
+
 			TEST(AddItemToActor)
 			{
 				auto        actor{ TestsHelper::GetActor() };
