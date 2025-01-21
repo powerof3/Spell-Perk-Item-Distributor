@@ -88,14 +88,14 @@
 		PASS;                                                                                                                                                                  \
 	}
 
-#define EXPECT_WORN_DEFAULT(outfit)                                                                                                                            \
-	{                                                                                                                                                          \
-		auto defaultOutfit = actor->GetActorBase()->defaultOutfit;                                                                                             \
-		auto it = wornReplacements.find(actor->formID);                                                                                                        \
-		ASSERT(!worn || (it != wornReplacements.end() && it->second.distributed == worn), "Expected worn replacement to be unchanged");                        \
-		ASSERT(defaultOutfit == outfit, fmt::format("Expected NPC's defaultOutfit to be {}, but got {}", *outfit, *defaultOutfit));                            \
-		ASSERT(TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from outfit {}, but they don't have it", *outfit)); \
-		PASS;                                                                                                                                                  \
+#define EXPECT_WORN_DEFAULT(outfit)                                                                                                                                    \
+	{                                                                                                                                                                  \
+		auto defaultOutfit = actor->GetActorBase()->defaultOutfit;                                                                                                     \
+		auto it = wornReplacements.find(actor->formID);                                                                                                                \
+		ASSERT(!worn || (it != wornReplacements.end() && it->second.distributed == worn), "Expected worn replacement to be unchanged");                                \
+		ASSERT(defaultOutfit == outfit, fmt::format("Expected NPC's defaultOutfit to be {}, but got {}", *outfit, *defaultOutfit));                                    \
+		ASSERT(TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from default outfit {}, but they don't have it", *outfit)); \
+		PASS;                                                                                                                                                          \
 	}
 
 namespace Outfits

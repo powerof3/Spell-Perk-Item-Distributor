@@ -919,7 +919,10 @@ namespace Outfits
 		LogWornOutfitItems(actor);
 #endif
 
-		if (IsSuspendedReplacement(actor)) {
+		// If we are trying to apply default outfit we want to bypass the suspension check.
+		// This is because we use ApplyOutfit as a custom implementation of equipping an outfit, 
+		// thus default outfits are also applied through this function.
+		if (IsSuspendedReplacement(actor) && outfit != npc->defaultOutfit) {
 #ifndef NDEBUG
 			logger::info("\t\tSkipping outfit equip because distribution is suspended for {}", *actor);
 #endif
