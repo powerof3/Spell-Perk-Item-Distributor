@@ -2,18 +2,20 @@
 #include "OutfitManager.h"
 #include "Testing.h"
 
+
+#define Outfit(name) TestsHelper::Get##name##Outfit()
+
 #define SETUP(A, W, isWd, isWf, G, L)                                         \
 	auto  manager = Outfits::Manager::GetSingleton();                         \
 	auto& wornReplacements = TestsHelper::GetWornReplacements(manager);       \
 	auto& pendingReplacements = TestsHelper::GetPendingReplacements(manager); \
-	wornReplacements.clear();                                                 \
-	pendingReplacements.clear();                                              \
 	RE::Actor*     actor = TestsHelper::Get##A##();                           \
+	RE::BGSOutfit* initial = TestsHelper::GetInitialOutfit(manager, actor);   \
 	RE::BGSOutfit* original = actor->GetActorBase()->defaultOutfit;           \
-	RE::BGSOutfit* worn = TestsHelper::Get##W##Outfit();                      \
+	RE::BGSOutfit* worn = Outfit(W);                                          \
 	RE::BGSOutfit* wears = worn;                                              \
-	RE::BGSOutfit* gets = TestsHelper::Get##G##Outfit();                      \
-	RE::BGSOutfit* links = TestsHelper::Get##L##Outfit();                     \
+	RE::BGSOutfit* gets = Outfit(G);                                          \
+	RE::BGSOutfit* links = Outfit(L);                                         \
 	bool           isLooted = false;                                          \
 	if (worn) {                                                               \
 		TestsHelper::ApplyOutfit(manager, actor, worn);                       \
@@ -35,14 +37,14 @@
 
 #define EXPECT_NONE(replacement) ASSERT(!replacement, "Expected no outfit replacement to occur");
 
-#define EXPECT_ORIGINAL(outfit)                                                                                                                                                    \
-	{                                                                                                                                                                              \
-		auto it = wornReplacements.find(actor->formID);                                                                                                                            \
-		ASSERT(it == wornReplacements.end(), "Expected to have no Worn Replacement for actor");                                                                                    \
-		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                                        \
-		ASSERT(actual == outfit, fmt::format("Expected actor to wear original outfit {}, but got {}", *outfit, *actual));                                                          \
-		ASSERT(isLooted || TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from deafult outfit {}, but they don't have it", *outfit)); \
-		PASS;                                                                                                                                                                      \
+#define EXPECT_WORN_ORIGINAL                                                                                                                                                           \
+	{                                                                                                                                                                                  \
+		auto it = wornReplacements.find(actor->formID);                                                                                                                                \
+		ASSERT(it == wornReplacements.end(), "Expected to have no Worn Replacement for actor");                                                                                        \
+		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                                            \
+		ASSERT(actual == original, fmt::format("Expected actor to wear original outfit {}, but got {}", *original, *actual));                                                          \
+		ASSERT(isLooted || TestsHelper::WearsOutfitItems(actor, original), fmt::format("Expected actor to wear all items from deafult outfit {}, but they don't have it", *original)); \
+		PASS;																																										   \
 	}
 
 #define EXPECT_WORN(replacement, outfit, d, f)                                                                                                                                 \
@@ -86,6 +88,16 @@
 		PASS;                                                                                                                                                                  \
 	}
 
+#define EXPECT_WORN_DEFAULT(outfit)                                                                                                                            \
+	{                                                                                                                                                          \
+		auto defaultOutfit = actor->GetActorBase()->defaultOutfit;                                                                                             \
+		auto it = wornReplacements.find(actor->formID);                                                                                                        \
+		ASSERT(!worn || (it != wornReplacements.end() && it->second.distributed == worn), "Expected worn replacement to be unchanged");                        \
+		ASSERT(defaultOutfit == outfit, fmt::format("Expected NPC's defaultOutfit to be {}, but got {}", *outfit, *defaultOutfit));                            \
+		ASSERT(TestsHelper::WearsOutfitItems(actor, outfit), fmt::format("Expected actor to wear all items from outfit {}, but they don't have it", *outfit)); \
+		PASS;                                                                                                                                                  \
+	}
+
 namespace Outfits
 {
 	using namespace Testing;
@@ -97,9 +109,18 @@ namespace Outfits
 
 		static auto& GetPendingReplacements(Manager* manager) { return manager->pendingReplacements; }
 
+		static auto GetInitialOutfit(Manager* manager, RE::Actor* actor) { return manager->GetInitialOutfit(actor); }
+
 		static bool ApplyOutfit(Manager* manager, RE::Actor* actor, RE::BGSOutfit* outfit)
 		{
 			return manager->ApplyOutfit(actor, outfit);
+		}
+
+		static bool PapyrusSetOutfit(Manager* manager, RE::Actor* actor, RE::BGSOutfit* outfit)
+		{
+			bool called = false;
+			manager->ProcessSetOutfitActor(actor, outfit, [&]() { called = true; });
+			return called;
 		}
 
 		static auto* ResolveAndApplyWornOutfit(Manager* manager, RE::Actor* actor, bool isDying)
@@ -193,13 +214,20 @@ namespace Outfits
 			{
 				constexpr static const char* moduleName = "OutfitManager.RegularDistribution.Alive";
 
+				AFTER_EACH
+				{
+					auto  manager = Outfits::Manager::GetSingleton();
+					TestsHelper::GetWornReplacements(manager).clear();
+					TestsHelper::GetPendingReplacements(manager).clear();
+				}
+
 				TEST(B05NoWearsNoGetsNoLinksIgnore)
 				{
 					SETUP(Alive, None, Regular, NotFinal, None, None);
 					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(B06NoWearsGetsNoLinksUpdate)
@@ -242,7 +270,7 @@ namespace Outfits
 					manager->SetDefaultOutfit(NPCData(actor), nullptr, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(B11FinalWearsNoGetsNoLinksForward)
@@ -331,6 +359,13 @@ namespace Outfits
 			{
 				constexpr static const char* moduleName = "OutfitManager.RegularDistribution.Dead";
 
+				AFTER_EACH
+				{
+					auto manager = Outfits::Manager::GetSingleton();
+					TestsHelper::GetWornReplacements(manager).clear();
+					TestsHelper::GetPendingReplacements(manager).clear();
+				}
+
 				AFTER_ALL
 				{
 					TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
@@ -386,7 +421,7 @@ namespace Outfits
 					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(B41LootedNoWearsFinalGetsNoLinksIgnore)
@@ -396,7 +431,7 @@ namespace Outfits
 					manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(B42LootedNoWearsGetsLinksIgnore)
@@ -407,7 +442,7 @@ namespace Outfits
 					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(B43LootedNoWearsFinalGetsLinksIgnore)
@@ -418,7 +453,7 @@ namespace Outfits
 					manager->SetDefaultOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(B44WearsNoGetsNoLinksForward)
@@ -669,6 +704,13 @@ namespace Outfits
 			{
 				constexpr static const char* moduleName = "OutfitManager.DeathDistribution.Dying";
 
+				AFTER_EACH
+				{
+					auto manager = Outfits::Manager::GetSingleton();
+					TestsHelper::GetWornReplacements(manager).clear();
+					TestsHelper::GetPendingReplacements(manager).clear();
+				}
+
 				TEST(J20NoWearsNoGetsNoLinksPersist)
 				{
 					SETUP(Alive, None, Regular, NotFinal, None, None);
@@ -803,6 +845,13 @@ namespace Outfits
 			{
 				constexpr static const char* moduleName = "OutfitManager.DeathDistribution.Dead";
 
+				AFTER_EACH
+				{
+					auto manager = Outfits::Manager::GetSingleton();
+					TestsHelper::GetWornReplacements(manager).clear();
+					TestsHelper::GetPendingReplacements(manager).clear();
+				}
+
 				AFTER_ALL
 				{
 					TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
@@ -858,7 +907,7 @@ namespace Outfits
 					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(J41LootedNoWearsFinalGetsNoLinksIgnore)
@@ -868,7 +917,7 @@ namespace Outfits
 					manager->SetDeathOutfit(NPCData(actor), gets, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(J42LootedNoWearsGetsLinksIgnore)
@@ -879,7 +928,7 @@ namespace Outfits
 					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(J43LootedNoWearsFinalGetsLinksIgnore)
@@ -890,7 +939,7 @@ namespace Outfits
 					manager->SetDeathOutfit(NPCData(actor), links, NotFinal);
 					auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
 					EXPECT_NONE(replacement);
-					EXPECT_ORIGINAL(original);
+					EXPECT_WORN_ORIGINAL;
 				}
 
 				TEST(J44WearsNoGetsNoLinksPersist)
@@ -1132,6 +1181,13 @@ namespace Outfits
 		{
 			constexpr static const char* moduleName = "OutfitManager.MixedDistribution.Dead";
 
+			AFTER_EACH
+			{
+				auto manager = Outfits::Manager::GetSingleton();
+				TestsHelper::GetWornReplacements(manager).clear();
+				TestsHelper::GetPendingReplacements(manager).clear();
+			}
+
 			AFTER_ALL
 			{
 				TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
@@ -1197,6 +1253,13 @@ namespace Outfits
 		{
 			constexpr static const char* moduleName = "OutfitManager.Resurrection";
 
+			AFTER_EACH
+			{
+				auto manager = Outfits::Manager::GetSingleton();
+				TestsHelper::GetWornReplacements(manager).clear();
+				TestsHelper::GetPendingReplacements(manager).clear();
+			}
+
 			AFTER_ALL
 			{
 				TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
@@ -1209,7 +1272,7 @@ namespace Outfits
 				// for some reason resurrect's resetInventory doesn't equip the outfit.
 				// I've checked in-game the outfit is equipped automatically, but in this test it does not :(
 				actor->AddWornOutfit(original, false);
-				EXPECT_ORIGINAL(original);
+				EXPECT_WORN_ORIGINAL;
 			}
 
 			TEST(B70ResurrectWears)
@@ -1240,11 +1303,81 @@ namespace Outfits
 				EXPECT_WORN_FIND(wears, Regular, Final);
 			}
 		}
+
+		namespace SetOutfit {
+
+			constexpr static const char* moduleName = "OutfitManager.SuspendedDistribution";
+
+			AFTER_EACH
+			{
+				auto manager = Outfits::Manager::GetSingleton();
+				auto actor = TestsHelper::GetAlive();
+				if (auto initial = TestsHelper::GetInitialOutfit(Manager::GetSingleton(), actor)) {
+					actor->SetDefaultOutfit(initial, false);
+				}
+				TestsHelper::GetWornReplacements(manager).clear();
+				TestsHelper::GetPendingReplacements(manager).clear();
+			}
+
+			TEST(SetOutfitOriginalNoWornForward)
+			{
+				SETUP(Alive, None, Regular, NotFinal, None, None);
+				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, original), "Original Papyrus SetOutfit function should not be called");
+				EXPECT_WORN_DEFAULT(original);
+			}
+
+			TEST(SetOutfitCustomNoWornForward)
+			{
+				SETUP(Alive, None, Regular, NotFinal, None, None);
+				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, Outfit(Guard)), "Original Papyrus SetOutfit function should not be called");
+				EXPECT_WORN_DEFAULT(Outfit(Guard));
+			}
+
+			TEST(SetOutfitOriginalWornResume)
+			{
+				SETUP(Alive, Guard, Regular, NotFinal, None, None);
+				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, original), "Original Papyrus SetOutfit function should not be called");
+				EXPECT_WORN_FIND(worn, Regular, NotFinal);
+			}
+
+			TEST(SetOutfitCustomWornSuspend)
+			{
+				SETUP(Alive, Guard, Regular, NotFinal, None, None);
+				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, Outfit(Elven)), "Original Papyrus SetOutfit function should not be called");
+				EXPECT_WORN_DEFAULT(Outfit(Elven));
+			}
+
+			TEST(DistributeOverOriginalResume)
+			{
+				SETUP(Alive, None, Regular, NotFinal, Guard, None);
+				manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+				auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
+				EXPECT_WORN(replacement, gets, Regular, NotFinal);
+			}
+
+			TEST(DistributeOverCustomSuspend)
+			{
+				SETUP(Alive, None, Regular, NotFinal, Elven, None);
+				actor->SetDefaultOutfit(Outfit(Guard), false);
+				manager->SetDefaultOutfit(NPCData(actor), gets, NotFinal);
+				auto* replacement = TestsHelper::ResolveAndApplyWornOutfit(manager, actor, false);
+				worn = replacement->distributed;  // worn used in the EXPECT_WORN_DEFAULT macro
+				EXPECT_WORN_DEFAULT(Outfit(Guard));
+			}
+		}
 	}
 };
 #undef SETUP
+#undef Outfit
 #undef Death
 #undef Regular
 #undef Final
 #undef NotFinal
 #undef CHECK
+#undef LOOT
+#undef RESURRECT
+#undef EXPECT_WORN
+#undef EXPECT_WORN_FIND
+#undef EXPECT_WORN_DEFAULT
+#undef EXPECT_WORN_ORIGINAL
+#undef EXPECT_NONE
