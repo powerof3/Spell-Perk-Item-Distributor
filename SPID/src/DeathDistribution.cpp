@@ -203,7 +203,7 @@ namespace DeathDistribution
 		static bool thunk(RE::Character* actor)
 		{
 #ifndef NDEBUG
-			logger::info("Distribute: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+			//logger::info("Distribute: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
 #endif
 			if (const auto npc = actor->GetActorBase()) {
 				auto npcData = NPCData(actor, npc);
@@ -216,7 +216,7 @@ namespace DeathDistribution
 
 		static inline void post_hook()
 		{
-			logger::info("Death Distribution: Installed ShouldBackgroundClone hook.");
+			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -225,18 +225,18 @@ namespace DeathDistribution
 	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
 	{
 		switch (message->type) {
-		case SKSE::MessagingInterface::kDataLoaded:
+		case SKSE::MessagingInterface::kPostLoad:
 			if (INI::deathConfigs.empty()) {
 				return;
 			}
 
+			logger::info("💀Death Distribution");
 			if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 				scripts->PrependEventSink<RE::TESDeathEvent>(this);
-				logger::info("Death Distribution: Registered for {}.", typeid(RE::TESDeathEvent).name());
+				logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
 			}
-
 			stl::install_hook<ShouldBackgroundClone>();
-
+			
 			break;
 		default:
 			break;

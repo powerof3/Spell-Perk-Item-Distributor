@@ -34,7 +34,7 @@ namespace Distribute
 
 			static bool thunk(RE::Character* actor)
 			{
-				logger::debug("Distribute: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+			//	logger::debug("Distribute: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
 				if (const auto npc = actor->GetActorBase()) {
 					detail::distribute_on_load(actor, npc);
 				}

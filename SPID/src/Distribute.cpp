@@ -207,10 +207,14 @@ namespace Distribute
 		}
 
 		logger::info("Distribution for {}", *npcData.GetActor());
-		for (const auto& pair : results) {
-			logger::info("\t{}", pair.first);
-			for (const auto& form : pair.second) {
-				logger::info("\t\t{} @ {}", *form.first, form.second);
+		if (results.empty()) {
+			logger::info("\tNothing");
+		} else {
+			for (const auto& pair : results) {
+				logger::info("\t{}", pair.first);
+				for (const auto& form : pair.second) {
+					logger::info("\t\t{} @ {}", *form.first, form.second);
+				}
 			}
 		}
 #endif

@@ -373,14 +373,14 @@ namespace Outfits
 		static bool thunk(RE::Character* actor)
 		{
 #ifndef NDEBUG
-			logger::info("Outfits: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+		//	logger::info("Outfits: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
 #endif
 			return Manager::GetSingleton()->ProcessShouldBackgroundClone(actor, [&] { return func(actor); });
 		}
 
 		static inline void post_hook()
 		{
-			logger::info("\t\tInstalled ShouldBackgroundClone hook.");
+			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -395,14 +395,14 @@ namespace Outfits
 		static RE::NiAVObject* thunk(RE::Character* actor, bool a_backgroundLoading)
 		{
 #ifndef NDEBUG
-			logger::info("Outfits: Load3D({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
+		//	logger::info("Outfits: Load3D({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
 #endif
 			return Manager::GetSingleton()->ProcessLoad3D(actor, [&] { return func(actor, a_backgroundLoading); });
 		}
 
 		static inline void post_hook()
 		{
-			logger::info("\t\tInstalled Load3D hook.");
+			logger::info("\t\t🪝Installed Load3D hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -422,7 +422,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\tInstalled InitItemImpl hook.");
+			logger::info("\t\t🪝Installed InitItemImpl hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -448,7 +448,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\tInstalled Resurrect hook.");
+			logger::info("\t\t🪝Installed Resurrect hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -476,7 +476,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\tInstalled ResetReference hook.");
+			logger::info("\t\t🪝Installed ResetReference hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -520,38 +520,53 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\tInstalled SetOutfit hook.");
+			logger::info("\t\t🪝Installed SetOutfit hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
+	struct EquipObject
 	{
-		WriteLocker lock(_lock);
-		if (a_event && a_event->formID != 0) {
-			wornReplacements.erase(a_event->formID);
-			pendingReplacements.erase(a_event->formID);
-			initialOutfits.erase(a_event->formID);
-		}
-		return RE::BSEventNotifyControl::kContinue;
-	}
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 38894);
+		static inline constexpr std::size_t offset = OFFSET(0, 0x170);
 
-	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
-	{
-		if (!a_event || a_event->dead) {
-			return RE::BSEventNotifyControl::kContinue;
-		}
-
-		if (const auto actor = a_event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
-			WriteLocker lock(_lock);
-			if (const auto outfit = ResolveWornOutfit(actor, true); outfit) {
-				ApplyOutfit(actor, outfit->distributed);
+		static void thunk(RE::ActorEquipManager* manager, RE::Actor* actor, RE::TESBoundObject* object, RE::ExtraDataList* list)
+		{
+			if (actor && object) {
+				logger::info("[EQUIP] {} equips {}", *actor, *object);
 			}
+			func(manager, actor, object, list);
 		}
 
-		return RE::BSEventNotifyControl::kContinue;
-	}
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed EquipObject hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
+	struct UnequipObject
+	{
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 38901);
+		static inline constexpr std::size_t offset = OFFSET(0, 0x1B9);
+
+		static void thunk(RE::ActorEquipManager* manager, RE::Actor* actor, RE::TESBoundObject* object, RE::ExtraDataList* list)
+		{
+			if (actor && object) {
+				logger::info("[UNEQUIP] {} unequips {}", *actor, *object);
+			}
+			func(manager, actor, object, list);
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed UnequipObject hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
 #pragma endregion
 
 	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
@@ -559,7 +574,7 @@ namespace Outfits
 		switch (message->type) {
 		case SKSE::MessagingInterface::kPostLoad:
 			{
-				logger::info("Outfit Manager:");
+				logger::info("🧥Outfit Manager");
 
 				const auto serializationInterface = SKSE::GetSerializationInterface();
 				serializationInterface->SetUniqueID(serializationKey);
@@ -568,12 +583,13 @@ namespace Outfits
 
 				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 					scripts->AddEventSink<RE::TESFormDeleteEvent>(this);
-					logger::info("\t\tRegistered for {}.", typeid(RE::TESFormDeleteEvent).name());
-				}
-
-				if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
+					logger::info("\t\t📝Registered for {}.", typeid(RE::TESFormDeleteEvent).name());
 					scripts->AddEventSink<RE::TESDeathEvent>(this);
-					logger::info("\t\tRegistered for {}.", typeid(RE::TESDeathEvent).name());
+					logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
+#ifndef NDEBUG
+					scripts->AddEventSink<RE::TESContainerChangedEvent>(this);
+					logger::info("\t\t📝Registered for {}.", typeid(RE::TESContainerChangedEvent).name());
+#endif
 				}
 
 				stl::install_hook<InitItemImpl>();
@@ -582,6 +598,10 @@ namespace Outfits
 				stl::install_hook<Resurrect>();
 				stl::install_hook<ResetReference>();
 				stl::install_hook<SetOutfitActor>();
+				stl::install_hook<EquipObject>();
+				stl::install_hook<UnequipObject>();
+
+
 			}
 			break;
 		case SKSE::MessagingInterface::kPreLoadGame:
@@ -793,15 +813,15 @@ namespace Outfits
 
 		const auto defaultOutfit = npc->defaultOutfit;
 
+		if (!defaultOutfit) {
+			return false;
+		}
+
 		// If outfit is nullptr, we just track that distribution didn't provide any outfit for this actor.
 		if (outfit) {
 #ifndef NDEBUG
 			logger::info("Evaluating outfit for {}", *actor);
-			if (defaultOutfit) {
-				logger::info("\tDefault Outfit: {}", *defaultOutfit);
-			} else {
-				logger::info("\tDefault Outfit: None");
-			}
+			logger::info("\tDefault Outfit: {}", *defaultOutfit);
 			if (auto worn = wornReplacements.find(actor->formID); worn != wornReplacements.end()) {
 				logger::info("\tWorn Outfit: {}", *worn->second.distributed);
 			} else {
@@ -815,11 +835,6 @@ namespace Outfits
 #endif
 				return false;
 			}
-		} else if (!defaultOutfit) {
-#ifndef NDEBUG
-			logger::warn("\tAttempted to track Outfit for actor that doesn't support outfits.");
-#endif
-			return false;
 		}
 
 		if (auto replacement = ResolvePendingOutfit(data, outfit, isDeathOutfit, isFinalOutfit); replacement) {
@@ -915,7 +930,7 @@ namespace Outfits
 		}
 
 #ifndef NDEBUG
-		logger::info("Outfit items present in {} inventory BEFORE EQUIP", *actor);
+		logger::info("[BEFORE EQUIP] Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
 #endif
 
@@ -938,7 +953,7 @@ namespace Outfits
 			AddWornOutfit(actor, outfit, shouldUpdate3D);
 		}
 #ifndef NDEBUG
-		logger::info("Outfit items present in {} inventory AFTER EQUIP", *actor);
+		logger::info("[AFTER EQUIP] Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
 #endif
 		return true;
@@ -992,6 +1007,81 @@ namespace Outfits
 #pragma endregion
 
 #pragma region Hooks Handling
+	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
+	{
+		WriteLocker lock(_lock);
+		if (event && event->formID != 0) {
+			wornReplacements.erase(event->formID);
+			pendingReplacements.erase(event->formID);
+			initialOutfits.erase(event->formID);
+		}
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* event, RE::BSTEventSource<RE::TESDeathEvent>*)
+	{
+		if (!event || event->dead) {
+			return RE::BSEventNotifyControl::kContinue;
+		}
+
+		if (const auto actor = event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
+			WriteLocker lock(_lock);
+			if (const auto outfit = ResolveWornOutfit(actor, true); outfit) {
+				ApplyOutfit(actor, outfit->distributed);
+			}
+		}
+
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
+	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESContainerChangedEvent* event, RE::BSTEventSource<RE::TESContainerChangedEvent>*)
+	{
+		if (event) {
+			auto fromID = event->oldContainer;
+			auto toID = event->newContainer;
+			auto itemID = event->baseObj;
+			auto count = event->itemCount;
+
+			if (const auto item = RE::TESForm::LookupByID<RE::TESBoundObject>(itemID)) {
+				if (const auto from = RE::TESForm::LookupByID<RE::TESObjectREFR>(fromID); from) {
+					if (const auto fromActor = from->As<RE::Actor>()) {
+						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
+							if (const auto toActor = to->As<RE::Actor>()) {
+								logger::info("[ADDITEM] {} took {} {} from {}", *toActor, count, *item, *fromActor);
+							} else {
+								logger::info("[ADDITEM] {} put {} {} to {}", *fromActor, count, *item, *toActor);
+							}
+						} else {
+							logger::info("[ADDITEM] {} dropped {} {}", *fromActor, count, *item);
+						}
+					} else { // from is inanimate container
+						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
+							if (const auto toActor = to->As<RE::Actor>()) {
+								logger::info("[ADDITEM] {} took {} {} from {}", *toActor, count, *item, *from);
+							} else {
+								//logger::info("[ADDITEM] {} {} transfered from {} to {}", count, *item, *from, *to);
+							}
+						} else {
+							//logger::info("[ADDITEM] {} {} removed from {}", count, *item, *from);
+						}
+					}
+				} else { // From is none
+					if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
+						if (const auto toActor = to->As<RE::Actor>()) {
+							logger::info("[ADDITEM] {} picked up {} {}", *toActor, count, *item);
+						} else {
+							//logger::info("[ADDITEM] {} {} transfered to {}", count, *item, *to);
+						}
+					} else {
+						//logger::info("[ADDITEM] {} {} materialized out of nowhere and vanished without a trace.", count, *item);
+					}
+				}
+			}
+		}
+
+		return RE::BSEventNotifyControl::kContinue;
+	}
+
 	bool Manager::ProcessShouldBackgroundClone(RE::Actor* actor, std::function<bool()> funcCall)
 	{
 		bool hasPending = false;
@@ -1024,7 +1114,7 @@ namespace Outfits
 
 		if (npc->defaultOutfit) {
 #ifndef NDEBUG
-			logger::info("Tracking initial outfit for {}: {}", *npc, *npc->defaultOutfit);
+			logger::info("{}: {}", *npc, *npc->defaultOutfit);
 #endif
 			WriteLocker lock(_lock);
 			initialOutfits.try_emplace(npc->formID, npc->defaultOutfit);

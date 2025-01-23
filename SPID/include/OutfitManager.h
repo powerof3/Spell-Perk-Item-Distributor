@@ -9,7 +9,8 @@ namespace Outfits
 	class Manager :
 		public ISingleton<Manager>,
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
-		public RE::BSTEventSink<RE::TESDeathEvent>
+		public RE::BSTEventSink<RE::TESDeathEvent>,
+		public RE::BSTEventSink<RE::TESContainerChangedEvent>
 	{
 	public:
 		void HandleMessage(SKSE::MessagingInterface::Message*);
@@ -74,6 +75,10 @@ namespace Outfits
 
 		/// TESDeathEvent is used to update outfit after potential Death Distribution of a new outfit.
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent*, RE::BSTEventSource<RE::TESDeathEvent>*) override;
+
+		// TODO: Delete this event once all issues with outfits are solved.
+		/// TESContainerChangedEvent is used to log when items are added/removed. For debugging only!
+		RE::BSEventNotifyControl ProcessEvent(const RE::TESContainerChangedEvent*, RE::BSTEventSource<RE::TESContainerChangedEvent>*) override;
 
 	private:
 		struct OutfitReplacement
