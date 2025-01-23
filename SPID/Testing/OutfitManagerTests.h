@@ -2,26 +2,25 @@
 #include "OutfitManager.h"
 #include "Testing.h"
 
-
 #define Outfit(name) TestsHelper::Get##name##Outfit()
 
-#define SETUP(A, W, isWd, isWf, G, L)                                         \
-	auto  manager = Outfits::Manager::GetSingleton();                         \
-	auto& wornReplacements = TestsHelper::GetWornReplacements(manager);       \
-	auto& pendingReplacements = TestsHelper::GetPendingReplacements(manager); \
-	RE::Actor*     actor = TestsHelper::Get##A##();                           \
-	RE::BGSOutfit* initial = TestsHelper::GetInitialOutfit(manager, actor);   \
-	RE::BGSOutfit* original = actor->GetActorBase()->defaultOutfit;           \
-	RE::BGSOutfit* worn = Outfit(W);                                          \
-	RE::BGSOutfit* wears = worn;                                              \
-	RE::BGSOutfit* gets = Outfit(G);                                          \
-	RE::BGSOutfit* links = Outfit(L);                                         \
-	bool           isLooted = false;                                          \
-	if (worn) {                                                               \
-		TestsHelper::ApplyOutfit(manager, actor, worn);                       \
-		wornReplacements[actor->GetFormID()] = { worn, isWd, isWf };          \
-	} else {                                                                  \
-		actor->AddWornOutfit(original, false);                                \
+#define SETUP(A, W, isWd, isWf, G, L)                                                  \
+	auto           manager = Outfits::Manager::GetSingleton();                         \
+	auto&          wornReplacements = TestsHelper::GetWornReplacements(manager);       \
+	auto&          pendingReplacements = TestsHelper::GetPendingReplacements(manager); \
+	RE::Actor*     actor = TestsHelper::Get##A##();                                    \
+	RE::BGSOutfit* initial = TestsHelper::GetInitialOutfit(manager, actor);            \
+	RE::BGSOutfit* original = actor->GetActorBase()->defaultOutfit;                    \
+	RE::BGSOutfit* worn = Outfit(W);                                                   \
+	RE::BGSOutfit* wears = worn;                                                       \
+	RE::BGSOutfit* gets = Outfit(G);                                                   \
+	RE::BGSOutfit* links = Outfit(L);                                                  \
+	bool           isLooted = false;                                                   \
+	if (worn) {                                                                        \
+		TestsHelper::ApplyOutfit(manager, actor, worn);                                \
+		wornReplacements[actor->GetFormID()] = { worn, isWd, isWf };                   \
+	} else {                                                                           \
+		actor->AddWornOutfit(original, false);                                         \
 	}
 
 // Terms from the Table https://docs.google.com/spreadsheets/d/1JEhAql7hUURYC63k_fScZ9u8OWni6gN9jHzytNQt-m8/edit?usp=sharing
@@ -44,7 +43,7 @@
 		auto actual = actor->GetActorBase()->defaultOutfit;                                                                                                                            \
 		ASSERT(actual == original, fmt::format("Expected actor to wear original outfit {}, but got {}", *original, *actual));                                                          \
 		ASSERT(isLooted || TestsHelper::WearsOutfitItems(actor, original), fmt::format("Expected actor to wear all items from deafult outfit {}, but they don't have it", *original)); \
-		PASS;																																										   \
+		PASS;                                                                                                                                                                          \
 	}
 
 #define EXPECT_WORN(replacement, outfit, d, f)                                                                                                                                 \
@@ -216,7 +215,7 @@ namespace Outfits
 
 				AFTER_EACH
 				{
-					auto  manager = Outfits::Manager::GetSingleton();
+					auto manager = Outfits::Manager::GetSingleton();
 					TestsHelper::GetWornReplacements(manager).clear();
 					TestsHelper::GetPendingReplacements(manager).clear();
 				}
@@ -1304,7 +1303,8 @@ namespace Outfits
 			}
 		}
 
-		namespace SetOutfit {
+		namespace SetOutfit
+		{
 
 			constexpr static const char* moduleName = "OutfitManager.SuspendedDistribution";
 

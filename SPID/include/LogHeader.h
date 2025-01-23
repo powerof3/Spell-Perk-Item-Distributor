@@ -7,7 +7,7 @@ struct LogHeader
 
 // Allows custom alignment for log headers :)
 // Supported formats:
-// 
+//
 // {:*<100}
 // {:*5<100}
 // {:*:2<100}
@@ -77,7 +77,7 @@ struct fmt::formatter<LogHeader>
 			}
 			++it;
 		}
-	
+
 		if (it != end) {
 			width = getNumber(it);
 		}
@@ -189,7 +189,15 @@ struct fmt::formatter<LogHeader>
 };
 
 #ifndef NDEBUG
-#define LOG_HEADER(name) { LogHeader header{name}; logger::info("{:#3:1<100}", header); }
+#	define LOG_HEADER(name)                     \
+		{                                        \
+			LogHeader header{ name };            \
+			logger::info("{:#3:1<100}", header); \
+		}
 #else
-#define LOG_HEADER(name) { LogHeader header{name}; logger::info("{:#3:1<50}", header); }
+#	define LOG_HEADER(name)                    \
+		{                                       \
+			LogHeader header{ name };           \
+			logger::info("{:#3:1<50}", header); \
+		}
 #endif

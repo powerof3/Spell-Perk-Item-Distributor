@@ -300,4 +300,3 @@ struct fmt::formatter<Outfits::Manager::OutfitReplacement>
 private:
 	bool reverse = false;
 };
-

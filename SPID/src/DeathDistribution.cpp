@@ -236,7 +236,7 @@ namespace DeathDistribution
 				logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
 			}
 			stl::install_hook<ShouldBackgroundClone>();
-			
+
 			break;
 		default:
 			break;

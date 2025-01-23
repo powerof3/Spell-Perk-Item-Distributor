@@ -373,7 +373,7 @@ namespace Outfits
 		static bool thunk(RE::Character* actor)
 		{
 #ifndef NDEBUG
-		//	logger::info("Outfits: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+			//	logger::info("Outfits: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
 #endif
 			return Manager::GetSingleton()->ProcessShouldBackgroundClone(actor, [&] { return func(actor); });
 		}
@@ -395,7 +395,7 @@ namespace Outfits
 		static RE::NiAVObject* thunk(RE::Character* actor, bool a_backgroundLoading)
 		{
 #ifndef NDEBUG
-		//	logger::info("Outfits: Load3D({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
+			//	logger::info("Outfits: Load3D({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
 #endif
 			return Manager::GetSingleton()->ProcessLoad3D(actor, [&] { return func(actor, a_backgroundLoading); });
 		}
@@ -600,8 +600,6 @@ namespace Outfits
 				stl::install_hook<SetOutfitActor>();
 				stl::install_hook<EquipObject>();
 				stl::install_hook<UnequipObject>();
-
-
 			}
 			break;
 		case SKSE::MessagingInterface::kPreLoadGame:
@@ -935,7 +933,7 @@ namespace Outfits
 #endif
 
 		// If we are trying to apply default outfit we want to bypass the suspension check.
-		// This is because we use ApplyOutfit as a custom implementation of equipping an outfit, 
+		// This is because we use ApplyOutfit as a custom implementation of equipping an outfit,
 		// thus default outfits are also applied through this function.
 		if (IsSuspendedReplacement(actor) && outfit != npc->defaultOutfit) {
 #ifndef NDEBUG
@@ -1054,7 +1052,7 @@ namespace Outfits
 						} else {
 							logger::info("[ADDITEM] {} dropped {} {}", *fromActor, count, *item);
 						}
-					} else { // from is inanimate container
+					} else {  // from is inanimate container
 						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 							if (const auto toActor = to->As<RE::Actor>()) {
 								logger::info("[ADDITEM] {} took {} {} from {}", *toActor, count, *item, *from);
@@ -1065,7 +1063,7 @@ namespace Outfits
 							//logger::info("[ADDITEM] {} {} removed from {}", count, *item, *from);
 						}
 					}
-				} else { // From is none
+				} else {  // From is none
 					if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 						if (const auto toActor = to->As<RE::Actor>()) {
 							logger::info("[ADDITEM] {} picked up {} {}", *toActor, count, *item);

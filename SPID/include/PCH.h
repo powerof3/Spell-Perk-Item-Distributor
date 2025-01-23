@@ -80,5 +80,5 @@ namespace stl
 
 #include "Cache.h"
 #include "Defs.h"
-#include "Version.h"
 #include "LogHeader.h"
+#include "Version.h"
