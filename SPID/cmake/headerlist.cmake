@@ -15,6 +15,7 @@ set(headers ${headers}
 	include/KeywordDependencies.h
 	include/LinkedDistribution.h
 	include/LogBuffer.h
+	include/LogHeader.h
 	include/LookupConfigs.h
 	include/LookupFilters.h
 	include/LookupForms.h

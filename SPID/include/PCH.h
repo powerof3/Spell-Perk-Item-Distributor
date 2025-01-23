@@ -81,5 +81,4 @@ namespace stl
 #include "Cache.h"
 #include "Defs.h"
 #include "Version.h"
-
-#define LOG_HEADER(name) logger::info("*** {} {:*<100}", name, "");
+#include "LogHeader.h"
