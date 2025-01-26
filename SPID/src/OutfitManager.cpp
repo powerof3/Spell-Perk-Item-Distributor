@@ -598,10 +598,17 @@ namespace Outfits
 				stl::install_hook<Resurrect>();
 				stl::install_hook<ResetReference>();
 				stl::install_hook<SetOutfitActor>();
+#ifndef NDEBUG
 				stl::install_hook<EquipObject>();
 				stl::install_hook<UnequipObject>();
+#endif
 			}
 			break;
+#ifndef NDEBUG
+		case SKSE::MessagingInterface::kPostPostLoad:
+			LOG_HEADER("OUTFITS");  // This is where TESNPCs start initializing, so we give it a nice header.
+			break;
+#endif
 		case SKSE::MessagingInterface::kPreLoadGame:
 			isLoadingGame = true;
 			break;

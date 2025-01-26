@@ -40,8 +40,6 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 			} else {
 				logger::info("INFO - MergeMapper not detected");
 			}
-
-			LOG_HEADER("OUTFITS");
 		}
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
