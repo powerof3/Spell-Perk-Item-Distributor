@@ -494,7 +494,7 @@ namespace Outfits
 		{
 			if (!outfit) {
 				using PapyrusLog = void(RE::TESObjectREFR*, const char*, RE::BSScript::Internal::VirtualMachine*, RE::VMStackID, RE::BSScript::ErrorLogger::Severity);
-				REL::Relocation<PapyrusLog> writeLog{ RELOCATION_ID(0x53024, 0x53824) };
+				REL::Relocation<PapyrusLog> writeLog{ RELOCATION_ID(53024, 53824) };
 				writeLog(actor, "Cannot set sleep or default outfit to None", vm, stackID, RE::BSScript::ErrorLogger::Severity::kError);
 				return;
 			}
