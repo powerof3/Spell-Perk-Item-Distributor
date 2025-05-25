@@ -12,12 +12,6 @@ namespace Distribute
 		const auto npc = npcData.GetNPC();
 		const auto actor = npcData.GetActor();
 
-		// SPID_Processed keyword prevents multiple distirbutions of the forms that do not support it during every ShouldBackgroundClone call on the same actor (when going in and out of a cell)
-		//
-		// This workaround can be removed when/if the per-actor item distribution manager is implemented (since it will take care of continuity).
-		// Only Distributables with support for isFinal trait can be safely distributed multiple times as they will be able "rotate".
-		// Eventually, this keyword won't be needed once SPID will keep track of all distributions in runtime.
-		if (!npc->HasKeyword(processed)) {
 			for_each_form<RE::BGSKeyword>(
 				npcData, forms.keywords, input, [&](const std::vector<RE::BGSKeyword*>& a_keywords) {
 					npc->AddKeywords(a_keywords);
@@ -148,7 +142,7 @@ namespace Distribute
 					return false;
 				},
 				accumulatedForms);
-		}
+		
 		for_first_form<RE::BGSOutfit>(
 			npcData, forms.outfits, input, [&](auto* outfit, bool isFinal) {
 				return distributeOutfit(npcData, outfit, isFinal);  // terminate as soon as valid outfit is confirmed.

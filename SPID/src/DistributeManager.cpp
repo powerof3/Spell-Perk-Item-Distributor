@@ -7,7 +7,7 @@ namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword)
 	{
-		if (a_npc->IsPlayer() || a_npc->IsDeleted()) {
+		if (a_npc->IsPlayer() || a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
 			return false;
 		}
 
@@ -21,6 +21,9 @@ namespace Distribute
 			Distribute(npcData, false);
 			a_npc->AddKeyword(processed);
 		}
+		// TODO: the keyword processed prevents Outfits from re-rolling. 
+		// However, checking the keyword inside Distribute is not possible, since other distributions use this method as well, so it should be "context-free". In particular this would block On Death distribution.
+		// figure out a way to solve this.
 	}
 
 	namespace Actor
@@ -117,6 +120,7 @@ namespace Distribute
 					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
 						auto npcData = NPCData(actor.get(), npc);
 						Distribute(npcData, false);
+						npc->AddKeyword(processed);
 						++actorCount;
 					}
 				}
