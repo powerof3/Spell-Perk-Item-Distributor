@@ -7,6 +7,7 @@
 #ifndef NDEBUG
 #	include "OutfitManagerTests.h"
 #	include "DistributionTests.h"
+#	include "DeathDistributionTests.h"
 #	include "Testing.h"
 #endif
 

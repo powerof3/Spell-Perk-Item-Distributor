@@ -1,6 +1,5 @@
 #pragma once
 #include "LookupNPC.h"
-#include "Testing.h"
 
 namespace Outfits
 {

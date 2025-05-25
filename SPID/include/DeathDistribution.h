@@ -4,6 +4,8 @@
 
 namespace DeathDistribution
 {
+	struct TestsHelper;
+
 	namespace INI
 	{
 		/// <summary>
@@ -62,6 +64,8 @@ namespace DeathDistribution
 
 	protected:
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent*, RE::BSTEventSource<RE::TESDeathEvent>*) override;
+
+	friend struct TestsHelper;
 	};
 
 #pragma region Implementation

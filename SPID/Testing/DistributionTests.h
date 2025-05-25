@@ -12,6 +12,7 @@ namespace Distribute
 		static RE::Actor* GetActor()
 		{
 			auto actor = GetForm<RE::Actor>(0x198B0);
+			actor->Resurrect(true, true);
 			return actor;
 		}
 
@@ -24,6 +25,13 @@ namespace Distribute
 		static void Distribute(RE::Actor* actor)
 		{
 			detail::distribute_on_load(actor, actor->GetActorBase());
+		}
+		
+		static void RemoveAddedItems(RE::Actor* actor = GetActor())
+		{
+			for (auto& item : Forms::items.GetForms()) {
+				actor->GetActorBase()->RemoveObjectFromContainer(item.form, std::get<RandomCount>(item.idxOrCount).min);
+			}
 		}
 
 		static int GetItemCount(RE::Actor* actor, RE::TESBoundObject* item)
@@ -123,7 +131,8 @@ namespace Distribute
 
 			AFTER_EACH
 			{
-				TestsHelper::GetActor()->ResetInventory(false);
+				TestsHelper::RemoveAddedItems();
+				TestsHelper::GetActor()->GetActorBase()->RemoveKeyword(Distribute::processed);  // clean up after distribute_on_load
 			}
 
 			TEST(AddItemToActor)
@@ -136,6 +145,7 @@ namespace Distribute
 				Path        path{ "" };
 				// void EmplaceForm(bool isValid, Form*, const bool& isFinal, const IndexOrCount&, const FilterData&, const Path&);
 				Forms::items.EmplaceForm(true, item, isFinal, idxOrCount, filterData, path);
+				
 				TestsHelper::Distribute(actor);
 				auto got = TestsHelper::GetItemCount(actor, item);
 				EXPECT(got == 1, fmt::format("Expected actor to have 1 item, but they have {}", got));
