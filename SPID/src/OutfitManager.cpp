@@ -1118,9 +1118,9 @@ namespace Outfits
 		funcCall();
 
 		if (npc->defaultOutfit) {
-#ifndef NDEBUG
-			logger::info("{}: {}", *npc, *npc->defaultOutfit);
-#endif
+//#ifndef NDEBUG
+//			logger::info("{}: {}", *npc, *npc->defaultOutfit);
+//#endif
 			WriteLocker lock(_lock);
 			initialOutfits.try_emplace(npc->formID, npc->defaultOutfit);
 		}

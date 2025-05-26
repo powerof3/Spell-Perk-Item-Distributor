@@ -3,6 +3,7 @@ set(headers ${headers}
 	Testing/DeathDistributionTests.h
 	Testing/OutfitManagerTests.h
 	Testing/Testing.h
+	Testing/TestsHelpers.h
 	include/Cache.h
 	include/DeathDistribution.h
 	include/Defs.h
