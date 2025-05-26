@@ -152,7 +152,7 @@ namespace Testing::Helper
 
 		}
 
-				inline Forms::Distributables<RE::SpellItem>&      GetSpells() { return Forms::spells; }
+		inline Forms::Distributables<RE::SpellItem>&      GetSpells() { return Forms::spells; }
 		inline Forms::Distributables<RE::BGSPerk>&        GetPerks() { return Forms::perks; }
 		inline Forms::Distributables<RE::TESBoundObject>& GetItems() { return Forms::items; }
 		inline Forms::Distributables<RE::TESShout>&       GetShouts() { return Forms::shouts; }
@@ -163,8 +163,6 @@ namespace Testing::Helper
 		inline Forms::Distributables<RE::TESFaction>&     GetFactions() { return Forms::factions; }
 		inline Forms::Distributables<RE::BGSOutfit>&      GetSleepOutfits() { return Forms::sleepOutfits; }
 		inline Forms::Distributables<RE::TESObjectARMO>&  GetSkins() { return Forms::skins; }
-
-		
 
 		inline Holder configHolder;
 

@@ -1,6 +1,6 @@
 set(headers ${headers}
-	Testing/DistributionTests.h
 	Testing/DeathDistributionTests.h
+	Testing/DistributionTests.h
 	Testing/OutfitManagerTests.h
 	Testing/Testing.h
 	Testing/TestsHelpers.h

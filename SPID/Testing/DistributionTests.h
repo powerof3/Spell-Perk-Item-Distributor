@@ -44,7 +44,7 @@ namespace Distribute
 				Path        path{ "" };
 				// void EmplaceForm(bool isValid, Form*, const bool& isFinal, const IndexOrCount&, const FilterData&, const Path&);
 				Forms::items.EmplaceForm(true, item, isFinal, idxOrCount, filterData, path);
-				
+
 				::Testing::Helper::Distribution::Distribute(actor);
 				auto got = ::Testing::Helper::Inventory::GetItemCount(actor, item);
 				EXPECT(got == 1, fmt::format("Expected actor to have 1 item, but they have {}", got));

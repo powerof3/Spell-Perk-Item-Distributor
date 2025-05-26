@@ -43,9 +43,9 @@ namespace DeathDistribution
 				bool        isFinal{ false };
 				Path        path{ "" };
 				::Testing::Helper::Distribution::Death::GetItems().EmplaceForm(true, item, isFinal, idxOrCount, filterData, path);
-		
+
 				::Testing::Helper::Distribution::Death::Distribute(actor, false);
-						
+
 				auto got = ::Testing::Helper::Inventory::GetItemCount(actor, item);
 				EXPECT(got == idxOrCount.min, fmt::format("Expected actor to have {} items, but they have {}", idxOrCount.min, got));
 			}

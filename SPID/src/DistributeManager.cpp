@@ -21,7 +21,7 @@ namespace Distribute
 			Distribute(npcData, false);
 			a_npc->AddKeyword(processed);
 		}
-		// TODO: the keyword processed prevents Outfits from re-rolling. 
+		// TODO: the keyword processed prevents Outfits from re-rolling.
 		// However, checking the keyword inside Distribute is not possible, since other distributions use this method as well, so it should be "context-free". In particular this would block On Death distribution.
 		// figure out a way to solve this.
 	}
