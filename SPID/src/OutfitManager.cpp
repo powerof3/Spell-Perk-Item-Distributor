@@ -255,7 +255,8 @@ namespace Outfits
 
 		auto manager = Manager::GetSingleton();
 
-		WriteLocker lock(manager->_lock);
+		WriteLocker wornLock(manager->_wornLock);
+		WriteLocker pendingLock(manager->_pendingLock);
 
 		std::uint32_t type, version, length;
 		int           total = 0;
@@ -334,8 +335,7 @@ namespace Outfits
 		LOG_HEADER("SAVING");
 #endif
 		auto        manager = Manager::GetSingleton();
-		ReadLocker  lock(manager->_lock);
-		const auto& replacements = manager->wornReplacements;
+		const auto replacements = manager->GetWornOutfits();
 #ifndef NDEBUG
 		logger::info("Saving {} distributed outfits...", replacements.size());
 		std::uint32_t savedCount = 0;
@@ -660,24 +660,25 @@ namespace Outfits
 		if (!actor) {
 			return false;
 		}
-		WriteLocker lock(_lock);
-		if (const auto replacement = wornReplacements.find(actor->formID); replacement != wornReplacements.end()) {
-			wornReplacements.erase(replacement);
-			return RevertOutfit(actor, replacement->second);
+		if (const auto replacement = PopWornOutfit(actor); replacement) {
+			return RevertOutfit(actor, *replacement);
 		}
 		return false;
 	}
 
-	const Manager::OutfitReplacement* const Manager::ResolveWornOutfit(RE::Actor* actor, bool isDying)
+	std::optional<Manager::OutfitReplacement> Manager::ResolveWornOutfit(RE::Actor* actor, bool isDying)
 	{
+		WriteLocker pendingLock(_pendingLock);
+		WriteLocker wornLock(_wornLock);
 		if (auto pending = pendingReplacements.find(actor->formID); pending != pendingReplacements.end()) {
 			return ResolveWornOutfit(actor, pending, isDying);
 		}
 
-		return nullptr;
+		return std::nullopt;
 	}
 
-	const Manager::OutfitReplacement* const Manager::ResolveWornOutfit(RE::Actor* actor, OutfitReplacementMap::iterator& pending, bool isDying)
+	// TODO: Do not lock this whole function OR move out RevertOutfit() call.
+	std::optional<Manager::OutfitReplacement> Manager::ResolveWornOutfit(RE::Actor* actor, OutfitReplacementMap::iterator& pending, bool isDying)
 	{
 		// W and G are named according to the Resolution Table.
 		const bool isDead = NPCData::IsDead(actor);
@@ -694,14 +695,14 @@ namespace Outfits
 					W.distributed = G.distributed;
 					W.isDeathOutfit = G.isDeathOutfit;
 					W.isFinalOutfit = G.isFinalOutfit;
-					return &W;
+					return W;
 				} else if (isDead) {        // Regular/Death Dead Distribution
 					if (G.isDeathOutfit) {  // On Death Dead Distribution
 						if (!W.isDeathOutfit && actor->HasOutfitItems(existing->second.distributed)) {
 							W.distributed = G.distributed;
 							W.isDeathOutfit = G.isDeathOutfit;
 							W.isFinalOutfit = G.isFinalOutfit;
-							return &W;
+							return W;
 						}                      // If Worn outfit is either death outfit or it was already looted, we don't allow changing it.
 					}                          // Regular Dead Distribution (not allowed to overwrite anything)
 				} else {                       // Regular Alive Distribution
@@ -710,18 +711,18 @@ namespace Outfits
 						W.distributed = G.distributed;
 						W.isDeathOutfit = G.isDeathOutfit;
 						W.isFinalOutfit = G.isFinalOutfit;
-						return &W;
+						return W;
 					}
 				}
 			} else {
 				if (isDying) {  // On Death Dying Distribution
-					return &wornReplacements.try_emplace(actor->formID, G).first->second;
+					return wornReplacements.try_emplace(actor->formID, G).first->second;
 				} else if (isDead) {  // Regular/Death Dead Distribution
 					if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit && actor->HasOutfitItems(npc->defaultOutfit)) {
-						return &wornReplacements.try_emplace(actor->formID, G).first->second;
+						return wornReplacements.try_emplace(actor->formID, G).first->second;
 					}     // In both On Death and Regular Distributions if Worn outfit was already looted, we don't allow changing it.
 				} else {  // Regular Alive Distribution
-					return &wornReplacements.try_emplace(actor->formID, G).first->second;
+					return wornReplacements.try_emplace(actor->formID, G).first->second;
 				}
 			}
 		} else {  // If there is no distributed outfit, we treat it as a marker that Distribution didn't pick any outfit for this actor.
@@ -748,10 +749,10 @@ namespace Outfits
 				}
 			}
 		}
-		return nullptr;
+		return std::nullopt;
 	}
 
-	const Manager::OutfitReplacement* const Manager::ResolvePendingOutfit(const NPCData& data, RE::BGSOutfit* outfit, bool isDeathOutfit, bool isFinalOutfit)
+	std::optional<Manager::OutfitReplacement> Manager::ResolvePendingOutfit(const NPCData& data, RE::BGSOutfit* outfit, bool isDeathOutfit, bool isFinalOutfit)
 	{
 		const auto actor = data.GetActor();
 		const bool isDead = data.IsDead();
@@ -760,7 +761,7 @@ namespace Outfits
 		assert(!isDeathOutfit || isDying || isDead);  // If outfit is death outfit then actor must be dying or dead, otherwise there is a mistake in the code.
 		assert(!isDying || isDeathOutfit);            // If actor is dying then outfit must be from On Death Distribution, otherwise there is a mistake in the code.
 
-		WriteLocker lock(_lock);
+		WriteLocker lock(_pendingLock);
 		if (const auto pending = pendingReplacements.find(actor->formID); pending != pendingReplacements.end()) {
 			auto& G = pending->second;  // Named according to the Resolution Table, outfit corresponds to L from that table.
 			// Null outfit in this case means that additional distribution didn't pick new outfit.
@@ -776,7 +777,7 @@ namespace Outfits
 					G.isDeathOutfit = isDeathOutfit;
 				}
 
-				return &G;
+				return G;
 			}
 			if (isDeathOutfit) {  // On Death Distribution
 				if (isDying) {    // On Death Dying Distribution
@@ -801,9 +802,9 @@ namespace Outfits
 					G.isFinalOutfit = isFinalOutfit;
 				}
 			}
-			return &G;
+			return G;
 		} else {  // If this is the first outfit in the pending queue, then we just add it.
-			return &pendingReplacements.try_emplace(actor->formID, outfit, isDeathOutfit, isFinalOutfit).first->second;
+			return pendingReplacements.try_emplace(actor->formID, outfit, isDeathOutfit, isFinalOutfit).first->second;
 		}
 	}
 
@@ -966,7 +967,7 @@ namespace Outfits
 
 	void Manager::RestoreOutfit(RE::Actor* actor)
 	{
-		WriteLocker lock(_lock);
+		WriteLocker lock(_wornLock);
 		if (auto replacement = wornReplacements.find(actor->formID); replacement != wornReplacements.end()) {
 			auto& W = replacement->second;
 			if (W.distributed == actor->GetActorBase()->defaultOutfit) {
@@ -988,14 +989,54 @@ namespace Outfits
 
 	RE::BGSOutfit* Manager::GetInitialOutfit(const RE::Actor* actor) const
 	{
-		const auto npc = actor->GetActorBase();
-		if (npc) {
+		if (const auto npc = actor->GetActorBase(); npc) {
+			ReadLocker lock(_initialLock);
 			if (const auto it = initialOutfits.find(npc->formID); it != initialOutfits.end()) {
 				return it->second;
 			}
 		}
-
 		return nullptr;
+	}
+
+	std::optional<Manager::OutfitReplacement> Manager::GetWornOutfit(const RE::Actor* actor) const
+	{
+		ReadLocker lock(_wornLock);
+		if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
+			return it->second;
+		}
+		return std::nullopt;
+	}
+
+	std::optional<Manager::OutfitReplacement> Manager::PopWornOutfit(const RE::Actor* actor)
+	{
+		WriteLocker lock(_wornLock);
+		if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
+			auto replacement = it->second;
+			wornReplacements.erase(it);
+			return replacement;
+		}
+		return std::nullopt;
+	}
+
+	Manager::OutfitReplacementMap Manager::GetWornOutfits() const
+	{
+		ReadLocker lock(_wornLock);
+		return wornReplacements;
+	}
+
+	std::optional<Manager::OutfitReplacement> Manager::GetPendingOutfit(const RE::Actor* actor) const
+	{
+		ReadLocker lock(_pendingLock);
+		if (const auto it = pendingReplacements.find(actor->formID); it != pendingReplacements.end()) {
+			return it->second;
+		}
+		return std::nullopt;
+	}
+
+	bool Manager::HasPendingOutfit(const RE::Actor* actor) const
+	{
+		ReadLocker lock(_pendingLock);
+		return pendingReplacements.find(actor->formID) != pendingReplacements.end();
 	}
 
 	bool Manager::IsSuspendedReplacement(const RE::Actor* actor) const
@@ -1014,11 +1055,19 @@ namespace Outfits
 #pragma region Hooks Handling
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
 	{
-		WriteLocker lock(_lock);
 		if (event && event->formID != 0) {
-			wornReplacements.erase(event->formID);
-			pendingReplacements.erase(event->formID);
-			initialOutfits.erase(event->formID);
+			{
+				WriteLocker lock(_wornLock);
+				wornReplacements.erase(event->formID);
+			}
+			{
+				WriteLocker lock(_pendingLock);
+				pendingReplacements.erase(event->formID);
+			}
+			{
+				WriteLocker lock(_initialLock);
+				initialOutfits.erase(event->formID);
+			}
 		}
 		return RE::BSEventNotifyControl::kContinue;
 	}
@@ -1030,8 +1079,8 @@ namespace Outfits
 		}
 
 		if (const auto actor = event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
-			WriteLocker lock(_lock);
-			if (const auto outfit = ResolveWornOutfit(actor, true); outfit) {
+			if (const auto outfit = ResolveWornOutfit(actor, true); outfit)
+			{
 				ApplyOutfit(actor, outfit->distributed);
 			}
 		}
@@ -1054,7 +1103,7 @@ namespace Outfits
 							if (const auto toActor = to->As<RE::Actor>()) {
 								logger::info("[ADDITEM] {} took {} {} from {}", *toActor, count, *item, *fromActor);
 							} else {
-								logger::info("[ADDITEM] {} put {} {} to {}", *fromActor, count, *item, *toActor);
+								logger::info("[ADDITEM] {} put {} {} to {}", *fromActor, count, *item, *to);
 							}
 						} else {
 							logger::info("[ADDITEM] {} dropped {} {}", *fromActor, count, *item);
@@ -1089,12 +1138,7 @@ namespace Outfits
 
 	bool Manager::ProcessShouldBackgroundClone(RE::Actor* actor, std::function<bool()> funcCall)
 	{
-		bool hasPending = false;
-		{
-			ReadLocker lock(_lock);
-			hasPending = pendingReplacements.contains(actor->formID);
-		}
-		if (!hasPending) {
+		if (!HasPendingOutfit(actor)) {
 			SetOutfit(actor, nullptr, NPCData::IsDead(actor), false);
 		}
 
@@ -1104,7 +1148,7 @@ namespace Outfits
 	RE::NiAVObject* Manager::ProcessLoad3D(RE::Actor* actor, std::function<RE::NiAVObject*()> funcCall)
 	{
 		if (!isLoadingGame) {
-			WriteLocker lock(_lock);
+				
 			if (const auto outfit = ResolveWornOutfit(actor, false); outfit) {
 				ApplyOutfit(actor, outfit->distributed);
 			}
@@ -1121,7 +1165,7 @@ namespace Outfits
 			//#ifndef NDEBUG
 			//			logger::info("{}: {}", *npc, *npc->defaultOutfit);
 			//#endif
-			WriteLocker lock(_lock);
+			WriteLocker lock(_initialLock);
 			initialOutfits.try_emplace(npc->formID, npc->defaultOutfit);
 		}
 	}
@@ -1130,9 +1174,8 @@ namespace Outfits
 	{
 		RestoreOutfit(actor);
 		funcCall();
-		ReadLocker lock(_lock);
-		if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
-			ApplyOutfit(actor, it->second.distributed);
+		if (const auto wornOutfit = GetWornOutfit(actor); wornOutfit) {
+			ApplyOutfit(actor, wornOutfit->distributed);
 		}
 	}
 
@@ -1144,8 +1187,6 @@ namespace Outfits
 
 	void Manager::ProcessSetOutfitActor(RE::Actor* actor, RE::BGSOutfit* outfit, std::function<void()> funcCall)
 	{
-		ReadLocker lock(_lock);
-
 		logger::info("SetOutfit({}) was called for actor {}.", *outfit, *actor);
 
 		// Empty outfit might be used to undress the actor.
@@ -1160,9 +1201,9 @@ namespace Outfits
 
 		const auto initialOutfit = GetInitialOutfit(actor);
 		if (initialOutfit && initialOutfit == outfit) {
-			if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
+			if (const auto wornOutfit = GetWornOutfit(actor); wornOutfit) {
 				logger::info("\t▶️ Resuming outfit distribution for {} as defaultOutfit has been reverted to its initial state", *actor);
-				ApplyOutfit(actor, it->second.distributed, true);  // apply our distributed outfit instead of defaultOutfit
+				ApplyOutfit(actor, wornOutfit->distributed, true);  // apply our distributed outfit instead of defaultOutfit
 				return;
 			}
 		}

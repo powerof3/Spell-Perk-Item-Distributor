@@ -100,6 +100,8 @@ namespace Outfits
 			/// In such cases the replacement should be reverted to the original outfit.
 			bool IsCorrupted() const { return !distributed; }
 
+			operator bool() const { return distributed != nullptr; }
+
 			OutfitReplacement() = default;
 			OutfitReplacement(RE::FormID unrecognizedDistributedFormID) :
 				distributed(nullptr),
@@ -147,6 +149,14 @@ namespace Outfits
 		/// Gets an outfit that was set in the plugins for the actor's ActorBase (NPC).
 		RE::BGSOutfit* GetInitialOutfit(const RE::Actor*) const;
 
+		std::optional<OutfitReplacement> GetWornOutfit(const RE::Actor*) const;
+		std::optional<OutfitReplacement> PopWornOutfit(const RE::Actor*);
+		OutfitReplacementMap GetWornOutfits() const;
+
+		std::optional<OutfitReplacement> GetPendingOutfit(const RE::Actor*) const;
+
+		bool HasPendingOutfit(const RE::Actor*) const;
+
 		/// <summary>
 		/// Resolves the outfit that should be worn by the actor.
 		///
@@ -158,11 +168,11 @@ namespace Outfits
 		/// <param name="Actor">Actor for whom outfit is being resolved</param>
 		/// <param name="isDying">Flag indicating whether this method is called during Death Event</param>
 		/// <returns>Pointer to a worn outfit replacement that needs to be applied. If resolution does not require updating the outfit then nullptr is returned.</returns>
-		[[nodiscard]] const OutfitReplacement* const ResolveWornOutfit(RE::Actor*, bool isDying);
-		[[nodiscard]] const OutfitReplacement* const ResolveWornOutfit(RE::Actor*, OutfitReplacementMap::iterator& pending, bool isDying);
+		[[nodiscard]] std::optional<Manager::OutfitReplacement> ResolveWornOutfit(RE::Actor*, bool isDying);
+		[[nodiscard]] std::optional<Manager::OutfitReplacement> ResolveWornOutfit(RE::Actor*, OutfitReplacementMap::iterator& pending, bool isDying);
 
 		/// Resolves the outfit that is a candiate for equipping.
-		const OutfitReplacement* const ResolvePendingOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
+		std::optional<Manager::OutfitReplacement> ResolvePendingOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
 
 		/// Utility method that validates incoming outfit and uses it to resolve pending outfit.
 		bool SetOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
@@ -172,18 +182,26 @@ namespace Outfits
 
 		void LogWornOutfitItems(RE::Actor*) const;
 
-		/// Lock for replacements.
-		mutable Lock _lock;
+		/// Lock for wornReplacements.
+		mutable Lock _wornLock;
+		/// Lock for pendingReplacements.
+		mutable Lock _pendingLock;
+		/// Lock for initialOutfits.
+		mutable Lock _initialLock;
 
 		/// Map of Actor's FormID and corresponding Outfit Replacements that are being tracked by the manager.
 		///
 		/// This map is serialized in a co-save and represents the in-memory map of everying that affected NPCs wear.
+		/// 
+		/// Important: Do not access this member directly, use a method that acquires a lock on the map.
 		OutfitReplacementMap wornReplacements;
 
 		/// Map of Actor's FormID and corresponding Outfit Replacements that are pending to be applied.
 		///
 		/// During distribution new outfit replacements are placed into this map through ResolvePendingOutfit.
 		/// Depending on when a distribution is happening, these replacements will be applied either in Load3D or during SKSE::Load.
+		///
+		/// Important: Do not access this member directly, use a method that acquires a lock on the map.
 		OutfitReplacementMap pendingReplacements;
 
 		/// Map of NPC's FormID and corresponding initial Outfit that is set in loaded plugins.
@@ -194,6 +212,8 @@ namespace Outfits
 		/// An actor will only be able to resume the outfit replacement, once another call to SetOutfit is made with the initialOutfit.
 		///
 		/// The map is constructed with TESNPC::InitItemImpl hook.
+		/// 
+		/// Important: Do not access this member directly, use a method that acquires a lock on the map.
 		std::unordered_map<RE::FormID, RE::BGSOutfit*> initialOutfits;
 
 		/// Flag indicating whether there is a loading of a save file in progress.
