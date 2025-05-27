@@ -47,50 +47,8 @@ namespace Testing::Helper
 
 	namespace Distribution
 	{
-		inline void Distribute(RE::Actor* actor = Actor::GetActor())
-		{
-			Distribute::detail::distribute_on_load(actor, actor->GetActorBase());
-		}
-
-		/// <summary>
-		/// Reverts distribution for a given actor.
-		/// For items it assumes that distributed entries had fixed count and always removes count.min number of items.
-		/// </summary>
-		/// <param name="actor"></param>
-		inline void Revert(RE::Actor* actor = Actor::GetActor())
-		{
-			for (auto& item : Forms::items.GetForms()) {
-				actor->GetActorBase()->RemoveObjectFromContainer(item.form, std::get<RandomCount>(item.idxOrCount).min);
-			}
-			actor->GetActorBase()->RemoveKeyword(Distribute::processed);  // clean up after distribute_on_load
-		}
-
-		/// <summary>
-		/// Holder to stash loaded distribution configurations during testing and restore them afterwards.
-		/// </summary>
-		struct Holder
-		{
-			Forms::Distributables<RE::SpellItem>      spells{ RECORD::kSpell };
-			Forms::Distributables<RE::BGSPerk>        perks{ RECORD::kPerk };
-			Forms::Distributables<RE::TESBoundObject> items{ RECORD::kItem };
-			Forms::Distributables<RE::TESShout>       shouts{ RECORD::kShout };
-			Forms::Distributables<RE::TESLevSpell>    levSpells{ RECORD::kLevSpell };
-			Forms::Distributables<RE::TESForm>        packages{ RECORD::kPackage };
-			Forms::Distributables<RE::BGSOutfit>      outfits{ RECORD::kOutfit };
-			Forms::Distributables<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
-			Forms::Distributables<RE::TESFaction>     factions{ RECORD::kFaction };
-			Forms::Distributables<RE::BGSOutfit>      sleepOutfits{ RECORD::kSleepOutfit };
-			Forms::Distributables<RE::TESObjectARMO>  skins{ RECORD::kSkin };
-		};
-
 		namespace Death
 		{
-			inline void Distribute(RE::Actor* actor, bool isDying)
-			{
-				auto data = NPCData(actor, actor->GetActorBase(), isDying);
-				DeathDistribution::Manager::GetSingleton()->Distribute(data);
-			}
-
 			inline Forms::Distributables<RE::SpellItem>&      GetSpells() { return DeathDistribution::TestingHelper::GetSpells(); }
 			inline Forms::Distributables<RE::BGSPerk>&        GetPerks() { return DeathDistribution::TestingHelper::GetPerks(); }
 			inline Forms::Distributables<RE::TESBoundObject>& GetItems() { return DeathDistribution::TestingHelper::GetItems(); }
@@ -103,53 +61,19 @@ namespace Testing::Helper
 			inline Forms::Distributables<RE::BGSOutfit>&      GetSleepOutfits() { return DeathDistribution::TestingHelper::GetSleepOutfits(); }
 			inline Forms::Distributables<RE::TESObjectARMO>&  GetSkins() { return DeathDistribution::TestingHelper::GetSkins(); }
 
-			inline Holder configHolder;
-
-			inline void ClearConfigs()
+			inline void Distribute(RE::Actor* actor, bool isDying)
 			{
-				GetSpells().GetForms().clear();
-				GetPerks().GetForms().clear();
-				GetItems().GetForms().clear();
-				GetShouts().GetForms().clear();
-				GetLevSpells().GetForms().clear();
-				GetPackages().GetForms().clear();
-				GetOutfits().GetForms().clear();
-				GetKeywords().GetForms().clear();
-				GetFactions().GetForms().clear();
-				GetSleepOutfits().GetForms().clear();
-				GetSkins().GetForms().clear();
+				auto data = NPCData(actor, actor->GetActorBase(), isDying);
+				DeathDistribution::Manager::GetSingleton()->Distribute(data);
 			}
 
-			inline void SnapshotConfigs()
+			inline void Revert(RE::Actor* actor = Actor::GetActor())
 			{
-				configHolder.spells = GetSpells();
-				configHolder.perks = GetPerks();
-				configHolder.items = GetItems();
-				configHolder.shouts = GetShouts();
-				configHolder.levSpells = GetLevSpells();
-				configHolder.packages = GetPackages();
-				configHolder.outfits = GetOutfits();
-				configHolder.keywords = GetKeywords();
-				configHolder.factions = GetFactions();
-				configHolder.sleepOutfits = GetSleepOutfits();
-				configHolder.skins = GetSkins();
+				for (auto& item : GetItems().GetForms()) {
+					actor->GetActorBase()->RemoveObjectFromContainer(item.form, std::get<RandomCount>(item.idxOrCount).min);
+				}
+				actor->GetActorBase()->RemoveKeyword(Distribute::processed);  // clean up after distribute_on_load
 			}
-
-			inline void RestoreConfigs()
-			{
-				GetSpells() = configHolder.spells;
-				GetPerks() = configHolder.perks;
-				GetItems() = configHolder.items;
-				GetShouts() = configHolder.shouts;
-				GetLevSpells() = configHolder.levSpells;
-				GetPackages() = configHolder.packages;
-				GetOutfits() = configHolder.outfits;
-				GetKeywords() = configHolder.keywords;
-				GetFactions() = configHolder.factions;
-				GetSleepOutfits() = configHolder.sleepOutfits;
-				GetSkins() = configHolder.skins;
-			}
-
 		}
 
 		inline Forms::Distributables<RE::SpellItem>&      GetSpells() { return Forms::spells; }
@@ -164,57 +88,22 @@ namespace Testing::Helper
 		inline Forms::Distributables<RE::BGSOutfit>&      GetSleepOutfits() { return Forms::sleepOutfits; }
 		inline Forms::Distributables<RE::TESObjectARMO>&  GetSkins() { return Forms::skins; }
 
-		inline Holder configHolder;
-
-		inline void ClearConfigs()
+		inline void Distribute(RE::Actor* actor = Actor::GetActor())
 		{
-			Forms::spells.GetForms().clear();
-			Forms::perks.GetForms().clear();
-			Forms::items.GetForms().clear();
-			Forms::shouts.GetForms().clear();
-			Forms::levSpells.GetForms().clear();
-			Forms::packages.GetForms().clear();
-			Forms::outfits.GetForms().clear();
-			Forms::keywords.GetForms().clear();
-			Forms::factions.GetForms().clear();
-			Forms::sleepOutfits.GetForms().clear();
-			Forms::skins.GetForms().clear();
-
-			Death::ClearConfigs();
+			Distribute::detail::distribute_on_load(actor, actor->GetActorBase());
 		}
 
-		inline void SnapshotConfigs()
+		/// <summary>
+		/// Reverts distribution for a given actor.
+		/// For items it assumes that distributed entries had fixed count and always removes count.min number of items.
+		/// </summary>
+		inline void Revert(RE::Actor* actor = Actor::GetActor())
 		{
-			configHolder.spells = Forms::spells;
-			configHolder.perks = Forms::perks;
-			configHolder.items = Forms::items;
-			configHolder.shouts = Forms::shouts;
-			configHolder.levSpells = Forms::levSpells;
-			configHolder.packages = Forms::packages;
-			configHolder.outfits = Forms::outfits;
-			configHolder.keywords = Forms::keywords;
-			configHolder.factions = Forms::factions;
-			configHolder.sleepOutfits = Forms::sleepOutfits;
-			configHolder.skins = Forms::skins;
-
-			Death::SnapshotConfigs();
-		}
-
-		inline void RestoreConfigs()
-		{
-			Forms::spells = configHolder.spells;
-			Forms::perks = configHolder.perks;
-			Forms::items = configHolder.items;
-			Forms::shouts = configHolder.shouts;
-			Forms::levSpells = configHolder.levSpells;
-			Forms::packages = configHolder.packages;
-			Forms::outfits = configHolder.outfits;
-			Forms::keywords = configHolder.keywords;
-			Forms::factions = configHolder.factions;
-			Forms::sleepOutfits = configHolder.sleepOutfits;
-			Forms::skins = configHolder.skins;
-
-			Death::RestoreConfigs();
+			for (auto& item : GetItems().GetForms()) {
+				actor->GetActorBase()->RemoveObjectFromContainer(item.form, std::get<RandomCount>(item.idxOrCount).min);
+			}
+			Death::Revert(actor);                                         // also clean up death distribution if it was applied
+			actor->GetActorBase()->RemoveKeyword(Distribute::processed);  // clean up after distribute_on_load
 		}
 	}
 
@@ -261,3 +150,129 @@ namespace Testing::Helper
 		}
 	}
 }
+
+#pragma region Configuration Snapshot
+namespace Testing::Helper::Distribution
+{
+	/// <summary>
+	/// Holder to stash loaded distribution configurations during testing and restore them afterwards.
+	/// </summary>
+	struct Holder
+	{
+		Forms::Distributables<RE::SpellItem>      spells{ RECORD::kSpell };
+		Forms::Distributables<RE::BGSPerk>        perks{ RECORD::kPerk };
+		Forms::Distributables<RE::TESBoundObject> items{ RECORD::kItem };
+		Forms::Distributables<RE::TESShout>       shouts{ RECORD::kShout };
+		Forms::Distributables<RE::TESLevSpell>    levSpells{ RECORD::kLevSpell };
+		Forms::Distributables<RE::TESForm>        packages{ RECORD::kPackage };
+		Forms::Distributables<RE::BGSOutfit>      outfits{ RECORD::kOutfit };
+		Forms::Distributables<RE::BGSKeyword>     keywords{ RECORD::kKeyword };
+		Forms::Distributables<RE::TESFaction>     factions{ RECORD::kFaction };
+		Forms::Distributables<RE::BGSOutfit>      sleepOutfits{ RECORD::kSleepOutfit };
+		Forms::Distributables<RE::TESObjectARMO>  skins{ RECORD::kSkin };
+	};
+
+	namespace Death
+	{
+		inline Holder configHolder;
+
+		inline void ClearConfigs()
+		{
+			GetSpells().GetForms().clear();
+			GetPerks().GetForms().clear();
+			GetItems().GetForms().clear();
+			GetShouts().GetForms().clear();
+			GetLevSpells().GetForms().clear();
+			GetPackages().GetForms().clear();
+			GetOutfits().GetForms().clear();
+			GetKeywords().GetForms().clear();
+			GetFactions().GetForms().clear();
+			GetSleepOutfits().GetForms().clear();
+			GetSkins().GetForms().clear();
+		}
+
+		inline void SnapshotConfigs()
+		{
+			configHolder.spells = GetSpells();
+			configHolder.perks = GetPerks();
+			configHolder.items = GetItems();
+			configHolder.shouts = GetShouts();
+			configHolder.levSpells = GetLevSpells();
+			configHolder.packages = GetPackages();
+			configHolder.outfits = GetOutfits();
+			configHolder.keywords = GetKeywords();
+			configHolder.factions = GetFactions();
+			configHolder.sleepOutfits = GetSleepOutfits();
+			configHolder.skins = GetSkins();
+		}
+
+		inline void RestoreConfigs()
+		{
+			GetSpells() = configHolder.spells;
+			GetPerks() = configHolder.perks;
+			GetItems() = configHolder.items;
+			GetShouts() = configHolder.shouts;
+			GetLevSpells() = configHolder.levSpells;
+			GetPackages() = configHolder.packages;
+			GetOutfits() = configHolder.outfits;
+			GetKeywords() = configHolder.keywords;
+			GetFactions() = configHolder.factions;
+			GetSleepOutfits() = configHolder.sleepOutfits;
+			GetSkins() = configHolder.skins;
+		}
+	}
+
+	inline Holder configHolder;
+
+	inline void ClearConfigs()
+	{
+		Forms::spells.GetForms().clear();
+		Forms::perks.GetForms().clear();
+		Forms::items.GetForms().clear();
+		Forms::shouts.GetForms().clear();
+		Forms::levSpells.GetForms().clear();
+		Forms::packages.GetForms().clear();
+		Forms::outfits.GetForms().clear();
+		Forms::keywords.GetForms().clear();
+		Forms::factions.GetForms().clear();
+		Forms::sleepOutfits.GetForms().clear();
+		Forms::skins.GetForms().clear();
+
+		Death::ClearConfigs();
+	}
+
+	inline void SnapshotConfigs()
+	{
+		configHolder.spells = Forms::spells;
+		configHolder.perks = Forms::perks;
+		configHolder.items = Forms::items;
+		configHolder.shouts = Forms::shouts;
+		configHolder.levSpells = Forms::levSpells;
+		configHolder.packages = Forms::packages;
+		configHolder.outfits = Forms::outfits;
+		configHolder.keywords = Forms::keywords;
+		configHolder.factions = Forms::factions;
+		configHolder.sleepOutfits = Forms::sleepOutfits;
+		configHolder.skins = Forms::skins;
+
+		Death::SnapshotConfigs();
+	}
+
+	inline void RestoreConfigs()
+	{
+		Forms::spells = configHolder.spells;
+		Forms::perks = configHolder.perks;
+		Forms::items = configHolder.items;
+		Forms::shouts = configHolder.shouts;
+		Forms::levSpells = configHolder.levSpells;
+		Forms::packages = configHolder.packages;
+		Forms::outfits = configHolder.outfits;
+		Forms::keywords = configHolder.keywords;
+		Forms::factions = configHolder.factions;
+		Forms::sleepOutfits = configHolder.sleepOutfits;
+		Forms::skins = configHolder.skins;
+
+		Death::RestoreConfigs();
+	}
+}
+#pragma endregion
