@@ -334,7 +334,7 @@ namespace Outfits
 #ifndef NDEBUG
 		LOG_HEADER("SAVING");
 #endif
-		auto        manager = Manager::GetSingleton();
+		auto       manager = Manager::GetSingleton();
 		const auto replacements = manager->GetWornOutfits();
 #ifndef NDEBUG
 		logger::info("Saving {} distributed outfits...", replacements.size());
@@ -1079,8 +1079,7 @@ namespace Outfits
 		}
 
 		if (const auto actor = event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
-			if (const auto outfit = ResolveWornOutfit(actor, true); outfit)
-			{
+			if (const auto outfit = ResolveWornOutfit(actor, true); outfit) {
 				ApplyOutfit(actor, outfit->distributed);
 			}
 		}
@@ -1148,7 +1147,6 @@ namespace Outfits
 	RE::NiAVObject* Manager::ProcessLoad3D(RE::Actor* actor, std::function<RE::NiAVObject*()> funcCall)
 	{
 		if (!isLoadingGame) {
-				
 			if (const auto outfit = ResolveWornOutfit(actor, false); outfit) {
 				ApplyOutfit(actor, outfit->distributed);
 			}

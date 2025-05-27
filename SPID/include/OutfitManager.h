@@ -151,7 +151,7 @@ namespace Outfits
 
 		std::optional<OutfitReplacement> GetWornOutfit(const RE::Actor*) const;
 		std::optional<OutfitReplacement> PopWornOutfit(const RE::Actor*);
-		OutfitReplacementMap GetWornOutfits() const;
+		OutfitReplacementMap             GetWornOutfits() const;
 
 		std::optional<OutfitReplacement> GetPendingOutfit(const RE::Actor*) const;
 
@@ -192,7 +192,7 @@ namespace Outfits
 		/// Map of Actor's FormID and corresponding Outfit Replacements that are being tracked by the manager.
 		///
 		/// This map is serialized in a co-save and represents the in-memory map of everying that affected NPCs wear.
-		/// 
+		///
 		/// Important: Do not access this member directly, use a method that acquires a lock on the map.
 		OutfitReplacementMap wornReplacements;
 
@@ -212,7 +212,7 @@ namespace Outfits
 		/// An actor will only be able to resume the outfit replacement, once another call to SetOutfit is made with the initialOutfit.
 		///
 		/// The map is constructed with TESNPC::InitItemImpl hook.
-		/// 
+		///
 		/// Important: Do not access this member directly, use a method that acquires a lock on the map.
 		std::unordered_map<RE::FormID, RE::BGSOutfit*> initialOutfits;
 

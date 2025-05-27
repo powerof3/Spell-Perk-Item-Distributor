@@ -40,7 +40,7 @@ namespace Distribute
 			RandomCount idxOrCount{ 1, 1 };
 			bool        isFinal{ false };
 			Path        path{ "" };
-			
+
 			::Testing::Helper::Distribution::GetItems().EmplaceForm(true, item, isFinal, idxOrCount, filterData, path);
 
 			::Testing::Helper::Distribution::Distribute(actor);
