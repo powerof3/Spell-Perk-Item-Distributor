@@ -194,7 +194,7 @@ namespace Distribute
 
 	void LogDistribution(const DistributedForms& forms, NPCData& npcData)
 	{
-//#ifndef NDEBUG
+		//#ifndef NDEBUG
 		std::map<std::string_view, std::vector<DistributedForm>> results;
 
 		for (const auto& form : forms) {
@@ -212,6 +212,6 @@ namespace Distribute
 				}
 			}
 		}
-//#endif
+		//#endif
 	}
 }
