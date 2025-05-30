@@ -188,16 +188,16 @@ struct fmt::formatter<LogHeader>
 	}
 };
 
-#ifndef NDEBUG
-#	define LOG_HEADER(name)                     \
-		{                                        \
-			LogHeader header{ name };            \
-			logger::info("{:#3:1<100}", header); \
-		}
-#else
-#	define LOG_HEADER(name)                    \
-		{                                       \
-			LogHeader header{ name };           \
-			logger::info("{:#3:1<50}", header); \
-		}
-#endif
+//#ifndef NDEBUG
+//#	define LOG_HEADER(name)                     \
+//		{                                        \
+//			LogHeader header{ name };            \
+//			logger::info("{:#3:1<100}", header); \
+//		}
+//#else
+#define LOG_HEADER(name)                    \
+	{                                       \
+		LogHeader header{ name };           \
+		logger::info("{:#3:1<50}", header); \
+	}
+//#endif

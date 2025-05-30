@@ -99,24 +99,24 @@ namespace Outfits
 		RE::BGSOutfit* distributed;
 
 		if (!details::Load(interface, loadedActorFormID)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::warn("Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
-#endif
+//#endif
 			return false;
 		}
 
 		RE::BGSOutfit* original;
 		if (!details::Load(interface, original, id)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::warn("Failed to load Outfit Replacement record: Unknown original outfit [{:08X}].", id);
-#endif
+//#endif
 			return false;
 		}
 
 		if (!details::Load(interface, distributed, id)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
-#endif
+//#endif
 			if (!id) {
 				return false;
 			}
@@ -157,16 +157,16 @@ namespace Outfits
 		RE::BGSOutfit* distributed;
 
 		if (!details::Load(interface, loadedActorFormID)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::warn("Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
-#endif
+//#endif
 			return false;
 		}
 
 		if (!details::Load(interface, distributed, id)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
-#endif
+//#endif
 			if (!id) {
 				return false;
 			}
@@ -176,11 +176,11 @@ namespace Outfits
 		if (!details::Read(interface, isDeathOutfit) ||
 			!details::Read(interface, isFinalOutfit) ||
 			!details::Read(interface, isSuspended)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			if (auto loadedActor = RE::TESForm::LookupByID<RE::Actor>(loadedActorFormID); loadedActor) {
 				logger::warn("Failed to load attributes for Outfit Replacement record. Actor: {}", *loadedActor);
 			}
-#endif
+//#endif
 		}
 
 		if (distributed) {
@@ -201,16 +201,16 @@ namespace Outfits
 		RE::BGSOutfit* distributed;
 
 		if (!details::Load(interface, loadedActorFormID)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::warn("Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
-#endif
+//#endif
 			return false;
 		}
 
 		if (!details::Load(interface, distributed, id)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
-#endif
+//#endif
 			if (!id) {
 				return false;
 			}
@@ -219,11 +219,11 @@ namespace Outfits
 
 		if (!details::Read(interface, isDeathOutfit) ||
 			!details::Read(interface, isFinalOutfit)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			if (auto loadedActor = RE::TESForm::LookupByID<RE::Actor>(loadedActorFormID); loadedActor) {
 				logger::warn("Failed to load attributes for Outfit Replacement record. Actor: {}", *loadedActor);
 			}
-#endif
+//#endif
 		}
 
 		if (distributed) {
@@ -248,10 +248,10 @@ namespace Outfits
 
 	void Manager::Load(SKSE::SerializationInterface* interface)
 	{
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		LOG_HEADER("LOADING");
 		std::unordered_map<RE::Actor*, OutfitReplacement> loadedReplacements;
-#endif
+//#endif
 
 		auto manager = Manager::GetSingleton();
 
@@ -283,9 +283,9 @@ namespace Outfits
 					if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(actorFormID); actor) {
 						if (loadedReplacement.distributed) {
 							manager->wornReplacements[actorFormID] = loadedReplacement;
-#ifndef NDEBUG
+//#ifndef NDEBUG
 							loadedReplacements[actor] = loadedReplacement;
-#endif
+//#endif
 						} else {
 							manager->RevertOutfit(actor, loadedReplacement);
 						}
@@ -296,7 +296,7 @@ namespace Outfits
 
 		auto& pendingReplacements = manager->pendingReplacements;
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		logger::info("Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
 		for (const auto& pair : loadedReplacements) {
 			logger::info("\t{}", *pair.first);
@@ -312,17 +312,17 @@ namespace Outfits
 		}
 
 		logger::info("Applying resolved outfits...");
-#endif
+//#endif
 
 		// We don't increment iterator here, since ResolveWornOutfit will be erasing each pending entry
 		for (auto it = pendingReplacements.begin(); it != pendingReplacements.end();) {
 			if (auto actor = RE::TESForm::LookupByID<RE::Actor>(it->first); actor) {
 				if (auto resolved = manager->ResolveWornOutfit(actor, it, false); resolved) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 					logger::info("\tActor: {}", *actor);
 					logger::info("\t\tResolved: {}", *resolved);
 					logger::info("\t\tDefault: {}", *(actor->GetActorBase()->defaultOutfit));
-#endif
+//#endif
 					manager->ApplyOutfit(actor, resolved->distributed);
 				}
 			}
@@ -331,36 +331,36 @@ namespace Outfits
 
 	void Manager::Save(SKSE::SerializationInterface* interface)
 	{
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		LOG_HEADER("SAVING");
-#endif
+//#endif
 		auto       manager = Manager::GetSingleton();
 		const auto replacements = manager->GetWornOutfits();
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		logger::info("Saving {} distributed outfits...", replacements.size());
 		std::uint32_t savedCount = 0;
-#endif
+//#endif
 
 		for (const auto& pair : replacements) {
 			if (!SaveReplacement(interface, pair.first, pair.second)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 				if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
 					logger::error("Failed to save Outfit Replacement ({}) for {}", pair.second, *actor);
 				}
-#endif
+//#endif
 				continue;
 			}
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
 				logger::info("\tSaved Outfit Replacement ({}) for actor {}", pair.second, *actor);
 			}
 			++savedCount;
-#endif
+//#endif
 		}
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		logger::info("Saved {} replacements", savedCount);
-#endif
+//#endif
 	}
 #pragma endregion
 
@@ -440,9 +440,9 @@ namespace Outfits
 
 		static void thunk(RE::Character* actor, bool resetInventory, bool attach3D)
 		{
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::info("Resurrect({}); IsDead: {}, ResetInventory: {}, Attach3D: {}", *(actor->As<RE::Actor>()), actor->IsDead(), resetInventory, attach3D);
-#endif
+//#endif
 			return Manager::GetSingleton()->ProcessResurrect(actor, [&] { return func(actor, resetInventory, attach3D); });
 		}
 
@@ -465,9 +465,9 @@ namespace Outfits
 		{
 			if (refr) {
 				if (const auto actor = refr->As<RE::Actor>(); actor) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 					logger::info("RecycleActor({})", *(actor->As<RE::Actor>()));
-#endif
+//#endif
 					return Manager::GetSingleton()->ProcessResetReference(actor, [&] { return func(a1, a2, refr, a4, a5, a6, a7, a8); });
 				}
 			}
@@ -586,10 +586,10 @@ namespace Outfits
 					logger::info("\t\t📝Registered for {}.", typeid(RE::TESFormDeleteEvent).name());
 					scripts->AddEventSink<RE::TESDeathEvent>(this);
 					logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
-#ifndef NDEBUG
+//#ifndef NDEBUG
 					scripts->AddEventSink<RE::TESContainerChangedEvent>(this);
 					logger::info("\t\t📝Registered for {}.", typeid(RE::TESContainerChangedEvent).name());
-#endif
+//#endif
 				}
 
 				stl::install_hook<InitItemImpl>();
@@ -598,10 +598,10 @@ namespace Outfits
 				stl::install_hook<Resurrect>();
 				stl::install_hook<ResetReference>();
 				stl::install_hook<SetOutfitActor>();
-#ifndef NDEBUG
+//#ifndef NDEBUG
 				stl::install_hook<EquipObject>();
 				stl::install_hook<UnequipObject>();
-#endif
+//#endif
 			}
 			break;
 #ifndef NDEBUG
@@ -825,7 +825,7 @@ namespace Outfits
 
 		// If outfit is nullptr, we just track that distribution didn't provide any outfit for this actor.
 		if (outfit) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::info("Evaluating outfit for {}", *actor);
 			logger::info("\tDefault Outfit: {}", *defaultOutfit);
 			if (auto worn = wornReplacements.find(actor->formID); worn != wornReplacements.end()) {
@@ -834,21 +834,21 @@ namespace Outfits
 				logger::info("\tWorn Outfit: None");
 			}
 			logger::info("\tNew Outfit: {}", *outfit);
-#endif
+//#endif
 			if (!CanEquipOutfit(actor, outfit)) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 				logger::warn("\tAttempted to set Outfit {} that can't be worn by given actor.", *outfit);
-#endif
+//#endif
 				return false;
 			}
 		}
 
 		if (auto replacement = ResolvePendingOutfit(data, outfit, isDeathOutfit, isFinalOutfit); replacement) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			if (replacement->distributed) {
 				logger::info("\tResolved Pending Outfit: {}", *replacement->distributed);
 			}
-#endif
+//#endif
 		}
 
 		return true;
@@ -935,33 +935,33 @@ namespace Outfits
 			return false;
 		}
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		logger::info("[BEFORE EQUIP] Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
-#endif
+//#endif
 
 		// If we are trying to apply default outfit we want to bypass the suspension check.
 		// This is because we use ApplyOutfit as a custom implementation of equipping an outfit,
 		// thus default outfits are also applied through this function.
 		if (IsSuspendedReplacement(actor) && outfit != npc->defaultOutfit) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			logger::info("\t\tSkipping outfit equip because distribution is suspended for {}", *actor);
-#endif
+//#endif
 			return false;
 		}
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		logger::info("\t\tEquipping Outfit {}", *outfit);
-#endif
+//#endif
 		actor->InitInventoryIfRequired();
 		actor->RemoveOutfitItems(nullptr);
 		if (!actor->IsDisabled()) {
 			AddWornOutfit(actor, outfit, shouldUpdate3D);
 		}
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		logger::info("[AFTER EQUIP] Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
-#endif
+//#endif
 		return true;
 	}
 
@@ -980,10 +980,10 @@ namespace Outfits
 
 	bool Manager::RevertOutfit(RE::Actor* actor, const OutfitReplacement& replacement) const
 	{
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		logger::info("\tReverting Outfit Replacement for {}", *actor);
 		logger::info("\t\t{:R}", replacement);
-#endif
+//#endif
 		return ApplyOutfit(actor, actor->GetActorBase()->defaultOutfit);
 	}
 
