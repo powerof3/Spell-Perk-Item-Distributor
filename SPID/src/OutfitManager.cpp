@@ -854,7 +854,8 @@ namespace Outfits
 		return true;
 	}
 
-	void Manager::AddWornOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool shouldUpdate3D) const
+	/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
+	void AddWornOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool shouldUpdate3D)
 	{
 		bool equipped = false;
 		if (const auto invChanges = actor->GetInventoryChanges()) {
@@ -886,9 +887,10 @@ namespace Outfits
 		}
 	}
 
-	void Manager::LogWornOutfitItems(RE::Actor* actor) const
+	/// Groups all items in actor's inventory by the outfits associated with them.
+	std::map<RE::BGSOutfit*, std::vector<std::pair<RE::TESForm*, bool>>> GetAllOutfitItems(RE::Actor* actor)
 	{
-		std::map<RE::BGSOutfit*, std::vector<RE::TESForm*>> items;
+		std::map<RE::BGSOutfit*, std::vector<std::pair<RE::TESForm*, bool>>> items;
 		if (const auto invChanges = actor->GetInventoryChanges()) {
 			if (const auto entryLists = invChanges->entryList) {
 				for (const auto& entryList : *entryLists) {
@@ -896,9 +898,10 @@ namespace Outfits
 						for (const auto& xList : *entryList->extraLists) {
 							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 							if (outfitItem) {
+								auto isWorn = xList ? xList->GetByType<RE::ExtraWorn>() : nullptr;
 								auto item = entryList->object;
 								if (auto outfit = RE::TESForm::LookupByID<RE::BGSOutfit>(outfitItem->id); outfit) {
-									items[outfit].push_back(item);
+									items[outfit].emplace_back(item, isWorn != nullptr);
 								}
 							}
 						}
@@ -906,16 +909,22 @@ namespace Outfits
 				}
 			}
 		}
+		return items;
+	}
+
+	void LogWornOutfitItems(RE::Actor* actor)
+	{
+		auto items = GetAllOutfitItems(actor);
 
 		for (const auto& [outfit, itemVec] : items) {
 			logger::info("\t{}", *outfit);
 			const auto lastItemIndex = itemVec.size() - 1;
 			for (int i = 0; i < lastItemIndex; ++i) {
 				const auto& item = itemVec[i];
-				logger::info("\t├─── {}", *item);
+				logger::info("\t├─── {}{}", *item.first, item.second ? " (Worn)" : "");
 			}
 			const auto& lastItem = itemVec[lastItemIndex];
-			logger::info("\t└─── {}", *lastItem);
+			logger::info("\t└─── {}{}", *lastItem.first, lastItem.second ? " (Worn)" : "");
 		}
 	}
 
@@ -940,14 +949,33 @@ namespace Outfits
 		LogWornOutfitItems(actor);
 		//#endif
 
-		// If we are trying to apply default outfit we want to bypass the suspension check.
-		// This is because we use ApplyOutfit as a custom implementation of equipping an outfit,
-		// thus default outfits are also applied through this function.
-		if (IsSuspendedReplacement(actor) && outfit != npc->defaultOutfit) {
+		if (IsSuspendedReplacement(actor)) {
 			//#ifndef NDEBUG
 			logger::info("\t\tSkipping outfit equip because distribution is suspended for {}", *actor);
 			//#endif
 			return false;
+		}
+
+		auto itemsMap = GetAllOutfitItems(actor);
+
+		if (auto items = itemsMap.find(outfit); items != itemsMap.end()) {
+			std::set<RE::FormID> newOutfitItemIDs{};
+			for (const auto& obj : outfit->outfitItems) {
+				newOutfitItemIDs.insert(obj->formID);
+			}
+			std::set<RE::FormID> wornOutfitItemIDs{};
+			for (const auto& [item, isWorn] : items->second) {
+				if (isWorn) {
+					wornOutfitItemIDs.insert(item->formID);
+				}
+			}
+
+			if (newOutfitItemIDs == wornOutfitItemIDs) {
+				//#ifndef NDEBUG
+				logger::info("\t\tOutfit {} is already equipped on {}", *outfit, *actor);
+				//#endif
+				return true;
+			}
 		}
 
 		//#ifndef NDEBUG
@@ -957,6 +985,7 @@ namespace Outfits
 		actor->RemoveOutfitItems(nullptr);
 		if (!actor->IsDisabled()) {
 			AddWornOutfit(actor, outfit, shouldUpdate3D);
+			actor->WornArmorChanged(); // This should make sure game updates perks and whatnot that might be dependent on the worn outfit.
 		}
 		//#ifndef NDEBUG
 		logger::info("[AFTER EQUIP] Outfit items present in {} inventory", *actor);
@@ -1185,34 +1214,33 @@ namespace Outfits
 
 	void Manager::ProcessSetOutfitActor(RE::Actor* actor, RE::BGSOutfit* outfit, std::function<void()> funcCall)
 	{
-		logger::info("SetOutfit({}) was called for actor {}.", *outfit, *actor);
+		logger::info("[PAPYRUS] SetOutfit({}) was called for actor {}.", *outfit, *actor);
 
 		// Empty outfit might be used to undress the actor.
 		if (outfit->outfitItems.empty()) {
-			logger::info("\t⚠️ Outfit {} is empty - Actor will appear naked unless followed by another call to SetOutfit.", *outfit);
+			logger::info("\[PAPYRUS] t⚠️ Outfit {} is empty - Actor will appear naked unless followed by another call to SetOutfit.", *outfit);
 		}
 
-		// In any case SetOutfit should result in outfit being set as NPC's defaultOutfit.
-		if (actor->GetActorBase()->defaultOutfit != outfit) {
-			actor->GetActorBase()->SetDefaultOutfit(outfit);
-		}
-
-		const auto initialOutfit = GetInitialOutfit(actor);
-		if (initialOutfit && initialOutfit == outfit) {
-			if (const auto wornOutfit = GetWornOutfit(actor); wornOutfit) {
-				logger::info("\t▶️ Resuming outfit distribution for {} as defaultOutfit has been reverted to its initial state", *actor);
-				ApplyOutfit(actor, wornOutfit->distributed, true);  // apply our distributed outfit instead of defaultOutfit
-				return;
+		// If there is no distributed outfit there is nothing to suspend/resume.
+		if (const auto wornOutfit = GetWornOutfit(actor); wornOutfit) {
+			const auto initialOutfit = GetInitialOutfit(actor);
+			if (initialOutfit) {
+				if (initialOutfit == outfit) {
+					logger::info("[PAPYRUS] \t▶️ Resuming outfit distribution for {} as defaultOutfit has been reverted to its initial state", *actor);
+					// In any case SetOutfit should result in outfit being set as NPC's defaultOutfit.
+					if (actor->GetActorBase()->defaultOutfit != outfit) {
+						actor->GetActorBase()->SetDefaultOutfit(outfit);
+					}
+					ApplyOutfit(actor, wornOutfit->distributed, true);  // apply our distributed outfit instead of defaultOutfit
+					return;
+				} else {
+					logger::info("[PAPYRUS] \t⏸️ Suspending outfit distribution for {} due to manual change of the outfit", *actor);
+					logger::info("[PAPYRUS] \t\tTo resume distribution SetOutfit({}) should be called for this actor", *initialOutfit);
+				}
 			}
 		}
 
-		logger::info("\t⏸️ Suspending outfit distribution for {} due to manual change of the outfit", *actor);
-		if (initialOutfit) {
-			logger::info("\t\tTo resume distribution SetOutfit({}) should be called for this actor", *initialOutfit);
-		}
-
-		// if suspended, apply the new outfit.
-		ApplyOutfit(actor, outfit, true);
+		funcCall();
 	}
 #pragma endregion
 }

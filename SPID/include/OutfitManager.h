@@ -177,11 +177,6 @@ namespace Outfits
 		/// Utility method that validates incoming outfit and uses it to resolve pending outfit.
 		bool SetOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
 
-		/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
-		void AddWornOutfit(RE::Actor*, RE::BGSOutfit*, bool shouldUpdate3D = false) const;
-
-		void LogWornOutfitItems(RE::Actor*) const;
-
 		/// Lock for wornReplacements.
 		mutable Lock _wornLock;
 		/// Lock for pendingReplacements.

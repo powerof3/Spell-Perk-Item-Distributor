@@ -118,7 +118,7 @@ namespace Outfits
 		static bool PapyrusSetOutfit(Manager* manager, RE::Actor* actor, RE::BGSOutfit* outfit)
 		{
 			bool called = false;
-			manager->ProcessSetOutfitActor(actor, outfit, [&]() { called = true; });
+			manager->ProcessSetOutfitActor(actor, outfit, [&]() { called = true; actor->SetDefaultOutfit(outfit, false); });
 			return called;
 		}
 
@@ -1322,14 +1322,14 @@ namespace Outfits
 			TEST(SetOutfitOriginalNoWornForward)
 			{
 				SETUP(Alive, None, Regular, NotFinal, None, None);
-				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, original), "Original Papyrus SetOutfit function should not be called");
+				ASSERT(TestsHelper::PapyrusSetOutfit(manager, actor, original), "Original Papyrus SetOutfit function should be called");
 				EXPECT_WORN_DEFAULT(original);
 			}
 
 			TEST(SetOutfitCustomNoWornForward)
 			{
 				SETUP(Alive, None, Regular, NotFinal, None, None);
-				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, Outfit(Guard)), "Original Papyrus SetOutfit function should not be called");
+				ASSERT(TestsHelper::PapyrusSetOutfit(manager, actor, Outfit(Guard)), "Original Papyrus SetOutfit function should be called");
 				EXPECT_WORN_DEFAULT(Outfit(Guard));
 			}
 
@@ -1343,7 +1343,7 @@ namespace Outfits
 			TEST(SetOutfitCustomWornSuspend)
 			{
 				SETUP(Alive, Guard, Regular, NotFinal, None, None);
-				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, Outfit(Elven)), "Original Papyrus SetOutfit function should not be called");
+				ASSERT(TestsHelper::PapyrusSetOutfit(manager, actor, Outfit(Elven)), "Original Papyrus SetOutfit function should be called");
 				EXPECT_WORN_DEFAULT(Outfit(Elven));
 			}
 
