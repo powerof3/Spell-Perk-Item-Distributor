@@ -592,15 +592,6 @@ void Forms::Distributables<Form>::FinishLookupForms()
 		return;
 	}
 
-	// reverse overridable form vectors, winning configs first (Zzzz -> Aaaa)
-	// entry order within config is preserved
-	// thanks, chatGPT!
-	if constexpr (std::is_same_v<RE::BGSOutfit, Form> || std::is_same_v<RE::TESObjectARMO, Form>) {
-		std::stable_sort(forms.begin(), forms.end(), [](const auto& a_form1, const auto& a_form2) {
-			return a_form1.path > a_form2.path;  // Compare paths in reverse order
-		});
-	}
-
 	formsWithLevels.reserve(forms.size());
 
 	std::copy_if(forms.begin(), forms.end(),
