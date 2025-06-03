@@ -1,6 +1,7 @@
 #include "OutfitManager.h"
 #include "Hooking.h"
 #include "LookupNPC.h"
+#include "DistributeManager.h"
 
 namespace Outfits
 {
@@ -364,6 +365,84 @@ namespace Outfits
 	}
 #pragma endregion
 
+#pragma region Helpers
+	/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
+	void AddWornOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool shouldUpdate3D)
+	{
+		bool equipped = false;
+		if (const auto invChanges = actor->GetInventoryChanges()) {
+			if (!actor->HasOutfitItems(outfit)) {
+				invChanges->InitOutfitItems(outfit, actor->GetLevel());
+			}
+			if (const auto entryLists = invChanges->entryList) {
+				const auto formID = outfit->GetFormID();
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->extraLists) {
+						for (const auto& xList : *entryList->extraLists) {
+							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+							if (outfitItem && outfitItem->id == formID) {
+								// forceEquip - actually it corresponds to the "PreventRemoval" flag in the game's function,
+								//				which determines whether NPC/EquipItem call can unequip the item. See EquipItem Papyrus function.
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, shouldUpdate3D, true, false, false);
+								equipped = true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (shouldUpdate3D && equipped) {
+			if (const auto cell = actor->GetParentCell(); cell && cell->cellState.underlying() == 4) {
+				actor->Update3DModel();
+			}
+		}
+	}
+
+	/// Groups all items in actor's inventory by the outfits associated with them.
+	std::map<RE::BGSOutfit*, std::vector<std::pair<RE::TESForm*, bool>>> GetAllOutfitItems(RE::Actor* actor)
+	{
+		std::map<RE::BGSOutfit*, std::vector<std::pair<RE::TESForm*, bool>>> items;
+		if (const auto invChanges = actor->GetInventoryChanges()) {
+			if (const auto entryLists = invChanges->entryList) {
+				for (const auto& entryList : *entryLists) {
+					if (entryList && entryList->object && entryList->extraLists) {
+						for (const auto& xList : *entryList->extraLists) {
+							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+							if (outfitItem) {
+								auto isWorn = xList ? xList->GetByType<RE::ExtraWorn>() : nullptr;
+								auto item = entryList->object;
+								if (auto outfit = RE::TESForm::LookupByID<RE::BGSOutfit>(outfitItem->id); outfit) {
+									items[outfit].emplace_back(item, isWorn != nullptr);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return items;
+	}
+
+	void LogWornOutfitItems(RE::Actor* actor)
+	{
+		auto items = GetAllOutfitItems(actor);
+
+		for (const auto& [outfit, itemVec] : items) {
+			logger::info("\t{}", *outfit);
+			const auto lastItemIndex = itemVec.size() - 1;
+			for (int i = 0; i < lastItemIndex; ++i) {
+				const auto& item = itemVec[i];
+				logger::info("\t├─── {}{}", *item.first, item.second ? " (Worn)" : "");
+			}
+			const auto& lastItem = itemVec[lastItemIndex];
+			logger::info("\t└─── {}{}", *lastItem.first, lastItem.second ? " (Worn)" : "");
+		}
+	}
+
+#pragma endregion
+
 #pragma region Hooks
 	struct ShouldBackgroundClone
 	{
@@ -394,7 +473,7 @@ namespace Outfits
 
 		static RE::NiAVObject* thunk(RE::Character* actor, bool a_backgroundLoading)
 		{
-			logger::info("Load3D ({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
+			//logger::info("Load3D ({}); Background: {}", *(actor->As<RE::Actor>()), a_backgroundLoading);
 			return Manager::GetSingleton()->ProcessLoad3D(actor, [&] { return func(actor, a_backgroundLoading); });
 		}
 
@@ -852,80 +931,6 @@ namespace Outfits
 		return true;
 	}
 
-	/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
-	void AddWornOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool shouldUpdate3D)
-	{
-		bool equipped = false;
-		if (const auto invChanges = actor->GetInventoryChanges()) {
-			if (!actor->HasOutfitItems(outfit)) {
-				invChanges->InitOutfitItems(outfit, actor->GetLevel());
-			}
-			if (const auto entryLists = invChanges->entryList) {
-				const auto formID = outfit->GetFormID();
-				for (const auto& entryList : *entryLists) {
-					if (entryList && entryList->object && entryList->extraLists) {
-						for (const auto& xList : *entryList->extraLists) {
-							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
-							if (outfitItem && outfitItem->id == formID) {
-								// forceEquip - actually it corresponds to the "PreventRemoval" flag in the game's function,
-								//				which determines whether NPC/EquipItem call can unequip the item. See EquipItem Papyrus function.
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, shouldUpdate3D, true, false, false);
-								equipped = true;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if (shouldUpdate3D && equipped) {
-			if (const auto cell = actor->GetParentCell(); cell && cell->cellState.underlying() == 4) {
-				actor->Update3DModel();
-			}
-		}
-	}
-
-	/// Groups all items in actor's inventory by the outfits associated with them.
-	std::map<RE::BGSOutfit*, std::vector<std::pair<RE::TESForm*, bool>>> GetAllOutfitItems(RE::Actor* actor)
-	{
-		std::map<RE::BGSOutfit*, std::vector<std::pair<RE::TESForm*, bool>>> items;
-		if (const auto invChanges = actor->GetInventoryChanges()) {
-			if (const auto entryLists = invChanges->entryList) {
-				for (const auto& entryList : *entryLists) {
-					if (entryList && entryList->object && entryList->extraLists) {
-						for (const auto& xList : *entryList->extraLists) {
-							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
-							if (outfitItem) {
-								auto isWorn = xList ? xList->GetByType<RE::ExtraWorn>() : nullptr;
-								auto item = entryList->object;
-								if (auto outfit = RE::TESForm::LookupByID<RE::BGSOutfit>(outfitItem->id); outfit) {
-									items[outfit].emplace_back(item, isWorn != nullptr);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		return items;
-	}
-
-	void LogWornOutfitItems(RE::Actor* actor)
-	{
-		auto items = GetAllOutfitItems(actor);
-
-		for (const auto& [outfit, itemVec] : items) {
-			logger::info("\t{}", *outfit);
-			const auto lastItemIndex = itemVec.size() - 1;
-			for (int i = 0; i < lastItemIndex; ++i) {
-				const auto& item = itemVec[i];
-				logger::info("\t├─── {}{}", *item.first, item.second ? " (Worn)" : "");
-			}
-			const auto& lastItem = itemVec[lastItemIndex];
-			logger::info("\t└─── {}{}", *lastItem.first, lastItem.second ? " (Worn)" : "");
-		}
-	}
-
 	bool Manager::ApplyOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool shouldUpdate3D) const
 	{
 		if (!actor) {
@@ -1164,7 +1169,11 @@ namespace Outfits
 
 	bool Manager::ProcessShouldBackgroundClone(RE::Actor* actor, std::function<bool()> funcCall)
 	{
-		if (!HasPendingOutfit(actor)) {
+		// For now, we only support a single distribution per game session.
+		// As such if SPID_Processed is detected, we assumed that the actor was already given an outfit if needed.
+		// Previous setup relied on the fact that each ShouldBackgroundClone call would also refresh distribution of the outfit,
+		// allowing OutfitManager to then swap it, thus perform rotation.
+		if (!HasPendingOutfit(actor) && !actor->HasKeyword(Distribute::processed)) {
 			SetOutfit(actor, nullptr, NPCData::IsDead(actor), false);
 		}
 
