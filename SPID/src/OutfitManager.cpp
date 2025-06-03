@@ -280,7 +280,6 @@ namespace Outfits
 					break;
 				}
 				if (loaded) {
-					// Only carry over replacements for actors that still exist.
 					if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(actorFormID); actor) {
 						if (loadedReplacement.distributed) {
 							manager->wornReplacements[actorFormID] = loadedReplacement;
@@ -328,6 +327,7 @@ namespace Outfits
 				}
 			}
 		}
+		LOG_HEADER("");
 	}
 
 	void Manager::Save(SKSE::SerializationInterface* interface)
