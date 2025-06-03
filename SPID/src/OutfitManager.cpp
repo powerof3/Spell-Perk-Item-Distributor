@@ -1,7 +1,7 @@
 #include "OutfitManager.h"
+#include "DistributeManager.h"
 #include "Hooking.h"
 #include "LookupNPC.h"
-#include "DistributeManager.h"
 
 namespace Outfits
 {
