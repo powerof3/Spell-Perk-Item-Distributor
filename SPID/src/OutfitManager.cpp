@@ -425,7 +425,7 @@ namespace Outfits
 		return items;
 	}
 
-	bool IsWearingSingleOutfit(RE::Actor* actor, RE::BGSOutfit* targetOutfit) 
+	bool IsWearingSingleOutfit(RE::Actor* actor, RE::BGSOutfit* targetOutfit)
 	{
 		std::set<RE::FormID> targetOutfitItemIDs{};
 		for (const auto& obj : targetOutfit->outfitItems) {
