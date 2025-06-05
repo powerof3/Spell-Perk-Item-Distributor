@@ -425,6 +425,25 @@ namespace Outfits
 		return items;
 	}
 
+	bool IsWearingSingleOutfit(RE::Actor* actor, RE::BGSOutfit* targetOutfit) 
+	{
+		std::set<RE::FormID> targetOutfitItemIDs{};
+		for (const auto& obj : targetOutfit->outfitItems) {
+			targetOutfitItemIDs.insert(obj->formID);
+		}
+
+		std::set<RE::FormID> wornOutfitItemIDs{};
+		for (auto& [outfit, items] : GetAllOutfitItems(actor)) {
+			for (const auto& [item, isWorn] : items) {
+				if (isWorn) {
+					wornOutfitItemIDs.insert(item->formID);
+				}
+			}
+		}
+
+		return targetOutfitItemIDs == wornOutfitItemIDs;
+	}
+
 	void LogWornOutfitItems(RE::Actor* actor)
 	{
 		auto items = GetAllOutfitItems(actor);
@@ -959,26 +978,11 @@ namespace Outfits
 			return false;
 		}
 
-		auto itemsMap = GetAllOutfitItems(actor);
-
-		if (auto items = itemsMap.find(outfit); items != itemsMap.end()) {
-			std::set<RE::FormID> newOutfitItemIDs{};
-			for (const auto& obj : outfit->outfitItems) {
-				newOutfitItemIDs.insert(obj->formID);
-			}
-			std::set<RE::FormID> wornOutfitItemIDs{};
-			for (const auto& [item, isWorn] : items->second) {
-				if (isWorn) {
-					wornOutfitItemIDs.insert(item->formID);
-				}
-			}
-
-			if (newOutfitItemIDs == wornOutfitItemIDs) {
-				//#ifndef NDEBUG
-				logger::info("\t\tOutfit {} is already equipped on {}", *outfit, *actor);
-				//#endif
-				return true;
-			}
+		if (IsWearingSingleOutfit(actor, outfit)) {
+			//#ifndef NDEBUG
+			logger::info("\t\tOutfit {} is already equipped on {}", *outfit, *actor);
+			//#endif
+			return true;
 		}
 
 		//#ifndef NDEBUG
