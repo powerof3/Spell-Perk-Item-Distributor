@@ -412,6 +412,7 @@ namespace Outfits
 							if (outfitItem) {
 								auto isWorn = xList ? xList->GetByType<RE::ExtraWorn>() : nullptr;
 								auto item = entryList->object;
+								
 								if (auto outfit = RE::TESForm::LookupByID<RE::BGSOutfit>(outfitItem->id); outfit) {
 									items[outfit].emplace_back(item, isWorn != nullptr);
 								}
@@ -425,7 +426,7 @@ namespace Outfits
 		return items;
 	}
 
-	bool IsWearingSingleOutfit(RE::Actor* actor, RE::BGSOutfit* targetOutfit)
+	bool IsWearingDistributedOutfit(RE::Actor* actor, RE::BGSOutfit* targetOutfit)
 	{
 		std::set<RE::FormID> targetOutfitItemIDs{};
 		for (const auto& obj : targetOutfit->outfitItems) {
@@ -433,8 +434,9 @@ namespace Outfits
 		}
 
 		std::set<RE::FormID> wornOutfitItemIDs{};
-		for (auto& [outfit, items] : GetAllOutfitItems(actor)) {
-			for (const auto& [item, isWorn] : items) {
+		const auto itemsMap = GetAllOutfitItems(actor);
+		if (const auto target = itemsMap.find(targetOutfit); target != itemsMap.end()) {
+			for (const auto& [item, isWorn] : target->second) {
 				if (isWorn) {
 					wornOutfitItemIDs.insert(item->formID);
 				}
@@ -999,7 +1001,7 @@ namespace Outfits
 			return false;
 		}
 
-		if (IsWearingSingleOutfit(actor, outfit)) {
+		if (IsWearingDistributedOutfit(actor, outfit)) {
 			//#ifndef NDEBUG
 			logger::info("\t\tOutfit {} is already equipped on {}", *outfit, *actor);
 			//#endif
