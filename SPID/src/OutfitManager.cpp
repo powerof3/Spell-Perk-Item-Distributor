@@ -578,6 +578,25 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
+	/// This hook is used to prevent game from re-initializing default outfit when SPID already manages actor's outfit.
+	struct NeedsInitializingDefaultOutfit
+	{
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(24221, 24725);
+		static inline constexpr std::size_t offset = OFFSET(0xA8, 0xA8);
+
+		static bool thunk(RE::TESNPC* npc, RE::Actor* actor)
+		{
+			return Manager::GetSingleton()->ProcessNeedsInitializingDefaultOutfit(npc, actor, [&] { return func(npc, actor); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed NeedsInitializingDefaultOutfit hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
 	/// This hook is used to detect manual changes of Actor's outfit and suspend SPID-managed outfits.
 	/// Suspending allows SPID-managed outfits to behave like default outfits.
 	struct SetOutfitActor
@@ -696,7 +715,9 @@ namespace Outfits
 				stl::install_hook<SetOutfitActor>();
 				//#ifndef NDEBUG
 				stl::install_hook<EquipObject>();
-				stl::install_hook<UnequipObject>();
+				stl::install_hook<UnequipObject>(); 
+
+				stl::install_hook<NeedsInitializingDefaultOutfit>();
 				//#endif
 			}
 			break;
@@ -1252,6 +1273,23 @@ namespace Outfits
 		}
 
 		funcCall();
+	}
+
+	bool Manager::ProcessNeedsInitializingDefaultOutfit(RE::TESNPC* npc, RE::Actor* actor, std::function<bool()> funcCall)
+	{
+		if (!npc || !actor || actor->IsPlayerRef()) {
+			return funcCall();
+		}
+		logger::info("[OUTFIT] Should init default outfit for {}?", *actor);
+		// If we have a replacements and it is not suspended then we should let the game evaluate whether it wants init default outfit.
+		// Otherwise we always tell the game to not touch the outfit.
+		if (IsSuspendedReplacement(actor) || GetWornOutfit(actor) == std::nullopt) {
+			bool res = funcCall();
+			logger::info("[OUTFIT] Default outfit {} on {}", res ? "will be re-equipped" : "won't be re-equipped", *actor);
+			return res;
+		}
+		logger::info("[OUTFIT] Blocked re-equipping of default outfit on {}, since SPID manages their outfit", *actor);
+		return false; 
 	}
 #pragma endregion
 }
