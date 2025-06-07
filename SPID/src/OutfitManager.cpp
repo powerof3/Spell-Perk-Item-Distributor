@@ -412,7 +412,7 @@ namespace Outfits
 							if (outfitItem) {
 								auto isWorn = xList ? xList->GetByType<RE::ExtraWorn>() : nullptr;
 								auto item = entryList->object;
-								
+
 								if (auto outfit = RE::TESForm::LookupByID<RE::BGSOutfit>(outfitItem->id); outfit) {
 									items[outfit].emplace_back(item, isWorn != nullptr);
 								}
@@ -434,7 +434,7 @@ namespace Outfits
 		}
 
 		std::set<RE::FormID> wornOutfitItemIDs{};
-		const auto itemsMap = GetAllOutfitItems(actor);
+		const auto           itemsMap = GetAllOutfitItems(actor);
 		if (const auto target = itemsMap.find(targetOutfit); target != itemsMap.end()) {
 			for (const auto& [item, isWorn] : target->second) {
 				if (isWorn) {
@@ -580,7 +580,6 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	
 	/// This hook is used to prevent game from re-initializing default outfit when SPID already manages actor's outfit.
 	/// In cases when distribution is suspended we remove distributed outfit and allow game to restore default one.
 	struct InitializeDefaultOutfit
@@ -600,7 +599,7 @@ namespace Outfits
 
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
-	
+
 	/// This hook is used to detect manual changes of Actor's outfit and suspend SPID-managed outfits.
 	/// Suspending allows SPID-managed outfits to behave like default outfits.
 	struct SetOutfitActor
@@ -719,7 +718,7 @@ namespace Outfits
 				stl::install_hook<SetOutfitActor>();
 				//#ifndef NDEBUG
 				stl::install_hook<EquipObject>();
-				stl::install_hook<UnequipObject>(); 
+				stl::install_hook<UnequipObject>();
 
 				stl::install_hook<InitializeDefaultOutfit>();
 				//#endif
@@ -1289,7 +1288,7 @@ namespace Outfits
 		if (!npc || !actor || !npc->defaultOutfit || actor->IsPlayerRef()) {
 			return funcCall();
 		}
-				
+
 		if (!IsSuspendedReplacement(actor)) {
 			if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
 				logger::info("[OUTFIT INIT] Reapplying distributed outfit for {}?", *actor);
