@@ -224,7 +224,7 @@ namespace Outfits
 		friend struct Resurrect;
 		friend struct ResetReference;
 		friend struct SetOutfitActor;
-		friend struct NeedsInitializingDefaultOutfit;
+		friend struct InitializeDefaultOutfit;
 
 		// Hooks handling.
 		bool            ProcessShouldBackgroundClone(RE::Actor*, std::function<bool()> funcCall);
@@ -233,7 +233,7 @@ namespace Outfits
 		void            ProcessResurrect(RE::Actor*, std::function<void()> funcCall);
 		bool            ProcessResetReference(RE::Actor*, std::function<bool()> funcCall);
 		void            ProcessSetOutfitActor(RE::Actor*, RE::BGSOutfit*, std::function<void()> funcCall);
-		bool            ProcessNeedsInitializingDefaultOutfit(RE::TESNPC*, RE::Actor*, std::function<bool()> funcCall);
+		void            ProcessInitializeDefaultOutfit(RE::TESNPC* npc, RE::Actor* actor, std::function<void()> funcCall);
 
 		friend struct TestsHelper;
 

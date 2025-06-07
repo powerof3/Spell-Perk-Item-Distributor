@@ -580,25 +580,27 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
+	
 	/// This hook is used to prevent game from re-initializing default outfit when SPID already manages actor's outfit.
-	struct NeedsInitializingDefaultOutfit
+	/// In cases when distribution is suspended we remove distributed outfit and allow game to restore default one.
+	struct InitializeDefaultOutfit
 	{
 		static inline constexpr REL::ID     relocation = RELOCATION_ID(24221, 24725);
-		static inline constexpr std::size_t offset = OFFSET(0xA8, 0xA8);
+		static inline constexpr std::size_t offset = OFFSET(0x151, 0x156);
 
-		static bool thunk(RE::TESNPC* npc, RE::Actor* actor)
+		static void thunk(RE::TESNPC* npc, RE::Actor* actor, bool arg3, bool arg4, bool arg5, bool arg6)
 		{
-			return Manager::GetSingleton()->ProcessNeedsInitializingDefaultOutfit(npc, actor, [&] { return func(npc, actor); });
+			Manager::GetSingleton()->ProcessInitializeDefaultOutfit(npc, actor, [&] { func(npc, actor, arg3, arg4, arg5, arg6); });
 		}
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed NeedsInitializingDefaultOutfit hook.");
+			logger::info("\t\t🪝Installed InitializeDefaultOutfit hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
-
+	
 	/// This hook is used to detect manual changes of Actor's outfit and suspend SPID-managed outfits.
 	/// Suspending allows SPID-managed outfits to behave like default outfits.
 	struct SetOutfitActor
@@ -719,7 +721,7 @@ namespace Outfits
 				stl::install_hook<EquipObject>();
 				stl::install_hook<UnequipObject>(); 
 
-				stl::install_hook<NeedsInitializingDefaultOutfit>();
+				stl::install_hook<InitializeDefaultOutfit>();
 				//#endif
 			}
 			break;
@@ -990,20 +992,20 @@ namespace Outfits
 		}
 
 		//#ifndef NDEBUG
-		logger::info("[BEFORE EQUIP] Outfit items present in {} inventory", *actor);
+		logger::info("[EQUIP] BEFORE Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
 		//#endif
 
 		if (IsSuspendedReplacement(actor)) {
 			//#ifndef NDEBUG
-			logger::info("\t\tSkipping outfit equip because distribution is suspended for {}", *actor);
+			logger::info("\tSkipping outfit equip because distribution is suspended for {}", *actor);
 			//#endif
 			return false;
 		}
 
 		if (IsWearingDistributedOutfit(actor, outfit)) {
 			//#ifndef NDEBUG
-			logger::info("\t\tOutfit {} is already equipped on {}", *outfit, *actor);
+			logger::info("\tOutfit {} is already equipped on {}", *outfit, *actor);
 			//#endif
 			return true;
 		}
@@ -1018,7 +1020,7 @@ namespace Outfits
 			actor->WornArmorChanged();  // This should make sure game updates perks and whatnot that might be dependent on the worn outfit.
 		}
 		//#ifndef NDEBUG
-		logger::info("[AFTER EQUIP] Outfit items present in {} inventory", *actor);
+		logger::info("[EQUIP] AFTER Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
 		//#endif
 		return true;
@@ -1159,33 +1161,33 @@ namespace Outfits
 					if (const auto fromActor = from->As<RE::Actor>()) {
 						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 							if (const auto toActor = to->As<RE::Actor>()) {
-								logger::info("[ADDITEM] {} took {} {} from {}", *toActor, count, *item, *fromActor);
+								logger::info("[INVENTORY] {} took {} {} from {}", *toActor, count, *item, *fromActor);
 							} else {
-								logger::info("[ADDITEM] {} put {} {} to {}", *fromActor, count, *item, *to);
+								logger::info("[INVENTORY] {} put {} {} to {}", *fromActor, count, *item, *to);
 							}
 						} else {
-							logger::info("[ADDITEM] {} dropped {} {}", *fromActor, count, *item);
+							logger::info("[INVENTORY] {} dropped {} {}", *fromActor, count, *item);
 						}
 					} else {  // from is inanimate container
 						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 							if (const auto toActor = to->As<RE::Actor>()) {
-								logger::info("[ADDITEM] {} took {} {} from {}", *toActor, count, *item, *from);
+								logger::info("[INVENTORY] {} took {} {} from {}", *toActor, count, *item, *from);
 							} else {
-								//logger::info("[ADDITEM] {} {} transfered from {} to {}", count, *item, *from, *to);
+								//logger::info("[INVENTORY] {} {} transfered from {} to {}", count, *item, *from, *to);
 							}
 						} else {
-							//logger::info("[ADDITEM] {} {} removed from {}", count, *item, *from);
+							//logger::info("[INVENTORY] {} {} removed from {}", count, *item, *from);
 						}
 					}
 				} else {  // From is none
 					if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 						if (const auto toActor = to->As<RE::Actor>()) {
-							logger::info("[ADDITEM] {} picked up {} {}", *toActor, count, *item);
+							logger::info("[INVENTORY] {} picked up {} {}", *toActor, count, *item);
 						} else {
-							//logger::info("[ADDITEM] {} {} transfered to {}", count, *item, *to);
+							//logger::info("[INVENTORY] {} {} transfered to {}", count, *item, *to);
 						}
 					} else {
-						//logger::info("[ADDITEM] {} {} materialized out of nowhere and vanished without a trace.", count, *item);
+						//logger::info("[INVENTORY] {} {} materialized out of nowhere and vanished without a trace.", count, *item);
 					}
 				}
 			}
@@ -1268,6 +1270,7 @@ namespace Outfits
 					ApplyOutfit(actor, wornOutfit->distributed, true);  // apply our distributed outfit instead of defaultOutfit
 					return;
 				} else {
+					actor->RemoveOutfitItems(wornOutfit->distributed);  // remove distributed outfit, so that it won't be stuck in the inventory
 					logger::info("[PAPYRUS] \t⏸️ Suspending outfit distribution for {} due to manual change of the outfit", *actor);
 					logger::info("[PAPYRUS] \t\tTo resume distribution SetOutfit({}) should be called for this actor", *initialOutfit);
 				}
@@ -1277,21 +1280,34 @@ namespace Outfits
 		funcCall();
 	}
 
-	bool Manager::ProcessNeedsInitializingDefaultOutfit(RE::TESNPC* npc, RE::Actor* actor, std::function<bool()> funcCall)
+	// TODO: Remove Distributed keyword on Disable.
+
+	// TODO: Handle sleeping. After sleep NPC should equip back their distributed outfit. Use TESSleepStopEvent
+
+	void Manager::ProcessInitializeDefaultOutfit(RE::TESNPC* npc, RE::Actor* actor, std::function<void()> funcCall)
 	{
-		if (!npc || !actor || actor->IsPlayerRef()) {
+		if (!npc || !actor || !npc->defaultOutfit || actor->IsPlayerRef()) {
 			return funcCall();
 		}
-		logger::info("[OUTFIT] Should init default outfit for {}?", *actor);
-		// If we have a replacements and it is not suspended then we should let the game evaluate whether it wants init default outfit.
-		// Otherwise we always tell the game to not touch the outfit.
-		if (IsSuspendedReplacement(actor) || GetWornOutfit(actor) == std::nullopt) {
-			bool res = funcCall();
-			logger::info("[OUTFIT] Default outfit {} on {}", res ? "will be re-equipped" : "won't be re-equipped", *actor);
-			return res;
+				
+		if (!IsSuspendedReplacement(actor)) {
+			if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
+				logger::info("[OUTFIT INIT] Reapplying distributed outfit for {}?", *actor);
+				ApplyOutfit(actor, worn->distributed, true);
+				return;
+			}
+		} else {
+			if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
+				actor->RemoveOutfitItems(worn->distributed);  // remove distributed outfit, as the game will restore default outfit
+			}
 		}
-		logger::info("[OUTFIT] Blocked re-equipping of default outfit on {}, since SPID manages their outfit", *actor);
-		return false; 
+
+		logger::info("[OUTFIT INIT] BEFORE Outfit items present in {} inventory", *actor);
+		LogWornOutfitItems(actor);
+		logger::info("[OUTFIT INIT] Initializing default outfit for {}?", *actor);
+		funcCall();
+		logger::info("[OUTFIT INIT] AFTER Outfit items present in {} inventory", *actor);
+		LogWornOutfitItems(actor);
 	}
 #pragma endregion
 }
