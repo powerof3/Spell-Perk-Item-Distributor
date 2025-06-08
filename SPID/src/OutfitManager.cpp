@@ -1279,10 +1279,6 @@ namespace Outfits
 		funcCall();
 	}
 
-	// TODO: Remove Distributed keyword on Disable.
-
-	// TODO: Handle sleeping. After sleep NPC should equip back their distributed outfit. Use TESSleepStopEvent
-
 	void Manager::ProcessInitializeDefaultOutfit(RE::TESNPC* npc, RE::Actor* actor, std::function<void()> funcCall)
 	{
 		if (!npc || !actor || !npc->defaultOutfit || actor->IsPlayerRef()) {
