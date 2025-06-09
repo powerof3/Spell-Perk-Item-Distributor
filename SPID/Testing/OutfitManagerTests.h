@@ -1333,10 +1333,18 @@ namespace Outfits
 				EXPECT_WORN_DEFAULT(Outfit(Guard));
 			}
 
+			TEST(SetOutfitOriginalSuspendedWornResume)
+			{
+				SETUP(Alive, Guard, Regular, NotFinal, None, None);
+				actor->SetDefaultOutfit(Outfit(Elven), false);
+				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, original), "Original Papyrus SetOutfit function should not be called");
+				EXPECT_WORN_FIND(worn, Regular, NotFinal);
+			}
+
 			TEST(SetOutfitOriginalWornResume)
 			{
 				SETUP(Alive, Guard, Regular, NotFinal, None, None);
-				ASSERT(!TestsHelper::PapyrusSetOutfit(manager, actor, original), "Original Papyrus SetOutfit function should not be called");
+				ASSERT(TestsHelper::PapyrusSetOutfit(manager, actor, original), "Original Papyrus SetOutfit function should be called");
 				EXPECT_WORN_FIND(worn, Regular, NotFinal);
 			}
 

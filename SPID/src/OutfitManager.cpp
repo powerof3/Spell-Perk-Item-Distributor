@@ -383,7 +383,7 @@ namespace Outfits
 							if (outfitItem && outfitItem->id == formID) {
 								// forceEquip - actually it corresponds to the "PreventRemoval" flag in the game's function,
 								//				which determines whether NPC/EquipItem call can unequip the item. See EquipItem Papyrus function.
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, shouldUpdate3D, true, false, false);
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, shouldUpdate3D, true, false, true);
 								equipped = true;
 							}
 						}
@@ -1252,7 +1252,7 @@ namespace Outfits
 
 		// Empty outfit might be used to undress the actor.
 		if (outfit->outfitItems.empty()) {
-			logger::info("\[PAPYRUS] t⚠️ Outfit {} is empty - Actor will appear naked unless followed by another call to SetOutfit.", *outfit);
+			logger::info("[PAPYRUS] \t⚠️ Outfit {} is empty - Actor will appear naked unless followed by another call to SetOutfit.", *outfit);
 		}
 
 		// If there is no distributed outfit there is nothing to suspend/resume.
@@ -1260,13 +1260,14 @@ namespace Outfits
 			const auto initialOutfit = GetInitialOutfit(actor);
 			if (initialOutfit) {
 				if (initialOutfit == outfit) {
-					logger::info("[PAPYRUS] \t▶️ Resuming outfit distribution for {} as defaultOutfit has been reverted to its initial state", *actor);
-					// In any case SetOutfit should result in outfit being set as NPC's defaultOutfit.
-					if (actor->GetActorBase()->defaultOutfit != outfit) {
-						actor->GetActorBase()->SetDefaultOutfit(outfit);
+					if (IsSuspendedReplacement(actor)) {
+						logger::info("[PAPYRUS] \t▶️ Resuming outfit distribution for {} as defaultOutfit has been reverted to its initial state", *actor);
+						if (actor->GetActorBase()->defaultOutfit != outfit) {
+							actor->GetActorBase()->SetDefaultOutfit(outfit);
+						}
+						ApplyOutfit(actor, wornOutfit->distributed, true);  // apply our distributed outfit instead of defaultOutfit
+						return;
 					}
-					ApplyOutfit(actor, wornOutfit->distributed, true);  // apply our distributed outfit instead of defaultOutfit
-					return;
 				} else {
 					actor->RemoveOutfitItems(wornOutfit->distributed);  // remove distributed outfit, so that it won't be stuck in the inventory
 					logger::info("[PAPYRUS] \t⏸️ Suspending outfit distribution for {} due to manual change of the outfit", *actor);
