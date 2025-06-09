@@ -1016,7 +1016,6 @@ namespace Outfits
 		actor->RemoveOutfitItems(nullptr);
 		if (!actor->IsDisabled()) {
 			AddWornOutfit(actor, outfit, shouldUpdate3D);
-			actor->WornArmorChanged();  // This should make sure game updates perks and whatnot that might be dependent on the worn outfit.
 		}
 		//#ifndef NDEBUG
 		logger::info("[EQUIP] AFTER Outfit items present in {} inventory", *actor);
