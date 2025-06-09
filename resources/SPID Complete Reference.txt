@@ -1,0 +1,468 @@
+[size=5][b]SPID: The Complete Reference
+[/b][/size][color=#cccccc][i][size=1]as of SPID 7.0.0[/size]
+[/i][/color][color=#efefef]
+Everything you need to know to start creating SPID mods.[/color]
+
+[size=4][b]Changelog[/b][/size][color=#cccccc]
+[/color][spoiler]
+[list]
+[*]17.04.24 
+[*]   Removed section about special Outfits ordering. The reverse ordering was removed in SPID 6.5.0
+[/list][/spoiler][color=#cccccc]
+
+[/color][size=4][b]Table of Contents
+[/b][/size][spoiler]
+[list=1]
+[*]General Distribution Info
+[*]   How does SPID load configs?
+[*]   When distribution happens?
+[*]   In what order forms are distributed?
+[*]Syntax
+[*]   Form Type
+[*]      Type Inferring
+[*]   Distributable Form
+[*]   Filtering
+[*]      String Filters
+[*]         Supported Strings
+[*]         String Expression Modifiers
+[*]      Form Filters
+[*]         Supported Filterable Forms
+[*]         Form Expression Modifiers
+[*]      Level Filters
+[*]         Supported Values
+[*]         Ranges Syntax
+[*]         Leveled Distribution
+[*]      Traits Filters
+[*]         Supported Traits
+[*]         Trait Expression Modifier
+[*]      Note on Templated NPCs
+[*]   Count or Package Index
+[*]      Item Count
+[*]      Package Index
+[*]      Package List Type
+[*]   Chance
+[/list][/spoiler]
+
+[size=4][b]General Distribution Info[/b][/size]
+
+SPID distributes all configured forms at runtime, it doesn't have effect on either loaded plugins nor on save. SPID distributes everything from scratch each time you launch the game. You can think of SPID distribution as a "virtual plugin" that applies changes last in your load order. This makes any SPID-based mods safe to install/uninstall at any time, as they don't leave a trace.
+
+[list]
+[*][size=3][b]How does SPID load configs? (Order)[/b][/size]
+[/list][size=3][b]
+[/b][/size][list=1]
+[*]At startup SPID looks into Skyrim's Data/ folder and finds all ini files that have a _DISTR suffix in their name.
+[*]Then it orders them alphabetically from A to Z and loads in that order.
+[*]Each file is read from top to bottom, preserving relative order of each type of forms (this order is used later during distribution. (each type of forms is guaranteed to be distributed in the same order as they appear in the file as well as the global order of files).
+[/list]
+[list]
+[*][size=3][b]When Distribution happens?[/b][/size]
+[/list][size=3][b]
+[/b][/size]Distribution of forms is split into two steps:
+
+[list=1]
+[*]Persistent static (not scaling with Player's level) NPCs are distributed to on Main Menu load.
+[*]Dynamic leveled NPCs are distributed to as they are loaded in the world (typically, on cell load).
+[/list]
+[list]
+[*][b][size=3]In what order forms are distributed?[/size][/b]
+[/list][size=3][b]
+[/b][/size]SPID distribution processes forms of each type separately.
+The exact order at which form types are processed is: [spoiler]
+[list=1]
+[*]Keywords
+[*]Factions
+[*]Spells
+[*]Perks
+[*]Shouts
+[*]Packages
+[*]Outfits
+[*]Items
+[*]Skins
+[/list][/spoiler]
+Within each type forms are distributed in the same order that they were loaded with a few exceptions:
+
+[list]
+[*][b]Keywords[/b] are additionally sorted to make sure that keywords that depend on other keywords will be distributed later than their dependencies. This allows you to freely use keywords as requirements for other keywords without manually ordering them.
+[/list]
+
+[size=4][b]Syntax
+
+[/b][/size]General syntax for a distributable form looks like this:
+
+[code]FormType = FormOrEditorID|StringFilters|FormFilters|LevelFilters|TraitFilters|CountOrPackageIndex|Chance
+[/code][size=1]      [color=#e06666]required                           required         [/color]               [color=#93c47d]     optional                              optional                      optional                      optional                                           optional                               optional
+                                                                             Default: Index=0; Count=1            Default: 100[/color][/size]
+Optional sections can be either left blank or marked as [b]NONE[/b].
+
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][i]So both[/i][/color]
+[code]Item = MyItem|||||5
+[/code][i][color=#cccccc]and[/color][/i] 
+[code]Item = MyItem|NONE|NONE|NONE|NONE|5
+[/code][i][color=#cccccc]are valid.[/color][/i]
+[/spoiler]
+
+[b][color=#8e7cc3][size=4]Form Type[/size][/color][/b]
+[size=2][i]Type of a distributable form that you want to configure.[/i][/size]
+
+Here is a list of all supported Distributable Forms that you can specify in [i]FormType[/i]:
+
+[color=#cccccc]    Form type       Signature[/color]
+[list]
+[*][b]Spell               [/b][SPEL, LVSP]
+[*][b]Perk[/b]                [PERK]
+[*][b]Item[/b][size=2]                 [ALCH, AMMO, ARMO, BOOK, INGR, KEYM, LVLI, MISC, SCRL, SLGM, WEAP][b][color=#ff0000]*[/color][/b][/size]
+[*][b]Shout             [/b][SHOU]
+[*][b]Package        [/b][PACK, FLST[color=#ff7700][size=2][b]*[/b][/size][/color]]
+[*][b]Keyword[color=#00ff00]*[/color]      [/b][KYWD]
+[*][b]Outfit             [/b][OTFT]
+[*][b]SleepOutfit[/b]   [OTFT]
+[*][b]Faction          [/b][FACT]
+[*][b]Skin               [/b][ARMO]
+[/list][color=#ff0000][size=2]* [/size][/color][color=#e06666][size=2]Basically, any carriable items. Let me know if I missed some.[/size][/color]
+[color=#ff7700][size=2]*[/size] [/color][color=#e69138][size=2]When distributing FormList it must contain only Packages, otherwise game most likely will crash.[/size]
+[/color][color=#00ff00][size=2]* [/size][/color][color=#93c47d][size=2]SPID can also create Keywords dynamically, so you can distribute custom keywords.[/size][/color]
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2][i]This will create a new keyword and distribute it to NPCs[/i][/size][/color]
+[code]Keyword = MyVerySpecialKeyword
+[/code][/spoiler]
+
+[b][size=3][color=#b4a7d6]Type Inferring[/color]
+
+[/size][/b]You can also specify [b]Form[/b] as a generic [i]Form Type [/i]and let SPID work out proper [i]Form Type [/i]based on provided [i]Distributable Form[/i].
+[quote][color=#e69138][size=2][b][/b][/size][/color][center][color=#e69138][size=2][b]IMPORTANT[/b][/size][/color]
+Keep in mind that [b]SleepOutfit [/b]and [b]Skin [/b]can't be inferred,
+because they use the same forms as [b]Outfit [/b]and [b]Item [/b]respectively, so the latter will always be detected first.
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][code]Form = SteelSword
+Form = DefaultOutfit[/code]is the same as
+[code]Item = SteelSword
+Outfit = DefaultOutfit[/code][/spoiler][/center][/quote]
+
+[b][color=#c27ba0][size=4]Distributable Form[/size][/color][/b]
+[i][size=2]A unique identifier of the Form to be distributed.
+[/size][/i]
+Form must be one of the supported types listed in [b][color=#8e7cc3]Form Type[/color][/b] section.
+
+A form can be identified by using one of the following IDs:
+
+[list=1]
+[*][b]FormID[/b] - a hexadecimal number (0x12345) with a plugin name as a suffix (e.g 0x12345~MyPlugin.esp). Read [url=https://www.nexusmods.com/skyrimspecialedition/articles/6629]FormIDs and You[/url] for more details on how this ID is formed.
+[*][b]EditorID[/b] - a text identifier of the Form as seen in Creation Kit or xEdit. (e.g. ElvenMace or ImperialBow).
+[/list]
+Generally, [b]EditorID [/b]is considered to be a more stable way of referencing a Form since, unlike [b]FormID[/b], it will remain the same when the mod is merged, converted to esl or compacted.
+
+[b][color=#e06666][size=4]Filtering[/size][/color][/b]
+[size=4][b]
+[/b][/size]Distributable Form can be restricted to a group of NPCs that match specific criteria. These criteria are configured by a handful of filtering sections, that we'll talk about in a moment.
+
+[u]All Filters sections are multiplicative (combined using logical AND operation), while expressions within the same section are additive (combined using logical OR operation).
+[/u]
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][i][color=#cccccc]So the entry[/color][/i]
+[code]Form = 0x12345|A,B|0x12,0x34[/code][i][color=#cccccc]
+can be read as "give a form 0x12345 when NPC has (A [b]OR[/b] B) [b]AND [/b](0x12 [b]OR[/b] 0x34)".[/color][/i]
+[/spoiler]
+[quote][b][color=#6fa8dc][size=2][/size][/color][/b][center][b][color=#6fa8dc][size=2]TIP[/size][/color][/b]
+Use multiple entries for the same distributable forms to target different groups of NPCs.
+[color=#cccccc][size=1]Example:[/size][/color][spoiler]
+[code]Keyword = FemaleBandits||BanditFaction||F
+[/code][color=#cccccc][size=2][i]will give the keyword only to NPCs that are both Female AND part of Bandit Faction. But[/i][/size][/color]
+[code]Keyword = FemaleOrBandits||BanditFaction
+Keyword = FemaleOrBandits||||F
+[/code][color=#cccccc][size=2][i]will give the keyword to all members of Bandit Faction as well as all Females in the game.[/i][/size][/color]
+[/spoiler][/center][/quote][b]
+[color=#6d9eeb][size=4]String Filters[/size][/color][/b]
+[size=2][i]A list of comma-separated textual expressions that allows you to filter eligible NPCs by their textual properties, such as a name.[/i][/size]
+
+[code]Form = 0x12345|StringExpression1,StringExpression2,...
+[/code]
+[b][color=#a4c2f4][size=3]Supported Strings[/size][/color][/b]
+[size=2][i]String Filters allow you to match NPCs by the following criteria:[/i][/size]
+
+[list]
+[*]NPC's [b]Name[/b] (e.g. [i]Balgruuf[/i]).
+[*]NPC's [b]EditorID[/b] (e.g. [i]BalgruufTheGreater[/i]).
+[*]NPC Templates[color=#ff7700][b]*[/b][/color] [b]EditorID[/b]. This allows you to target all descendants of a template.
+[*]NPC's [b]Keywords[/b] (e.g. [i]ActorTypeNPC[/i]). This also includes[b] Keywords[/b] distributed by SPID.
+[*]NPC Race's [b]Keywords[/b] (e.g. [i]ActorTypeAnimal[/i]).
+[/list][color=#ff7700][size=2]* [/size][/color][color=#f6b26b][size=2]This allows you to target all descendants of the same template. See Note on Templated NPCs below.[/size][/color]
+
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2][i]Give a form to all Whiterun Guards[/i][/size][/color]
+[code]Form = 0x12345|Whiterun Guard[/code][color=#cccccc][size=2][i]
+
+Give a form to NPC with ActorTypeNPC [b]OR [/b]ActorTypeDragon[/i][/size][/color]
+[code]Form = 0x12345|ActorTypeNPC,ActorTypeDragon[/code][/spoiler]
+[size=3][b][color=#a4c2f4]String Expres[/color][color=#9fc5e8]sion Modifiers[/color][/b][/size]
+[i][size=2]By default, String Expression looks for the exact match of the specified term, but this behavior can be changed with several modifiers.[/size][/i]
+
+[list]
+[*][b]Exclusion modifier[/b] ([b]-[/b]). Placed in front of a term. This will invert the expression and make it only match NPCs who does [u]NOT[/u] have the exact term. 
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2][i]Give a form to every NPC except specifically "Balgruuf" (so "Balgruuf Junior" would still be allowed)[/i][/size][/color]
+[code]Form = 0x12345|-Balgruuf[/code][/spoiler]
+[list]
+[*][b]Partial match modifier[/b] ([b]*[/b]). Placed in front of a term. This will make the expression allow partial matches of the term. (e.g. "Guard" in "Whiterun Guard")
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler][size=2][i][color=#cccccc]Give form to every guard, this will match all "Whiterun [/color][color=#6aa84f]Guard[/color][color=#cccccc]", "Falkreath [/color][color=#6aa84f]Guard[/color][color=#cccccc]", "Markarth [/color][color=#6aa84f]Guard[/color][color=#cccccc]", etc. Note that this will also match NPCs like "[/color][color=#6aa84f]Guard[/color][color=#cccccc]ian" or "Body[/color][color=#6aa84f]guard[/color][color=#cccccc]".[/color][/i][/size]
+[code]Form = 0x12345|*Guard
+[/code][/spoiler]
+[list]
+[*][b]Combining modifier[/b] ([b]+[/b]). Placed between multiple terms you want to combine. This will make the expression only match NPCs who have [u]ALL[/u] of the exact terms.
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler][i][color=#cccccc][size=2]Give a form to NPCs who are simultaneously ActorTypeNPC, Bandit and ActorTypeGhost[/size][/color][/i]
+[code]Form = 0x12345|ActorTypeNPC+Bandit+ActorTypeGhost[/code][/spoiler]
+[quote][center][color=#e69138][size=2][b]IMPORTANT[/b][/size][/color]
+Only one modifier can be used in a single expression.
+[color=#cccccc][size=1]Example:[/size][/color][spoiler]None of these are valid:
+[color=#e06666][code]Form = 0x12345|-*Guard
+Form = 0x12345|-Guard+ActorTypeNPC
+Form = 0x12345|ActorTypeNPC-Guard
+Form = 0x12345|*Guard+ActoryTypeNPC[/code][/color][/spoiler][/center][/quote]
+
+[b][color=#8e7cc3][size=4]Form Filters[/size][/color][/b]
+[size=2][i]A list of comma-separated expressions containing FormOrEditorIDs that allows you to filter eligible NPCs by their form properties, such as Race, Class, etc.
+[/i][/size]
+[code]Form = 0x12345||FormExpression1,FormExpression2,...[/code][b][color=#b4a7d6][size=3]
+
+Supported Filterable Forms[/size][/color][/b]
+[i][size=2]Form Filters allow you to match NPCs by the following criteria:[/size][/i]
+
+        [color=#b6b6b6]Form type            Signature       NPC's Record in xEdit[/color]
+[list]
+[*][b]Combat Style   [/b][CSTY]          ZNAM - Combat Style    
+[*][b]Class[/b]                 [CLAS]          CNAM - Class
+[*][b]Faction             [/b][FACT]           Factions
+[*][b]Race[/b]                  [RACE]          RNAM - Race
+[*][b]Outfit[/b]                [OTFT]           DOFT - Default outfit
+[*]Specific [b]NPC [/b]   [NPC_]          FormID, EDID - Editor ID
+[*]NPC's [b]Template[color=#ff0000]*[/color][/b]  [NPC_]     FormID, EDID - Editor ID
+[*][b]Voice Type[/b]            [VTYP]           VTCK - Voice
+[*]Known [b]Spell    [/b]      [SPEL]           Actor Effects
+[*][b]Skin[/b]                       [ARMO]          WNAM - Worn Armor
+[*]Editor [b]Location[color=#ff7700][size=2]*[/size][/color] [/b]  [LCTN]           XLCN - Persistent Location (of ActorRef)
+[*][b]FormList[color=#00ff00][size=2]*[/size][/color][/b]              [FLST]           [i]Recursively looks for any form from the list.[/i]
+[/list][color=#ff0000]* [/color][color=#e06666][size=2]This allows you to target all descendants of the same template. See Note on Templated NPCs below.[/size][/color]
+[color=#ff7700]*[/color][color=#cccccc] [/color][color=#f6b26b][size=2]This is the location where NPC is placed in the Editor, [u]NOT[/u] the location where NPC is right now.[/size][/color]
+[color=#00ff00]*[/color][color=#cccccc] [/color][color=#93c47d][size=2]List can contain any of the forms from this table, including another nested FormList.[/size][/color]
+[color=#cccccc][size=1]
+Example:[/size][/color][spoiler][color=#cccccc][i][size=2]Give a form to all Nords [/size][size=1](NordRace "Nord" [RACE:00013746])[/size][/i][/color]
+[code]Form = 0x12345||NordRace
+[/code]
+[color=#cccccc][i][size=2]Give a form to NPCs that are located in Whiterun [/size][size=1]([/size][/i][/color][color=#cccccc][i][size=1]WhiterunLocation "Whiterun" [LCTN:00018A56])[/size] [b]OR [/b][size=2]report crimes in Whiterun Hold [/size][size=1](CrimeFactionWhiterun "Whiterun" [FACT:000267EA])[/size][size=2].[/size][/i][/color]
+[code]Form = 0x12345||WhiterunLocation,CrimeFactionWhiterun[/code][/spoiler]
+Additionally, here you can specify only name of the plugin where NPC is defined. This will match only NPCs from given plugin.
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2][i]Give a form only to NPCs from CoolNPCs.esp plugin[/i][/size][/color]
+[code]Form = 0x12345||CoolNPCs.esp[/code][/spoiler]
+
+[b][color=#b4a7d6][size=3]Form Expression Modifiers[/size][/color][/b]
+[size=2][i]By default, Form Expression checks whether an NPC has the specified form, but this behavior can be changed with several modifiers.[/i][/size]
+
+[list]
+[*][b]Exclusion modifier[/b] ([b]-[/b]). Placed in front of a form. This will invert the expression and make it only match NPCs who does [u]NOT[/u] have the form. 
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][i][size=2]Give a form to every NPC except Nords [/size][i][size=1](NordRace "Nord" [RACE:00013746])[/size][/i][/i][/color]
+[code]Form = 0x12345||-NordRace
+[/code][/spoiler]
+[list]
+[*][b]Combining modifier[/b] ([b]+[/b]). Placed between multiple forms you want to combine. This will make the expression only match NPCs who have [u]ALL[/u] of the forms.
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler][i][color=#cccccc][size=2]Give a form to NPCs who are simultaneously Nords [/size][i][size=1](NordRace "Nord" [RACE:00013746])[/size][/i][size=2], Report Crime in Whiterun [/size][i][size=1](CrimeFactionWhiterun "Whiterun" [FACT:000267EA])[/size][size=2] [/size][/i][size=2]and know Stoneflesh spell[/size] [size=1](StonefleshLeftHand "Stoneflesh" [SPEL:00072316])[/size][/color][/i]
+[code]Form = 0x12345||NordRace+CrimeFactionWhiterun+StonefleshLeftHand
+[/code][/spoiler]
+[quote][center][color=#e69138][size=2][b]IMPORTANT
+[/b][/size][/color]Only one modifier can be used in a single expression.
+[color=#cccccc][size=1]Example:[/size][/color][spoiler]None of these are valid:
+[color=#e06666][code]Form = 0x12345|-NordRace+WhiterunLocation
+Form = 0x12345|CrimeFactionWhiterun-NordRace
+[/code][/color][/spoiler][/center][/quote]
+[b][color=#76a5af][size=4]Level Filters[/size][/color][/b]
+[size=2][i]A list of comma-separated expressions with numeric ranges that allows you to filter eligible NPCs by their leveled properties, such as level or skill.
+[/i][/size]
+[code]Form = 0x12345|||LevelExpression,SkillExpression1,SkillExpression2,...
+[/code]
+[quote][color=#e69138][size=2][b][/b][/size][/color][color=#e69138][size=2][b][/b][/size][/color][center][color=#e69138][size=2][b]IMPORTANT
+[/b][/size][/color]Only one Level Expression can be specified.
+Providing multiple Level Expression will cause SPID to only recognize the last one.
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2][i]In the entry[/i][/size][/color]
+[code]Form = 0x12345|||5/10,7/12
+[/code][i][color=#cccccc][size=2]only 7/12 levels will be stored. 5/10 will be discarded.[/size][/color][/i]
+[/spoiler][/center][/quote]
+
+[color=#a2c4c9][size=3][b]Supported Values[/b][/size][/color]
+[i][size=2]Level Filters allow you to match NPCs by the following criteria:[/size][/i]
+
+        [color=#cccccc]Value                 Expression[/color]
+[list]
+[*][b]Level[/b]                 min/max
+[*][b]Skill Level[/b]        skillIndex[color=#ff7700][size=2][b]*[/b][/size][/color](min/max)
+[*][b]Skill Weight[/b]     S[i]ame as Skill but prefixed with letter [b]w[/b].[/i]
+[/list][color=#ff7700][size=2][b]*[/b][/size][/color] [color=#e69138][size=2]skillIndex is a number corresponding to one of the 17 skills:[/size][/color]
+[spoiler]  [color=#cccccc]#  Skill[/color]
+  0. One-Handed
+  1. Two-Handed
+  2. Archery
+  3. Block
+  4. Smithing
+  5. Heavy Armor
+  6. Light Armor
+  7. Pickpocket
+  8. Lockpicking
+  9. Sneak
+10. Alchemy
+11. Speech
+12. Alteration
+13. Conjuration
+14. Destruction
+15. Illusion
+16. Restoration
+17. Enchanting
+[/spoiler]
+
+[color=#a2c4c9][size=3][b]Ranges Syntax[/b][/size][/color]
+
+[list]
+[*]Closed range ([b]min/max[/b]). Match values between [b]min[/b] and [b]max[/b], including [b]min[/b] and [b]max[/b].
+[*]Half-open range ([b]min [/b]or [b]min/[/b]). Matches values starting from [b]min[/b] and to infinity :)
+[*]Exact value ([b]value/value[/b]). Matches exact [b]value[/b].
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2]Give a form to NPCs who are at least level 5[/size][/color]
+[code]Form = 0x12345|||5
+[/code]
+[color=#cccccc][size=2]Give a form to NPCs who has 50 in Destruction skill level[/size][/color]
+[code]Form = 0x12345|||14(50/50)
+[/code]
+[color=#cccccc][size=2]Give a form to NPCs who level up their Two-Handed skill slightly more actively than other skills.[/size][/color] [color=#cccccc][size=1](controlled by Skill Weight)[/size][/color]
+[code]Form = 0x12345|||w2(2/3)
+[/code][/spoiler]
+
+[color=#a2c4c9][size=3][b]Leveled Distribution[/b][/size][/color]
+
+Whenever a [i]Distributable Form[/i] defines a [i]Level Filter[/i] it becomes a part of the [i]Leveled Distribution[/i]. Unlike regular distribution, [i]Leveled Distribution [/i]checks levels and/or skills of all loaded auto-leveled NPCs and checks whether they've met requirements of the [i]Level Filter[/i]. This happens unless either other filters discard the NPC or a random chance check would fail.
+
+
+[b][color=#c27ba0][size=4]Trait Filters[/size][/color][/b]
+[size=2][i]A single expression that allows you to filter eligible NPCs by traits, such as gender or teammate.
+
+[/i][/size][code]Form = 0x12345||||TraitExpression
+[/code]
+[color=#d5a6bd][size=3][b]Supported Traits[/b][/size][/color]
+
+[list]
+[*][b][color=#f1c232]F[/color][/b]emale
+[*][b][color=#f1c232]M[/color][/b]ale
+[*][b][color=#f1c232]U[/color][/b]nique
+[*][color=#f1c232][b]S[/b][/color]ummonable
+[*][color=#f1c232][b]C[/b][/color]hild
+[*][b][color=#f1c232]L[/color][/b]eveled (Is PC Level Mult)
+[*]Player's [b][color=#f1c232]T[/color][/b]eammate
+[/list]
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][i][color=#cccccc][size=2]Give a form to females[/size][/color][/i]
+[code]Form = 0x12345||||F[/code][/spoiler]
+
+[size=3][b][color=#d5a6bd]Trait Expression Modifier[/color]
+[/b][/size][size=2][i]By default, Trait Expression checks whether an NPC has given Trait, but this behavior can be changed with several modifiers.[/i][/size]
+
+[list]
+[*][b]Exclusion modifier[/b] ([b]-[/b]). Placed in front of a trait. This will invert the trait and make it only match NPCs who does [u]NOT[/u] have that trait. 
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][i][size=2]Give a form only to not unique NPC[/size][/i][/color]
+[code]Form = 0x12345||||-U
+[/code][/spoiler]
+[list]
+[*][b]Combining modifier[/b] ([b][color=#ff0000]/[/color][/b]). Placed between multiple traits you want to combine. This will make the expression only match NPCs who have [u]ALL[/u] of the traits.
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler][i][color=#cccccc][size=2]Give a form to all non unique male NPCs who are also adults[/size][/color][/i]
+[code]Form = 0x12345||||-U/M/-C
+[/code][/spoiler]
+
+[quote][color=#6fa8dc][size=2][b]
+[/b][/size][/color][color=#6fa8dc][size=2][b][/b][/size][/color][center][color=#6fa8dc][size=2][b]TIP
+[/b][/size][/color]Note that, unlike other filters, Traits actually support mixing of expression modifiers.
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2]So you can do this[/size][/color]
+[color=#6aa84f][code]Form = 0x12345||||F/-U/L/-S[/code][/color][/spoiler][/center][/quote]
+
+[b][color=#6d9eeb][size=4]Note on Templated NPCs[/size][/color][/b]
+
+Templated NPCs are those that inherit their attributes from another NPC, that is referred to as a base template. [i]Filters[/i] always check the final NPC that is created after merging attributes from NPC and its base template.
+
+Additionally, [i]String Filters[/i] and [i]Form Filters[/i] allow you to target specific NPCs using EditorID or FormID, including IDs of templates that they derive from. However, when template hierarchy includes multiple templated NPC, SPID can only reach specific templates. In such cases the following templates can be specified:
+
+[color=#a4c2f4][size=3][b]For not leveled NPCs:
+[/b][/size][/color]
+[list]
+[*]Final NPC. This is the resolved NPC that will inherit attributes from its template.
+[*]Base template. This is the immediate parent Template of the final NPC. 
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler]
+[size=2][code]DLC2SV01DragonPriestBoss [NPC_:0401CAD5] => EncDragonPriestFire [NPC_:0002025A] => EncDragonPriest [NPC_:00023A93]
+[/code][/size]   [size=1]   [color=#93c47d]Final NPC [/color]                                                                                  [color=#93c47d]Base template                                                                          [/color][color=#e06666]F[/color][color=#e06666]urther template in hierarchy
+[/color][color=#93c47d]                         Reachable                                                                                                        Reachable                                                                                      [/color][color=#e06666]Unreachable[/color][/size]
+[/spoiler]
+
+[color=#a4c2f4][size=3][b]For leveled NPCs:[/b][/size][/color]
+[list]
+[/list][list]
+[*]Original NPC. This is the top-level NPC that was used to create the final NPC.
+[*]Base leveled NPC. This is the Leveled NPC that is the closest to Original NPC in the hierarchy of templates that was used to pick a random NPC.
+[*]Base template. This is a random NPC that was picked from Leveled NPC and will be used as a template for Original NPC.
+[/list][color=#cccccc][size=1]Example:[/size][/color][spoiler]
+[size=2][code][NPC_:FF000D45] => LvlDraugrAmbushMelee2HMale [NPC_:0004A04E] => LCharDraugrMelee2HMale [LVLN:0001E772] => 
+[/code][/size][size=1] [color=#e06666]Dynamic Final NPC [/color]           [color=#93c47d]                                Original NPC                                                                                              [/color]   [color=#93c47d]Base leveled NPC
+[/color][/size][color=#e06666][size=1]      Unreachable                                                    [/size][/color][color=#93c47d][size=1]Reachable                                                                                                               Reachable
+[/size][/color]
+[size=2][code]SubCharDraugr02Melee2HM [LVLN:00023BFF] => EncDraugr02Melee2HHeadM05 [NPC_:0001FF2C] => EncDraugr02Template2H [NPC_:0005B753]
+[/code][/size][size=1]     [color=#e06666]Nested leveled NPC[/color]                                                                              [/size]   [size=1][color=#93c47d]         Base template                                                                                               [/color][color=#e06666]Further template in hierarchy
+          Unreachable                                                                                                             [/color][color=#93c47d]Reachable[/color][color=#e06666]                                                                                                               Unreachable[/color][/size]
+[/spoiler]
+
+[b][color=#ffd966][size=4]Count or Package Index[/size][/color][/b]
+[i][size=2]A numeric value that is interpreted based on associated Distributable Form.[/size][/i][size=3][b]
+[/b][/size]
+[size=3][b][color=#ffe599]Item Count[/color]
+[/b][/size]
+When [i]Distributable Form[/i] is an [b]Item[/b], this section is interpreted as a number of items that should be added.
+If this section is empty or absent Default count is 1.
+
+You can also specify a numeric range as a Count and let SPID pick a [b]Random Item Count[/b] to distribute from this range.
+
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2][i]Give a single bow (default count 1)[/i][/size][/color]
+[code]Form = ImperialBow[/code]
+
+[i][color=#cccccc][size=2]Give 3 swords[/size][/color][/i]
+[code]Form = IronSword|||||3[/code]
+
+[i][color=#cccccc][size=2]Give somewhere between 10 and 20 arrows[/size][/color][/i]
+[code]Item = SteelArrow|||||10-20[/code][/spoiler]
+
+[b][size=3][color=#ffe599]Package Index[/color]
+
+[/size][/b]When [i]Distributable Form[/i] is a [b]Package[/b], this section is interpreted as an index where given Package should be inserted.
+If this section is empty or absent Default index is 0.
+
+Note that Package Index is zero-based, so the first Package has index 0.
+
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][i][color=#cccccc][size=2]Set Patrol package [/size][size=1](Patrol [PACK:00017723]) [/size][size=2]as the second package[/size][/color][/i]
+[code]Package = Patrol|||||1
+[/code]
+[i][color=#cccccc][size=2]Set Travel package [/size][size=1](Travel [PACK:00016FAA])[/size][/color][color=#cccccc][size=2] as the first package (default index 0)[/size][/color][/i]
+[code]Package = Travel
+[/code][/spoiler]
+
+[color=#ffe599][size=3][b]Package List Type[/b][/size][/color]
+
+When [i]Distributable Form[/i] is a [b]FormList[/b], this section is interpreted as a type of the Package List that should be overwritten.
+If this section is empty or absent Default type is 0.
+
+Type can be one of the following:
+[color=#cccccc]#              Type                                       NPC's Record in xEdit[/color]
+0. Default Package List                  DPLT - Default Package List
+1. Spectator Override                     SPOR - Spectator override package list
+2. Observe Corpse Override          OCOR - Observe dead body override package list
+3. Guard Warn Override                 GWOR - Guard warn override package list
+4. Enter Combat Override              ECOR - Combat override package list
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2][i]Set default package list[/i][/size][/color]
+[code]Package = DefaultPackageListLinkedPatrol|||||0
+[/code]
+[i][color=#cccccc][size=2]or, since default type is 0, we can simply write[/size][/color][/i]
+[code]Package = DefaultPackageListLinkedPatrol[/code][/spoiler]
+
+[b][color=#93c47d][size=4]Chance[/size][/color][/b]
+[size=2][i]A percentage value that sets a chance of given Distributable Form to be distributed.[/i][/size][size=4][b]
+[/b][/size]
+Chance is a [u]decimal[/u] value from 0 to 100. There is no limit on how small you want the chance to be [color=#cccccc][size=1](good luck hitting those 0.0001% chances though :D)[/size][/color]
+If this section is absent Default chance is 100 (e.g. guaranteed).
+
+[color=#cccccc][size=1]Example:[/size][/color][spoiler][color=#cccccc][size=2][i]Give a form with a 60% chance[/i][/size][/color]
+[code]Form = 0x12345||||||60
+[/code]
+[color=#cccccc][size=2][i]Give a form with a 0.01% chance[/i][/size][/color]
+[code]Form = 0x12345||||||0.01[/code][/spoiler]
