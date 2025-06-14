@@ -1285,15 +1285,21 @@ namespace Outfits
 			return funcCall();
 		}
 
-		if (!IsSuspendedReplacement(actor)) {
-			if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
-				logger::info("[OUTFIT INIT] Reapplying distributed outfit for {}?", *actor);
-				ApplyOutfit(actor, worn->distributed, true);
-				return;
-			}
-		} else {
-			if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
+		if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
+			if (IsSuspendedReplacement(actor)) {
 				actor->RemoveOutfitItems(worn->distributed);  // remove distributed outfit, as the game will restore default outfit
+			} else {
+				// We want the game to do what it does with defaultOutfit, but for a distributed one.
+				logger::info("[OUTFIT INIT] BEFORE Outfit items present in {} inventory", *actor);
+				LogWornOutfitItems(actor);
+				logger::info("[OUTFIT INIT] Initializing distributed outfit for {}?", *actor);
+				auto backupOutfit = npc->defaultOutfit;
+				npc->defaultOutfit = worn->distributed;
+				funcCall();
+				npc->defaultOutfit = backupOutfit;
+				logger::info("[OUTFIT INIT] AFTER Outfit items present in {} inventory", *actor);
+				LogWornOutfitItems(actor);
+				return;
 			}
 		}
 
