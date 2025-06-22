@@ -251,7 +251,7 @@ namespace Outfits
 	{
 		//#ifndef NDEBUG
 		LOG_HEADER("LOADING");
-		std::unordered_map<RE::Actor*, OutfitReplacement> loadedReplacements;
+		std::unordered_map<RE::FormID, OutfitReplacement> loadedReplacements;
 		//#endif
 
 		auto manager = Manager::GetSingleton();
@@ -280,16 +280,17 @@ namespace Outfits
 					break;
 				}
 				if (loaded) {
-					if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(actorFormID); actor) {
-						if (loadedReplacement.distributed) {
-							manager->wornReplacements[actorFormID] = loadedReplacement;
+					if (loadedReplacement.distributed) {
+						manager->wornReplacements[actorFormID] = loadedReplacement;
 							//#ifndef NDEBUG
-							loadedReplacements[actor] = loadedReplacement;
+							loadedReplacements[actorFormID] = loadedReplacement;
 							//#endif
-						} else {
-							manager->RevertOutfit(actor, loadedReplacement);
-						}
+					} else if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(actorFormID); actor) {
+						logger::warn("Loaded replacement doesn't have an outfit, reverting actor {}", *actor);
+						manager->RevertOutfit(actor, loadedReplacement);
 					}
+				} else {
+					logger::error("Failed to load replacement");
 				}
 			}
 		}
@@ -299,7 +300,11 @@ namespace Outfits
 		//#ifndef NDEBUG
 		logger::info("Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
 		for (const auto& pair : loadedReplacements) {
-			logger::info("\t{}", *pair.first);
+			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
+				logger::info("\t{}", *actor);
+			} else {
+				logger::info("\t[ACHR:{:08X}]", pair.first);
+			}
 			logger::info("\t\t{}", pair.second);
 		}
 
