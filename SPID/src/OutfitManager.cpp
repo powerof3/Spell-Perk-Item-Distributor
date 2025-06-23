@@ -379,16 +379,16 @@ namespace Outfits
 			if (!actor->HasOutfitItems(outfit)) {
 				invChanges->InitOutfitItems(outfit, actor->GetLevel());
 			}
-			if (const auto entryLists = invChanges->entryList) {
+			if (const auto entryList = invChanges->entryList) {
 				const auto formID = outfit->GetFormID();
-				for (const auto& entryList : *entryLists) {
-					if (entryList && entryList->object && entryList->extraLists) {
-						for (const auto& xList : *entryList->extraLists) {
-							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+				for (const auto& entryData : *entryList) {
+					if (entryData && entryData->object && entryData->extraLists) {
+						for (const auto& extraList : *entryData->extraLists) {
+							auto outfitItem = extraList ? extraList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 							if (outfitItem && outfitItem->id == formID) {
 								// forceEquip - actually it corresponds to the "PreventRemoval" flag in the game's function,
 								//				which determines whether NPC/EquipItem call can unequip the item. See EquipItem Papyrus function.
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryList->object, xList, 1, nullptr, shouldUpdate3D, true, false, true);
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryData->object, extraList, 1, nullptr, shouldUpdate3D, true, false, true);
 								equipped = true;
 							}
 						}
@@ -409,14 +409,14 @@ namespace Outfits
 	{
 		std::map<RE::BGSOutfit*, std::vector<std::pair<RE::TESForm*, bool>>> items;
 		if (const auto invChanges = actor->GetInventoryChanges()) {
-			if (const auto entryLists = invChanges->entryList) {
-				for (const auto& entryList : *entryLists) {
-					if (entryList && entryList->object && entryList->extraLists) {
-						for (const auto& xList : *entryList->extraLists) {
-							auto outfitItem = xList ? xList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+			if (const auto entryList = invChanges->entryList) {
+				for (const auto& entryData : *entryList) {
+					if (entryData && entryData->object && entryData->extraLists) {
+						for (const auto& extraList : *entryData->extraLists) {
+							auto outfitItem = extraList ? extraList->GetByType<RE::ExtraOutfitItem>() : nullptr;
 							if (outfitItem) {
-								auto isWorn = xList ? xList->GetByType<RE::ExtraWorn>() : nullptr;
-								auto item = entryList->object;
+								auto isWorn = extraList ? extraList->GetByType<RE::ExtraWorn>() : nullptr;
+								auto item = entryData->object;
 
 								if (auto outfit = RE::TESForm::LookupByID<RE::BGSOutfit>(outfitItem->id); outfit) {
 									items[outfit].emplace_back(item, isWorn != nullptr);
@@ -429,6 +429,63 @@ namespace Outfits
 		}
 
 		return items;
+	}
+
+	template <typename T>
+	std::string JoinVector(const std::vector<T>& vec)
+	{
+		std::ostringstream oss;
+		for (size_t i = 0; i < vec.size(); ++i) {
+			oss << std::hex << std::uppercase << vec[i];
+			if (i + 1 < vec.size()) {
+				oss << ", ";
+			}
+		}
+		return oss.str();
+	}
+
+	void LogInventory(RE::Actor* actor)
+	{
+		if (const auto invChanges = actor->GetInventoryChanges()) {
+			if (const auto entryList = invChanges->entryList) {
+				for (const auto& entryData : *entryList) {
+					if (entryData && entryData->object) {
+						bool isWorn = false;
+						bool           cannotWear = false;
+						bool           shouldWear = false;
+						std::vector<int> extraTypes{};
+						RE::BGSOutfit* outfit = nullptr;
+						if (const auto extraLists = entryData->extraLists) {
+							for (const auto& extraList : *entryData->extraLists) {
+								if (!extraList) {
+									continue;
+								}
+
+								for (int i = 0; i < static_cast<int>(RE::ExtraDataType::kUnkBF); i++) {
+									if (auto extraData = extraList->GetByType(static_cast<RE::ExtraDataType>(i)); extraData) {
+										extraTypes.push_back(i);
+									}
+								}
+								if (std::find(extraTypes.begin(), extraTypes.end(), 0x16) != extraTypes.end()) {
+									isWorn = true;
+								}
+
+								if (auto outfitItem = extraList->GetByType<RE::ExtraOutfitItem>(); outfitItem) {
+									if (auto o = RE::TESForm::LookupByID<RE::BGSOutfit>(outfitItem->id); o) {
+										outfit = o;
+									}
+								}
+							}
+						}
+						if (outfit) {
+							logger::info("\t{} [{:+}]{} (Part of {}) (extras: {})", *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", *outfit, JoinVector(extraTypes));
+						} else {
+							logger::info("\t{} [{:+}]{} (extras: {})", *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", JoinVector(extraTypes));
+						}
+					}
+				}
+			}
+		}
 	}
 
 	bool IsWearingDistributedOutfit(RE::Actor* actor, RE::BGSOutfit* targetOutfit)
@@ -456,14 +513,14 @@ namespace Outfits
 		auto items = GetAllOutfitItems(actor);
 
 		for (const auto& [outfit, itemVec] : items) {
-			logger::info("\t{}", *outfit);
+			logger::info("\t\t{}", *outfit);
 			const auto lastItemIndex = itemVec.size() - 1;
 			for (int i = 0; i < lastItemIndex; ++i) {
 				const auto& item = itemVec[i];
-				logger::info("\t├─── {}{}", *item.first, item.second ? " (Worn)" : "");
+				logger::info("\t\t├─── {}{}", *item.first, item.second ? " (Worn)" : "");
 			}
 			const auto& lastItem = itemVec[lastItemIndex];
-			logger::info("\t└─── {}{}", *lastItem.first, lastItem.second ? " (Worn)" : "");
+			logger::info("\t\t└─── {}{}", *lastItem.first, lastItem.second ? " (Worn)" : "");
 		}
 	}
 
