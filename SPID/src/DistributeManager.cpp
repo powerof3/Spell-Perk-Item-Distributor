@@ -97,7 +97,7 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
-		// TODO: No initial distribution. Check Packages distribution and see if those work as intended. Confirmed that packages do not work.
+		// TODO: Packages distribution does not work in lazy distribution, they need to be evaluated.
 		//DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)

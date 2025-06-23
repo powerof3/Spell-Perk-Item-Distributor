@@ -16,6 +16,7 @@
 	RE::BGSOutfit* gets = Outfit(G);                                                   \
 	RE::BGSOutfit* links = Outfit(L);                                                  \
 	bool           isLooted = false;                                                   \
+	actor->Load3D(true);                                                               \
 	if (worn) {                                                                        \
 		TestsHelper::ApplyOutfit(manager, actor, worn);                                \
 		wornReplacements[actor->GetFormID()] = { worn, isWd, isWf };                   \
@@ -67,7 +68,7 @@
 	isLooted = true; \
 	TestsHelper::Loot(actor);
 
-#define RESURRECT actor->Resurrect(true, true);
+#define RESURRECT actor->Resurrect(false, true);
 
 #define EXPECT_WORN_FIND(outfit, d, f)                                                                                                                                         \
 	{                                                                                                                                                                          \

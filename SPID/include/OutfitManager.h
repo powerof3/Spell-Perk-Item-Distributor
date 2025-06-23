@@ -94,6 +94,9 @@ namespace Outfits
 			/// Flag indicating whether the distributed outfit is final and cannot be replaced with any other outfit.
 			bool isFinalOutfit;
 
+			/// Flag indicating whether the distributed outfit needs to be re-initialized. Typically this happens after reset inventory was called.
+			bool needsInitialization = false;
+
 			/// Flag indicating whether the replacement wasn't properly loaded and is now corrupted.
 			///
 			/// This can happen when the distributed outfit was removed from the game.
@@ -150,6 +153,8 @@ namespace Outfits
 		RE::BGSOutfit* GetInitialOutfit(const RE::Actor*) const;
 
 		std::optional<OutfitReplacement> GetWornOutfit(const RE::Actor*) const;
+		/// Mutable version of `GetWornOutfit` that allows to safely change replacement.
+		bool                             GetWornOutfit(const RE::Actor*, std::function<void(OutfitReplacement&)>);
 		std::optional<OutfitReplacement> PopWornOutfit(const RE::Actor*);
 		OutfitReplacementMap             GetWornOutfits() const;
 
@@ -220,6 +225,8 @@ namespace Outfits
 		// Make sure hooks can access private members
 		friend struct ShouldBackgroundClone;
 		friend struct Load3D;
+		friend struct EquipDefaultOutfitAfterResetInventory;
+		friend struct ResetInventory;
 		friend struct InitItemImpl;
 		friend struct Resurrect;
 		friend struct ResetReference;
@@ -229,8 +236,9 @@ namespace Outfits
 		// Hooks handling.
 		bool            ProcessShouldBackgroundClone(RE::Actor*, std::function<bool()> funcCall);
 		RE::NiAVObject* ProcessLoad3D(RE::Actor*, std::function<RE::NiAVObject*()> funcCall);
+		void            ProcessResetInventory(RE::Actor*, bool reapplyOutfitNow, std::function<void()> funcCall);
 		void            ProcessInitItemImpl(RE::TESNPC*, std::function<void()> funcCall);
-		void            ProcessResurrect(RE::Actor*, std::function<void()> funcCall);
+		void            ProcessResurrect(RE::Actor*, bool resetInventory, std::function<void()> funcCall);
 		bool            ProcessResetReference(RE::Actor*, std::function<bool()> funcCall);
 		void            ProcessSetOutfitActor(RE::Actor*, RE::BGSOutfit*, std::function<void()> funcCall);
 		void            ProcessInitializeDefaultOutfit(RE::TESNPC* npc, RE::Actor* actor, std::function<void()> funcCall);

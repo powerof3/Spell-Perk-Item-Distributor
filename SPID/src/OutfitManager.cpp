@@ -603,7 +603,7 @@ namespace Outfits
 			//#ifndef NDEBUG
 			logger::info("Resurrect({}); IsDead: {}, ResetInventory: {}, Attach3D: {}", *(actor->As<RE::Actor>()), actor->IsDead(), resetInventory, attach3D);
 			//#endif
-			return Manager::GetSingleton()->ProcessResurrect(actor, [&] { return func(actor, resetInventory, attach3D); });
+			return Manager::GetSingleton()->ProcessResurrect(actor, resetInventory, [&] { return func(actor, resetInventory, attach3D); });
 		}
 
 		static inline void post_hook()
@@ -657,6 +657,46 @@ namespace Outfits
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed InitializeDefaultOutfit hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
+	/// This hook is used to prevent game from re-initializing default outfit when SPID already manages actor's outfit.
+	/// In cases when distribution is suspended we remove distributed outfit and allow game to restore default one.
+	struct EquipDefaultOutfitAfterResetInventory
+	{
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 37322);
+		static inline constexpr std::size_t offset = OFFSET(0x0, 0xDF);
+
+		static void thunk(RE::TESNPC* npc, RE::Actor* actor, bool arg3, bool arg4, bool arg5, bool arg6)
+		{
+			Manager::GetSingleton()->ProcessResetInventory(actor, true, [&] { func(npc, actor, arg3, arg4, arg5, arg6); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed EquipDefaultOutfitAfterResetInventory hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
+	/// This hook is used to track when the game resets actor's inventory (thus removing outfit items) 
+	/// and queue re-applying SPID outfit next time the game tries to update worn gear.
+	struct ResetInventory
+	{
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 37322);
+		static inline constexpr std::size_t offset = OFFSET(0x0, 0x56);
+
+		static void thunk(RE::Actor* actor, bool leveledOnly)
+		{
+			Manager::GetSingleton()->ProcessResetInventory(actor, false, [&] { func(actor, leveledOnly); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed ResetInventory hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -774,16 +814,18 @@ namespace Outfits
 
 				stl::install_hook<InitItemImpl>();
 				stl::install_hook<ShouldBackgroundClone>();
+				
 				stl::install_hook<Load3D>();
 				stl::install_hook<Resurrect>();
 				stl::install_hook<ResetReference>();
 				stl::install_hook<SetOutfitActor>();
-				//#ifndef NDEBUG
+			
 				stl::install_hook<EquipObject>();
 				stl::install_hook<UnequipObject>();
 
 				stl::install_hook<InitializeDefaultOutfit>();
-				//#endif
+				stl::install_hook<EquipDefaultOutfitAfterResetInventory>();
+				stl::install_hook<ResetInventory>();
 			}
 			break;
 #ifndef NDEBUG
@@ -1053,26 +1095,26 @@ namespace Outfits
 		}
 
 		//#ifndef NDEBUG
-		logger::info("[EQUIP] BEFORE Outfit items present in {} inventory", *actor);
+		logger::info("[OUTFIT APPLY] BEFORE Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
 		//#endif
 
 		if (IsSuspendedReplacement(actor)) {
 			//#ifndef NDEBUG
-			logger::info("\tSkipping outfit equip because distribution is suspended for {}", *actor);
+			logger::info("[OUTFIT APPLY] Skipping outfit equip because distribution is suspended for {}", *actor);
 			//#endif
 			return false;
 		}
 
 		if (IsWearingDistributedOutfit(actor, outfit)) {
 			//#ifndef NDEBUG
-			logger::info("\tOutfit {} is already equipped on {}", *outfit, *actor);
+			logger::info("[OUTFIT APPLY] Outfit {} is already equipped on {}", *outfit, *actor);
 			//#endif
 			return true;
 		}
 
 		//#ifndef NDEBUG
-		logger::info("\t\tEquipping Outfit {}", *outfit);
+		logger::info("[OUTFIT APPLY] Equipping Outfit {}", *outfit);
 		//#endif
 		actor->InitInventoryIfRequired();
 		actor->RemoveOutfitItems(nullptr);
@@ -1080,7 +1122,7 @@ namespace Outfits
 			AddWornOutfit(actor, outfit, shouldUpdate3D);
 		}
 		//#ifndef NDEBUG
-		logger::info("[EQUIP] AFTER Outfit items present in {} inventory", *actor);
+		logger::info("[OUTFIT APPLY] AFTER Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
 		//#endif
 		return true;
@@ -1088,15 +1130,13 @@ namespace Outfits
 
 	void Manager::RestoreOutfit(RE::Actor* actor)
 	{
-		WriteLocker lock(_wornLock);
-		if (auto replacement = wornReplacements.find(actor->formID); replacement != wornReplacements.end()) {
-			auto& W = replacement->second;
+		GetWornOutfit(actor, [&](OutfitReplacement& W) {
 			if (W.distributed == actor->GetActorBase()->defaultOutfit) {
-				wornReplacements.erase(replacement);
+				wornReplacements.erase(actor->formID);
 			} else {
 				W.isDeathOutfit = false;
 			}
-		}
+		});
 	}
 
 	bool Manager::RevertOutfit(RE::Actor* actor, const OutfitReplacement& replacement) const
@@ -1126,6 +1166,17 @@ namespace Outfits
 			return it->second;
 		}
 		return std::nullopt;
+	}
+
+	bool Manager::GetWornOutfit(const RE::Actor* actor, std::function<void(OutfitReplacement&)> mutate)
+	{
+		WriteLocker lock(_wornLock);
+		if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
+			auto& replacement = it->second;
+			mutate(replacement);
+			return true;
+		}
+		return false;
 	}
 
 	std::optional<Manager::OutfitReplacement> Manager::PopWornOutfit(const RE::Actor* actor)
@@ -1286,6 +1337,26 @@ namespace Outfits
 		return funcCall();
 	}
 
+	void Manager::ProcessResetInventory(RE::Actor* actor, bool reapplyOutfitNow, std::function<void()> funcCall)
+	{
+		if (reapplyOutfitNow) {
+			logger::info("[OUTFIT RESET] Restoring worn outfit after inventory was reset for {}", *actor);
+
+			if (!IsSuspendedReplacement(actor)) {
+				if (const auto outfit = GetWornOutfit(actor); outfit) {
+					ApplyOutfit(actor, outfit->distributed);
+					return;
+				}
+			}
+		} else if (actor && !actor->Get3D2()) {
+			if (GetWornOutfit(actor, [&](OutfitReplacement& replacement) { replacement.needsInitialization = true; })) {
+				logger::info("[OUTFIT RESET] Queuing restoring worn outfit after inventory was reset for {}", *actor);
+			}
+		}
+
+		funcCall();
+	}
+
 	void Manager::ProcessInitItemImpl(RE::TESNPC* npc, std::function<void()> funcCall)
 	{
 		funcCall();
@@ -1299,12 +1370,18 @@ namespace Outfits
 		}
 	}
 
-	void Manager::ProcessResurrect(RE::Actor* actor, std::function<void()> funcCall)
+	void Manager::ProcessResurrect(RE::Actor* actor, bool resetInventory, std::function<void()> funcCall)
 	{
 		RestoreOutfit(actor);
 		funcCall();
-		if (const auto wornOutfit = GetWornOutfit(actor); wornOutfit) {
-			ApplyOutfit(actor, wornOutfit->distributed);
+		// If resurrection will reset inventory, then ResetInventory hook will be responsible for re-applying outfit,
+		// otherwise we need to manually re-apply outfit.
+		if (!resetInventory) {
+			if (const auto wornOutfit = GetWornOutfit(actor); wornOutfit) {
+				ApplyOutfit(actor, wornOutfit->distributed);
+			} else {
+				actor->AddWornOutfit(actor->GetActorBase()->defaultOutfit, true);
+			}
 		}
 	}
 
@@ -1353,22 +1430,31 @@ namespace Outfits
 			return funcCall();
 		}
 
+		// TODO: There is a case when NPC might appear naked, as the game removed outfit items. In this case we need to restore the outfit.
+		// However, we can't simply check if outfit items are present in NPC's inventory, as they might be missing due to the fact that player (or someone else) took those items.
 		if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
-			if (IsSuspendedReplacement(actor)) {
-				logger::info("[OUTFIT INIT] Removing distributed outfit items for {}", *actor);
-				actor->RemoveOutfitItems(worn->distributed);  // remove distributed outfit, as the game will restore default outfit
-			} else {
-				logger::info("[OUTFIT INIT] Default outfit init ignored for {} as it is SPID managed", *actor);
-				logger::info("[OUTFIT INIT] Outfit items present in {} inventory", *actor);
-				LogWornOutfitItems(actor);
+			if (!IsSuspendedReplacement(actor)) {
+				if (worn->needsInitialization) {
+					GetWornOutfit(actor, [&](OutfitReplacement& replacement) {
+						replacement.needsInitialization = false;
+					});
+					logger::info("[OUTFIT INIT] Resotring outfit for {} after reset", *actor);
+					ApplyOutfit(actor, worn->distributed, true);
+				} else {
+					logger::info("[OUTFIT INIT] Default outfit init ignored for {} as it is SPID managed", *actor);
+					logger::info("[OUTFIT INIT] Outfit items present in {} inventory", *actor);
+					LogWornOutfitItems(actor);
+				}
 				return;
 			}
 		}
-
+		
 		logger::info("[OUTFIT INIT] BEFORE Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
+
 		logger::info("[OUTFIT INIT] Initializing default outfit for {}?", *actor);
 		funcCall();
+		
 		logger::info("[OUTFIT INIT] AFTER Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
 	}
