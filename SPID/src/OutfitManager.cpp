@@ -621,17 +621,17 @@ namespace Outfits
 		static inline constexpr REL::ID     relocation = RELOCATION_ID(21556, 22038);
 		static inline constexpr std::size_t offset = OFFSET(0x4B, 0x4B);
 
-		static bool thunk(std::int64_t a1, std::int64_t a2, RE::TESObjectREFR* refr, std::int64_t a4, std::int64_t a5, std::int64_t a6, int a7, int* a8)
+		static bool thunk(std::int64_t a1, std::int64_t a2, std::int64_t a3, RE::TESObjectREFR* refr, std::int64_t a5, std::int64_t a6, int a7, int* a8)
 		{
 			if (refr) {
 				if (const auto actor = refr->As<RE::Actor>(); actor) {
 					//#ifndef NDEBUG
 					logger::info("RecycleActor({})", *(actor->As<RE::Actor>()));
 					//#endif
-					return Manager::GetSingleton()->ProcessResetReference(actor, [&] { return func(a1, a2, refr, a4, a5, a6, a7, a8); });
+					return Manager::GetSingleton()->ProcessResetReference(actor, [&] { return func(a1, a2, a3, refr, a5, a6, a7, a8); });
 				}
 			}
-			return func(a1, a2, refr, a4, a5, a6, a7, a8);
+			return func(a1, a2, a3, refr, a5, a6, a7, a8);
 		}
 
 		static inline void post_hook()
