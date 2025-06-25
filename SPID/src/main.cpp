@@ -2,13 +2,13 @@
 #include "DistributeManager.h"
 #include "LookupConfigs.h"
 #include "LookupForms.h"
-#include "OutfitManager.h"
+#include "Outfits/OutfitManager.h"
 #include "PCLevelMultManager.h"
 #ifndef NDEBUG
-#	include "OutfitManagerTests.h"
-#	include "DistributionTests.h"
-#	include "DeathDistributionTests.h"
-#	include "Testing.h"
+#	include "Testing/OutfitManagerTests.h"
+#	include "Testing/DistributionTests.h"
+#	include "Testing/DeathDistributionTests.h"
+#	include "Testing/Testing.h"
 #endif
 
 bool shouldLookupForms{ false };

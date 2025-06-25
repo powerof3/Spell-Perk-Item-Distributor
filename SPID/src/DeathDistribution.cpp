@@ -3,7 +3,7 @@
 #include "Hooking.h"
 #include "LinkedDistribution.h"
 #include "LookupNPC.h"
-#include "OutfitManager.h"
+#include "Outfits/OutfitManager.h"
 #include "PCLevelMultManager.h"
 #include "Parser.h"
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "OutfitManager.h"
+#include "Outfits/OutfitManager.h"
 #include "Testing.h"
 
 #define Outfit(name) TestsHelper::Get##name##Outfit()

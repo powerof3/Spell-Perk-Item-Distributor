@@ -140,38 +140,51 @@ find_path(SRELL_INCLUDE_DIRS "srell.hpp")
 find_path(MERGEMAPPER_INCLUDE_DIRS "MergeMapperPluginAPI.h")
 find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
 
-# ---- Add source files ----
+# ---- Auto-discover all source and header files ----
 
-include(cmake/headerlist.cmake)
-include(cmake/sourcelist.cmake)
-
-source_group(
-	TREE
-		${CMAKE_CURRENT_SOURCE_DIR}
-	FILES
-		${headers}
-		${sources}
+file(GLOB_RECURSE ALL_SRC_FILES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
 )
 
-source_group(
-	TREE
-		${CMAKE_CURRENT_BINARY_DIR}
-	FILES
-		${CMAKE_CURRENT_BINARY_DIR}/include/Version.h
+# ---- Visual Studio folder grouping ----
+
+# All files go under "Source Files", preserving src/ substructure
+foreach(source_file ${ALL_SRC_FILES})
+    file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}/src" "${source_file}")
+    get_filename_component(dir "${rel_path}" PATH)
+    string(REPLACE "/" "\\" subfolder "${dir}")
+    source_group("Source Files\\${subfolder}" FILES "${source_file}")
+endforeach()
+
+# Remove PCH files from ALL_SRC_FILES
+list(FILTER ALL_SRC_FILES EXCLUDE REGEX "src[/\\\\]PCH\\.(cpp|h|hpp)$")
+
+set(PCH_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PCH.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/PCH.cpp
 )
+
+source_group("Header Files" FILES ${CMAKE_CURRENT_BINARY_DIR}/include/Version.h)
+
+source_group("Precompile Header File" FILES ${PCH_FILES})
+
+source_group("Resource Files" FILES ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 
 # ---- Create DLL ----
 
 add_library(
-	${PROJECT_NAME}
-	SHARED
-	${headers}
-	${sources}
-	${CMAKE_CURRENT_BINARY_DIR}/include/Version.h
-	${CMAKE_CURRENT_BINARY_DIR}/version.rc
-	.clang-format
-	.editorconfig
-	${MERGEMAPPER_INCLUDE_DIRS}/MergeMapperPluginAPI.cpp
+    ${PROJECT_NAME}
+    SHARED
+    ${ALL_SRC_FILES}
+	${PCH_FILES}
+    ${CMAKE_CURRENT_BINARY_DIR}/include/Version.h
+    ${CMAKE_CURRENT_BINARY_DIR}/version.rc
+    .clang-format
+    .editorconfig
+    ${MERGEMAPPER_INCLUDE_DIRS}/MergeMapperPluginAPI.cpp
 )
 
 target_compile_features(
@@ -187,14 +200,13 @@ target_compile_definitions(
 )
 
 target_include_directories(
-	${PROJECT_NAME}
-	PRIVATE
-		${CMAKE_CURRENT_BINARY_DIR}/include
-		${CMAKE_CURRENT_SOURCE_DIR}/include
-		${CMAKE_CURRENT_SOURCE_DIR}/Testing
-		${SRELL_INCLUDE_DIRS}
-		${MERGEMAPPER_INCLUDE_DIRS}
-		${CLIB_UTIL_INCLUDE_DIRS}
+    ${PROJECT_NAME}
+    PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${SRELL_INCLUDE_DIRS}
+        ${MERGEMAPPER_INCLUDE_DIRS}
+        ${CLIB_UTIL_INCLUDE_DIRS}
 )
 
 target_link_libraries(
@@ -205,9 +217,9 @@ target_link_libraries(
 )
 
 target_precompile_headers(
-	${PROJECT_NAME}
-	PRIVATE
-		include/PCH.h
+    ${PROJECT_NAME}
+    PRIVATE
+        src/PCH.h
 )
 
 if (MSVC)

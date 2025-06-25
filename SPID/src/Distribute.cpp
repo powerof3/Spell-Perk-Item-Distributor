@@ -3,7 +3,7 @@
 #include "DeathDistribution.h"
 #include "DistributeManager.h"
 #include "LinkedDistribution.h"
-#include "OutfitManager.h"
+#include "Outfits/OutfitManager.h"
 
 namespace Distribute
 {
