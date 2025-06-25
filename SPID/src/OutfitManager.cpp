@@ -1145,7 +1145,17 @@ namespace Outfits
 		logger::info("\tReverting Outfit Replacement for {}", *actor);
 		logger::info("\t\t{:R}", replacement);
 		//#endif
-		return ApplyOutfit(actor, actor->GetActorBase()->defaultOutfit);
+		if (actor && actor->GetActorBase()) {
+			if (auto outfit = actor->GetActorBase()->defaultOutfit; outfit) {
+				actor->InitInventoryIfRequired();
+				actor->RemoveOutfitItems(nullptr);
+				if (!actor->IsDisabled()) {
+					AddWornOutfit(actor, outfit, true);
+				}
+				return true;
+			}
+		}
+		return false;
 	}
 
 	RE::BGSOutfit* Manager::GetInitialOutfit(const RE::Actor* actor) const
@@ -1380,6 +1390,8 @@ namespace Outfits
 			if (const auto wornOutfit = GetWornOutfit(actor); wornOutfit) {
 				ApplyOutfit(actor, wornOutfit->distributed);
 			} else {
+				actor->InitInventoryIfRequired();
+				actor->RemoveOutfitItems(nullptr);
 				actor->AddWornOutfit(actor->GetActorBase()->defaultOutfit, true);
 			}
 		}
@@ -1387,7 +1399,7 @@ namespace Outfits
 
 	bool Manager::ProcessResetReference(RE::Actor* actor, std::function<bool()> funcCall)
 	{
-		RevertOutfit(actor);
+		RevertOutfit(actor, false);
 		return funcCall();
 	}
 

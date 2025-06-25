@@ -134,9 +134,6 @@ namespace Outfits
 		/// <summary>
 		/// Performs the actual reversion of the outfit.
 		/// </summary>
-		/// <param name=""></param>
-		/// <param name=""></param>
-		/// <returns></returns>
 		bool RevertOutfit(RE::Actor*, const OutfitReplacement&) const;
 
 		/// Restores outfit replacement for given actor.

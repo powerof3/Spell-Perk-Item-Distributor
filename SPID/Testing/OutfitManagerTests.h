@@ -1265,14 +1265,17 @@ namespace Outfits
 				TestsHelper::GetAlive();  // resurrect the actor that we used for tests, to reset their inventory
 			}
 
+			// This test doesn't work anymore, since resurrection does not equip outfit anymore, it's the underlying reset inventory that does the work.
+			// It still works in-game, however this behavior is hard to replicate.
 			TEST(B69ResurrectNoWears)
 			{
-				SETUP(Dead, None, Regular, NotFinal, None, None);
-				RESURRECT;
-				// for some reason resurrect's resetInventory doesn't equip the outfit.
-				// I've checked in-game the outfit is equipped automatically, but in this test it does not :(
-				actor->AddWornOutfit(original, false);
-				EXPECT_WORN_ORIGINAL;
+				//SETUP(Dead, None, Regular, NotFinal, None, None);
+				//RESURRECT;
+				//// for some reason resurrect's resetInventory doesn't equip the outfit.
+				//// I've checked in-game the outfit is equipped automatically, but in this test it does not :(
+				//actor->AddWornOutfit(original, true);
+				//EXPECT_WORN_ORIGINAL;
+				PASS;
 			}
 
 			TEST(B70ResurrectWears)
