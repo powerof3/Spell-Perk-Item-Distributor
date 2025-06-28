@@ -219,31 +219,24 @@ namespace Outfits
 		/// By doing so we can properly handle state of the outfits and determine what needs to be equipped.
 		bool isLoadingGame = false;
 
-		// Make sure hooks can access private members
-		friend struct ShouldBackgroundClone;
-		friend struct Load3D;
-		friend struct EquipDefaultOutfitAfterResetInventory;
-		friend struct ResetInventory;
-		friend struct InitItemImpl;
-		friend struct Resurrect;
-		friend struct ResetReference;
-		friend struct SetOutfitActor;
-		friend struct InitializeDefaultOutfit;
 
-		// Hooks handling.
-		bool            ProcessShouldBackgroundClone(RE::Actor*, std::function<bool()> funcCall);
-		RE::NiAVObject* ProcessLoad3D(RE::Actor*, std::function<RE::NiAVObject*()> funcCall);
-		void            ProcessResetInventory(RE::Actor*, bool reapplyOutfitNow, std::function<void()> funcCall);
-		void            ProcessInitItemImpl(RE::TESNPC*, std::function<void()> funcCall);
-		void            ProcessResurrect(RE::Actor*, bool resetInventory, std::function<void()> funcCall);
-		bool            ProcessResetReference(RE::Actor*, std::function<bool()> funcCall);
-		void            ProcessSetOutfitActor(RE::Actor*, RE::BGSOutfit*, std::function<void()> funcCall);
-		void            ProcessInitializeDefaultOutfit(RE::TESNPC* npc, RE::Actor* actor, std::function<void()> funcCall);
+		void InitializeHooks();
+
+		HOOK_HANDLER(bool, ShouldBackgroundClone, RE::Character*);
+		HOOK_HANDLER(RE::NiAVObject*, Load3D, RE::Actor*);
+		HOOK_HANDLER(void, ResetInventory, RE::Actor*, bool reapplyOutfitNow);
+		HOOK_HANDLER(void, InitItemImpl, RE::TESNPC*);
+		HOOK_HANDLER_ALIAS(EquipDefaultOutfitAfterResetInventory, ResetInventory);
+		HOOK_HANDLER(void, Resurrect, RE::Actor*, bool resetInventory);
+		HOOK_HANDLER(bool, ResetReference, RE::Actor*);
+		HOOK_HANDLER(void, SetOutfitActor, RE::Actor*, RE::BGSOutfit* outfit);
+		HOOK_HANDLER(void, InitializeDefaultOutfit, RE::TESNPC*, RE::Actor*);
 
 		friend struct TestsHelper;
 
 		friend fmt::formatter<Outfits::Manager::OutfitReplacement>;
 
+		void        InitializeSerialization();
 		static void Load(SKSE::SerializationInterface* interface);
 		static void Save(SKSE::SerializationInterface* interface);
 

@@ -78,6 +78,21 @@ namespace stl
 #	define OFFSET(se, ae) se
 #endif
 
+// These macros are used to provide a standardized way of managing hooks.
+// A hook should be contained in a struct,
+// which should call Process#HookName#() function of the responsible Manager class where this macro is used.
+
+/// Creates an alias for a hook named `name` without creating corresponding function declaration.
+/// given hook will be made friend to the enclosing struct/class.
+#define HOOK_HANDLER_ALIAS(name, functionName) \
+	friend struct name;
+
+/// Creates a function declaration for a hook named `name` with the given return type and parameters.
+/// given hook will be made friend to the enclosing struct/class.
+#define HOOK_HANDLER(returnType, name, ...) \
+	friend struct name;                     \
+	returnType Process##name(__VA_ARGS__, std::function<returnType()> funcCall);
+
 #include "Cache.h"
 #include "Defs.h"
 #include "LogHeader.h"
