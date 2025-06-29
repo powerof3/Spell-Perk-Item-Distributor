@@ -69,7 +69,7 @@ namespace Outfits
 	
 	void Manager::RestoreOutfit(RE::Actor* actor)
 	{
-		GetWornOutfit(actor, [&](OutfitReplacement& W) {
+		UpdateWornOutfit(actor, [&](OutfitReplacement& W) {
 			if (W.distributed == actor->GetActorBase()->defaultOutfit) {
 				wornReplacements.erase(actor->formID);
 			} else {
@@ -224,7 +224,7 @@ namespace Outfits
 		return std::nullopt;
 	}
 
-	bool Manager::GetWornOutfit(const RE::Actor* actor, std::function<void(OutfitReplacement&)> mutate)
+	bool Manager::UpdateWornOutfit(const RE::Actor* actor, std::function<void(OutfitReplacement&)> mutate)
 	{
 		WriteLocker lock(_wornLock);
 		if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {

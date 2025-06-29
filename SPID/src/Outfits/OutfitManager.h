@@ -3,8 +3,6 @@
 
 namespace Outfits
 {
-	struct TestsHelper;
-
 	class Manager :
 		public ISingleton<Manager>,
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
@@ -151,7 +149,7 @@ namespace Outfits
 
 		std::optional<OutfitReplacement> GetWornOutfit(const RE::Actor*) const;
 		/// Mutable version of `GetWornOutfit` that allows to safely change replacement.
-		bool                             GetWornOutfit(const RE::Actor*, std::function<void(OutfitReplacement&)>);
+		bool                             UpdateWornOutfit(const RE::Actor*, std::function<void(OutfitReplacement&)>);
 		std::optional<OutfitReplacement> PopWornOutfit(const RE::Actor*);
 		OutfitReplacementMap             GetWornOutfits() const;
 
@@ -222,15 +220,15 @@ namespace Outfits
 
 		void InitializeHooks();
 
-		HOOK_HANDLER(bool, ShouldBackgroundClone, RE::Character*);
-		HOOK_HANDLER(RE::NiAVObject*, Load3D, RE::Actor*);
-		HOOK_HANDLER(void, ResetInventory, RE::Actor*, bool reapplyOutfitNow);
-		HOOK_HANDLER(void, InitItemImpl, RE::TESNPC*);
-		HOOK_HANDLER_ALIAS(EquipDefaultOutfitAfterResetInventory, ResetInventory);
-		HOOK_HANDLER(void, Resurrect, RE::Actor*, bool resetInventory);
-		HOOK_HANDLER(bool, ResetReference, RE::Actor*);
-		HOOK_HANDLER(void, SetOutfitActor, RE::Actor*, RE::BGSOutfit* outfit);
-		HOOK_HANDLER(void, InitializeDefaultOutfit, RE::TESNPC*, RE::Actor*);
+		HOOK_HANDLER(bool, ShouldBackgroundClone, RE::Character*)
+		HOOK_HANDLER(RE::NiAVObject*, Load3D, RE::Actor*)
+		HOOK_HANDLER(void, ResetInventory, RE::Actor*, bool reapplyOutfitNow)
+		HOOK_HANDLER(void, InitItemImpl, RE::TESNPC*)
+		HOOK_HANDLER_ALIAS(EquipDefaultOutfitAfterResetInventory, ResetInventory)
+		HOOK_HANDLER(void, Resurrect, RE::Actor*, bool resetInventory)
+		HOOK_HANDLER(bool, ResetReference, RE::Actor*)
+		HOOK_HANDLER(void, SetOutfitActor, RE::Actor*, RE::BGSOutfit* outfit)
+		HOOK_HANDLER(void, InitializeDefaultOutfit, RE::TESNPC*, RE::Actor*)
 
 		friend struct TestsHelper;
 

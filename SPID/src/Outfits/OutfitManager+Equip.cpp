@@ -74,7 +74,7 @@ namespace Outfits
 				}
 			}
 		} else if (actor && !actor->Get3D2()) {
-			if (GetWornOutfit(actor, [&](OutfitReplacement& replacement) { replacement.needsInitialization = true; })) {
+			if (UpdateWornOutfit(actor, [&](OutfitReplacement& replacement) { replacement.needsInitialization = true; })) {
 				logger::info("[OUTFIT RESET] Queuing restoring worn outfit after inventory was reset for {}", *actor);
 			}
 		}
@@ -116,7 +116,7 @@ namespace Outfits
 		if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
 			if (!IsSuspendedReplacement(actor)) {
 				if (worn->needsInitialization) {
-					GetWornOutfit(actor, [&](OutfitReplacement& replacement) {
+					UpdateWornOutfit(actor, [&](OutfitReplacement& replacement) {
 						replacement.needsInitialization = false;
 					});
 					logger::info("[OUTFIT INIT] Resotring outfit for {} after reset", *actor);
