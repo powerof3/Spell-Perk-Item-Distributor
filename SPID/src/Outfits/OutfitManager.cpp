@@ -2,9 +2,6 @@
 #include "DistributeManager.h"
 #include "Helpers.h"
 
-// TODO: The entire distribution logic that concerns Outfits should be moved here.
-// Main reason is that Outfits are distributed per-actor and the general rule of following SPID_Processed keyword on NPC breaks certain cases when outfits would be re-run (including "rolling outfits")
-
 namespace Outfits
 {
 	void Manager::HandleMessage(SKSE::MessagingInterface::Message* message)
@@ -300,7 +297,7 @@ namespace Outfits
 	bool Manager::ProcessShouldBackgroundClone(RE::Character* actor, std::function<bool()> funcCall)
 	{
 		// For now, we only support a single distribution per game session.
-		// As such if SPID_Processed is detected, we assumed that the actor was already given an outfit if needed.
+		// As such if SPID_Processed is detected, we assume that the actor was already given an outfit if needed.
 		// Previous setup relied on the fact that each ShouldBackgroundClone call would also refresh distribution of the outfit,
 		// allowing OutfitManager to then swap it, thus perform rotation.
 		if (!HasPendingOutfit(actor) && !actor->HasKeyword(Distribute::processed)) {
