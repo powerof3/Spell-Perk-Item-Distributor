@@ -142,8 +142,8 @@ namespace Outfits
 	/// In cases when distribution is suspended we remove distributed outfit and allow game to restore default one.
 	struct EquipDefaultOutfitAfterResetInventory
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 37322);
-		static inline constexpr std::size_t offset = OFFSET(0x0, 0xDF);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(36332, 37322);
+		static inline constexpr std::size_t offset = OFFSET(0xDE, 0xDF);
 
 		static void thunk(RE::TESNPC* npc, RE::Actor* actor, bool arg3, bool arg4, bool arg5, bool arg6)
 		{
@@ -162,8 +162,8 @@ namespace Outfits
 	/// and queue re-applying SPID outfit next time the game tries to update worn gear.
 	struct ResetInventory
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 37322);
-		static inline constexpr std::size_t offset = OFFSET(0x0, 0x56);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(36332, 37322);
+		static inline constexpr std::size_t offset = OFFSET(0x56, 0x56);
 
 		static void thunk(RE::Actor* actor, bool leveledOnly)
 		{
