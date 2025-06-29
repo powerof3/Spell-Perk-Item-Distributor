@@ -1,5 +1,5 @@
-#include "OutfitManager.h"
 #include "Hooking.h"
+#include "OutfitManager.h"
 
 namespace Outfits
 {

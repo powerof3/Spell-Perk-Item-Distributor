@@ -39,8 +39,8 @@ namespace Outfits
 							W.isDeathOutfit = G.isDeathOutfit;
 							W.isFinalOutfit = G.isFinalOutfit;
 							return W;
-						}  // If Worn outfit is either death outfit or it was already looted, we don't allow changing it.
-					}  // Regular Dead Distribution (not allowed to overwrite anything)
+						}                      // If Worn outfit is either death outfit or it was already looted, we don't allow changing it.
+					}                          // Regular Dead Distribution (not allowed to overwrite anything)
 				} else {                       // Regular Alive Distribution
 					assert(!G.isDeathOutfit);  // When alive only regular outfits can be worn.
 					if (!W.isFinalOutfit) {
@@ -56,7 +56,7 @@ namespace Outfits
 				} else if (isDead) {  // Regular/Death Dead Distribution
 					if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit && actor->HasOutfitItems(npc->defaultOutfit)) {
 						return wornReplacements.try_emplace(actor->formID, G).first->second;
-					}  // In both On Death and Regular Distributions if Worn outfit was already looted, we don't allow changing it.
+					}     // In both On Death and Regular Distributions if Worn outfit was already looted, we don't allow changing it.
 				} else {  // Regular Alive Distribution
 					return wornReplacements.try_emplace(actor->formID, G).first->second;
 				}
@@ -70,7 +70,7 @@ namespace Outfits
 				} else if (NPCData::IsDead(actor)) {
 					if (G.isDeathOutfit) {  // On Death Dead Distribution
 						W.isDeathOutfit = true;
-					}  // Regular Dead Distribution (just forwards the outfit)
+					}     // Regular Dead Distribution (just forwards the outfit)
 				} else {  // Regular Alive Distribution
 					if (!W.isFinalOutfit) {
 						RevertOutfit(actor, W);

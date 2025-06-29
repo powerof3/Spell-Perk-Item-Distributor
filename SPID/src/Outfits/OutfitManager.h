@@ -217,7 +217,6 @@ namespace Outfits
 		/// By doing so we can properly handle state of the outfits and determine what needs to be equipped.
 		bool isLoadingGame = false;
 
-
 		void InitializeHooks();
 
 		HOOK_HANDLER(bool, ShouldBackgroundClone, RE::Character*)

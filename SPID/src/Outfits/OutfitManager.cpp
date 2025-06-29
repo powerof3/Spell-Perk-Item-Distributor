@@ -63,7 +63,7 @@ namespace Outfits
 
 		return true;
 	}
-	
+
 	void Manager::RestoreOutfit(RE::Actor* actor)
 	{
 		UpdateWornOutfit(actor, [&](OutfitReplacement& W) {
@@ -104,7 +104,7 @@ namespace Outfits
 		}
 		return false;
 	}
-	
+
 	bool Manager::SetOutfit(const NPCData& data, RE::BGSOutfit* outfit, bool isDeathOutfit, bool isFinalOutfit)
 	{
 		const auto actor = data.GetActor();
