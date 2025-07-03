@@ -162,7 +162,7 @@ namespace Distribute
 			Forms::shouts.GetForms(input.onlyPlayerLevelEntries),
 			Forms::levSpells.GetForms(input.onlyPlayerLevelEntries),
 			Forms::packages.GetForms(input.onlyPlayerLevelEntries),
-			Forms::DistributionSet::empty<RE::BGSOutfit>(), // Outfits are distributed separately.
+			Forms::DistributionSet::empty<RE::BGSOutfit>(),  // Outfits are distributed separately.
 			Forms::keywords.GetForms(input.onlyPlayerLevelEntries),
 			Forms::factions.GetForms(input.onlyPlayerLevelEntries),
 			Forms::sleepOutfits.GetForms(input.onlyPlayerLevelEntries),
@@ -172,7 +172,7 @@ namespace Distribute
 		DistributedForms distributedForms{};
 
 		Distribute(npcData, input, entries, &distributedForms, Outfits::SetDefaultOutfit);
-		
+
 		if (!distributedForms.empty()) {
 			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kRegular, distributedForms, [&](Forms::DistributionSet& set) {

@@ -27,7 +27,7 @@ namespace Outfits
 
 		/// <summary>
 		/// Checks whether the Actor already has a distributed outfit.
-		/// 
+		///
 		/// Use this method to ensure that actor has been processed by the OutfitManager to avoid repeated distribution (e.g. Rolling Outfits).;
 		/// </summary>
 		bool HasDistributedOutfit(const RE::Actor*) const;

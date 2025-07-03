@@ -246,7 +246,7 @@ namespace Distribute
 
 	/// <summary>
 	/// Performs distribution of outfits to NPC described with npcData and input.
-	/// 
+	///
 	/// Unlike general Distribute function, this one is expected to be called once for each actor (rather than once for each NPC).
 	/// </summary>
 	/// <param name="npcData"></param>

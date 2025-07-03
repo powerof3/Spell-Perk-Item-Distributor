@@ -23,8 +23,8 @@ namespace Distribute
 			// However, checking the keyword inside Distribute is not possible, since other distributions use this method as well, so it should be "context-free". In particular this would block On Death distribution.
 			// figure out a way to solve this.
 			// For now we only allow distributing outfits once per actor.
-			
-			// TODO: We can't use HasDistributedOutfit because Worn Replacements are carried with the save. 
+
+			// TODO: We can't use HasDistributedOutfit because Worn Replacements are carried with the save.
 			// It appears that instead we'll need to have yet another map to track whether actor was processed this game session.
 			if (!Outfits::Manager::GetSingleton()->HasDistributedOutfit(actor)) {
 				DistributeOutfits(npcData, false);
