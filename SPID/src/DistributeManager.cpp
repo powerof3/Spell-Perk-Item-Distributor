@@ -2,28 +2,34 @@
 #include "Distribute.h"
 #include "DistributePCLevelMult.h"
 #include "Hooking.h"
+#include "Outfits/OutfitManager.h"
 
 namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword)
 	{
-		if (a_npc->IsPlayer() || a_npc->IsDeleted() || a_npc->HasKeyword(a_keyword)) {
-			return false;
-		}
-
-		return true;
+		return !a_npc->IsPlayer() && !a_npc->IsDeleted();
 	}
 
-	void detail::distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc)
+	void detail::distribute_on_load(RE::Actor* actor, RE::TESNPC* npc)
 	{
-		if (should_process_NPC(a_npc)) {
-			auto npcData = NPCData(a_actor, a_npc);
-			Distribute(npcData, false);
-			a_npc->AddKeyword(processed);
+		auto npcData = NPCData(actor, npc);
+		if (should_process_NPC(npc)) {
+			if (!npc->HasKeyword(processed)) {
+				Distribute(npcData, false);
+				npc->AddKeyword(processed);
+			}
+			// TODO: the keyword processed prevents Outfits from re-rolling.
+			// However, checking the keyword inside Distribute is not possible, since other distributions use this method as well, so it should be "context-free". In particular this would block On Death distribution.
+			// figure out a way to solve this.
+			// For now we only allow distributing outfits once per actor.
+			
+			// TODO: We can't use HasDistributedOutfit because Worn Replacements are carried with the save. 
+			// It appears that instead we'll need to have yet another map to track whether actor was processed this game session.
+			if (!Outfits::Manager::GetSingleton()->HasDistributedOutfit(actor)) {
+				DistributeOutfits(npcData, false);
+			}
 		}
-		// TODO: the keyword processed prevents Outfits from re-rolling.
-		// However, checking the keyword inside Distribute is not possible, since other distributions use this method as well, so it should be "context-free". In particular this would block On Death distribution.
-		// figure out a way to solve this.
 	}
 
 	namespace Actor
@@ -43,6 +49,12 @@ namespace Distribute
 				}
 				return func(actor);
 			}
+
+			static inline void post_hook()
+			{
+				logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
+			}
+
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
@@ -73,10 +85,9 @@ namespace Distribute
 
 		void Install()
 		{
+			logger::info("🧝Actors");
 			//stl::install_hook<InitLoadGame>();
 			stl::install_hook<ShouldBackgroundClone>();
-
-			logger::info("Installed actor load hooks");
 		}
 	}
 

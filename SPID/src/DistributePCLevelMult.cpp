@@ -18,6 +18,7 @@ namespace Distribute::PlayerLeveledActor
 			if (const auto npc = a_actor->GetActorBase(); npc && npc->HasKeyword(processed)) {
 				auto npcData = NPCData(a_actor, npc);
 				Distribute(npcData, true);
+				DistributeOutfits(npcData, true);
 			}
 
 			func(a_actor);

@@ -43,6 +43,19 @@ namespace Outfits
 		return npc->defaultOutfit == outfit;
 	}
 
+	bool Manager::HasDistributedOutfit(const RE::Actor* actor) const
+	{
+		if (HasWornOutfit(actor)) {
+			return true;
+		}
+
+		if (auto pending = GetPendingOutfit(actor); pending && pending->distributed) {
+			return true;
+		}
+
+		return false;
+	}
+
 	bool Manager::CanEquipOutfit(const RE::Actor* actor, const RE::BGSOutfit* outfit) const
 	{
 		// Actors that don't have default outfit can't wear any outfit.
@@ -167,6 +180,11 @@ namespace Outfits
 			return false;
 		}
 
+		// Empty outfit might be used to undress the actor.
+		if (outfit->outfitItems.empty()) {
+			logger::info("[OUTFIT APPLY] \t⚠️ Outfit {} is empty - {} will appear naked.", *outfit, *actor);
+		}
+
 		//#ifndef NDEBUG
 		logger::info("[OUTFIT APPLY] BEFORE Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
@@ -264,6 +282,12 @@ namespace Outfits
 		return pendingReplacements.find(actor->formID) != pendingReplacements.end();
 	}
 
+	bool Manager::HasWornOutfit(const RE::Actor* actor) const
+	{
+		ReadLocker lock(_wornLock);
+		return wornReplacements.find(actor->formID) != wornReplacements.end();
+	}
+
 	bool Manager::IsSuspendedReplacement(const RE::Actor* actor) const
 	{
 		if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
@@ -292,18 +316,5 @@ namespace Outfits
 			}
 		}
 		return RE::BSEventNotifyControl::kContinue;
-	}
-
-	bool Manager::ProcessShouldBackgroundClone(RE::Character* actor, std::function<bool()> funcCall)
-	{
-		// For now, we only support a single distribution per game session.
-		// As such if SPID_Processed is detected, we assume that the actor was already given an outfit if needed.
-		// Previous setup relied on the fact that each ShouldBackgroundClone call would also refresh distribution of the outfit,
-		// allowing OutfitManager to then swap it, thus perform rotation.
-		if (!HasPendingOutfit(actor) && !actor->HasKeyword(Distribute::processed)) {
-			SetOutfit(actor, nullptr, NPCData::IsDead(actor), false);
-		}
-
-		return funcCall();
 	}
 }

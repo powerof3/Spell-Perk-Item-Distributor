@@ -162,7 +162,7 @@ namespace Distribute
 			Forms::shouts.GetForms(input.onlyPlayerLevelEntries),
 			Forms::levSpells.GetForms(input.onlyPlayerLevelEntries),
 			Forms::packages.GetForms(input.onlyPlayerLevelEntries),
-			Forms::outfits.GetForms(input.onlyPlayerLevelEntries),
+			Forms::DistributionSet::empty<RE::BGSOutfit>(), // Outfits are distributed separately.
 			Forms::keywords.GetForms(input.onlyPlayerLevelEntries),
 			Forms::factions.GetForms(input.onlyPlayerLevelEntries),
 			Forms::sleepOutfits.GetForms(input.onlyPlayerLevelEntries),
@@ -172,7 +172,7 @@ namespace Distribute
 		DistributedForms distributedForms{};
 
 		Distribute(npcData, input, entries, &distributedForms, Outfits::SetDefaultOutfit);
-
+		
 		if (!distributedForms.empty()) {
 			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kRegular, distributedForms, [&](Forms::DistributionSet& set) {
@@ -181,6 +181,37 @@ namespace Distribute
 		}
 
 		LogDistribution(distributedForms, npcData);
+	}
+
+	void DistributeOutfits(NPCData& npcData, const PCLevelMult::Input& input)
+	{
+		if (input.onlyPlayerLevelEntries && PCLevelMult::Manager::GetSingleton()->HasHitLevelCap(input))
+			return;
+
+		Forms::DistributionSet entries{
+			Forms::DistributionSet::empty<RE::SpellItem>(),
+			Forms::DistributionSet::empty<RE::BGSPerk>(),
+			Forms::DistributionSet::empty<RE::TESBoundObject>(),
+			Forms::DistributionSet::empty<RE::TESShout>(),
+			Forms::DistributionSet::empty<RE::TESLevSpell>(),
+			Forms::DistributionSet::empty<RE::TESForm>(),
+			Forms::outfits.GetForms(input.onlyPlayerLevelEntries),
+			Forms::DistributionSet::empty<RE::BGSKeyword>(),
+			Forms::DistributionSet::empty<RE::TESFaction>(),
+			Forms::DistributionSet::empty<RE::BGSOutfit>(),
+			Forms::DistributionSet::empty<RE::TESObjectARMO>()
+		};
+
+		DistributedForms distributedForms{};
+
+		Distribute(npcData, input, entries, &distributedForms, Outfits::SetDefaultOutfit);
+
+		// If no outfits were given we should mark it properly.
+		if (distributedForms.empty()) {
+			Outfits::SetDefaultOutfit(npcData, nullptr, false);
+		}
+
+		LogDistribution(distributedForms, npcData, true);
 	}
 
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
@@ -192,7 +223,16 @@ namespace Distribute
 		Distribute(npcData, input);
 	}
 
-	void LogDistribution(const DistributedForms& forms, NPCData& npcData)
+	void DistributeOutfits(NPCData& npcData, bool onlyLeveledEntries)
+	{
+		const auto input = PCLevelMult::Input{ npcData.GetActor(), npcData.GetNPC(), onlyLeveledEntries };
+
+		// We always do the normal distribution even for Dead NPCs,
+		// if Distributable Form is only meant to be distributed while NPC is alive, the entry must contain -D filter.
+		DistributeOutfits(npcData, input);
+	}
+
+	void LogDistribution(const DistributedForms& forms, NPCData& npcData, bool append)
 	{
 		//#ifndef NDEBUG
 		std::map<std::string_view, std::vector<DistributedForm>> results;
@@ -201,9 +241,13 @@ namespace Distribute
 			results[RE::FormTypeToString(form.first->GetFormType())].push_back(form);
 		}
 
-		logger::info("Distribution for {}", *npcData.GetActor());
+		if (!append) {
+			logger::info("Distribution for {}", *npcData.GetActor());
+		}
 		if (results.empty()) {
-			logger::info("\tNothing");
+			if (!append) {
+				logger::info("\tNothing");
+			}
 		} else {
 			for (const auto& pair : results) {
 				logger::info("\t{}", pair.first);

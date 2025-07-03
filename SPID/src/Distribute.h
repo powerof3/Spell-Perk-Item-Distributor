@@ -244,5 +244,14 @@ namespace Distribute
 	/// <param name="onlyLeveledEntries"> Flag indicating that distribution is invoked by a leveling event and only entries with LevelFilters needs to be processed.</param>
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries);
 
-	void LogDistribution(const DistributedForms& forms, NPCData& npcData);
+	/// <summary>
+	/// Performs distribution of outfits to NPC described with npcData and input.
+	/// 
+	/// Unlike general Distribute function, this one is expected to be called once for each actor (rather than once for each NPC).
+	/// </summary>
+	/// <param name="npcData"></param>
+	/// <param name="onlyLeveledEntries"></param>
+	void DistributeOutfits(NPCData& npcData, bool onlyLeveledEntries);
+
+	void LogDistribution(const DistributedForms& forms, NPCData& npcData, bool append = false);
 }

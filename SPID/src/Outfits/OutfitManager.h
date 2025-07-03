@@ -26,6 +26,13 @@ namespace Outfits
 		bool HasDefaultOutfit(const RE::TESNPC*, const RE::BGSOutfit*) const;
 
 		/// <summary>
+		/// Checks whether the Actor already has a distributed outfit.
+		/// 
+		/// Use this method to ensure that actor has been processed by the OutfitManager to avoid repeated distribution (e.g. Rolling Outfits).;
+		/// </summary>
+		bool HasDistributedOutfit(const RE::Actor*) const;
+
+		/// <summary>
 		/// Checks whether the actor can technically wear a given outfit.
 		/// Actor can wear an outfit when all of its components are compatible with actor's race.
 		///
@@ -156,6 +163,7 @@ namespace Outfits
 		std::optional<OutfitReplacement> GetPendingOutfit(const RE::Actor*) const;
 
 		bool HasPendingOutfit(const RE::Actor*) const;
+		bool HasWornOutfit(const RE::Actor*) const;
 
 		/// <summary>
 		/// Resolves the outfit that should be worn by the actor.
@@ -219,7 +227,6 @@ namespace Outfits
 
 		void InitializeHooks();
 
-		HOOK_HANDLER(bool, ShouldBackgroundClone, RE::Character*)
 		HOOK_HANDLER(RE::NiAVObject*, Load3D, RE::Actor*)
 		HOOK_HANDLER(void, ResetInventory, RE::Actor*, bool reapplyOutfitNow)
 		HOOK_HANDLER(void, InitItemImpl, RE::TESNPC*)
