@@ -3,6 +3,44 @@
 
 namespace Outfits
 {
+	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
+	struct ShouldDisplayInventoryItem
+	{
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(50227, 51156);
+		static inline constexpr std::size_t offset = OFFSET(0xB6, 0xA6);
+
+		static bool thunk(RE::NiPointer<RE::TESObjectREFR>& ptr, RE::InventoryEntryData* entryData)
+		{
+			return Manager::GetSingleton()->ProcessShouldDisplayInventoryItem(ptr, entryData, [&] { return func(ptr, entryData); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed ShouldDisplayInventoryItem hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
+	/// This hook ensures that items from distributed outfit are not accessible in the inventory. (called from another menu)
+	struct ShouldDisplayInventoryItem2
+	{
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(50228, 51157);
+		static inline constexpr std::size_t offset = OFFSET(0xB6, 0xA8);
+
+		static bool thunk(RE::NiPointer<RE::TESObjectREFR>& ptr, RE::InventoryEntryData* entryData)
+		{
+			return Manager::GetSingleton()->ProcessShouldDisplayInventoryItem(ptr, entryData, [&] { return func(ptr, entryData); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed ShouldDisplayInventoryItem2 hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
 	/// This hook performs distribution of outfits. 
 	struct ShouldBackgroundClone
 	{
@@ -292,5 +330,8 @@ namespace Outfits
 		stl::install_hook<InitializeDefaultOutfit>();
 		stl::install_hook<EquipDefaultOutfitAfterResetInventory>();
 		stl::install_hook<ResetInventory>();
+
+		stl::install_hook<ShouldDisplayInventoryItem>();
+		stl::install_hook<ShouldDisplayInventoryItem2>();
 	}
 }

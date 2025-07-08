@@ -236,6 +236,8 @@ namespace Outfits
 		HOOK_HANDLER(bool, ResetReference, RE::Actor*)
 		HOOK_HANDLER(void, SetOutfitActor, RE::Actor*, RE::BGSOutfit* outfit)
 		HOOK_HANDLER(void, InitializeDefaultOutfit, RE::TESNPC*, RE::Actor*)
+		HOOK_HANDLER(bool, ShouldDisplayInventoryItem, RE::NiPointer<RE::TESObjectREFR>&, RE::InventoryEntryData*)
+		HOOK_HANDLER_ALIAS(ShouldDisplayInventoryItem2, ShouldDisplayInventoryItem)
 
 		friend struct TestsHelper;
 

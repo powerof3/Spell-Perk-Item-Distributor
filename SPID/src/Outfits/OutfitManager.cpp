@@ -333,4 +333,40 @@ namespace Outfits
 		return funcCall();
 	}
 
+	// TODO: Optimize this further:
+	// This is called multiple times per each item in both actor's and player's inventories.
+	// With a small optimization we reduced number of locking/unlocking 
+	// to the number of outfit items present in the inventory that are not from default outfit.
+	// Another way is to hook calls one level higher. Those come in pairs: one for NPC, one for the Player. We only care about NPC, so that's about 3-4 calls to hook.
+	bool Manager::ProcessShouldDisplayInventoryItem(RE::NiPointer<RE::TESObjectREFR>& ptr, RE::InventoryEntryData* entryData, std::function<bool()> funcCall)
+	{
+		if (auto refr = ptr.get(); refr) {
+			if (auto actor = refr->As<RE::Actor>(); actor) {
+				if (auto npc = actor->GetActorBase(); npc) {
+					if (npc->defaultOutfit) {
+						RE::FormID itemOutfitId = 0;
+						if (entryData && entryData->object && entryData->extraLists) {
+							for (const auto& extraList : *entryData->extraLists) {
+								auto outfitItem = extraList ? extraList->GetByType<RE::ExtraOutfitItem>() : nullptr;
+								if (outfitItem) {
+									itemOutfitId = outfitItem->id;
+									break;
+								}
+							}
+						}
+						if (itemOutfitId && itemOutfitId != npc->defaultOutfit->formID) {
+							if (auto worn = GetWornOutfit(actor); worn && worn->distributed) {
+								auto old = npc->defaultOutfit;
+								npc->defaultOutfit = worn->distributed;
+								bool result = funcCall();
+								npc->defaultOutfit = old;
+								return result;
+							}
+						}
+					}
+				}
+			}
+		}
+		return funcCall();
+	}
 }
