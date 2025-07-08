@@ -26,13 +26,6 @@ namespace Outfits
 		bool HasDefaultOutfit(const RE::TESNPC*, const RE::BGSOutfit*) const;
 
 		/// <summary>
-		/// Checks whether the Actor already has a distributed outfit.
-		///
-		/// Use this method to ensure that actor has been processed by the OutfitManager to avoid repeated distribution (e.g. Rolling Outfits).;
-		/// </summary>
-		bool HasDistributedOutfit(const RE::Actor*) const;
-
-		/// <summary>
 		/// Checks whether the actor can technically wear a given outfit.
 		/// Actor can wear an outfit when all of its components are compatible with actor's race.
 		///
@@ -165,6 +158,9 @@ namespace Outfits
 		bool HasPendingOutfit(const RE::Actor*) const;
 		bool HasWornOutfit(const RE::Actor*) const;
 
+		bool IsProcessed(const RE::Actor*) const;
+		void MarkProcessed(const RE::Actor*);
+
 		/// <summary>
 		/// Resolves the outfit that should be worn by the actor.
 		///
@@ -185,12 +181,16 @@ namespace Outfits
 		/// Utility method that validates incoming outfit and uses it to resolve pending outfit.
 		bool SetOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
 
+		/// Lock for processedActors.
+		mutable Lock _processedLock;
 		/// Lock for wornReplacements.
 		mutable Lock _wornLock;
 		/// Lock for pendingReplacements.
 		mutable Lock _pendingLock;
 		/// Lock for initialOutfits.
 		mutable Lock _initialLock;
+
+		std::unordered_set<RE::FormID> processedActors;
 
 		/// Map of Actor's FormID and corresponding Outfit Replacements that are being tracked by the manager.
 		///
@@ -227,6 +227,7 @@ namespace Outfits
 
 		void InitializeHooks();
 
+		HOOK_HANDLER(bool, ShouldBackgroundClone, RE::Character*)
 		HOOK_HANDLER(RE::NiAVObject*, Load3D, RE::Actor*)
 		HOOK_HANDLER(void, ResetInventory, RE::Actor*, bool reapplyOutfitNow)
 		HOOK_HANDLER(void, InitItemImpl, RE::TESNPC*)

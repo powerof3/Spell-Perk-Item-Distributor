@@ -3,6 +3,28 @@
 
 namespace Outfits
 {
+	/// This hook performs distribution of outfits. 
+	struct ShouldBackgroundClone
+	{
+		using Target = RE::Character;
+		static inline constexpr std::size_t index{ 0x6D };
+
+		static bool thunk(RE::Character* actor)
+		{
+#ifndef NDEBUG
+			//	logger::info("Outfits: ShouldBackgroundClone({})", *(actor->As<RE::Actor>()));
+#endif
+			return Manager::GetSingleton()->ProcessShouldBackgroundClone(actor, [&] { return func(actor); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
 	/// This hook applies pending outfit replacements before loading 3D model. Outfit Replacements are created by SetDefaultOutfit.
 	struct Load3D
 	{
@@ -257,6 +279,7 @@ namespace Outfits
 		}
 
 		stl::install_hook<InitItemImpl>();
+		stl::install_hook<ShouldBackgroundClone>();
 
 		stl::install_hook<Load3D>();
 		stl::install_hook<Resurrect>();

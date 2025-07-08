@@ -1,5 +1,5 @@
 #include "OutfitManager.h"
-#include "DistributeManager.h"
+#include "Distribute.h"
 #include "Helpers.h"
 
 namespace Outfits
@@ -41,19 +41,6 @@ namespace Outfits
 		}
 
 		return npc->defaultOutfit == outfit;
-	}
-
-	bool Manager::HasDistributedOutfit(const RE::Actor* actor) const
-	{
-		if (HasWornOutfit(actor)) {
-			return true;
-		}
-
-		if (auto pending = GetPendingOutfit(actor); pending && pending->distributed) {
-			return true;
-		}
-
-		return false;
 	}
 
 	bool Manager::CanEquipOutfit(const RE::Actor* actor, const RE::BGSOutfit* outfit) const
@@ -288,6 +275,18 @@ namespace Outfits
 		return wornReplacements.find(actor->formID) != wornReplacements.end();
 	}
 
+	bool Manager::IsProcessed(const RE::Actor* actor) const
+	{
+		ReadLocker lock(_processedLock);
+		return processedActors.contains(actor->formID);
+	}
+
+	void Manager::MarkProcessed(const RE::Actor* actor)
+	{
+		WriteLocker lock(_processedLock);
+		processedActors.insert(actor->formID);
+	}
+
 	bool Manager::IsSuspendedReplacement(const RE::Actor* actor) const
 	{
 		if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
@@ -317,4 +316,21 @@ namespace Outfits
 		}
 		return RE::BSEventNotifyControl::kContinue;
 	}
+	
+	bool Manager::ProcessShouldBackgroundClone(RE::Character* actor, std::function<bool()> funcCall)
+	{
+		// For now, we only support a single distribution per game session.
+		if (!IsProcessed(actor)) {
+			auto npcData = NPCData(actor);
+			Distribute::DistributeOutfits(npcData, false);
+
+			if (!HasPendingOutfit(actor)) {
+				SetOutfit(actor, nullptr, NPCData::IsDead(actor), false);
+			}
+			MarkProcessed(actor);
+		}
+
+		return funcCall();
+	}
+
 }

@@ -206,11 +206,6 @@ namespace Distribute
 
 		Distribute(npcData, input, entries, &distributedForms, Outfits::SetDefaultOutfit);
 
-		// If no outfits were given we should mark it properly.
-		if (distributedForms.empty()) {
-			Outfits::SetDefaultOutfit(npcData, nullptr, false);
-		}
-
 		LogDistribution(distributedForms, npcData, true);
 	}
 
