@@ -316,7 +316,7 @@ namespace Outfits
 		}
 		return RE::BSEventNotifyControl::kContinue;
 	}
-	
+
 	bool Manager::ProcessShouldBackgroundClone(RE::Character* actor, std::function<bool()> funcCall)
 	{
 		// For now, we only support a single distribution per game session.
@@ -335,7 +335,7 @@ namespace Outfits
 
 	// TODO: Optimize this further:
 	// This is called multiple times per each item in both actor's and player's inventories.
-	// With a small optimization we reduced number of locking/unlocking 
+	// With a small optimization we reduced number of locking/unlocking
 	// to the number of outfit items present in the inventory that are not from default outfit.
 	// Another way is to hook calls one level higher. Those come in pairs: one for NPC, one for the Player. We only care about NPC, so that's about 3-4 calls to hook.
 	bool Manager::ProcessShouldDisplayInventoryItem(RE::NiPointer<RE::TESObjectREFR>& ptr, RE::InventoryEntryData* entryData, std::function<bool()> funcCall)

@@ -41,7 +41,7 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	/// This hook performs distribution of outfits. 
+	/// This hook performs distribution of outfits.
 	struct ShouldBackgroundClone
 	{
 		using Target = RE::Character;
