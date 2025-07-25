@@ -284,7 +284,7 @@ namespace Outfits
 	// TODO: Subscribe to serialization interface for Revert.
 	// Reset processed flag for all reverted NPCs, so that reloading the same save will always re-process NPCs.
 	// Right now reloading the save will result in using outfit baked into the save (e.g. from previous game session).
-	// OR - check the loading logic, and don't overwrite wornReplacements map if anything is already there 
+	// OR - check the loading logic, and don't overwrite wornReplacements map if anything is already there
 	// (however, this has some other cases when currently not loaded NPCs would become out of sync.
 	//
 	// Maybe... make outfit distribution permanent. So once something is picked for NPC, they will stick with it in this save game.

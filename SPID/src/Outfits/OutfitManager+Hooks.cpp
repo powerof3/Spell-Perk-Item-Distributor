@@ -321,7 +321,7 @@ namespace Outfits
 
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
-	
+
 	///  This hook stubs call to HasOutfitItems, so that the UpdateWornGear function would always call AddWornOutfit where we handle outfit.
 	/// Our hook will re-iomplement the entire logic related to outfit.
 	struct UpdateWornGear_HasOutfitItems_stub

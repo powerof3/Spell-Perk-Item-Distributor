@@ -210,7 +210,7 @@ namespace Outfits
 			}
 		}
 
-		logger::info("[UPDATE WORN] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", * effectiveOutfit, *actor);
+		logger::info("[UPDATE WORN] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
 		AddWornOutfit(actor, effectiveOutfit, forceUpdate, false);
 	}
 }
