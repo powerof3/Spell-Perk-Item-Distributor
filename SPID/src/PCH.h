@@ -93,6 +93,12 @@ namespace stl
 	friend struct name;                     \
 	returnType Process##name(__VA_ARGS__, std::function<returnType()> funcCall);
 
+/// Creates a function declaration named `functionName` for a hook named `hookName` with the given return type and parameters.
+/// given hook will be made friend to the enclosing struct/class.
+#define HOOK_HANDLER_EX(returnType, hookName, functionName, ...) \
+	friend struct hookName;                                   \
+	returnType Process##functionName(__VA_ARGS__, std::function<returnType()> funcCall);
+
 #include "Cache.h"
 #include "Defs.h"
 #include "LogHeader.h"

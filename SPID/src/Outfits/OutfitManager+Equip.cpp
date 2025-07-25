@@ -111,22 +111,25 @@ namespace Outfits
 			return funcCall();
 		}
 
-		// TODO: There is a case when NPC might appear naked, as the game removed outfit items. In this case we need to restore the outfit.
-		// However, we can't simply check if outfit items are present in NPC's inventory, as they might be missing due to the fact that player (or someone else) took those items.
-		if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
-			if (!IsSuspendedReplacement(actor)) {
-				if (worn->needsInitialization) {
-					UpdateWornOutfit(actor, [&](OutfitReplacement& replacement) {
-						replacement.needsInitialization = false;
-					});
-					logger::info("[OUTFIT INIT] Resotring outfit for {} after reset", *actor);
-					ApplyOutfit(actor, worn->distributed, true);
+		if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
+			auto worn = it->second;
+			if (worn.distributed) {
+				if (IsSuspendedReplacement(actor)) {
+					actor->RemoveOutfitItems(worn.distributed);  // remove distributed outfit, as the game will restore default outfit
 				} else {
-					logger::info("[OUTFIT INIT] Default outfit init ignored for {} as it is SPID managed", *actor);
-					logger::info("[OUTFIT INIT] Outfit items present in {} inventory", *actor);
+					// We want the game to do what it does with defaultOutfit, but for a distributed one.
+					logger::info("[OUTFIT INIT] BEFORE Outfit items present in {} inventory", *actor);
 					LogWornOutfitItems(actor);
+					logger::info("[OUTFIT INIT] Initializing distributed outfit for {}?", *actor);
+					auto backupOutfit = npc->defaultOutfit;
+					npc->defaultOutfit = worn.distributed;
+					funcCall();
+					npc->defaultOutfit = backupOutfit;
+
+					logger::info("[OUTFIT INIT] AFTER Outfit items present in {} inventory", *actor);
+					LogWornOutfitItems(actor);
+					return;
 				}
-				return;
 			}
 		}
 
@@ -138,5 +141,76 @@ namespace Outfits
 
 		logger::info("[OUTFIT INIT] AFTER Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor);
+	}
+
+	/// Utility functions for ProcessUpdateWornGear.
+	namespace utils
+	{
+		RE::InventoryEntryData* GetObjectInSlot(RE::Actor* actor, int slotIndex)
+		{
+			using func_t = decltype(&GetObjectInSlot);
+			static REL::Relocation<func_t> func{ RELOCATION_ID(0, 419334) };
+			return func(actor, slotIndex);
+		}
+
+		RE::BGSBipedObjectForm* GetBipedObject(RE::TESBoundObject* object)
+		{
+			if (const auto armo = object->As<RE::TESObjectARMO>(); armo) {
+				return armo;
+			} else if (const auto arma = object->As<RE::TESObjectARMA>(); arma) {
+				return arma;
+			}
+			return nullptr;
+		}
+
+		inline bool HasOverlappingSlot(RE::Actor* actor, RE::TESBoundObject* obj)
+		{
+			if (const auto biped = GetBipedObject(obj); biped) {
+				for (int slot = 0; slot < RE::BIPED_OBJECT::kEditorTotal; ++slot) {
+					if (const auto equipped = GetObjectInSlot(actor, slot); equipped && equipped->object) {
+						if (const auto equippedBiped = GetBipedObject(equipped->object); equippedBiped) {
+							if (biped->bipedModelData.bipedObjectSlots & equippedBiped->bipedModelData.bipedObjectSlots) {
+								return true;
+							}
+						}
+					}
+				}
+			}
+			return false;
+		}
+	}
+
+	void Manager::ProcessUpdateWornGear(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate, std::function<void()> funcCall)
+	{
+		auto effectiveOutfit = outfit;
+		bool isDefault = true;
+		if (!IsSuspendedReplacement(actor)) {
+			if (const auto worn = GetWornOutfit(actor); worn && worn->distributed) {
+				effectiveOutfit = worn->distributed;
+				isDefault = false;
+			}
+		}
+
+		if (actor && !actor->HasOutfitItems(effectiveOutfit) && (!actor->IsDead() || !RE::BGSSaveLoadGame::GetSingleton()->GetChange(actor, 32))) {
+			if (auto changes = actor->GetInventoryChanges(); changes) {
+				auto level = actor->GetLevel();
+				logger::info("[UPDATE WORN] Initializing worn outfit {} for {}", *effectiveOutfit, *actor);
+				changes->InitOutfitItems(effectiveOutfit, level);
+			}
+		}
+
+		if (actor && actor->IsHorse()) {
+			for (const auto& item : effectiveOutfit->outfitItems) {
+				if (const auto obj = item->As<RE::TESBoundObject>(); obj) {
+					if (utils::HasOverlappingSlot(actor, obj)) {
+						logger::info("[UPDATE WORN] {} has equipped something in slot for {}", *actor, *obj);
+						return;
+					}
+				}
+			}
+		}
+
+		logger::info("[UPDATE WORN] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", * effectiveOutfit, *actor);
+		AddWornOutfit(actor, effectiveOutfit, forceUpdate, false);
 	}
 }

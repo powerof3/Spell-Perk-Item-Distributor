@@ -3,11 +3,12 @@
 namespace Outfits
 {
 	/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
-	inline void AddWornOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool shouldUpdate3D)
+	/// <param name="shouldInitOutfit">Whether this call should auto-init outfit items if needed. If you manually control outfits items init, pass false.</param>
+	inline void AddWornOutfit(RE::Actor* actor, RE::BGSOutfit* outfit, bool shouldUpdate3D, bool shouldInitOutfit = true)
 	{
 		bool equipped = false;
 		if (const auto invChanges = actor->GetInventoryChanges()) {
-			if (!actor->HasOutfitItems(outfit)) {
+			if (shouldInitOutfit && !actor->HasOutfitItems(outfit)) {
 				invChanges->InitOutfitItems(outfit, actor->GetLevel());
 			}
 			if (const auto entryList = invChanges->entryList) {
@@ -19,7 +20,8 @@ namespace Outfits
 							if (outfitItem && outfitItem->id == formID) {
 								// forceEquip - actually it corresponds to the "PreventRemoval" flag in the game's function,
 								//				which determines whether NPC/EquipItem call can unequip the item. See EquipItem Papyrus function.
-								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryData->object, extraList, 1, nullptr, shouldUpdate3D, true, false, true);
+								// What it does in practice is blocks that equip slot from being re-evaluated when UpdateWornGear is called.
+								RE::ActorEquipManager::GetSingleton()->EquipObject(actor, entryData->object, extraList, 1, nullptr, shouldUpdate3D, false, false, true);
 								equipped = true;
 							}
 						}

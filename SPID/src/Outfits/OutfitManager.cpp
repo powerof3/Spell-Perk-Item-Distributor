@@ -281,6 +281,13 @@ namespace Outfits
 		return processedActors.contains(actor->formID);
 	}
 
+	// TODO: Subscribe to serialization interface for Revert.
+	// Reset processed flag for all reverted NPCs, so that reloading the same save will always re-process NPCs.
+	// Right now reloading the save will result in using outfit baked into the save (e.g. from previous game session).
+	// OR - check the loading logic, and don't overwrite wornReplacements map if anything is already there 
+	// (however, this has some other cases when currently not loaded NPCs would become out of sync.
+	//
+	// Maybe... make outfit distribution permanent. So once something is picked for NPC, they will stick with it in this save game.
 	void Manager::MarkProcessed(const RE::Actor* actor)
 	{
 		WriteLocker lock(_processedLock);
@@ -333,40 +340,23 @@ namespace Outfits
 		return funcCall();
 	}
 
-	// TODO: Optimize this further:
-	// This is called multiple times per each item in both actor's and player's inventories.
-	// With a small optimization we reduced number of locking/unlocking
-	// to the number of outfit items present in the inventory that are not from default outfit.
-	// Another way is to hook calls one level higher. Those come in pairs: one for NPC, one for the Player. We only care about NPC, so that's about 3-4 calls to hook.
-	bool Manager::ProcessShouldDisplayInventoryItem(RE::NiPointer<RE::TESObjectREFR>& ptr, RE::InventoryEntryData* entryData, std::function<bool()> funcCall)
+	void Manager::ProcessFilterInventoryItems(RE::NiPointer<RE::TESObjectREFR>& ptr, std::function<void()> funcCall)
 	{
 		if (auto refr = ptr.get(); refr) {
 			if (auto actor = refr->As<RE::Actor>(); actor) {
 				if (auto npc = actor->GetActorBase(); npc) {
 					if (npc->defaultOutfit) {
-						RE::FormID itemOutfitId = 0;
-						if (entryData && entryData->object && entryData->extraLists) {
-							for (const auto& extraList : *entryData->extraLists) {
-								auto outfitItem = extraList ? extraList->GetByType<RE::ExtraOutfitItem>() : nullptr;
-								if (outfitItem) {
-									itemOutfitId = outfitItem->id;
-									break;
-								}
-							}
-						}
-						if (itemOutfitId && itemOutfitId != npc->defaultOutfit->formID) {
-							if (auto worn = GetWornOutfit(actor); worn && worn->distributed) {
-								auto old = npc->defaultOutfit;
-								npc->defaultOutfit = worn->distributed;
-								bool result = funcCall();
-								npc->defaultOutfit = old;
-								return result;
-							}
+						if (auto worn = GetWornOutfit(actor); worn && worn->distributed) {
+							auto old = npc->defaultOutfit;
+							npc->defaultOutfit = worn->distributed;
+							funcCall();
+							npc->defaultOutfit = old;
+							return;
 						}
 					}
 				}
 			}
 		}
-		return funcCall();
+		funcCall();
 	}
 }
