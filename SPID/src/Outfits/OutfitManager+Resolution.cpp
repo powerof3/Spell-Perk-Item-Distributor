@@ -13,7 +13,7 @@ namespace Outfits
 		return std::nullopt;
 	}
 
-	// TODO: Do not lock this whole function OR move out RevertOutfit() call.
+	// MAYBE: Do not lock this whole function OR move out RevertOutfit() call.
 	std::optional<Manager::OutfitReplacement> Manager::ResolveWornOutfit(RE::Actor* actor, OutfitReplacementMap::iterator& pending, bool isDying)
 	{
 		// W and G are named according to the Resolution Table.

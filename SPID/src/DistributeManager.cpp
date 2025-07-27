@@ -62,7 +62,7 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
-						// TODO: Test whether there are some NPCs that are getting in this branch
+						// MAYBE: Test whether there are some NPCs that are getting in this branch
 						// I haven't experienced issues with ShouldBackgroundClone hook.
 						//logger::info("InitLoadGame({})", *a_this);
 						detail::distribute_on_load(a_this, npc);
@@ -97,7 +97,7 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
-		// TODO: Packages distribution does not work in lazy distribution, they need to be evaluated.
+		// FIX: Packages distribution does not work in lazy distribution, they need to be evaluated.
 		//DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)

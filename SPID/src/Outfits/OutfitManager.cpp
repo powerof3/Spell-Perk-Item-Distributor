@@ -88,19 +88,17 @@ namespace Outfits
 
 	bool Manager::RevertOutfit(RE::Actor* actor, const OutfitReplacement& replacement) const
 	{
-		//#ifndef NDEBUG
-		logger::info("\tReverting Outfit Replacement for {}", *actor);
-		logger::info("\t\t{:R}", replacement);
-		//#endif
 		if (actor && actor->GetActorBase()) {
-			if (auto outfit = actor->GetActorBase()->defaultOutfit; outfit) {
-				actor->InitInventoryIfRequired();
-				actor->RemoveOutfitItems(nullptr);
-				if (!actor->IsDisabled()) {
-					AddWornOutfit(actor, outfit, true);
-				}
-				return true;
+			logger::info("[🧥][REVERT]\tReverting Outfit Replacement for {}", *actor);
+		if (auto outfit = actor->GetActorBase()->defaultOutfit; outfit) {
+			logger::info("[🧥][REVERT]\t\t{:R} ({})", replacement, *outfit);
+			actor->InitInventoryIfRequired();
+			actor->RemoveOutfitItems(nullptr);
+			if (!actor->IsDisabled()) {
+				AddWornOutfit(actor, outfit, true);
 			}
+			return true;
+		}
 		}
 		return false;
 	}
@@ -123,18 +121,18 @@ namespace Outfits
 		// If outfit is nullptr, we just track that distribution didn't provide any outfit for this actor.
 		if (outfit) {
 			//#ifndef NDEBUG
-			logger::info("Evaluating outfit for {}", *actor);
-			logger::info("\tDefault Outfit: {}", *defaultOutfit);
+			logger::info("[🧥][SET] Evaluating outfit for {}", *actor);
+			logger::info("[🧥][SET] \tDefault Outfit: {}", *defaultOutfit);
 			if (auto worn = wornReplacements.find(actor->formID); worn != wornReplacements.end()) {
-				logger::info("\tWorn Outfit: {}", *worn->second.distributed);
+				logger::info("[🧥][SET] \tWorn Outfit: {}", *worn->second.distributed);
 			} else {
-				logger::info("\tWorn Outfit: None");
+				logger::info("[🧥][SET] \tWorn Outfit: None");
 			}
-			logger::info("\tNew Outfit: {}", *outfit);
+			logger::info("[🧥][SET] \tNew Outfit: {}", *outfit);
 			//#endif
 			if (!CanEquipOutfit(actor, outfit)) {
 				//#ifndef NDEBUG
-				logger::warn("\tAttempted to set Outfit {} that can't be worn by given actor.", *outfit);
+				logger::warn("[🧥][SET] \tAttempted to set Outfit {} that can't be worn by given actor.", *outfit);
 				//#endif
 				return false;
 			}
@@ -143,7 +141,7 @@ namespace Outfits
 		if (auto replacement = ResolvePendingOutfit(data, outfit, isDeathOutfit, isFinalOutfit); replacement) {
 			//#ifndef NDEBUG
 			if (replacement->distributed) {
-				logger::info("\tResolved Pending Outfit: {}", *replacement->distributed);
+				logger::info("[🧥][SET] \tResolved Pending Outfit: {}", *replacement->distributed);
 			}
 			//#endif
 		}
@@ -169,30 +167,30 @@ namespace Outfits
 
 		// Empty outfit might be used to undress the actor.
 		if (outfit->outfitItems.empty()) {
-			logger::info("[OUTFIT APPLY] \t⚠️ Outfit {} is empty - {} will appear naked.", *outfit, *actor);
+			logger::info("[🧥][APPLY] \t⚠️ Outfit {} is empty - {} will appear naked.", *outfit, *actor);
 		}
 
 		//#ifndef NDEBUG
-		logger::info("[OUTFIT APPLY] BEFORE Outfit items present in {} inventory", *actor);
-		LogWornOutfitItems(actor);
+		logger::info("[🧥][APPLY] BEFORE Outfit items present in {} inventory", *actor);
+		LogWornOutfitItems(actor, "[🧥][APPLY] \t\t");
 		//#endif
 
 		if (IsSuspendedReplacement(actor)) {
 			//#ifndef NDEBUG
-			logger::info("[OUTFIT APPLY] Skipping outfit equip because distribution is suspended for {}", *actor);
+			logger::info("[🧥][APPLY] Skipping outfit equip because distribution is suspended for {}", *actor);
 			//#endif
 			return false;
 		}
 
 		if (IsWearingOutfit(actor, outfit)) {
 			//#ifndef NDEBUG
-			logger::info("[OUTFIT APPLY] Outfit {} is already equipped on {}", *outfit, *actor);
+			logger::info("[🧥][APPLY] Outfit {} is already equipped on {}", *outfit, *actor);
 			//#endif
 			return true;
 		}
 
 		//#ifndef NDEBUG
-		logger::info("[OUTFIT APPLY] Equipping Outfit {}", *outfit);
+		logger::info("[🧥][APPLY] Equipping Outfit {}", *outfit);
 		//#endif
 		actor->InitInventoryIfRequired();
 		actor->RemoveOutfitItems(nullptr);
@@ -200,8 +198,8 @@ namespace Outfits
 			AddWornOutfit(actor, outfit, shouldUpdate3D);
 		}
 		//#ifndef NDEBUG
-		logger::info("[OUTFIT APPLY] AFTER Outfit items present in {} inventory", *actor);
-		LogWornOutfitItems(actor);
+		logger::info("[🧥][APPLY] AFTER Outfit items present in {} inventory", *actor);
+		LogWornOutfitItems(actor, "[🧥][APPLY] \t\t");
 		//#endif
 		return true;
 	}
@@ -281,7 +279,7 @@ namespace Outfits
 		return processedActors.contains(actor->formID);
 	}
 
-	// TODO: Subscribe to serialization interface for Revert.
+	// NEXT: Subscribe to serialization interface for Revert.
 	// Reset processed flag for all reverted NPCs, so that reloading the same save will always re-process NPCs.
 	// Right now reloading the save will result in using outfit baked into the save (e.g. from previous game session).
 	// OR - check the loading logic, and don't overwrite wornReplacements map if anything is already there

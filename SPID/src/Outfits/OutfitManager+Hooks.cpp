@@ -77,10 +77,7 @@ namespace Outfits
 
 		static void thunk(RE::Character* actor, bool resetInventory, bool attach3D)
 		{
-			//#ifndef NDEBUG
-			logger::info("Resurrect({}); IsDead: {}, ResetInventory: {}, Attach3D: {}", *(actor->As<RE::Actor>()), actor->IsDead(), resetInventory, attach3D);
-			//#endif
-			return Manager::GetSingleton()->ProcessResurrect(actor, resetInventory, [&] { return func(actor, resetInventory, attach3D); });
+			Manager::GetSingleton()->ProcessResurrect(actor, resetInventory, [&] { func(actor, resetInventory, attach3D); });
 		}
 
 		static inline void post_hook()
@@ -90,6 +87,26 @@ namespace Outfits
 
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
+
+	/// This hook is mainly for logging purposes now. The reset is properly handled by UpdateWornGear hook.
+	struct ResetInventory
+	{
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(36332, 37322);
+		static inline constexpr std::size_t offset = OFFSET(0x56, 0x56);
+
+		static void thunk(RE::Actor* actor, bool leveledOnly)
+		{
+			Manager::GetSingleton()->ProcessResetInventory(actor, [&] { func(actor, leveledOnly); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed ResetInventory hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+
 
 	/// This hook is used to clear outfit replacements info since the actor will be completely reset,
 	/// thus eligible for a fresh distribution.
@@ -102,9 +119,6 @@ namespace Outfits
 		{
 			if (refr) {
 				if (const auto actor = refr->As<RE::Actor>(); actor) {
-					//#ifndef NDEBUG
-					logger::info("RecycleActor({})", *(actor->As<RE::Actor>()));
-					//#endif
 					return Manager::GetSingleton()->ProcessResetReference(actor, [&] { return func(a1, a2, a3, refr, a5, a6, a7, a8); });
 				}
 			}
@@ -114,66 +128,6 @@ namespace Outfits
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed ResetReference hook.");
-		}
-
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
-	/// This hook is used to prevent game from re-initializing default outfit when SPID already manages actor's outfit.
-	/// In cases when distribution is suspended we remove distributed outfit and allow game to restore default one.
-	struct InitializeDefaultOutfit
-	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(24221, 24725);
-		static inline constexpr std::size_t offset = OFFSET(0x151, 0x156);
-
-		static void thunk(RE::TESNPC* npc, RE::Actor* actor, bool arg3, bool arg4, bool arg5, bool arg6)
-		{
-			Manager::GetSingleton()->ProcessInitializeDefaultOutfit(npc, actor, [&] { func(npc, actor, arg3, arg4, arg5, arg6); });
-		}
-
-		static inline void post_hook()
-		{
-			logger::info("\t\t🪝Installed InitializeDefaultOutfit hook.");
-		}
-
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
-	/// This hook is used to prevent game from re-initializing default outfit when SPID already manages actor's outfit.
-	/// In cases when distribution is suspended we remove distributed outfit and allow game to restore default one.
-	struct EquipDefaultOutfitAfterResetInventory
-	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(36332, 37322);
-		static inline constexpr std::size_t offset = OFFSET(0xDE, 0xDF);
-
-		static void thunk(RE::TESNPC* npc, RE::Actor* actor, bool arg3, bool arg4, bool arg5, bool arg6)
-		{
-			Manager::GetSingleton()->ProcessResetInventory(actor, true, [&] { func(npc, actor, arg3, arg4, arg5, arg6); });
-		}
-
-		static inline void post_hook()
-		{
-			logger::info("\t\t🪝Installed EquipDefaultOutfitAfterResetInventory hook.");
-		}
-
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
-	/// This hook is used to track when the game resets actor's inventory (thus removing outfit items)
-	/// and queue re-applying SPID outfit next time the game tries to update worn gear.
-	struct ResetInventory
-	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(36332, 37322);
-		static inline constexpr std::size_t offset = OFFSET(0x56, 0x56);
-
-		static void thunk(RE::Actor* actor, bool leveledOnly)
-		{
-			Manager::GetSingleton()->ProcessResetInventory(actor, false, [&] { func(actor, leveledOnly); });
-		}
-
-		static inline void post_hook()
-		{
-			logger::info("\t\t🪝Installed ResetInventory hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -223,52 +177,56 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	struct EquipObject
-	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(37938, 38894);
-		static inline constexpr std::size_t offset = OFFSET(0xE5, 0x170);
+	// NEXT: These will be disabled for now, but in the future we might want to use these hooks to handle equip/unequip as events and triggers for some actions.
+	// For future reference, there is a situation when the game repeatedly calls (spams) Equip/Unequip calls 
+	// during a scripted scene where NPC practices archery (an arrow is being equipped/unequipped), causing some lagging.
 
-		static void thunk(RE::ActorEquipManager* manager, RE::Actor* actor, RE::TESBoundObject* object, RE::ObjectEquipParams* params)
-		{
-			if (actor && object) {
-				logger::info("[EQUIP] {} equips {}", *actor, *object);
-			}
-			func(manager, actor, object, params);
-		}
+	//struct EquipObject
+	//{
+	//	static inline constexpr REL::ID     relocation = RELOCATION_ID(37938, 38894);
+	//	static inline constexpr std::size_t offset = OFFSET(0xE5, 0x170);
 
-		static inline void post_hook()
-		{
-			logger::info("\t\t🪝Installed EquipObject hook.");
-		}
+	//	static void thunk(RE::ActorEquipManager* manager, RE::Actor* actor, RE::TESBoundObject* object, RE::ObjectEquipParams* params)
+	//	{
+	//		if (actor && object) {
+	//			logger::info("[EQUIP] {} equips {}", *actor, *object);
+	//		}
+	//		func(manager, actor, object, params);
+	//	}
 
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
+	//	static inline void post_hook()
+	//	{
+	//		logger::info("\t\t🪝Installed EquipObject hook.");
+	//	}
 
-	struct UnequipObject
-	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(37945, 38901);
-		static inline constexpr std::size_t offset = OFFSET(0x138, 0x1B9);
+	//	static inline REL::Relocation<decltype(thunk)> func;
+	//};
 
-		static void thunk(RE::ActorEquipManager* manager, RE::Actor* actor, RE::TESBoundObject* object, RE::ObjectEquipParams* params)
-		{
-			if (actor && object) {
-				logger::info("[UNEQUIP] {} unequips {}", *actor, *object);
-			}
-			func(manager, actor, object, params);
-		}
+	//struct UnequipObject
+	//{
+	//	static inline constexpr REL::ID     relocation = RELOCATION_ID(37945, 38901);
+	//	static inline constexpr std::size_t offset = OFFSET(0x138, 0x1B9);
 
-		static inline void post_hook()
-		{
-			logger::info("\t\t🪝Installed UnequipObject hook.");
-		}
+	//	static void thunk(RE::ActorEquipManager* manager, RE::Actor* actor, RE::TESBoundObject* object, RE::ObjectEquipParams* params)
+	//	{
+	//		if (actor && object) {
+	//			logger::info("[UNEQUIP] {} unequips {}", *actor, *object);
+	//		}
+	//		func(manager, actor, object, params);
+	//	}
 
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
+	//	static inline void post_hook()
+	//	{
+	//		logger::info("\t\t🪝Installed UnequipObject hook.");
+	//	}
+
+	//	static inline REL::Relocation<decltype(thunk)> func;
+	//};
 
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51144);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51144); // FINISH: SE addresses
 		static inline constexpr std::size_t offset = OFFSET(0x0, 0xE2);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
@@ -287,7 +245,7 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems2
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51145);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51145);  // FINISH: SE addresses
 		static inline constexpr std::size_t offset = OFFSET(0x0, 0xBE);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
@@ -306,7 +264,7 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems3
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51146);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51146);  // FINISH: SE addresses
 		static inline constexpr std::size_t offset = OFFSET(0x0, 0x12E);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
@@ -326,7 +284,7 @@ namespace Outfits
 	/// Our hook will re-iomplement the entire logic related to outfit.
 	struct UpdateWornGear_HasOutfitItems_stub
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);  // FINISH: SE addresses
 		static inline constexpr std::size_t offset = OFFSET(0x0, 0x15B);
 
 		static bool thunk(RE::TESObjectREFR* refr, RE::BGSOutfit* outfit)
@@ -346,7 +304,7 @@ namespace Outfits
 	/// Our hook will re-iomplement the entire logic related to outfit.
 	struct UpdateWornGear_IsHorse_stub
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);  // FINISH: SE addresses
 		static inline constexpr std::size_t offset = OFFSET(0x0, 0x1C0);
 
 		static bool thunk(RE::TESObjectREFR* refr)
@@ -365,7 +323,7 @@ namespace Outfits
 	/// This hook implements part of the UpdateWornGear related to the default outfit.
 	struct UpdateWornGear_AddWornOutfit
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);  // FINISH: SE addresses
 		static inline constexpr std::size_t offset = OFFSET(0x0, 0x25E);
 
 		static void thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
@@ -406,18 +364,10 @@ namespace Outfits
 		// A bunch of cases when NPC/actor outfit needs to be reset or re-initialized.
 		stl::install_hook<Resurrect>();
 		stl::install_hook<ResetReference>();
+		stl::install_hook<ResetInventory>();
 
 		// Papyrus handling (suspending/resuming SPID outfits).
 		stl::install_hook<SetOutfitActor>();
-
-		// Log Equip/Unequip events.
-		stl::install_hook<EquipObject>();
-		stl::install_hook<UnequipObject>();
-
-		// TODO: Test if new implmenetation will work without this workaround.
-		//stl::install_hook<InitializeDefaultOutfit>();
-		//stl::install_hook<EquipDefaultOutfitAfterResetInventory>();
-		//stl::install_hook<ResetInventory>();
 
 		// Hide distributed outfit items from the inventory.
 		stl::install_hook<FilterInventoryItems>();

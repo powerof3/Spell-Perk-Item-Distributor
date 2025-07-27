@@ -12,7 +12,7 @@ namespace Outfits
 	public:
 		void HandleMessage(SKSE::MessagingInterface::Message*);
 
-		// TODO: This method should check both initial and distributed outfits in SPID 8 or something.
+		// MAYBE: This method should check both initial and distributed outfits in SPID 8 or something.
 		/// <summary>
 		/// Checks whether the NPC uses specified outfit as the default outfit.
 		///
@@ -73,7 +73,7 @@ namespace Outfits
 		/// TESDeathEvent is used to update outfit after potential Death Distribution of a new outfit.
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent*, RE::BSTEventSource<RE::TESDeathEvent>*) override;
 
-		// TODO: Delete this event once all issues with outfits are solved.
+		// NEXT: Delete this event once all issues with outfits are solved.
 		/// TESContainerChangedEvent is used to log when items are added/removed. For debugging only!
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESContainerChangedEvent*, RE::BSTEventSource<RE::TESContainerChangedEvent>*) override;
 
@@ -229,16 +229,19 @@ namespace Outfits
 
 		HOOK_HANDLER(bool, ShouldBackgroundClone, RE::Character*)
 		HOOK_HANDLER(RE::NiAVObject*, Load3D, RE::Actor*)
-		HOOK_HANDLER(void, ResetInventory, RE::Actor*, bool reapplyOutfitNow)
+
 		HOOK_HANDLER(void, InitItemImpl, RE::TESNPC*)
-		HOOK_HANDLER_ALIAS(EquipDefaultOutfitAfterResetInventory, ResetInventory)
+
 		HOOK_HANDLER(void, Resurrect, RE::Actor*, bool resetInventory)
 		HOOK_HANDLER(bool, ResetReference, RE::Actor*)
+		HOOK_HANDLER(void, ResetInventory, RE::Actor*)
+
 		HOOK_HANDLER(void, SetOutfitActor, RE::Actor*, RE::BGSOutfit* outfit)
-		HOOK_HANDLER(void, InitializeDefaultOutfit, RE::TESNPC*, RE::Actor*)
+
 		HOOK_HANDLER(void, FilterInventoryItems, RE::NiPointer<RE::TESObjectREFR>& container)
 		HOOK_HANDLER_ALIAS(FilterInventoryItems2, FilterInventoryItems)
 		HOOK_HANDLER_ALIAS(FilterInventoryItems3, FilterInventoryItems)
+
 		HOOK_HANDLER_EX(void, UpdateWornGear_AddWornOutfit, UpdateWornGear, RE::Actor*, RE::BGSOutfit*, bool forceUpdate)
 
 		friend struct TestsHelper;

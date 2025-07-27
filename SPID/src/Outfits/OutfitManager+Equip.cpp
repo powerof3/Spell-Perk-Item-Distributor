@@ -16,17 +16,17 @@ namespace Outfits
 					if (const auto fromActor = from->As<RE::Actor>()) {
 						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 							if (const auto toActor = to->As<RE::Actor>()) {
-								logger::info("[INVENTORY] {} took {} {} from {}", *toActor, count, *item, *fromActor);
+								logger::info("[🧥][INVENTORY] {} took {} {} from {}", *toActor, count, *item, *fromActor);
 							} else {
-								logger::info("[INVENTORY] {} put {} {} to {}", *fromActor, count, *item, *to);
+								logger::info("[🧥][INVENTORY] {} put {} {} to {}", *fromActor, count, *item, *to);
 							}
 						} else {
-							logger::info("[INVENTORY] {} dropped {} {}", *fromActor, count, *item);
+							logger::info("[🧥][INVENTORY] {} dropped {} {}", *fromActor, count, *item);
 						}
 					} else {  // from is inanimate container
 						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 							if (const auto toActor = to->As<RE::Actor>()) {
-								logger::info("[INVENTORY] {} took {} {} from {}", *toActor, count, *item, *from);
+								logger::info("[🧥][INVENTORY] {} took {} {} from {}", *toActor, count, *item, *from);
 							} else {
 								//logger::info("[INVENTORY] {} {} transfered from {} to {}", count, *item, *from, *to);
 							}
@@ -37,7 +37,7 @@ namespace Outfits
 				} else {  // From is none
 					if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 						if (const auto toActor = to->As<RE::Actor>()) {
-							logger::info("[INVENTORY] {} picked up {} {}", *toActor, count, *item);
+							logger::info("[🧥][INVENTORY] {} picked up {} {}", *toActor, count, *item);
 						} else {
 							//logger::info("[INVENTORY] {} {} transfered to {}", count, *item, *to);
 						}
@@ -60,87 +60,6 @@ namespace Outfits
 		}
 
 		return funcCall();
-	}
-
-	void Manager::ProcessResetInventory(RE::Actor* actor, bool reapplyOutfitNow, std::function<void()> funcCall)
-	{
-		if (reapplyOutfitNow) {
-			logger::info("[OUTFIT RESET] Restoring worn outfit after inventory was reset for {}", *actor);
-
-			if (!IsSuspendedReplacement(actor)) {
-				if (const auto outfit = GetWornOutfit(actor); outfit) {
-					ApplyOutfit(actor, outfit->distributed);
-					return;
-				}
-			}
-		} else if (actor && !actor->Get3D2()) {
-			if (UpdateWornOutfit(actor, [&](OutfitReplacement& replacement) { replacement.needsInitialization = true; })) {
-				logger::info("[OUTFIT RESET] Queuing restoring worn outfit after inventory was reset for {}", *actor);
-			}
-		}
-
-		funcCall();
-	}
-
-	void Manager::ProcessResurrect(RE::Actor* actor, bool resetInventory, std::function<void()> funcCall)
-	{
-		RestoreOutfit(actor);
-		funcCall();
-		// If resurrection will reset inventory, then ResetInventory hook will be responsible for re-applying outfit,
-		// otherwise we need to manually re-apply outfit.
-		if (!resetInventory) {
-			if (const auto wornOutfit = GetWornOutfit(actor); wornOutfit) {
-				ApplyOutfit(actor, wornOutfit->distributed);
-			} else {
-				actor->InitInventoryIfRequired();
-				actor->RemoveOutfitItems(nullptr);
-				actor->AddWornOutfit(actor->GetActorBase()->defaultOutfit, true);
-			}
-		}
-	}
-
-	bool Manager::ProcessResetReference(RE::Actor* actor, std::function<bool()> funcCall)
-	{
-		RevertOutfit(actor, false);
-		return funcCall();
-	}
-
-	void Manager::ProcessInitializeDefaultOutfit(RE::TESNPC* npc, RE::Actor* actor, std::function<void()> funcCall)
-	{
-		if (!npc || !actor || !npc->defaultOutfit || actor->IsPlayerRef()) {
-			return funcCall();
-		}
-
-		if (const auto it = wornReplacements.find(actor->formID); it != wornReplacements.end()) {
-			auto worn = it->second;
-			if (worn.distributed) {
-				if (IsSuspendedReplacement(actor)) {
-					actor->RemoveOutfitItems(worn.distributed);  // remove distributed outfit, as the game will restore default outfit
-				} else {
-					// We want the game to do what it does with defaultOutfit, but for a distributed one.
-					logger::info("[OUTFIT INIT] BEFORE Outfit items present in {} inventory", *actor);
-					LogWornOutfitItems(actor);
-					logger::info("[OUTFIT INIT] Initializing distributed outfit for {}?", *actor);
-					auto backupOutfit = npc->defaultOutfit;
-					npc->defaultOutfit = worn.distributed;
-					funcCall();
-					npc->defaultOutfit = backupOutfit;
-
-					logger::info("[OUTFIT INIT] AFTER Outfit items present in {} inventory", *actor);
-					LogWornOutfitItems(actor);
-					return;
-				}
-			}
-		}
-
-		logger::info("[OUTFIT INIT] BEFORE Outfit items present in {} inventory", *actor);
-		LogWornOutfitItems(actor);
-
-		logger::info("[OUTFIT INIT] Initializing default outfit for {}?", *actor);
-		funcCall();
-
-		logger::info("[OUTFIT INIT] AFTER Outfit items present in {} inventory", *actor);
-		LogWornOutfitItems(actor);
 	}
 
 	/// Utility functions for ProcessUpdateWornGear.
@@ -194,7 +113,7 @@ namespace Outfits
 		if (actor && !actor->HasOutfitItems(effectiveOutfit) && (!actor->IsDead() || !RE::BGSSaveLoadGame::GetSingleton()->GetChange(actor, 32))) {
 			if (auto changes = actor->GetInventoryChanges(); changes) {
 				auto level = actor->GetLevel();
-				logger::info("[UPDATE WORN] Initializing worn outfit {} for {}", *effectiveOutfit, *actor);
+				logger::info("[🧥][UPDATE] Initializing worn outfit {} for {}", *effectiveOutfit, *actor);
 				changes->InitOutfitItems(effectiveOutfit, level);
 			}
 		}
@@ -203,14 +122,14 @@ namespace Outfits
 			for (const auto& item : effectiveOutfit->outfitItems) {
 				if (const auto obj = item->As<RE::TESBoundObject>(); obj) {
 					if (utils::HasOverlappingSlot(actor, obj)) {
-						logger::info("[UPDATE WORN] {} has equipped something in slot for {}", *actor, *obj);
+						logger::info("[🧥][UPDATE] {} has equipped something in slot for {}", *actor, *obj);
 						return;
 					}
 				}
 			}
 		}
 
-		logger::info("[UPDATE WORN] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
+		logger::info("[🧥][UPDATE] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
 		AddWornOutfit(actor, effectiveOutfit, forceUpdate, false);
 	}
 }

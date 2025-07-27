@@ -104,7 +104,7 @@ namespace Outfits
 
 		if (!details::Load(interface, loadedActorFormID)) {
 			//#ifndef NDEBUG
-			logger::warn("Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
+			logger::warn("[🧥][LOAD] Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
 			//#endif
 			return false;
 		}
@@ -112,14 +112,14 @@ namespace Outfits
 		RE::BGSOutfit* original;
 		if (!details::Load(interface, original, id)) {
 			//#ifndef NDEBUG
-			logger::warn("Failed to load Outfit Replacement record: Unknown original outfit [{:08X}].", id);
+			logger::warn("[🧥][LOAD] Failed to load Outfit Replacement record: Unknown original outfit [{:08X}].", id);
 			//#endif
 			return false;
 		}
 
 		if (!details::Load(interface, distributed, id)) {
 			//#ifndef NDEBUG
-			logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
+			logger::warn("[🧥][LOAD] Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
 			//#endif
 			if (!id) {
 				return false;
@@ -162,14 +162,14 @@ namespace Outfits
 
 		if (!details::Load(interface, loadedActorFormID)) {
 			//#ifndef NDEBUG
-			logger::warn("Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
+			logger::warn("[🧥][LOAD] Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
 			//#endif
 			return false;
 		}
 
 		if (!details::Load(interface, distributed, id)) {
 			//#ifndef NDEBUG
-			logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
+			logger::warn("[🧥][LOAD] Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
 			//#endif
 			if (!id) {
 				return false;
@@ -182,7 +182,7 @@ namespace Outfits
 			!details::Read(interface, isSuspended)) {
 			//#ifndef NDEBUG
 			if (auto loadedActor = RE::TESForm::LookupByID<RE::Actor>(loadedActorFormID); loadedActor) {
-				logger::warn("Failed to load attributes for Outfit Replacement record. Actor: {}", *loadedActor);
+				logger::warn("[🧥][LOAD] Failed to load attributes for Outfit Replacement record. Actor: {}", *loadedActor);
 			}
 			//#endif
 		}
@@ -206,14 +206,14 @@ namespace Outfits
 
 		if (!details::Load(interface, loadedActorFormID)) {
 			//#ifndef NDEBUG
-			logger::warn("Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
+			logger::warn("[🧥][LOAD] Failed to load Outfit Replacement record: Unknown actor [{:08X}].", loadedActorFormID);
 			//#endif
 			return false;
 		}
 
 		if (!details::Load(interface, distributed, id)) {
 			//#ifndef NDEBUG
-			logger::warn("Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
+			logger::warn("[🧥][LOAD] Failed to load Outfit Replacement record: Unknown distributed outfit [{:08X}].", id);
 			//#endif
 			if (!id) {
 				return false;
@@ -225,7 +225,7 @@ namespace Outfits
 			!details::Read(interface, isFinalOutfit)) {
 			//#ifndef NDEBUG
 			if (auto loadedActor = RE::TESForm::LookupByID<RE::Actor>(loadedActorFormID); loadedActor) {
-				logger::warn("Failed to load attributes for Outfit Replacement record. Actor: {}", *loadedActor);
+				logger::warn("[🧥][LOAD] Failed to load attributes for Outfit Replacement record. Actor: {}", *loadedActor);
 			}
 			//#endif
 		}
@@ -289,11 +289,11 @@ namespace Outfits
 						loadedReplacements[actorFormID] = loadedReplacement;
 						//#endif
 					} else if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(actorFormID); actor) {
-						logger::warn("Loaded replacement doesn't have an outfit, reverting actor {}", *actor);
+						logger::warn("[🧥][LOAD] Loaded replacement doesn't have an outfit, reverting actor {}", *actor);
 						manager->RevertOutfit(actor, loadedReplacement);
 					}
 				} else {
-					logger::error("Failed to load replacement");
+					logger::error("[🧥][LOAD] Failed to load replacement");
 				}
 			}
 		}
@@ -301,25 +301,25 @@ namespace Outfits
 		auto& pendingReplacements = manager->pendingReplacements;
 
 		//#ifndef NDEBUG
-		logger::info("Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
+		logger::info("[🧥][LOAD] Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
 		for (const auto& pair : loadedReplacements) {
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-				logger::info("\t{}", *actor);
+				logger::info("[🧥][LOAD] \t{}", *actor);
 			} else {
-				logger::info("\t[ACHR:{:08X}]", pair.first);
+				logger::info("[🧥][LOAD] \t[ACHR:{:08X}]", pair.first);
 			}
-			logger::info("\t\t{}", pair.second);
+			logger::info("[🧥][LOAD] \t\t{}", pair.second);
 		}
 
-		logger::info("Pending {} Outfit Replacements", pendingReplacements.size());
+		logger::info("[🧥][LOAD] Pending {} Outfit Replacements", pendingReplacements.size());
 		for (const auto& pair : pendingReplacements) {
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-				logger::info("\t{}", *actor);
+				logger::info("[🧥][LOAD] \t{}", *actor);
 			}
-			logger::info("\t\t{}", pair.second);
+			logger::info("[🧥][LOAD] \t\t{}", pair.second);
 		}
 
-		logger::info("Applying resolved outfits...");
+		logger::info("[🧥][LOAD] Applying resolved outfits...");
 		//#endif
 
 		// We don't increment iterator here, since ResolveWornOutfit will be erasing each pending entry
@@ -327,9 +327,9 @@ namespace Outfits
 			if (auto actor = RE::TESForm::LookupByID<RE::Actor>(it->first); actor) {
 				if (auto resolved = manager->ResolveWornOutfit(actor, it, false); resolved) {
 					//#ifndef NDEBUG
-					logger::info("\tActor: {}", *actor);
-					logger::info("\t\tResolved: {}", *resolved);
-					logger::info("\t\tDefault: {}", *(actor->GetActorBase()->defaultOutfit));
+					logger::info("[🧥][LOAD] \tActor: {}", *actor);
+					logger::info("[🧥][LOAD] \t\tResolved: {}", *resolved);
+					logger::info("[🧥][LOAD] \t\tDefault: {}", *(actor->GetActorBase()->defaultOutfit));
 					//#endif
 					manager->ApplyOutfit(actor, resolved->distributed);
 				}
@@ -346,7 +346,7 @@ namespace Outfits
 		auto       manager = Manager::GetSingleton();
 		const auto replacements = manager->GetWornOutfits();
 		//#ifndef NDEBUG
-		logger::info("Saving {} distributed outfits...", replacements.size());
+		logger::info("[🧥][SAVE] Saving {} distributed outfits...", replacements.size());
 		std::uint32_t savedCount = 0;
 		//#endif
 
@@ -354,21 +354,21 @@ namespace Outfits
 			if (!SaveReplacement(interface, pair.first, pair.second)) {
 				//#ifndef NDEBUG
 				if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-					logger::error("Failed to save Outfit Replacement ({}) for {}", pair.second, *actor);
+					logger::error("[🧥][SAVE] Failed to save Outfit Replacement ({}) for {}", pair.second, *actor);
 				}
 				//#endif
 				continue;
 			}
 			//#ifndef NDEBUG
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-				logger::info("\tSaved Outfit Replacement ({}) for actor {}", pair.second, *actor);
+				logger::info("[🧥][SAVE] \tSaved Outfit Replacement ({}) for actor {}", pair.second, *actor);
 			}
 			++savedCount;
 			//#endif
 		}
 
 		//#ifndef NDEBUG
-		logger::info("Saved {} replacements", savedCount);
+		logger::info("[🧥][SAVE] Saved {} replacements", savedCount);
 		//#endif
 	}
 }

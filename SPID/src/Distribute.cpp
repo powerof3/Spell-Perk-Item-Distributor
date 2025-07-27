@@ -33,6 +33,7 @@ namespace Distribute
 			},
 			accumulatedForms);
 
+		// FIX: This breaks another thing... see pending bug report.
 		// Note: Abilities are persisted, so that once applied they stick on NPCs.
 		// Maybe one day we should add a system similar to outfits :)
 		// or at least implement RemoveSpell calls for all previous abilities.
@@ -112,7 +113,7 @@ namespace Distribute
 
 		for_each_form<RE::TESBoundObject>(
 			npcData, forms.items, input, [&](std::map<RE::TESBoundObject*, Count>& a_objects) {
-				// TODO: Per-actor item distribution. Would require similar manager as in outfits :) but would be cool, right?
+				// MAYBE: Per-actor item distribution. Would require similar manager as in outfits :) but would be cool, right?
 				// adding objects to actors directly put them in inventory changes, so these items are baked into the save.
 				// to mitiage it, we would need to remove such items whenever a new distribution is triggered.
 				/*for (auto object : a_objects) {
@@ -174,7 +175,7 @@ namespace Distribute
 		Distribute(npcData, input, entries, &distributedForms, Outfits::SetDefaultOutfit);
 
 		if (!distributedForms.empty()) {
-			// TODO: This only does one-level linking. So that linked entries won't trigger another level of distribution.
+			// MAYBE: This only does one-level linking. So that linked entries won't trigger another level of distribution.
 			LinkedDistribution::Manager::GetSingleton()->ForEachLinkedDistributionSet(LinkedDistribution::kRegular, distributedForms, [&](Forms::DistributionSet& set) {
 				Distribute(npcData, input, set, &distributedForms, Outfits::SetDefaultOutfit);
 			});

@@ -77,7 +77,7 @@ namespace Outfits
 		return oss.str();
 	}
 
-	inline void LogInventory(RE::Actor* actor)
+	inline void LogInventory(RE::Actor* actor, const char* prefix = "\t")
 	{
 		if (const auto invChanges = actor->GetInventoryChanges()) {
 			if (const auto entryList = invChanges->entryList) {
@@ -109,9 +109,9 @@ namespace Outfits
 							}
 						}
 						if (outfit) {
-							logger::info("\t{} [{:+}]{} (Part of {}) (extras: {})", *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", *outfit, JoinVector(extraTypes));
+							logger::info("{}{} [{:+}]{} (Part of {}) (extras: {})", prefix, *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", *outfit, JoinVector(extraTypes));
 						} else {
-							logger::info("\t{} [{:+}]{} (extras: {})", *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", JoinVector(extraTypes));
+							logger::info("{}{} [{:+}]{} (extras: {})", prefix, *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", JoinVector(extraTypes));
 						}
 					}
 				}
@@ -139,19 +139,19 @@ namespace Outfits
 		return targetOutfitItemIDs == wornOutfitItemIDs;
 	}
 
-	inline void LogWornOutfitItems(RE::Actor* actor)
+	inline void LogWornOutfitItems(RE::Actor* actor, const char* prefix = "\t\t")
 	{
 		auto items = GetAllOutfitItems(actor);
 
 		for (const auto& [outfit, itemVec] : items) {
-			logger::info("\t\t{}", *outfit);
+			logger::info("{}{}", prefix, *outfit);
 			const auto lastItemIndex = itemVec.size() - 1;
 			for (int i = 0; i < lastItemIndex; ++i) {
 				const auto& item = itemVec[i];
-				logger::info("\t\t├─── {}{}", *item.first, item.second ? " (Worn)" : "");
+				logger::info("{}├─── {}{}", prefix, *item.first, item.second ? " (Worn)" : "");
 			}
 			const auto& lastItem = itemVec[lastItemIndex];
-			logger::info("\t\t└─── {}{}", *lastItem.first, lastItem.second ? " (Worn)" : "");
+			logger::info("{}└─── {}{}", prefix, *lastItem.first, lastItem.second ? " (Worn)" : "");
 		}
 	}
 }

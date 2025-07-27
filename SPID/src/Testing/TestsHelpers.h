@@ -109,7 +109,7 @@ namespace Testing::Helper
 
 	namespace Data
 	{
-		// TODO: Fill all kinds of distributable objects for easy access
+		// MAYBE: Fill all kinds of distributable objects for easy access
 
 		inline RE::TESBoundObject* GetItem()
 		{
@@ -129,7 +129,7 @@ namespace Testing::Helper
 
 	namespace Outfits
 	{
-		// TODO: Outfit helper methods
+		// MAYBE: Outfit helper methods
 	}
 
 	namespace Inventory
