@@ -97,7 +97,6 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
-		// FIX: Packages distribution does not work in lazy distribution, they need to be evaluated.
 		//DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)

@@ -56,28 +56,26 @@ namespace Distribute
 		for_each_form<RE::TESForm>(
 			npcData, forms.packages, input, [&](auto* a_packageOrList, [[maybe_unused]] IndexOrCount a_idx) {
 				auto packageIdx = std::get<Index>(a_idx);
-
+				// FINISH: Add unit tests for this logic.
 				if (a_packageOrList->Is(RE::FormType::Package)) {
 					auto package = a_packageOrList->As<RE::TESPackage>();
-
-					if (packageIdx > 0) {
-						--packageIdx;  //get actual position we want to insert at
-					}
 
 					auto& packageList = npc->aiPackages.packages;
 					if (std::ranges::find(packageList, package) == packageList.end()) {
 						if (packageList.empty() || packageIdx == 0) {
 							packageList.push_front(package);
 						} else {
-							auto idxIt = packageList.begin();
-							for (idxIt; idxIt != packageList.end(); ++idxIt) {
-								auto idx = std::distance(packageList.begin(), idxIt);
-								if (packageIdx == idx) {
-									break;
-								}
+							auto  last = packageList.end();
+							Index insertAfterIndex = packageIdx - 1;
+							int   currentIndex = 0;
+							auto  packageIt = packageList.begin();
+							while(packageIt != packageList.end() && currentIndex <= insertAfterIndex) {
+								last = packageIt;
+								++currentIndex;
+								++packageIt;
 							}
-							if (idxIt != packageList.end()) {
-								packageList.insert_after(idxIt, package);
+							if (last != packageList.end()) {
+								packageList.insert_after(last, package);
 							}
 						}
 					}
