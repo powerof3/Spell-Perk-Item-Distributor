@@ -107,7 +107,6 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-
 	/// This hook is used to clear outfit replacements info since the actor will be completely reset,
 	/// thus eligible for a fresh distribution.
 	struct ResetReference
@@ -178,7 +177,7 @@ namespace Outfits
 	};
 
 	// NEXT: These will be disabled for now, but in the future we might want to use these hooks to handle equip/unequip as events and triggers for some actions.
-	// For future reference, there is a situation when the game repeatedly calls (spams) Equip/Unequip calls 
+	// For future reference, there is a situation when the game repeatedly calls (spams) Equip/Unequip calls
 	// during a scripted scene where NPC practices archery (an arrow is being equipped/unequipped), causing some lagging.
 
 	//struct EquipObject

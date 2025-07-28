@@ -37,7 +37,7 @@ namespace Outfits
 		if (resetInventory) {
 			logger::info("[🧥][RESURRECT] \tInventory will be reset.");
 		}
-		
+
 		RestoreOutfit(actor);
 		funcCall();
 		if (!resetInventory) {

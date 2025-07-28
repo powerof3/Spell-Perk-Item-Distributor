@@ -90,15 +90,15 @@ namespace Outfits
 	{
 		if (actor && actor->GetActorBase()) {
 			logger::info("[🧥][REVERT]\tReverting Outfit Replacement for {}", *actor);
-		if (auto outfit = actor->GetActorBase()->defaultOutfit; outfit) {
-			logger::info("[🧥][REVERT]\t\t{:R} ({})", replacement, *outfit);
-			actor->InitInventoryIfRequired();
-			actor->RemoveOutfitItems(nullptr);
-			if (!actor->IsDisabled()) {
-				AddWornOutfit(actor, outfit, true);
+			if (auto outfit = actor->GetActorBase()->defaultOutfit; outfit) {
+				logger::info("[🧥][REVERT]\t\t{:R} ({})", replacement, *outfit);
+				actor->InitInventoryIfRequired();
+				actor->RemoveOutfitItems(nullptr);
+				if (!actor->IsDisabled()) {
+					AddWornOutfit(actor, outfit, true);
+				}
+				return true;
 			}
-			return true;
-		}
 		}
 		return false;
 	}
