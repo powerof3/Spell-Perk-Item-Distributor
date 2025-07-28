@@ -88,7 +88,7 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	/// This hook is mainly for logging purposes now. The reset is properly handled by UpdateWornGear hook.
+	/// This hook ensures that NPCs receive distributed outfit when inventory is reset.
 	struct ResetInventory
 	{
 		static inline constexpr REL::ID     relocation = RELOCATION_ID(36332, 37322);

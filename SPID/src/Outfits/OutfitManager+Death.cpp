@@ -50,19 +50,4 @@ namespace Outfits
 			}
 		}
 	}
-
-	bool Manager::ProcessResetReference(RE::Actor* actor, std::function<bool()> funcCall)
-	{
-		logger::info("[🧥][RECYCLE] Recycling {}", *actor);
-		RevertOutfit(actor, false);
-		// NEXT: After reseting, processed flag should be cleared, allowing new distribution to occur.
-		return funcCall();
-	}
-
-	// FIX: When resetting inventory of a dead NPC, the game adds defaultOutfit items instead of distributed outfit.
-	void Manager::ProcessResetInventory(RE::Actor* actor, std::function<void()> funcCall)
-	{
-		logger::info("[🧥][RESET] Resetting inventory of {}", *actor);
-		funcCall();
-	}
 }

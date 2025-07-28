@@ -62,6 +62,32 @@ namespace Outfits
 		return funcCall();
 	}
 
+	
+	bool Manager::ProcessResetReference(RE::Actor* actor, std::function<bool()> funcCall)
+	{
+		logger::info("[🧥][RECYCLE] Recycling {}", *actor);
+		RevertOutfit(actor, false);
+		// NEXT: After reseting, processed flag should be cleared, allowing new distribution to occur.
+		return funcCall();
+	}
+
+	void Manager::ProcessResetInventory(RE::Actor* actor, std::function<void()> funcCall)
+	{
+		logger::info("[🧥][RESET] Resetting inventory of {}", *actor);
+		if (auto npc = actor->GetActorBase(); npc) {
+			if (npc->defaultOutfit) {
+				if (auto worn = GetWornOutfit(actor); worn && worn->distributed) {
+					auto old = npc->defaultOutfit;
+					npc->defaultOutfit = worn->distributed;
+					funcCall();
+					npc->defaultOutfit = old;
+					return;
+				}
+			}
+		}
+		funcCall();
+	}
+
 	/// Utility functions for ProcessUpdateWornGear.
 	namespace utils
 	{
@@ -118,6 +144,9 @@ namespace Outfits
 			}
 		}
 
+		// Logic related to horses onlyt appears in AE version of the game.
+		// SE only checks the outfit as written above.
+		#ifdef SKYRIM_SUPPORT_AE
 		if (actor && actor->IsHorse()) {
 			for (const auto& item : effectiveOutfit->outfitItems) {
 				if (const auto obj = item->As<RE::TESBoundObject>(); obj) {
@@ -128,6 +157,7 @@ namespace Outfits
 				}
 			}
 		}
+		#endif
 
 		logger::info("[🧥][UPDATE] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
 		AddWornOutfit(actor, effectiveOutfit, forceUpdate, false);
