@@ -226,8 +226,8 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51144); // FINISH: SE addresses
-		static inline constexpr std::size_t offset = OFFSET(0x0, 0xE2);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(50216, 51145);
+		static inline constexpr std::size_t offset = OFFSET(0xED, 0xBE);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -243,14 +243,36 @@ namespace Outfits
 	};
 
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
-	struct FilterInventoryItems2
+#ifdef SKYRIM_SUPPORT_AE
+	struct FilterInventoryItemsAE
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51145);  // FINISH: SE addresses
-		static inline constexpr std::size_t offset = OFFSET(0x0, 0xBE);
+		// In AE one of the functions inlines call to function used in the above hook (FilterInventoryItems), so we need to add extra hook for it.
+		static inline constexpr REL::ID     relocation = REL::ID(51144);
+		static inline constexpr std::size_t offset = 0xE2;
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed FilterInventoryItemsAE hook.");
+		}
+
+		static inline REL::Relocation<decltype(thunk)> func;
+	};
+#endif
+
+	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
+	struct FilterInventoryItems2
+	{
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(50217, 51146);
+		static inline constexpr std::size_t offset = OFFSET(0x152, 0x12E);
+
+		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
+		{
+			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, item, container); });
 		}
 
 		static inline void post_hook()
@@ -261,31 +283,12 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
-	struct FilterInventoryItems3
-	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 51146);  // FINISH: SE addresses
-		static inline constexpr std::size_t offset = OFFSET(0x0, 0x12E);
-
-		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
-		{
-			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, item, container); });
-		}
-
-		static inline void post_hook()
-		{
-			logger::info("\t\t🪝Installed FilterInventoryItems3 hook.");
-		}
-
-		static inline REL::Relocation<decltype(thunk)> func;
-	};
-
 	///  This hook stubs call to HasOutfitItems, so that the UpdateWornGear function would always call AddWornOutfit where we handle outfit.
 	/// Our hook will re-iomplement the entire logic related to outfit.
 	struct UpdateWornGear_HasOutfitItems_stub
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);  // FINISH: SE addresses
-		static inline constexpr std::size_t offset = OFFSET(0x0, 0x15B);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(24234, 418622);
+		static inline constexpr std::size_t offset = OFFSET(0x158, 0x15B);
 
 		static bool thunk(RE::TESObjectREFR* refr, RE::BGSOutfit* outfit)
 		{
@@ -300,12 +303,14 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
+#ifdef SKYRIM_SUPPORT_AE
 	/// This hook stubs call to IsHorse, so that the UpdateWornGear function would always call AddWornOutfit where we handle outfit.
 	/// Our hook will re-iomplement the entire logic related to outfit.
 	struct UpdateWornGear_IsHorse_stub
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);  // FINISH: SE addresses
-		static inline constexpr std::size_t offset = OFFSET(0x0, 0x1C0);
+		// This logic related to horse only appears in AE version of the game.
+		static inline constexpr REL::ID     relocation = REL::ID(418622);
+		static inline constexpr std::size_t offset = 0x1C0;
 
 		static bool thunk(RE::TESObjectREFR* refr)
 		{
@@ -319,12 +324,13 @@ namespace Outfits
 
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
+#endif
 
 	/// This hook implements part of the UpdateWornGear related to the default outfit.
 	struct UpdateWornGear_AddWornOutfit
 	{
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(0, 418622);  // FINISH: SE addresses
-		static inline constexpr std::size_t offset = OFFSET(0x0, 0x25E);
+		static inline constexpr REL::ID     relocation = RELOCATION_ID(24234, 418622);
+		static inline constexpr std::size_t offset = OFFSET(0x1C3, 0x25E);
 
 		static void thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
 		{
@@ -371,12 +377,16 @@ namespace Outfits
 
 		// Hide distributed outfit items from the inventory.
 		stl::install_hook<FilterInventoryItems>();
+#ifdef SKYRIM_SUPPORT_AE
+		stl::install_hook<FilterInventoryItemsAE>();
+#endif
 		stl::install_hook<FilterInventoryItems2>();
-		stl::install_hook<FilterInventoryItems3>();
 
 		// Track attempts to keep best gear equipped.
 		stl::install_hook<UpdateWornGear_HasOutfitItems_stub>();
+#ifdef SKYRIM_SUPPORT_AE
 		stl::install_hook<UpdateWornGear_IsHorse_stub>();
+#endif
 		stl::install_hook<UpdateWornGear_AddWornOutfit>();
 	}
 }
