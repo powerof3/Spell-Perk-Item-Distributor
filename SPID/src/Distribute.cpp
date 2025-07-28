@@ -69,7 +69,7 @@ namespace Distribute
 							Index insertAfterIndex = packageIdx - 1;
 							int   currentIndex = 0;
 							auto  packageIt = packageList.begin();
-							while(packageIt != packageList.end() && currentIndex <= insertAfterIndex) {
+							while (packageIt != packageList.end() && currentIndex <= insertAfterIndex) {
 								last = packageIt;
 								++currentIndex;
 								++packageIt;
