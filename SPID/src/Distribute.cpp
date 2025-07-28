@@ -33,17 +33,13 @@ namespace Distribute
 			},
 			accumulatedForms);
 
-		// FIX: This breaks another thing... see pending bug report.
-		// Note: Abilities are persisted, so that once applied they stick on NPCs.
-		// Maybe one day we should add a system similar to outfits :)
-		// or at least implement RemoveSpell calls for all previous abilities.
 		for_each_form<RE::SpellItem>(
 			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& spells) {
-				for (auto& spell : spells) {
-					actor->AddSpell(spell);  // Adding spells one by one to actor properly applies them. This solves On Death distribution issue #60
-				}
+				npc->GetSpellList()->AddSpells(spells);
 			},
 			accumulatedForms);
+		// Apply abilities that were distributed. This is especially important when distributed to dead actors, since game doesn't do this by default.
+		actor->CastPermanentMagic(false, true, false, false);
 
 		for_each_form<RE::TESLevSpell>(
 			npcData, forms.levSpells, input, [&](const std::vector<RE::TESLevSpell*>& levSpells) {
