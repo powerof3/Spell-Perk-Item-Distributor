@@ -151,7 +151,7 @@ namespace Distribute
 				::Testing::Helper::Distribution::GetPackages().EmplaceForm(true, package, isFinal, idxOrCount, filterData, path);
 				::Testing::Helper::Distribution::Distribute(actor);
 
-				auto newPackages = actor->GetActorBase()->aiPackages.packages;
+				auto                         newPackages = actor->GetActorBase()->aiPackages.packages;
 				std::vector<RE::TESPackage*> oldVec{ package };
 				auto                         newVec = ::Testing::Helper::ToVector(newPackages);
 				EXPECT(oldVec == newVec, "Expected package to be inserted at the front");
@@ -165,7 +165,6 @@ namespace Distribute
 				Index           idxOrCount{ 1 };
 				bool            isFinal{ false };
 				Path            path{ "" };
-
 
 				::Testing::Helper::Distribution::GetPackages().EmplaceForm(true, package, isFinal, idxOrCount, filterData, path);
 				::Testing::Helper::Distribution::Distribute(actor);

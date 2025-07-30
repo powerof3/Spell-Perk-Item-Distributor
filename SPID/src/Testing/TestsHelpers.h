@@ -23,7 +23,7 @@ namespace DeathDistribution
 
 namespace Testing::Helper
 {
-	template<class T>
+	template <class T>
 	std::vector<T> ToVector(RE::BSSimpleList<T>& list)
 	{
 		std::vector<T> result;
