@@ -23,6 +23,16 @@ namespace DeathDistribution
 
 namespace Testing::Helper
 {
+	template<class T>
+	std::vector<T> ToVector(RE::BSSimpleList<T>& list)
+	{
+		std::vector<T> result;
+		for (auto iter = list.begin(); iter != list.end(); ++iter) {
+			result.push_back(*iter);
+		}
+		return result;
+	}
+
 	namespace Actor
 	{
 		inline RE::Actor* GetActor()
@@ -44,6 +54,14 @@ namespace Testing::Helper
 			return actor;
 		}
 	};
+
+	namespace Package
+	{
+		inline RE::TESPackage* GetPackage()
+		{
+			return GetForm<RE::TESPackage>(0x750BE);  // Follow Player
+		}
+	}
 
 	namespace Distribution
 	{

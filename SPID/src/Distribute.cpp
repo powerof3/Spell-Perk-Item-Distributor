@@ -56,28 +56,12 @@ namespace Distribute
 		for_each_form<RE::TESForm>(
 			npcData, forms.packages, input, [&](auto* a_packageOrList, [[maybe_unused]] IndexOrCount a_idx) {
 				auto packageIdx = std::get<Index>(a_idx);
-				// FINISH: Add unit tests for this logic.
 				if (a_packageOrList->Is(RE::FormType::Package)) {
 					auto package = a_packageOrList->As<RE::TESPackage>();
 
 					auto& packageList = npc->aiPackages.packages;
 					if (std::ranges::find(packageList, package) == packageList.end()) {
-						if (packageList.empty() || packageIdx == 0) {
-							packageList.push_front(package);
-						} else {
-							auto  last = packageList.end();
-							Index insertAfterIndex = packageIdx - 1;
-							int   currentIndex = 0;
-							auto  packageIt = packageList.begin();
-							while (packageIt != packageList.end() && currentIndex <= insertAfterIndex) {
-								last = packageIt;
-								++currentIndex;
-								++packageIt;
-							}
-							if (last != packageList.end()) {
-								packageList.insert_after(last, package);
-							}
-						}
+						packageList.insert_at(packageIdx, package);
 					}
 				} else if (a_packageOrList->Is(RE::FormType::FormList)) {
 					auto packageList = a_packageOrList->As<RE::BGSListForm>();
