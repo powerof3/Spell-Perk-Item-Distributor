@@ -253,5 +253,5 @@ namespace Distribute
 	/// <param name="onlyLeveledEntries"></param>
 	void DistributeOutfits(NPCData& npcData, bool onlyLeveledEntries);
 
-	void LogDistribution(const DistributedForms& forms, NPCData& npcData, bool append = false);
+	void LogDistribution(const DistributedForms& forms, NPCData& npcData, bool append, const char* prefix = "");
 }

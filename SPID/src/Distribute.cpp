@@ -159,7 +159,7 @@ namespace Distribute
 			});
 		}
 
-		LogDistribution(distributedForms, npcData);
+		LogDistribution(distributedForms, npcData, false, "[📦] ");
 	}
 
 	void DistributeOutfits(NPCData& npcData, const PCLevelMult::Input& input)
@@ -185,7 +185,7 @@ namespace Distribute
 
 		Distribute(npcData, input, entries, &distributedForms, Outfits::SetDefaultOutfit);
 
-		LogDistribution(distributedForms, npcData, true);
+		LogDistribution(distributedForms, npcData, true, "[📦] ");
 	}
 
 	void Distribute(NPCData& npcData, bool onlyLeveledEntries)
@@ -206,7 +206,7 @@ namespace Distribute
 		DistributeOutfits(npcData, input);
 	}
 
-	void LogDistribution(const DistributedForms& forms, NPCData& npcData, bool append)
+	void LogDistribution(const DistributedForms& forms, NPCData& npcData, bool append, const char* prefix)
 	{
 		//#ifndef NDEBUG
 		std::map<std::string_view, std::vector<DistributedForm>> results;
@@ -216,17 +216,17 @@ namespace Distribute
 		}
 
 		if (!append) {
-			logger::info("Distribution for {}", *npcData.GetActor());
+			logger::info("{}Distribution for {}", prefix, *npcData.GetActor());
 		}
 		if (results.empty()) {
 			if (!append) {
-				logger::info("\tNothing");
+				logger::info("{}\tNothing", prefix);
 			}
 		} else {
 			for (const auto& pair : results) {
-				logger::info("\t{}", pair.first);
+				logger::info("{}\t{}", prefix, pair.first);
 				for (const auto& form : pair.second) {
-					logger::info("\t\t{} @ {}", *form.first, form.second);
+					logger::info("{}\t\t{} @ {}", prefix, *form.first, form.second);
 				}
 			}
 		}

@@ -273,7 +273,7 @@ namespace DeathDistribution
 			});
 		}
 
-		Distribute::LogDistribution(distributedForms, data);
+		Distribute::LogDistribution(distributedForms, data, false, "[💀][📦] ");
 	}
 
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
@@ -284,7 +284,7 @@ namespace DeathDistribution
 
 		if (const auto actor = a_event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
 			if (const auto npc = actor->GetActorBase(); npc) {
-				logger::info("Dying {}", *actor);
+				logger::info("[💀] Dying {}", *actor);
 				auto npcData = NPCData(actor, npc, true);
 				Distribute(npcData);
 			}

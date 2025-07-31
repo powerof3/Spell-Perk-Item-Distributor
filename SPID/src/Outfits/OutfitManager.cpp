@@ -16,7 +16,7 @@ namespace Outfits
 			break;
 #ifndef NDEBUG
 		case SKSE::MessagingInterface::kPostPostLoad:
-			LOG_HEADER("OUTFITS");  // This is where TESNPCs start initializing, so we give it a nice header.
+			//LOG_HEADER("OUTFITS");  // This is where TESNPCs start initializing, so we give it a nice header.
 			break;
 #endif
 		case SKSE::MessagingInterface::kPreLoadGame:
@@ -89,9 +89,9 @@ namespace Outfits
 	bool Manager::RevertOutfit(RE::Actor* actor, const OutfitReplacement& replacement) const
 	{
 		if (actor && actor->GetActorBase()) {
-			logger::info("[🧥][REVERT]\tReverting Outfit Replacement for {}", *actor);
+			logger::info("[🧥]\tReverting Outfit Replacement for {}", *actor);
 			if (auto outfit = actor->GetActorBase()->defaultOutfit; outfit) {
-				logger::info("[🧥][REVERT]\t\t{:R} ({})", replacement, *outfit);
+				logger::info("[🧥]\t\t{:R} ({})", replacement, *outfit);
 				actor->InitInventoryIfRequired();
 				actor->RemoveOutfitItems(nullptr);
 				if (!actor->IsDisabled()) {
@@ -121,18 +121,18 @@ namespace Outfits
 		// If outfit is nullptr, we just track that distribution didn't provide any outfit for this actor.
 		if (outfit) {
 			//#ifndef NDEBUG
-			logger::info("[🧥][SET] Evaluating outfit for {}", *actor);
-			logger::info("[🧥][SET] \tDefault Outfit: {}", *defaultOutfit);
+			logger::info("[🧥] Evaluating outfit for {}", *actor);
+			logger::info("[🧥] \tDefault Outfit: {}", *defaultOutfit);
 			if (auto worn = wornReplacements.find(actor->formID); worn != wornReplacements.end()) {
-				logger::info("[🧥][SET] \tWorn Outfit: {}", *worn->second.distributed);
+				logger::info("[🧥] \tWorn Outfit: {}", *worn->second.distributed);
 			} else {
-				logger::info("[🧥][SET] \tWorn Outfit: None");
+				logger::info("[🧥] \tWorn Outfit: None");
 			}
-			logger::info("[🧥][SET] \tNew Outfit: {}", *outfit);
+			logger::info("[🧥] \tNew Outfit: {}", *outfit);
 			//#endif
 			if (!CanEquipOutfit(actor, outfit)) {
 				//#ifndef NDEBUG
-				logger::warn("[🧥][SET] \tAttempted to set Outfit {} that can't be worn by given actor.", *outfit);
+				logger::warn("[🧥] \tAttempted to set Outfit {} that can't be worn by given actor.", *outfit);
 				//#endif
 				return false;
 			}
@@ -141,7 +141,7 @@ namespace Outfits
 		if (auto replacement = ResolvePendingOutfit(data, outfit, isDeathOutfit, isFinalOutfit); replacement) {
 			//#ifndef NDEBUG
 			if (replacement->distributed) {
-				logger::info("[🧥][SET] \tResolved Pending Outfit: {}", *replacement->distributed);
+				logger::info("[🧥] \tResolved Pending Outfit: {}", *replacement->distributed);
 			}
 			//#endif
 		}
@@ -167,30 +167,30 @@ namespace Outfits
 
 		// Empty outfit might be used to undress the actor.
 		if (outfit->outfitItems.empty()) {
-			logger::info("[🧥][APPLY] \t⚠️ Outfit {} is empty - {} will appear naked.", *outfit, *actor);
+			logger::info("[🧥] \t⚠️ Outfit {} is empty - {} will appear naked.", *outfit, *actor);
 		}
 
 		//#ifndef NDEBUG
-		logger::info("[🧥][APPLY] BEFORE Outfit items present in {} inventory", *actor);
-		LogWornOutfitItems(actor, "[🧥][APPLY] \t\t");
+		logger::info("[🧥] BEFORE Outfit items present in {} inventory", *actor);
+		LogWornOutfitItems(actor, "[🧥] \t\t");
 		//#endif
 
 		if (IsSuspendedReplacement(actor)) {
 			//#ifndef NDEBUG
-			logger::info("[🧥][APPLY] Skipping outfit equip because distribution is suspended for {}", *actor);
+			logger::info("[🧥] Skipping outfit equip because distribution is suspended for {}", *actor);
 			//#endif
 			return false;
 		}
 
 		if (IsWearingOutfit(actor, outfit)) {
 			//#ifndef NDEBUG
-			logger::info("[🧥][APPLY] Outfit {} is already equipped on {}", *outfit, *actor);
+			logger::info("[🧥] Outfit {} is already equipped on {}", *outfit, *actor);
 			//#endif
 			return true;
 		}
 
 		//#ifndef NDEBUG
-		logger::info("[🧥][APPLY] Equipping Outfit {}", *outfit);
+		logger::info("[🧥] Equipping Outfit {}", *outfit);
 		//#endif
 		actor->InitInventoryIfRequired();
 		actor->RemoveOutfitItems(nullptr);
@@ -198,8 +198,8 @@ namespace Outfits
 			AddWornOutfit(actor, outfit, shouldUpdate3D);
 		}
 		//#ifndef NDEBUG
-		logger::info("[🧥][APPLY] AFTER Outfit items present in {} inventory", *actor);
-		LogWornOutfitItems(actor, "[🧥][APPLY] \t\t");
+		logger::info("[🧥] AFTER Outfit items present in {} inventory", *actor);
+		LogWornOutfitItems(actor, "[🧥] \t\t");
 		//#endif
 		return true;
 	}
