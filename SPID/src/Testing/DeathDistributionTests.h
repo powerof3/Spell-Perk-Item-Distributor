@@ -27,11 +27,12 @@ namespace DeathDistribution
 			BEFORE_EACH
 			{
 				::Testing::Helper::Distribution::ClearConfigs();
+				::Testing::Helper::Distribution::SnapshotActor();
 			}
 
 			AFTER_EACH
 			{
-				::Testing::Helper::Distribution::Revert();
+				::Testing::Helper::Distribution::RevertActor();
 			}
 
 			TEST(AddItemToDeadActor)
@@ -85,11 +86,12 @@ namespace DeathDistribution
 			BEFORE_EACH
 			{
 				::Testing::Helper::Distribution::ClearConfigs();
+				::Testing::Helper::Distribution::SnapshotActor();
 			}
 
 			AFTER_EACH
 			{
-				::Testing::Helper::Distribution::Revert();
+				::Testing::Helper::Distribution::RevertActor();
 			}
 
 			TEST(AddItemToDyingActor)

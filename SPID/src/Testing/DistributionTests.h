@@ -27,11 +27,12 @@ namespace Distribute
 			BEFORE_EACH
 			{
 				::Testing::Helper::Distribution::ClearConfigs();
+				::Testing::Helper::Distribution::SnapshotActor();
 			}
 
 			AFTER_EACH
 			{
-				::Testing::Helper::Distribution::Revert();
+				::Testing::Helper::Distribution::RevertActor();
 			}
 
 			TEST(AddItemToActor)
@@ -51,11 +52,9 @@ namespace Distribute
 			}
 		}
 
-		namespace Packages
+		namespace Spells
 		{
-			constexpr static const char* moduleName = "Distribute.Packages";
-
-			inline RE::BSSimpleList<RE::TESPackage*> originalPackages;
+			constexpr static const char* moduleName = "Distribute.Spells";
 
 			BEFORE_ALL
 			{
@@ -65,35 +64,86 @@ namespace Distribute
 			AFTER_ALL
 			{
 				::Testing::Helper::Distribution::RestoreConfigs();
-				originalPackages = {};
 			}
 
 			BEFORE_EACH
 			{
-				originalPackages = ::Testing::Helper::Actor::GetActor()->GetActorBase()->aiPackages.packages;
 				::Testing::Helper::Distribution::ClearConfigs();
+				::Testing::Helper::Distribution::SnapshotActor();
 			}
 
 			AFTER_EACH
 			{
-				::Testing::Helper::Actor::GetActor()->GetActorBase()->aiPackages.packages = originalPackages;
-				::Testing::Helper::Distribution::Revert();
+				::Testing::Helper::Distribution::RevertActor();
+			}
+
+			TEST(AddSpellToAliveActor)
+			{
+				auto        actor{ ::Testing::Helper::Actor::GetAlive() };
+				auto        spell{ ::Testing::Helper::Data::GetSpell() };
+				FilterData  filterData{ {}, {}, {}, {}, 100 };
+				RandomCount idxOrCount{ 1, 1 };
+				bool        isFinal{ false };
+				Path        path{ "" };
+				::Testing::Helper::Distribution::GetSpells().EmplaceForm(true, spell, isFinal, idxOrCount, filterData, path);
+				::Testing::Helper::Distribution::Distribute(actor);
+				EXPECT(actor->HasSpell(spell), "Expected actor to have the spell");
+			}
+
+			TEST(AddSpellToDeadActor)
+			{
+				auto        actor{ ::Testing::Helper::Actor::GetDead() };
+				auto        spell{ ::Testing::Helper::Data::GetSpell() };
+				FilterData  filterData{ {}, {}, {}, {}, 100 };
+				RandomCount idxOrCount{ 1, 1 };
+				bool        isFinal{ false };
+				Path        path{ "" };
+				::Testing::Helper::Distribution::GetSpells().EmplaceForm(true, spell, isFinal, idxOrCount, filterData, path);
+				::Testing::Helper::Distribution::Distribute(actor);
+				EXPECT(actor->HasSpell(spell), "Expected actor to have the spell");
+			}
+		}
+
+		namespace Packages
+		{
+			constexpr static const char* moduleName = "Distribute.Packages";
+
+			BEFORE_ALL
+			{
+				::Testing::Helper::Distribution::SnapshotConfigs();
+			}
+
+			AFTER_ALL
+			{
+				::Testing::Helper::Distribution::RestoreConfigs();
+			}
+
+			BEFORE_EACH
+			{
+				::Testing::Helper::Distribution::ClearConfigs();
+				::Testing::Helper::Distribution::SnapshotActor();
+			}
+
+			AFTER_EACH
+			{
+				::Testing::Helper::Distribution::RevertActor();
 			}
 
 			TEST(InsertPackagesAt0)
 			{
 				auto            actor{ ::Testing::Helper::Actor::GetActor() };
-				RE::TESPackage* package{ ::Testing::Helper::Package::GetPackage() };
+				RE::TESPackage* package{ ::Testing::Helper::Data::GetPackage() };
 				FilterData      filterData{ {}, {}, {}, {}, 100 };
 				Index           idxOrCount{ 0 };
 				bool            isFinal{ false };
 				Path            path{ "" };
 
+				auto oldPackages = actor->GetActorBase()->aiPackages.packages;
 				::Testing::Helper::Distribution::GetPackages().EmplaceForm(true, package, isFinal, idxOrCount, filterData, path);
 				::Testing::Helper::Distribution::Distribute(actor);
 
 				auto newPackages = actor->GetActorBase()->aiPackages.packages;
-				auto oldVec = ::Testing::Helper::ToVector(originalPackages);
+				auto oldVec = ::Testing::Helper::ToVector(oldPackages);
 				oldVec.insert(oldVec.begin() + idxOrCount, package);
 				auto newVec = ::Testing::Helper::ToVector(newPackages);
 				EXPECT(oldVec == newVec, "Expected package to be inserted at the front");
@@ -102,7 +152,7 @@ namespace Distribute
 			TEST(InsertPackageInTheMiddle)
 			{
 				auto            actor{ ::Testing::Helper::Actor::GetActor() };
-				RE::TESPackage* package{ ::Testing::Helper::Package::GetPackage() };
+				RE::TESPackage* package{ ::Testing::Helper::Data::GetPackage() };
 				FilterData      filterData{ {}, {}, {}, {}, 100 };
 				Index           idxOrCount{ 2 };
 				bool            isFinal{ false };
@@ -113,7 +163,7 @@ namespace Distribute
 				::Testing::Helper::Distribution::Distribute(actor);
 
 				auto newPackages = actor->GetActorBase()->aiPackages.packages;
-				auto oldVec = ::Testing::Helper::ToVector(originalPackages);
+				auto oldVec = ::Testing::Helper::ToVector(oldPackages);
 				oldVec.insert(oldVec.begin() + idxOrCount, package);
 				auto newVec = ::Testing::Helper::ToVector(newPackages);
 				EXPECT(oldVec == newVec, fmt::format("Expected package to be inserted at index {}", idxOrCount));
@@ -122,17 +172,18 @@ namespace Distribute
 			TEST(AppendPackageWhenIndexExceedsSize)
 			{
 				auto            actor{ ::Testing::Helper::Actor::GetActor() };
-				RE::TESPackage* package{ ::Testing::Helper::Package::GetPackage() };
+				RE::TESPackage* package{ ::Testing::Helper::Data::GetPackage() };
 				FilterData      filterData{ {}, {}, {}, {}, 100 };
 				Index           idxOrCount{ 100 };
 				bool            isFinal{ false };
 				Path            path{ "" };
 
+				auto oldPackages = actor->GetActorBase()->aiPackages.packages;
 				::Testing::Helper::Distribution::GetPackages().EmplaceForm(true, package, isFinal, idxOrCount, filterData, path);
 				::Testing::Helper::Distribution::Distribute(actor);
 
 				auto newPackages = actor->GetActorBase()->aiPackages.packages;
-				auto oldVec = ::Testing::Helper::ToVector(originalPackages);
+				auto oldVec = ::Testing::Helper::ToVector(oldPackages);
 				oldVec.push_back(package);
 				auto newVec = ::Testing::Helper::ToVector(newPackages);
 				EXPECT(oldVec == newVec, "Expected package to be appended to the back");
@@ -141,7 +192,7 @@ namespace Distribute
 			TEST(PlacePackageAtTheFrontWhenListIsEmpty)
 			{
 				auto            actor{ ::Testing::Helper::Actor::GetActor() };
-				RE::TESPackage* package{ ::Testing::Helper::Package::GetPackage() };
+				RE::TESPackage* package{ ::Testing::Helper::Data::GetPackage() };
 				FilterData      filterData{ {}, {}, {}, {}, 100 };
 				Index           idxOrCount{ 1 };
 				bool            isFinal{ false };
@@ -166,11 +217,12 @@ namespace Distribute
 				bool            isFinal{ false };
 				Path            path{ "" };
 
+				auto oldPackages = actor->GetActorBase()->aiPackages.packages;
 				::Testing::Helper::Distribution::GetPackages().EmplaceForm(true, package, isFinal, idxOrCount, filterData, path);
 				::Testing::Helper::Distribution::Distribute(actor);
 
 				auto newPackages = actor->GetActorBase()->aiPackages.packages;
-				auto oldVec = ::Testing::Helper::ToVector(originalPackages);
+				auto oldVec = ::Testing::Helper::ToVector(oldPackages);
 				auto newVec = ::Testing::Helper::ToVector(newPackages);
 				EXPECT(oldVec == newVec, "Expected package to be inserted at the front");
 			}

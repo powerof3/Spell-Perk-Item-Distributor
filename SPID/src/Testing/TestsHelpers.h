@@ -1,4 +1,5 @@
 #pragma once
+#include "../Outfits/OutfitManager.h"
 #include "DeathDistribution.h"
 #include "FormData.h"
 #include "Testing.h"
@@ -55,14 +56,6 @@ namespace Testing::Helper
 		}
 	};
 
-	namespace Package
-	{
-		inline RE::TESPackage* GetPackage()
-		{
-			return GetForm<RE::TESPackage>(0x750BE);  // Follow Player
-		}
-	}
-
 	namespace Distribution
 	{
 		namespace Death
@@ -111,15 +104,73 @@ namespace Testing::Helper
 			Distribute::detail::distribute_on_load(actor, actor->GetActorBase());
 		}
 
+		inline RE::BSSimpleList<RE::TESPackage*> snapshotPackages{};
+		inline RE::BGSOutfit*                    snapshotSleepOutfit{};
+		inline RE::TESObjectARMO*                snapshotSkin{};
+
+		inline void SnapshotActor(RE::Actor* actor = Actor::GetActor())
+		{
+			snapshotPackages = actor->GetActorBase()->aiPackages.packages;
+			snapshotSleepOutfit = actor->GetActorBase()->sleepOutfit;
+			snapshotSkin = actor->GetActorBase()->skin;
+		}
+
 		/// <summary>
 		/// Reverts distribution for a given actor.
 		/// For items it assumes that distributed entries had fixed count and always removes count.min number of items.
 		/// </summary>
-		inline void Revert(RE::Actor* actor = Actor::GetActor())
+		inline void RevertActor(RE::Actor* actor = Actor::GetActor())
 		{
+			for (auto& spell : GetSpells().GetForms()) {
+				actor->GetActorBase()->GetSpellList()->RemoveSpell(spell.form);
+			}
+
+			for (auto& perk : GetPerks().GetForms()) {
+				actor->GetActorBase()->RemovePerk(perk.form);
+			}
+
 			for (auto& item : GetItems().GetForms()) {
 				actor->GetActorBase()->RemoveObjectFromContainer(item.form, std::get<RandomCount>(item.idxOrCount).min);
 			}
+
+			for (auto& shout : GetShouts().GetForms()) {
+				actor->GetActorBase()->GetSpellList()->RemoveShout(shout.form);
+			}
+
+			for (auto& levSpell : GetLevSpells().GetForms()) {
+				actor->GetActorBase()->GetSpellList()->RemoveLevSpell(levSpell.form);
+			}
+
+			if (!snapshotPackages.empty()) {
+				actor->GetActorBase()->aiPackages.packages = snapshotPackages;
+				snapshotPackages = {};
+			}
+
+			::Outfits::Manager::GetSingleton()->RevertOutfit(actor);
+
+			for (auto& keyword : GetKeywords().GetForms()) {
+				actor->GetActorBase()->RemoveKeyword(keyword.form);
+			}
+
+			auto& factions = actor->GetActorBase()->factions;
+			for (auto& toRemove : GetFactions().GetForms()) {
+				auto it = std::find_if(factions.begin(), factions.end(),
+					[&](const RE::FACTION_RANK& rank) { return rank.faction == toRemove.form && rank.rank == 1; });
+				if (it != factions.end()) {
+					factions.erase(it);  // Erase the matching faction
+				}
+			}
+
+			if (snapshotSleepOutfit) {
+				actor->GetActorBase()->sleepOutfit = snapshotSleepOutfit;
+				snapshotSleepOutfit = nullptr;
+			}
+
+			if (snapshotSkin) {
+				actor->GetActorBase()->skin = snapshotSkin;
+				snapshotSkin = nullptr;
+			}
+
 			Death::Revert(actor);                                         // also clean up death distribution if it was applied
 			actor->GetActorBase()->RemoveKeyword(Distribute::processed);  // clean up after distribute_on_load
 		}
@@ -142,6 +193,21 @@ namespace Testing::Helper
 		inline RE::TESLevItem* GetLeveledItem()
 		{
 			return GetForm<RE::TESLevItem>(0x14);  // Best Daedric Weapons
+		}
+
+		inline RE::TESPackage* GetPackage()
+		{
+			return GetForm<RE::TESPackage>(0x750BE);  // Follow Player
+		}
+
+		inline RE::SpellItem* GetAbility()
+		{
+			return GetForm<RE::SpellItem>(0x5030B);  // Ghost Ability
+		}
+
+		inline RE::SpellItem* GetSpell()
+		{
+			return GetForm<RE::SpellItem>(0x10F7F7);  // Icy Spear
 		}
 	}
 
