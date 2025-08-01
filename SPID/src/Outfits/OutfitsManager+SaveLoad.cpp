@@ -328,14 +328,15 @@ namespace Outfits
 				if (auto resolved = manager->ResolveWornOutfit(actor, it, false); resolved) {
 					//#ifndef NDEBUG
 					logger::info("[🧥][💾] \tActor: {}", *actor);
-					logger::info("[🧥][💾] \t\tResolved: {}", *resolved);
-					logger::info("[🧥][💾] \t\tDefault: {}", *(actor->GetActorBase()->defaultOutfit));
+					logger::info("[🧥][💾] \tResolved: {}", *resolved);
+					logger::info("[🧥][💾] \tDefault: {}", *(actor->GetActorBase()->defaultOutfit));
 					//#endif
 					manager->ApplyOutfit(actor, resolved->distributed);
 				}
 			}
 		}
 		LOG_HEADER("");
+		logger::info("[🧥][💾] Loading completed.");
 	}
 
 	void Manager::Save(SKSE::SerializationInterface* interface)
