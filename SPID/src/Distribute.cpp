@@ -33,6 +33,8 @@ namespace Distribute
 			},
 			accumulatedForms);
 
+		// NEXT: Need to do per-actor spells distribution. When multiple actors of the same base NPC are spawned, they all share the same spell list.
+		// For example, using something like GhostAbility on npc would result in all subsequent reference of that npc to be ghosts.
 		for_each_form<RE::SpellItem>(
 			npcData, forms.spells, input, [&](const std::vector<RE::SpellItem*>& spells) {
 				npc->GetSpellList()->AddSpells(spells);
