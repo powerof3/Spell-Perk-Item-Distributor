@@ -251,7 +251,7 @@ namespace Outfits
 		       details::Write(interface, replacement.isFinalOutfit);
 	}
 
-	void Manager::Revert(SKSE::SerializationInterface* interface) 
+	void Manager::Revert(SKSE::SerializationInterface* interface)
 	{
 		auto manager = Manager::GetSingleton();
 
@@ -320,7 +320,7 @@ namespace Outfits
 		}
 
 		auto& pendingReplacements = manager->pendingReplacements;
-	
+
 		//#ifndef NDEBUG
 		logger::info("[🧥][💾] Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
 		for (const auto& pair : loadedReplacements) {
@@ -356,7 +356,7 @@ namespace Outfits
 				}
 			}
 		}
-		pendingReplacements.clear(); // in case there were corrupted actors we want to clear this list.
+		pendingReplacements.clear();  // in case there were corrupted actors we want to clear this list.
 		logger::info("[🧥][💾] Loading completed.");
 	}
 
