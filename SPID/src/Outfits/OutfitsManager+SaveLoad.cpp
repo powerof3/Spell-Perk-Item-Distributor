@@ -94,6 +94,7 @@ namespace Outfits
 		serializationInterface->SetUniqueID(serializationKey);
 		serializationInterface->SetSaveCallback(Save);
 		serializationInterface->SetLoadCallback(Load);
+		serializationInterface->SetRevertCallback(Revert);
 	}
 
 	bool Manager::LoadReplacementV1(SKSE::SerializationInterface* interface, RE::FormID& loadedActorFormID, Manager::OutfitReplacement& loadedReplacement)
@@ -250,6 +251,32 @@ namespace Outfits
 		       details::Write(interface, replacement.isFinalOutfit);
 	}
 
+	void Manager::Revert(SKSE::SerializationInterface* interface) 
+	{
+		auto manager = Manager::GetSingleton();
+
+		WriteLocker wornLock(manager->_wornLock);
+		WriteLocker pendingLock(manager->_pendingLock);
+		LOG_HEADER("REVERTING");
+		// We want to preserve current session's
+		auto& pendingReplacements = manager->pendingReplacements;
+		logger::info("[🧥][💾] Pending Outfit Replacements count: {}", pendingReplacements.size());
+		int counter = 0;
+		for (auto& [actorID, replacement] : manager->wornReplacements) {
+			if (pendingReplacements.find(actorID) == pendingReplacements.end()) {
+				if (!replacement.isDeathOutfit) {
+					if (manager->IsProcessed(actorID)) {
+						pendingReplacements[actorID] = replacement;
+						++counter;
+					}
+				}
+			}
+		}
+		logger::info("[🧥][💾] Preserved {} Outfit Replacements for pending outfits", counter);
+
+		manager->wornReplacements.clear();
+	}
+
 	void Manager::Load(SKSE::SerializationInterface* interface)
 	{
 		//#ifndef NDEBUG
@@ -282,16 +309,10 @@ namespace Outfits
 					loaded = LoadReplacementV3(interface, actorFormID, loadedReplacement);
 					break;
 				}
+
 				if (loaded) {
-					if (loadedReplacement.distributed) {
-						manager->wornReplacements[actorFormID] = loadedReplacement;
-						//#ifndef NDEBUG
-						loadedReplacements[actorFormID] = loadedReplacement;
-						//#endif
-					} else if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(actorFormID); actor) {
-						logger::warn("[🧥][💾] Loaded replacement doesn't have an outfit, reverting actor {}", *actor);
-						manager->RevertOutfit(actor, loadedReplacement);
-					}
+					manager->wornReplacements[actorFormID] = loadedReplacement;
+					loadedReplacements[actorFormID] = loadedReplacement;
 				} else {
 					logger::error("[🧥][💾] Failed to load replacement");
 				}
@@ -299,7 +320,7 @@ namespace Outfits
 		}
 
 		auto& pendingReplacements = manager->pendingReplacements;
-
+	
 		//#ifndef NDEBUG
 		logger::info("[🧥][💾] Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
 		for (const auto& pair : loadedReplacements) {
@@ -335,7 +356,7 @@ namespace Outfits
 				}
 			}
 		}
-		LOG_HEADER("");
+		pendingReplacements.clear(); // in case there were corrupted actors we want to clear this list.
 		logger::info("[🧥][💾] Loading completed.");
 	}
 

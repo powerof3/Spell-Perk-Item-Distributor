@@ -66,7 +66,7 @@ namespace Outfits
 	{
 		logger::info("[🧥] Recycling {}", *actor);
 		RevertOutfit(actor, false);
-		// NEXT: After reseting, processed flag should be cleared, allowing new distribution to occur.
+		processedActors.erase(actor->formID);
 		return funcCall();
 	}
 

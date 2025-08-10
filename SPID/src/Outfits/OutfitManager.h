@@ -158,7 +158,11 @@ namespace Outfits
 		bool HasPendingOutfit(const RE::Actor*) const;
 		bool HasWornOutfit(const RE::Actor*) const;
 
+		/// Processed marker is session-bound, meaning that once processed during the current game session,
+		/// SPID will re-apply the same outfit on all loaded games regardless of what actor was wearing in that save, as if it was the first time SPID loaded that actor.
+		/// This preserves "transient" state of outfits like in previous versions.
 		bool IsProcessed(const RE::Actor*) const;
+		bool IsProcessed(RE::FormID actorID) const;
 		void MarkProcessed(const RE::Actor*);
 
 		/// <summary>
@@ -249,8 +253,9 @@ namespace Outfits
 		friend fmt::formatter<Outfits::Manager::OutfitReplacement>;
 
 		void        InitializeSerialization();
-		static void Load(SKSE::SerializationInterface* interface);
-		static void Save(SKSE::SerializationInterface* interface);
+		static void Revert(SKSE::SerializationInterface*);
+		static void Load(SKSE::SerializationInterface*);
+		static void Save(SKSE::SerializationInterface*);
 
 		static bool LoadReplacementV1(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);
 		static bool LoadReplacementV2(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);
