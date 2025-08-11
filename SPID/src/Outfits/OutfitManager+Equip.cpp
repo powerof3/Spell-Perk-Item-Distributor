@@ -87,13 +87,14 @@ namespace Outfits
 		funcCall();
 	}
 
+#ifdef SKYRIM_SUPPORT_AE
 	/// Utility functions for ProcessUpdateWornGear.
 	namespace utils
 	{
 		RE::InventoryEntryData* GetObjectInSlot(RE::Actor* actor, int slotIndex)
 		{
 			using func_t = decltype(&GetObjectInSlot);
-			static REL::Relocation<func_t> func{ RELOCATION_ID(0, 419334) };
+			static REL::Relocation<func_t> func{ REL::ID(419334) };
 			return func(actor, slotIndex);
 		}
 
@@ -123,6 +124,7 @@ namespace Outfits
 			return false;
 		}
 	}
+#endif
 
 	void Manager::ProcessUpdateWornGear(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate, std::function<void()> funcCall)
 	{
@@ -143,7 +145,7 @@ namespace Outfits
 			}
 		}
 
-// Logic related to horses onlyt appears in AE version of the game.
+// Logic related to horses only appears in AE version of the game.
 // SE only checks the outfit as written above.
 #ifdef SKYRIM_SUPPORT_AE
 		if (actor && actor->IsHorse()) {
