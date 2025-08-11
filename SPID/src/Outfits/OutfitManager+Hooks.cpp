@@ -265,7 +265,7 @@ namespace Outfits
 	struct FilterInventoryItemsAE1170
 	{
 		static inline constexpr REL::ID     relocation = REL::ID(51145);
-		static inline constexpr std::size_t offset = 0xBC;
+		static inline constexpr std::size_t offset = 0xEB;
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
