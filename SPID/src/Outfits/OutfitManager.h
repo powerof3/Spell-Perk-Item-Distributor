@@ -243,8 +243,11 @@ namespace Outfits
 		HOOK_HANDLER(void, SetOutfitActor, RE::Actor*, RE::BGSOutfit* outfit)
 
 		HOOK_HANDLER(void, FilterInventoryItems, RE::NiPointer<RE::TESObjectREFR>& container)
-		HOOK_HANDLER_ALIAS(FilterInventoryItemsAE, FilterInventoryItems)
 		HOOK_HANDLER_ALIAS(FilterInventoryItems2, FilterInventoryItems)
+		HOOK_HANDLER_ALIAS(FilterInventoryItems3AE, FilterInventoryItems)
+		HOOK_HANDLER_ALIAS(FilterInventoryItemsAE1170, FilterInventoryItems)
+		HOOK_HANDLER_ALIAS(FilterInventoryItems3AE1170, FilterInventoryItems)
+		HOOK_HANDLER_ALIAS(FilterInventoryItems2AE1170, FilterInventoryItems)
 
 		HOOK_HANDLER_EX(void, UpdateWornGear_AddWornOutfit, UpdateWornGear, RE::Actor*, RE::BGSOutfit*, bool forceUpdate)
 
