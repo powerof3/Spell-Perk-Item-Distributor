@@ -317,7 +317,7 @@ namespace Outfits
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
-	};	
+	};
 
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems3AE1170
