@@ -2,12 +2,13 @@
 #include "DistributeManager.h"
 #include "LookupConfigs.h"
 #include "LookupForms.h"
-#include "OutfitManager.h"
+#include "Outfits/OutfitManager.h"
 #include "PCLevelMultManager.h"
 #ifndef NDEBUG
-#	include "OutfitManagerTests.h"
-#	include "DistributionTests.h"
-#	include "Testing.h"
+#	include "Testing/OutfitManagerTests.h"
+#	include "Testing/DistributionTests.h"
+#	include "Testing/DeathDistributionTests.h"
+#	include "Testing/Testing.h"
 #endif
 
 bool shouldLookupForms{ false };
@@ -16,6 +17,11 @@ bool shouldDistribute{ false };
 
 void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 {
+	// The order at which managers handle messages is important,
+	// since they need to register for events in specific order to work properly (e.g. Death event must be handled first by Death Manager, and then by Outfit Manager)
+	Outfits::Manager::GetSingleton()->HandleMessage(a_message);
+	DeathDistribution::Manager::GetSingleton()->HandleMessage(a_message);
+
 	switch (a_message->type) {
 	case SKSE::MessagingInterface::kPostLoad:
 		{
@@ -72,16 +78,13 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	default:
 		break;
 	}
-	// The order at which managers handle messages is important,
-	// since they need to register for events in specific order to work properly (e.g. Death event must be handled first by Death Manager, and then by Outfit Manager)
-	Outfits::Manager::GetSingleton()->HandleMessage(a_message);
-	DeathDistribution::Manager::GetSingleton()->HandleMessage(a_message);
 
 	// Run tests after all hooks.
 	switch (a_message->type) {
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
 #ifndef NDEBUG
+			logger::info("Running tests...");
 			Testing::Run();
 #endif
 		}
@@ -97,7 +100,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 	v.AuthorName("powerofthree");
 	v.UsesAddressLibrary();
 	v.UsesUpdatedStructs();
-	v.CompatibleVersions({ SKSE::RUNTIME_LATEST });
+	v.CompatibleVersions({ SKSE::RUNTIME_SSE_LATEST });
 
 	return v;
 }();
@@ -116,7 +119,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 	const auto ver = a_skse->RuntimeVersion();
 	if (ver <
 #	ifndef SKYRIMVR
-		SKSE::RUNTIME_1_5_39
+		SKSE::RUNTIME_SSE_1_5_39
 #	else
 		SKSE::RUNTIME_VR_1_4_15
 #	endif

@@ -7,19 +7,17 @@ namespace Distribute
 {
 	bool detail::should_process_NPC(RE::TESNPC* a_npc, RE::BGSKeyword* a_keyword)
 	{
-		if (a_npc->IsPlayer() || a_npc->IsDeleted()) {
-			return false;
-		}
-
-		return true;
+		return !a_npc->IsPlayer() && !a_npc->IsDeleted();
 	}
 
-	void detail::distribute_on_load(RE::Actor* a_actor, RE::TESNPC* a_npc)
+	void detail::distribute_on_load(RE::Actor* actor, RE::TESNPC* npc)
 	{
-		if (should_process_NPC(a_npc)) {
-			auto npcData = NPCData(a_actor, a_npc);
-			Distribute(npcData, false);
-			a_npc->AddKeyword(processed);
+		auto npcData = NPCData(actor, npc);
+		if (should_process_NPC(npc)) {
+			if (!npc->HasKeyword(processed)) {
+				Distribute(npcData, false);
+				npc->AddKeyword(processed);
+			}
 		}
 	}
 
@@ -40,6 +38,12 @@ namespace Distribute
 				}
 				return func(actor);
 			}
+
+			static inline void post_hook()
+			{
+				logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
+			}
+
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
@@ -58,7 +62,7 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
-						// TODO: Test whether there are some NPCs that are getting in this branch
+						// MAYBE: Test whether there are some NPCs that are getting in this branch
 						// I haven't experienced issues with ShouldBackgroundClone hook.
 						//logger::info("InitLoadGame({})", *a_this);
 						detail::distribute_on_load(a_this, npc);
@@ -70,10 +74,9 @@ namespace Distribute
 
 		void Install()
 		{
+			logger::info("🧝Actors");
 			//stl::install_hook<InitLoadGame>();
 			stl::install_hook<ShouldBackgroundClone>();
-
-			logger::info("Installed actor load hooks");
 		}
 	}
 
@@ -94,7 +97,6 @@ namespace Distribute
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
 
-		// TODO: No initial distribution. Check Packages distribution and see if those work as intended.
 		//DoInitialDistribution();
 
 		// Clear logger's buffer to free some memory :)
@@ -117,6 +119,7 @@ namespace Distribute
 					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
 						auto npcData = NPCData(actor.get(), npc);
 						Distribute(npcData, false);
+						npc->AddKeyword(processed);
 						++actorCount;
 					}
 				}

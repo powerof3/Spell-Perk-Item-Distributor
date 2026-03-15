@@ -15,6 +15,8 @@ namespace DeathDistribution
 
 	using namespace Forms;
 
+	struct TestingHelper;
+
 	class Manager :
 		public ISingleton<Manager>,
 		public RE::BSTEventSink<RE::TESDeathEvent>
@@ -27,7 +29,7 @@ namespace DeathDistribution
 		///
 		/// As a result this method configures Manager with discovered valid On Death Distributable Forms.
 		/// </summary>
-		void LookupForms(RE::TESDataHandler* const dataHandler);
+		void LookupForms(RE::TESDataHandler* const);
 
 		void LogFormsLookup();
 
@@ -38,7 +40,6 @@ namespace DeathDistribution
 		///
 		/// NPC passed to this method must be Dead in order to be processed.
 		/// </summary>
-		/// <param name=""></param>
 		void Distribute(NPCData&);
 
 	private:
@@ -62,6 +63,8 @@ namespace DeathDistribution
 
 	protected:
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent*, RE::BSTEventSource<RE::TESDeathEvent>*) override;
+
+		friend struct TestingHelper;
 	};
 
 #pragma region Implementation

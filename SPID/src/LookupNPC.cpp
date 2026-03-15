@@ -1,6 +1,6 @@
 #include "LookupNPC.h"
 #include "ExclusiveGroups.h"
-#include "OutfitManager.h"
+#include "Outfits/OutfitManager.h"
 
 namespace NPC
 {

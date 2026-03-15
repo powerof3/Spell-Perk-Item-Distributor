@@ -1,11 +1,8 @@
 #pragma once
 #include "LookupNPC.h"
-#include "Testing.h"
 
 namespace Outfits
 {
-	struct TestsHelper;
-
 	class Manager :
 		public ISingleton<Manager>,
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
@@ -15,7 +12,7 @@ namespace Outfits
 	public:
 		void HandleMessage(SKSE::MessagingInterface::Message*);
 
-		// TODO: This method should check both initial and distributed outfits in SPID 8 or something.
+		// MAYBE: This method should check both initial and distributed outfits in SPID 8 or something.
 		/// <summary>
 		/// Checks whether the NPC uses specified outfit as the default outfit.
 		///
@@ -76,7 +73,7 @@ namespace Outfits
 		/// TESDeathEvent is used to update outfit after potential Death Distribution of a new outfit.
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent*, RE::BSTEventSource<RE::TESDeathEvent>*) override;
 
-		// TODO: Delete this event once all issues with outfits are solved.
+		// NEXT: Delete this event once all issues with outfits are solved.
 		/// TESContainerChangedEvent is used to log when items are added/removed. For debugging only!
 		RE::BSEventNotifyControl ProcessEvent(const RE::TESContainerChangedEvent*, RE::BSTEventSource<RE::TESContainerChangedEvent>*) override;
 
@@ -95,11 +92,16 @@ namespace Outfits
 			/// Flag indicating whether the distributed outfit is final and cannot be replaced with any other outfit.
 			bool isFinalOutfit;
 
+			/// Flag indicating whether the distributed outfit needs to be re-initialized. Typically this happens after reset inventory was called.
+			bool needsInitialization = false;
+
 			/// Flag indicating whether the replacement wasn't properly loaded and is now corrupted.
 			///
 			/// This can happen when the distributed outfit was removed from the game.
 			/// In such cases the replacement should be reverted to the original outfit.
 			bool IsCorrupted() const { return !distributed; }
+
+			operator bool() const { return distributed != nullptr; }
 
 			OutfitReplacement() = default;
 			OutfitReplacement(RE::FormID unrecognizedDistributedFormID) :
@@ -130,9 +132,6 @@ namespace Outfits
 		/// <summary>
 		/// Performs the actual reversion of the outfit.
 		/// </summary>
-		/// <param name=""></param>
-		/// <param name=""></param>
-		/// <returns></returns>
 		bool RevertOutfit(RE::Actor*, const OutfitReplacement&) const;
 
 		/// Restores outfit replacement for given actor.
@@ -148,6 +147,24 @@ namespace Outfits
 		/// Gets an outfit that was set in the plugins for the actor's ActorBase (NPC).
 		RE::BGSOutfit* GetInitialOutfit(const RE::Actor*) const;
 
+		std::optional<OutfitReplacement> GetWornOutfit(const RE::Actor*) const;
+		/// Mutable version of `GetWornOutfit` that allows to safely change replacement.
+		bool                             UpdateWornOutfit(const RE::Actor*, std::function<void(OutfitReplacement&)>);
+		std::optional<OutfitReplacement> PopWornOutfit(const RE::Actor*);
+		OutfitReplacementMap             GetWornOutfits() const;
+
+		std::optional<OutfitReplacement> GetPendingOutfit(const RE::Actor*) const;
+
+		bool HasPendingOutfit(const RE::Actor*) const;
+		bool HasWornOutfit(const RE::Actor*) const;
+
+		/// Processed marker is session-bound, meaning that once processed during the current game session,
+		/// SPID will re-apply the same outfit on all loaded games regardless of what actor was wearing in that save, as if it was the first time SPID loaded that actor.
+		/// This preserves "transient" state of outfits like in previous versions.
+		bool IsProcessed(const RE::Actor*) const;
+		bool IsProcessed(RE::FormID actorID) const;
+		void MarkProcessed(const RE::Actor*);
+
 		/// <summary>
 		/// Resolves the outfit that should be worn by the actor.
 		///
@@ -159,32 +176,30 @@ namespace Outfits
 		/// <param name="Actor">Actor for whom outfit is being resolved</param>
 		/// <param name="isDying">Flag indicating whether this method is called during Death Event</param>
 		/// <returns>Pointer to a worn outfit replacement that needs to be applied. If resolution does not require updating the outfit then nullptr is returned.</returns>
-		[[nodiscard]] const OutfitReplacement* const ResolveWornOutfit(RE::Actor*, bool isDying);
-		[[nodiscard]] const OutfitReplacement* const ResolveWornOutfit(RE::Actor*, OutfitReplacementMap::iterator& pending, bool isDying);
+		[[nodiscard]] std::optional<Manager::OutfitReplacement> ResolveWornOutfit(RE::Actor*, bool isDying);
+		[[nodiscard]] std::optional<Manager::OutfitReplacement> ResolveWornOutfit(RE::Actor*, OutfitReplacementMap::iterator& pending, bool isDying);
 
 		/// Resolves the outfit that is a candiate for equipping.
-		const OutfitReplacement* const ResolvePendingOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
+		std::optional<Manager::OutfitReplacement> ResolvePendingOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
 
 		/// Utility method that validates incoming outfit and uses it to resolve pending outfit.
 		bool SetOutfit(const NPCData&, RE::BGSOutfit*, bool isDeathOutfit, bool isFinalOutfit);
 
-		/// This re-creates game's function that performs a similar code, but crashes for unknown reasons :)
-		void AddWornOutfit(RE::Actor*, RE::BGSOutfit*, bool shouldUpdate3D = false) const;
-
-		void LogWornOutfitItems(RE::Actor*) const;
-
-		/// Lock for replacements.
-		mutable Lock _lock;
+		std::unordered_set<RE::FormID> processedActors;
 
 		/// Map of Actor's FormID and corresponding Outfit Replacements that are being tracked by the manager.
 		///
 		/// This map is serialized in a co-save and represents the in-memory map of everying that affected NPCs wear.
+		///
+		/// Important: Do not access this member directly, use a method that acquires a lock on the map.
 		OutfitReplacementMap wornReplacements;
 
 		/// Map of Actor's FormID and corresponding Outfit Replacements that are pending to be applied.
 		///
 		/// During distribution new outfit replacements are placed into this map through ResolvePendingOutfit.
 		/// Depending on when a distribution is happening, these replacements will be applied either in Load3D or during SKSE::Load.
+		///
+		/// Important: Do not access this member directly, use a method that acquires a lock on the map.
 		OutfitReplacementMap pendingReplacements;
 
 		/// Map of NPC's FormID and corresponding initial Outfit that is set in loaded plugins.
@@ -195,6 +210,8 @@ namespace Outfits
 		/// An actor will only be able to resume the outfit replacement, once another call to SetOutfit is made with the initialOutfit.
 		///
 		/// The map is constructed with TESNPC::InitItemImpl hook.
+		///
+		/// Important: Do not access this member directly, use a method that acquires a lock on the map.
 		std::unordered_map<RE::FormID, RE::BGSOutfit*> initialOutfits;
 
 		/// Flag indicating whether there is a loading of a save file in progress.
@@ -203,28 +220,36 @@ namespace Outfits
 		/// By doing so we can properly handle state of the outfits and determine what needs to be equipped.
 		bool isLoadingGame = false;
 
-		// Make sure hooks can access private members
-		friend struct ShouldBackgroundClone;
-		friend struct Load3D;
-		friend struct InitItemImpl;
-		friend struct Resurrect;
-		friend struct ResetReference;
-		friend struct SetOutfitActor;
+		void InitializeHooks();
 
-		// Hooks handling.
-		bool            ProcessShouldBackgroundClone(RE::Actor*, std::function<bool()> funcCall);
-		RE::NiAVObject* ProcessLoad3D(RE::Actor*, std::function<RE::NiAVObject*()> funcCall);
-		void            ProcessInitItemImpl(RE::TESNPC*, std::function<void()> funcCall);
-		void            ProcessResurrect(RE::Actor*, std::function<void()> funcCall);
-		bool            ProcessResetReference(RE::Actor*, std::function<bool()> funcCall);
-		void            ProcessSetOutfitActor(RE::Actor*, RE::BGSOutfit*, std::function<void()> funcCall);
+		HOOK_HANDLER(bool, ShouldBackgroundClone, RE::Character*)
+		HOOK_HANDLER(RE::NiAVObject*, Load3D, RE::Actor*)
+
+		HOOK_HANDLER(void, InitItemImpl, RE::TESNPC*)
+
+		HOOK_HANDLER(void, Resurrect, RE::Actor*, bool resetInventory)
+		HOOK_HANDLER(bool, ResetReference, RE::Actor*)
+		HOOK_HANDLER(void, ResetInventory, RE::Actor*)
+
+		HOOK_HANDLER(void, SetOutfitActor, RE::Actor*, RE::BGSOutfit* outfit)
+
+		HOOK_HANDLER(void, FilterInventoryItems, RE::NiPointer<RE::TESObjectREFR>& container)
+		HOOK_HANDLER_ALIAS(FilterInventoryItems2, FilterInventoryItems)
+		HOOK_HANDLER_ALIAS(FilterInventoryItems3AE, FilterInventoryItems)
+		HOOK_HANDLER_ALIAS(FilterInventoryItemsAE1170, FilterInventoryItems)
+		HOOK_HANDLER_ALIAS(FilterInventoryItems3AE1170, FilterInventoryItems)
+		HOOK_HANDLER_ALIAS(FilterInventoryItems2AE1170, FilterInventoryItems)
+
+		HOOK_HANDLER_EX(void, UpdateWornGear_AddWornOutfit, UpdateWornGear, RE::Actor*, RE::BGSOutfit*, bool forceUpdate)
 
 		friend struct TestsHelper;
 
 		friend fmt::formatter<Outfits::Manager::OutfitReplacement>;
 
-		static void Load(SKSE::SerializationInterface* interface);
-		static void Save(SKSE::SerializationInterface* interface);
+		void        InitializeSerialization();
+		static void Revert(SKSE::SerializationInterface*);
+		static void Load(SKSE::SerializationInterface*);
+		static void Save(SKSE::SerializationInterface*);
 
 		static bool LoadReplacementV1(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);
 		static bool LoadReplacementV2(SKSE::SerializationInterface*, RE::FormID& actorFormID, OutfitReplacement&);

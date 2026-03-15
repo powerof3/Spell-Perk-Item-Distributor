@@ -189,3 +189,6 @@ namespace Testing
 
 #define EXPECT(expr, msg) \
 	return (expr) ? ::Testing::TestResult::Success() : ::Testing::TestResult::Fail(msg);
+
+#define WAIT(ms) \
+	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
