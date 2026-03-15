@@ -3,53 +3,53 @@
 
 namespace Outfits
 {
-	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESContainerChangedEvent* event, RE::BSTEventSource<RE::TESContainerChangedEvent>*)
-	{
-		if (event) {
-			auto fromID = event->oldContainer;
-			auto toID = event->newContainer;
-			auto itemID = event->baseObj;
-			auto count = event->itemCount;
+	//RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESContainerChangedEvent* event, RE::BSTEventSource<RE::TESContainerChangedEvent>*)
+	//{
+	//	if (event) {
+	//		auto fromID = event->oldContainer;
+	//		auto toID = event->newContainer;
+	//		auto itemID = event->baseObj;
+	//		auto count = event->itemCount;
 
-			if (const auto item = RE::TESForm::LookupByID<RE::TESBoundObject>(itemID)) {
-				if (const auto from = RE::TESForm::LookupByID<RE::TESObjectREFR>(fromID); from) {
-					if (const auto fromActor = from->As<RE::Actor>()) {
-						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
-							if (const auto toActor = to->As<RE::Actor>()) {
-								logger::info("[🎒] {} took {} {} from {}", *toActor, count, *item, *fromActor);
-							} else {
-								logger::info("[🎒] {} put {} {} to {}", *fromActor, count, *item, *to);
-							}
-						} else {
-							logger::info("[🎒] {} dropped {} {}", *fromActor, count, *item);
-						}
-					} else {  // from is inanimate container
-						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
-							if (const auto toActor = to->As<RE::Actor>()) {
-								logger::info("[🎒] {} took {} {} from {}", *toActor, count, *item, *from);
-							} else {
-								//logger::info("[INVENTORY] {} {} transfered from {} to {}", count, *item, *from, *to);
-							}
-						} else {
-							//logger::info("[INVENTORY] {} {} removed from {}", count, *item, *from);
-						}
-					}
-				} else {  // From is none
-					if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
-						if (const auto toActor = to->As<RE::Actor>()) {
-							logger::info("[🎒] {} picked up {} {}", *toActor, count, *item);
-						} else {
-							//logger::info("[INVENTORY] {} {} transfered to {}", count, *item, *to);
-						}
-					} else {
-						//logger::info("[INVENTORY] {} {} materialized out of nowhere and vanished without a trace.", count, *item);
-					}
-				}
-			}
-		}
+	//		if (const auto item = RE::TESForm::LookupByID<RE::TESBoundObject>(itemID)) {
+	//			if (const auto from = RE::TESForm::LookupByID<RE::TESObjectREFR>(fromID); from) {
+	//				if (const auto fromActor = from->As<RE::Actor>()) {
+	//					if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
+	//						if (const auto toActor = to->As<RE::Actor>()) {
+	//							logger::info("[🎒] {} took {} {} from {}", *toActor, count, *item, *fromActor);
+	//						} else {
+	//							logger::info("[🎒] {} put {} {} to {}", *fromActor, count, *item, *to);
+	//						}
+	//					} else {
+	//						logger::info("[🎒] {} dropped {} {}", *fromActor, count, *item);
+	//					}
+	//				} else {  // from is inanimate container
+	//					if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
+	//						if (const auto toActor = to->As<RE::Actor>()) {
+	//							logger::info("[🎒] {} took {} {} from {}", *toActor, count, *item, *from);
+	//						} else {
+	//							//logger::info("[INVENTORY] {} {} transfered from {} to {}", count, *item, *from, *to);
+	//						}
+	//					} else {
+	//						//logger::info("[INVENTORY] {} {} removed from {}", count, *item, *from);
+	//					}
+	//				}
+	//			} else {  // From is none
+	//				if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
+	//					if (const auto toActor = to->As<RE::Actor>()) {
+	//						logger::info("[🎒] {} picked up {} {}", *toActor, count, *item);
+	//					} else {
+	//						//logger::info("[INVENTORY] {} {} transfered to {}", count, *item, *to);
+	//					}
+	//				} else {
+	//					//logger::info("[INVENTORY] {} {} materialized out of nowhere and vanished without a trace.", count, *item);
+	//				}
+	//			}
+	//		}
+	//	}
 
-		return RE::BSEventNotifyControl::kContinue;
-	}
+	//	return RE::BSEventNotifyControl::kContinue;
+	//}
 
 	RE::NiAVObject* Manager::ProcessLoad3D(RE::Actor* actor, std::function<RE::NiAVObject*()> funcCall)
 	{

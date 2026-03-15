@@ -410,7 +410,7 @@ namespace Outfits
 			scripts->AddEventSink<RE::TESDeathEvent>(this);
 			logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
 			//#ifndef NDEBUG
-			scripts->AddEventSink<RE::TESContainerChangedEvent>(this);
+			//scripts->AddEventSink<RE::TESContainerChangedEvent>(this);
 			logger::info("\t\t📝Registered for {}.", typeid(RE::TESContainerChangedEvent).name());
 			//#endif
 		}
