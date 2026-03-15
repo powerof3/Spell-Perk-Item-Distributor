@@ -19,7 +19,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed ShouldBackgroundClone hook.");
+			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -39,7 +39,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed Load3D hook.");
+			logger::info("\t\t🪝Installed Load3D hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -59,7 +59,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed InitItemImpl hook.");
+			logger::info("\t\t🪝Installed InitItemImpl hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -86,7 +86,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed Resurrect hook.");
+			logger::info("\t\t🪝Installed Resurrect hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -105,7 +105,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed ResetInventory hook.");
+			logger::info("\t\t🪝Installed ResetInventory hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -130,7 +130,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed ResetReference hook.");
+			logger::info("\t\t🪝Installed ResetReference hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -174,7 +174,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed SetOutfit hook.");
+			logger::info("\t\t🪝Installed SetOutfit hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -239,7 +239,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed FilterInventoryItems hook.");
+			logger::info("\t\t🪝Installed FilterInventoryItems hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -258,7 +258,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed FilterInventoryItems2 hook.");
+			logger::info("\t\t🪝Installed FilterInventoryItems2 hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -278,7 +278,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed FilterInventoryItems hook.");
+			logger::info("\t\t🪝Installed FilterInventoryItems hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -297,7 +297,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed FilterInventoryItems2 hook.");
+			logger::info("\t\t🪝Installed FilterInventoryItems2 hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -317,7 +317,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed FilterInventoryItemsAE hook.");
+			logger::info("\t\t🪝Installed FilterInventoryItemsAE hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -337,7 +337,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed FilterInventoryItemsAE hook.");
+			logger::info("\t\t🪝Installed FilterInventoryItemsAE hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -358,7 +358,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed HasOutfitItems stub.");
+			logger::info("\t\t🪝Installed HasOutfitItems stub.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -380,7 +380,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed IsHorse stub.");
+			logger::info("\t\t🪝Installed IsHorse stub.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -400,7 +400,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed AddWornOutfit hook.");
+			logger::info("\t\t🪝Installed AddWornOutfit hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -410,12 +410,12 @@ namespace Outfits
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(this);
-			logger::debug("\t\t📝Registered for {}.", typeid(RE::TESFormDeleteEvent).name());
+			logger::info("\t\t📝Registered for {}.", typeid(RE::TESFormDeleteEvent).name());
 			scripts->AddEventSink<RE::TESDeathEvent>(this);
-			logger::debug("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
+			logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
 			//#ifndef NDEBUG
-			scripts->AddEventSink<RE::TESContainerChangedEvent>(this);
-			logger::debug("\t\t📝Registered for {}.", typeid(RE::TESContainerChangedEvent).name());
+			//scripts->AddEventSink<RE::TESContainerChangedEvent>(this);
+			logger::info("\t\t📝Registered for {}.", typeid(RE::TESContainerChangedEvent).name());
 			//#endif
 		}
 

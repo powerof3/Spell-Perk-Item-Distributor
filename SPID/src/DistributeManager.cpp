@@ -98,80 +98,8 @@ namespace Distribute
 		PCLevelMult::Manager::Register();
 		logger::info("Registered event handlers");
 
-		//DoInitialDistribution();
-
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();
-	}
-
-	void DoInitialDistribution()
-	{
-		Timer         timer;
-		std::uint32_t actorCount = 0;
-
-		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
-			timer.start();
-
-			// This iterate over all actors loaded in-memory.
-			// lowActorHandles are the actors that do not require high precision updates.
-			// As we are in the main menu this will target most of static unique actors.
-			for (auto& actorHandle : processLists->lowActorHandles) {
-				if (const auto& actor = actorHandle.get()) {
-					if (const auto npc = actor->GetActorBase(); npc && detail::should_process_NPC(npc)) {
-						auto npcData = NPCData(actor.get(), npc);
-						Distribute(npcData, false);
-						npc->AddKeyword(processed);
-						++actorCount;
-					}
-				}
-			}
-			timer.end();
-		}
-
-		LogResults(actorCount);
-
-		logger::info("Distribution took {}μs / {}ms", timer.duration_μs(), timer.duration_ms());
-	}
-
-	void LogResults(std::uint32_t a_actorCount)
-	{
-		using namespace Forms;
-
-		LOG_HEADER("MAIN MENU DISTRIBUTION");
-
-		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
-			if (a_distributable) {
-				logger::debug("{}", RECORD::GetTypeName(a_distributable.GetType()));
-
-				auto& forms = a_distributable.GetForms();
-
-				// Group the same entries together to avoid duplicates in the log.
-				std::map<RE::FormID, Data<Form>> sums{};
-				for (auto& formData : forms) {
-					if (const auto& form = formData.form) {
-						auto it = sums.find(form->GetFormID());
-						if (it != sums.end()) {
-							it->second.npcCount += formData.npcCount;
-						} else {
-							sums.insert({ form->GetFormID(), formData });
-						}
-					}
-				}
-
-				for (auto& entry : sums) {
-					auto& formData = entry.second;
-					if (const auto& form = formData.form) {
-						if (auto file = form->GetFile(0)) {
-							logger::debug("\t\t{} [0x{:X}~{}] added to {}/{} NPCs", editorID::get_editorID(form), form->GetLocalFormID(), file->GetFilename(), formData.npcCount, a_actorCount);
-						} else {
-							logger::debug("\t\t{} [0x{:X}] added to {}/{} NPCs", editorID::get_editorID(form), form->GetFormID(), formData.npcCount, a_actorCount);
-						}
-					}
-				}
-
-				sums.clear();
-			}
-		});
 	}
 }
 
