@@ -56,6 +56,13 @@ else()
 	set(SkyrimVersion "Skyrim SSE")
 	set(VERSION ${VERSION}.${SE_VERSION})
 endif()
+if(DEFINED SkyrimPath)
+	cmake_path(GET SkyrimPath FILENAME _lastComp)
+	if(_lastComp STREQUAL "Data")
+		cmake_path(GET SkyrimPath PARENT_PATH SkyrimPath)
+	endif()
+	unset(_lastComp)
+endif()
 find_commonlib_path()
 message(
 	STATUS
