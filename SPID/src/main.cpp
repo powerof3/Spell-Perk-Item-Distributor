@@ -162,6 +162,11 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
 	SKSE::Init(a_skse, false);
 
+	// Pre-allocate all trampoline space upfront while SKSE's branch pool is available.
+	// Each write_call<5> hook needs 14 bytes (FF 25 00000000 + 8-byte absolute address).
+	// Max active call hooks: 10 (AE 1.6.1170+) or 8 (SE/VR/older AE). Using 14 for headroom.
+	SKSE::AllocTrampoline(14 * 14);
+
 	SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
 
 	return true;
