@@ -7,7 +7,7 @@ namespace Outfits
 		public ISingleton<Manager>,
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
 		public RE::BSTEventSink<RE::TESDeathEvent>
-		//public RE::BSTEventSink<RE::TESContainerChangedEvent>
+	//public RE::BSTEventSink<RE::TESContainerChangedEvent>
 	{
 	public:
 		void HandleMessage(SKSE::MessagingInterface::Message*);
