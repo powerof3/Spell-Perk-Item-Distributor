@@ -109,9 +109,9 @@ namespace Outfits
 							}
 						}
 						if (outfit) {
-							logger::info("{}{} [{:+}]{} (Part of {}) (extras: {})", prefix, *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", *outfit, JoinVector(extraTypes));
+							logger::debug("{}{} [{:+}]{} (Part of {}) (extras: {})", prefix, *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", *outfit, JoinVector(extraTypes));
 						} else {
-							logger::info("{}{} [{:+}]{} (extras: {})", prefix, *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", JoinVector(extraTypes));
+							logger::debug("{}{} [{:+}]{} (extras: {})", prefix, *entryData->object, entryData->countDelta, isWorn ? " (Worn)" : "", JoinVector(extraTypes));
 						}
 					}
 				}
@@ -144,14 +144,14 @@ namespace Outfits
 		auto items = GetAllOutfitItems(actor);
 
 		for (const auto& [outfit, itemVec] : items) {
-			logger::info("{}{}", prefix, *outfit);
+			logger::debug("{}{}", prefix, *outfit);
 			const auto lastItemIndex = itemVec.size() - 1;
 			for (int i = 0; i < lastItemIndex; ++i) {
 				const auto& item = itemVec[i];
-				logger::info("{}├─── {}{}", prefix, *item.first, item.second ? " (Worn)" : "");
+				logger::debug("{}├─── {}{}", prefix, *item.first, item.second ? " (Worn)" : "");
 			}
 			const auto& lastItem = itemVec[lastItemIndex];
-			logger::info("{}└─── {}{}", prefix, *lastItem.first, lastItem.second ? " (Worn)" : "");
+			logger::debug("{}└─── {}{}", prefix, *lastItem.first, lastItem.second ? " (Worn)" : "");
 		}
 	}
 }

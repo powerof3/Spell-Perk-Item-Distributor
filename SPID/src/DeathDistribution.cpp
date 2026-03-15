@@ -66,8 +66,8 @@ namespace DeathDistribution
 					data.path = path;
 					if (data.recordTraits & RECORD::TRAITS::Final && data.type != RECORD::TYPE::kOutfit) {
 						data.recordTraits &= ~RECORD::TRAITS::Final;
-						logger::info("\t\t[{} = {}]", key, value);
-						logger::info("\t\t\tFinal modifier can only be applied to Outfits.");
+						logger::warn("\t\t[{} = {}]", key, value);
+						logger::warn("\t\t\tFinal modifier can only be applied to Outfits.");
 					}
 					deathConfigs[data.type].emplace_back(data);
 				} else {
@@ -216,7 +216,7 @@ namespace DeathDistribution
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
+			logger::debug("\t\t🪝Installed ShouldBackgroundClone hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -233,7 +233,7 @@ namespace DeathDistribution
 			logger::info("💀Death Distribution");
 			if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 				scripts->PrependEventSink<RE::TESDeathEvent>(this);
-				logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
+				logger::debug("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
 			}
 			stl::install_hook<ShouldBackgroundClone>();
 
@@ -284,7 +284,7 @@ namespace DeathDistribution
 
 		if (const auto actor = a_event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
 			if (const auto npc = actor->GetActorBase(); npc) {
-				logger::info("[💀] Dying {}", *actor);
+				logger::debug("[💀] Dying {}", *actor);
 				auto npcData = NPCData(actor, npc, true);
 				Distribute(npcData);
 			}

@@ -218,17 +218,17 @@ namespace Distribute
 		}
 
 		if (!append) {
-			logger::info("{}Distribution for {}", prefix, *npcData.GetActor());
+			logger::debug("{}Distribution for {}", prefix, *npcData.GetActor());
 		}
 		if (results.empty()) {
 			if (!append) {
-				logger::info("{}\tNothing", prefix);
+				logger::debug("{}\tNothing", prefix);
 			}
 		} else {
 			for (const auto& pair : results) {
-				logger::info("{}\t{}", prefix, pair.first);
+				logger::debug("{}\t{}", prefix, pair.first);
 				for (const auto& form : pair.second) {
-					logger::info("{}\t\t{} @ {}", prefix, *form.first, form.second);
+					logger::debug("{}\t\t{} @ {}", prefix, *form.first, form.second);
 				}
 			}
 		}

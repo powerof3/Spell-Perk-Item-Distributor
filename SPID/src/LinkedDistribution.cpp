@@ -89,8 +89,8 @@ namespace LinkedDistribution
 					data.path = path;
 					if (data.recordTraits & RECORD::TRAITS::Final && data.type != RECORD::TYPE::kOutfit) {
 						data.recordTraits &= ~RECORD::TRAITS::Final;
-						logger::info("\t\t[{} = {}]", key, value);
-						logger::info("\t\t\tFinal modifier can only be applied to Outfits.");
+						logger::warn("\t\t[{} = {}]", key, value);
+						logger::warn("\t\t\tFinal modifier can only be applied to Outfits.");
 					}
 					linkedConfigs[data.type].push_back(data);
 				} else {
@@ -221,15 +221,15 @@ namespace LinkedDistribution
 			logger::info("Linked {}s: ", recordName);
 
 			for (const auto& [form, linkedConfigs] : map) {
-				logger::info("\t{}", describe(form));
+				logger::debug("\t{}", describe(form));
 
 				const auto lastItemIndex = linkedConfigs.size() - 1;
 				for (int i = 0; i < lastItemIndex; ++i) {
 					const auto& linkedItem = linkedConfigs[i];
-					logger::info("\t├─── {}", describe(linkedItem));
+					logger::debug("\t├─── {}", describe(linkedItem));
 				}
 				const auto& lastLinkedItem = linkedConfigs[lastItemIndex];
-				logger::info("\t└─── {}", describe(lastLinkedItem));
+				logger::debug("\t└─── {}", describe(lastLinkedItem));
 			}
 		});
 	}

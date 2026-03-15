@@ -41,7 +41,7 @@ namespace Distribute
 
 			static inline void post_hook()
 			{
-				logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
+				logger::debug("\t\t🪝Installed ShouldBackgroundClone hook.");
 			}
 
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -96,6 +96,7 @@ namespace Distribute
 		LOG_HEADER("EVENTS");
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
+		logger::info("Registered event handlers");
 
 		//DoInitialDistribution();
 
@@ -140,7 +141,7 @@ namespace Distribute
 
 		ForEachDistributable([&]<typename Form>(Distributables<Form>& a_distributable) {
 			if (a_distributable) {
-				logger::info("{}", RECORD::GetTypeName(a_distributable.GetType()));
+				logger::debug("{}", RECORD::GetTypeName(a_distributable.GetType()));
 
 				auto& forms = a_distributable.GetForms();
 
@@ -161,9 +162,9 @@ namespace Distribute
 					auto& formData = entry.second;
 					if (const auto& form = formData.form) {
 						if (auto file = form->GetFile(0)) {
-							logger::info("\t\t{} [0x{:X}~{}] added to {}/{} NPCs", editorID::get_editorID(form), form->GetLocalFormID(), file->GetFilename(), formData.npcCount, a_actorCount);
+							logger::debug("\t\t{} [0x{:X}~{}] added to {}/{} NPCs", editorID::get_editorID(form), form->GetLocalFormID(), file->GetFilename(), formData.npcCount, a_actorCount);
 						} else {
-							logger::info("\t\t{} [0x{:X}] added to {}/{} NPCs", editorID::get_editorID(form), form->GetFormID(), formData.npcCount, a_actorCount);
+							logger::debug("\t\t{} [0x{:X}] added to {}/{} NPCs", editorID::get_editorID(form), form->GetFormID(), formData.npcCount, a_actorCount);
 						}
 					}
 				}
@@ -180,7 +181,7 @@ namespace Distribute::Event
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
-			logger::info("Registered Distribution Manager for {}", typeid(RE::TESFormDeleteEvent).name());
+			logger::debug("Registered Distribution Manager for {}", typeid(RE::TESFormDeleteEvent).name());
 		}
 	}
 

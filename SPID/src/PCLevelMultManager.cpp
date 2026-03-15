@@ -15,7 +15,7 @@ namespace PCLevelMult
 	{
 		if (const auto UI = RE::UI::GetSingleton()) {
 			UI->AddEventSink(GetSingleton());
-			logger::info("Registered {}", typeid(Manager).name());
+			logger::debug("Registered {}", typeid(Manager).name());
 		}
 	}
 
@@ -71,15 +71,15 @@ namespace PCLevelMult
 	{
 		ReadLocker lock(_lock);
 		for (auto& [playerID, npcFormIDs] : _cache) {
-			logger::info("PlayerID : {:X}", playerID);
+			logger::debug("PlayerID : {:X}", playerID);
 			for (auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("\tNPC : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
+				logger::debug("\tNPC : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
 				for (auto& [level, distFormMap] : levelMap.entries) {
-					logger::info("\t\tLevel : {}", level);
+					logger::debug("\t\tLevel : {}", level);
 					for (auto& [distFormID, idxSet] : distFormMap.rejectedEntries) {
-						logger::info("\t\t\tDist FormID : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(distFormID)), distFormID);
+						logger::debug("\t\t\tDist FormID : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(distFormID)), distFormID);
 						for (auto& idx : idxSet) {
-							logger::info("\t\t\t\tIDX : {}", idx);
+							logger::debug("\t\t\t\tIDX : {}", idx);
 						}
 					}
 				}
@@ -108,15 +108,15 @@ namespace PCLevelMult
 	{
 		ReadLocker lock(_lock);
 		for (const auto& [playerID, npcFormIDs] : _cache) {
-			logger::info("PlayerID : {:X}", playerID);
+			logger::debug("PlayerID : {:X}", playerID);
 			for (const auto& [npcFormID, levelMap] : npcFormIDs) {
-				logger::info("\tNPC : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
+				logger::debug("\tNPC : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(npcFormID)), npcFormID);
 				for (const auto& [level, distFormMap] : levelMap.entries) {
-					logger::info("\t\tLevel : {}", level);
+					logger::debug("\t\tLevel : {}", level);
 					for (const auto& [formType, formIDSet] : distFormMap.distributedEntries) {
-						logger::info("\t\t\tDist FormType : {}", formType);
+						logger::debug("\t\t\tDist FormType : {}", formType);
 						for (const auto& formID : formIDSet) {
-							logger::info("\t\t\t\tDist FormID : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(formID)), formID);
+							logger::debug("\t\t\t\tDist FormID : {} [{:X}]", editorID::get_editorID(RE::TESForm::LookupByID(formID)), formID);
 						}
 					}
 				}

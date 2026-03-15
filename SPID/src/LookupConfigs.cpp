@@ -72,8 +72,8 @@ namespace Distribution
 
 					if (data.recordTraits & RECORD::TRAITS::Final && data.type != RECORD::TYPE::kOutfit) {
 						data.recordTraits &= ~RECORD::TRAITS::Final;
-						logger::info("\t\t[{} = {}]", key, value);
-						logger::info("\t\t\tFinal modifier can only be applied to Outfits.");
+						logger::warn("\t\t[{} = {}]", key, value);
+						logger::warn("\t\t\tFinal modifier can only be applied to Outfits.");
 					}
 
 					configs[data.type].emplace_back(data);
@@ -143,7 +143,7 @@ namespace Distribution
 					}
 
 					if (!oldFormatMap.empty()) {
-						logger::info("\t\tsanitizing {} entries", oldFormatMap.size());
+						logger::debug("\t\tsanitizing {} entries", oldFormatMap.size());
 
 						for (auto& [key, entry] : oldFormatMap) {
 							auto& [original, sanitized] = entry;

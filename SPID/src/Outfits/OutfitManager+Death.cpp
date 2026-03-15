@@ -30,12 +30,12 @@ namespace Outfits
 			return;
 		}
 
-		logger::info("[🧥] Resurrecting {}", *actor);
+		logger::debug("[🧥] Resurrecting {}", *actor);
 		if (!actor->IsDead()) {
-			logger::info("[🧥] \t⚠️ {} is not dead", *actor);
+			logger::debug("[🧥] \t⚠️ {} is not dead", *actor);
 		}
 		if (resetInventory) {
-			logger::info("[🧥] \tInventory will be reset.");
+			logger::debug("[🧥] \tInventory will be reset.");
 		}
 
 		RestoreOutfit(actor);

@@ -16,17 +16,17 @@ namespace Outfits
 					if (const auto fromActor = from->As<RE::Actor>()) {
 						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 							if (const auto toActor = to->As<RE::Actor>()) {
-								logger::info("[🎒] {} took {} {} from {}", *toActor, count, *item, *fromActor);
+								logger::debug("[🎒] {} took {} {} from {}", *toActor, count, *item, *fromActor);
 							} else {
-								logger::info("[🎒] {} put {} {} to {}", *fromActor, count, *item, *to);
+								logger::debug("[🎒] {} put {} {} to {}", *fromActor, count, *item, *to);
 							}
 						} else {
-							logger::info("[🎒] {} dropped {} {}", *fromActor, count, *item);
+							logger::debug("[🎒] {} dropped {} {}", *fromActor, count, *item);
 						}
 					} else {  // from is inanimate container
 						if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 							if (const auto toActor = to->As<RE::Actor>()) {
-								logger::info("[🎒] {} took {} {} from {}", *toActor, count, *item, *from);
+								logger::debug("[🎒] {} took {} {} from {}", *toActor, count, *item, *from);
 							} else {
 								//logger::info("[INVENTORY] {} {} transfered from {} to {}", count, *item, *from, *to);
 							}
@@ -37,7 +37,7 @@ namespace Outfits
 				} else {  // From is none
 					if (const auto to = RE::TESForm::LookupByID<RE::TESObjectREFR>(toID); to) {
 						if (const auto toActor = to->As<RE::Actor>()) {
-							logger::info("[🎒] {} picked up {} {}", *toActor, count, *item);
+							logger::debug("[🎒] {} picked up {} {}", *toActor, count, *item);
 						} else {
 							//logger::info("[INVENTORY] {} {} transfered to {}", count, *item, *to);
 						}
@@ -64,7 +64,7 @@ namespace Outfits
 
 	bool Manager::ProcessResetReference(RE::Actor* actor, std::function<bool()> funcCall)
 	{
-		logger::info("[🧥] Recycling {}", *actor);
+		logger::debug("[🧥] Recycling {}", *actor);
 		RevertOutfit(actor, false);
 		processedActors.erase(actor->formID);
 		return funcCall();
@@ -72,7 +72,7 @@ namespace Outfits
 
 	void Manager::ProcessResetInventory(RE::Actor* actor, std::function<void()> funcCall)
 	{
-		logger::info("[🧥] Resetting inventory of {}", *actor);
+		logger::debug("[🧥] Resetting inventory of {}", *actor);
 		if (auto npc = actor->GetActorBase(); npc) {
 			if (npc->defaultOutfit) {
 				if (auto worn = GetWornOutfit(actor); worn && worn->distributed) {
@@ -140,7 +140,7 @@ namespace Outfits
 		if (actor && !actor->HasOutfitItems(effectiveOutfit) && (!actor->IsDead() || !RE::BGSSaveLoadGame::GetSingleton()->GetChange(actor, 32))) {
 			if (auto changes = actor->GetInventoryChanges(); changes) {
 				auto level = actor->GetLevel();
-				logger::info("[🧥] Initializing worn outfit {} for {}", *effectiveOutfit, *actor);
+				logger::debug("[🧥] Initializing worn outfit {} for {}", *effectiveOutfit, *actor);
 				changes->InitOutfitItems(effectiveOutfit, level);
 			}
 		}
@@ -152,7 +152,7 @@ namespace Outfits
 			for (const auto& item : effectiveOutfit->outfitItems) {
 				if (const auto obj = item->As<RE::TESBoundObject>(); obj) {
 					if (utils::HasOverlappingSlot(actor, obj)) {
-						logger::info("[🧥] {} has equipped something in slot for {}", *actor, *obj);
+						logger::debug("[🧥] {} has equipped something in slot for {}", *actor, *obj);
 						return;
 					}
 				}
@@ -160,7 +160,7 @@ namespace Outfits
 		}
 #endif
 
-		logger::info("[🧥] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
+		logger::debug("[🧥] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
 		AddWornOutfit(actor, effectiveOutfit, forceUpdate, false);
 	}
 }

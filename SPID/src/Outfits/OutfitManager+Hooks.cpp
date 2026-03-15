@@ -19,7 +19,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
+			logger::debug("\t\t🪝Installed ShouldBackgroundClone hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -39,7 +39,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed Load3D hook.");
+			logger::debug("\t\t🪝Installed Load3D hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -59,7 +59,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed InitItemImpl hook.");
+			logger::debug("\t\t🪝Installed InitItemImpl hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -73,7 +73,11 @@ namespace Outfits
 	struct Resurrect
 	{
 		using Target = RE::Character;
+#ifndef SKYRIMVR
 		static inline constexpr std::size_t index{ 0xAB };
+#else
+		static inline constexpr std::size_t index{ 0xAD };
+#endif
 
 		static void thunk(RE::Character* actor, bool resetInventory, bool attach3D)
 		{
@@ -82,7 +86,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed Resurrect hook.");
+			logger::debug("\t\t🪝Installed Resurrect hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -101,7 +105,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed ResetInventory hook.");
+			logger::debug("\t\t🪝Installed ResetInventory hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -126,7 +130,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed ResetReference hook.");
+			logger::debug("\t\t🪝Installed ResetReference hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -137,7 +141,7 @@ namespace Outfits
 	struct SetOutfitActor
 	{
 		static inline constexpr REL::ID     relocation = RELOCATION_ID(53960, 54784);
-		static inline constexpr std::size_t offset = OFFSET(0x3E60, 0x47D5);
+		static inline constexpr std::size_t offset = OFFSET_3(0x3E60, 0x47D5, 0x3c83);
 
 		// This re-creates original papyrus::Actor::SetOutfit function.
 		static void thunk(RE::BSScript::Internal::VirtualMachine* vm, RE::VMStackID stackID, RE::Actor* actor, RE::BGSOutfit* outfit, bool isSleepOutfit)
@@ -170,7 +174,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed SetOutfit hook.");
+			logger::debug("\t\t🪝Installed SetOutfit hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -235,7 +239,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed FilterInventoryItems hook.");
+			logger::debug("\t\t🪝Installed FilterInventoryItems hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -245,7 +249,7 @@ namespace Outfits
 	struct FilterInventoryItems2
 	{
 		static inline constexpr REL::ID     relocation = RELOCATION_ID(50217, 51146);
-		static inline constexpr std::size_t offset = OFFSET(0x152, 0x12E);
+		static inline constexpr std::size_t offset = OFFSET_3(0x152, 0x12E, 0x161);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -254,7 +258,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed FilterInventoryItems2 hook.");
+			logger::debug("\t\t🪝Installed FilterInventoryItems2 hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -274,7 +278,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed FilterInventoryItems hook.");
+			logger::debug("\t\t🪝Installed FilterInventoryItems hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -293,7 +297,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed FilterInventoryItems2 hook.");
+			logger::debug("\t\t🪝Installed FilterInventoryItems2 hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -313,7 +317,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed FilterInventoryItemsAE hook.");
+			logger::debug("\t\t🪝Installed FilterInventoryItemsAE hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -333,7 +337,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed FilterInventoryItemsAE hook.");
+			logger::debug("\t\t🪝Installed FilterInventoryItemsAE hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -354,7 +358,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed HasOutfitItems stub.");
+			logger::debug("\t\t🪝Installed HasOutfitItems stub.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -376,7 +380,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed IsHorse stub.");
+			logger::debug("\t\t🪝Installed IsHorse stub.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -396,7 +400,7 @@ namespace Outfits
 
 		static inline void post_hook()
 		{
-			logger::info("\t\t🪝Installed AddWornOutfit hook.");
+			logger::debug("\t\t🪝Installed AddWornOutfit hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -406,12 +410,12 @@ namespace Outfits
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(this);
-			logger::info("\t\t📝Registered for {}.", typeid(RE::TESFormDeleteEvent).name());
+			logger::debug("\t\t📝Registered for {}.", typeid(RE::TESFormDeleteEvent).name());
 			scripts->AddEventSink<RE::TESDeathEvent>(this);
-			logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
+			logger::debug("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
 			//#ifndef NDEBUG
 			scripts->AddEventSink<RE::TESContainerChangedEvent>(this);
-			logger::info("\t\t📝Registered for {}.", typeid(RE::TESContainerChangedEvent).name());
+			logger::debug("\t\t📝Registered for {}.", typeid(RE::TESContainerChangedEvent).name());
 			//#endif
 		}
 
