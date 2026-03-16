@@ -89,9 +89,9 @@ namespace Outfits
 	bool Manager::RevertOutfit(RE::Actor* actor, const OutfitReplacement& replacement) const
 	{
 		if (actor && actor->GetActorBase()) {
-			logger::info("[🧥]\tReverting Outfit Replacement for {}", *actor);
+			logger::debug("[🧥]\tReverting Outfit Replacement for {}", *actor);
 			if (auto outfit = actor->GetActorBase()->defaultOutfit; outfit) {
-				logger::info("[🧥]\t\t{:R} ({})", replacement, *outfit);
+				logger::debug("[🧥]\t\t{:R} ({})", replacement, *outfit);
 				actor->InitInventoryIfRequired();
 				actor->RemoveOutfitItems(nullptr);
 				if (!actor->IsDisabled()) {
@@ -121,14 +121,14 @@ namespace Outfits
 		// If outfit is nullptr, we just track that distribution didn't provide any outfit for this actor.
 		if (outfit) {
 			//#ifndef NDEBUG
-			logger::info("[🧥] Evaluating outfit for {}", *actor);
-			logger::info("[🧥] \tDefault Outfit: {}", *defaultOutfit);
+			logger::debug("[🧥] Evaluating outfit for {}", *actor);
+			logger::debug("[🧥] \tDefault Outfit: {}", *defaultOutfit);
 			if (auto worn = wornReplacements.find(actor->formID); worn != wornReplacements.end()) {
-				logger::info("[🧥] \tWorn Outfit: {}", *worn->second.distributed);
+				logger::debug("[🧥] \tWorn Outfit: {}", *worn->second.distributed);
 			} else {
-				logger::info("[🧥] \tWorn Outfit: None");
+				logger::debug("[🧥] \tWorn Outfit: None");
 			}
-			logger::info("[🧥] \tNew Outfit: {}", *outfit);
+			logger::debug("[🧥] \tNew Outfit: {}", *outfit);
 			//#endif
 			if (!CanEquipOutfit(actor, outfit)) {
 				//#ifndef NDEBUG
@@ -141,7 +141,7 @@ namespace Outfits
 		if (auto replacement = ResolvePendingOutfit(data, outfit, isDeathOutfit, isFinalOutfit); replacement) {
 			//#ifndef NDEBUG
 			if (replacement->distributed) {
-				logger::info("[🧥] \tResolved Pending Outfit: {}", *replacement->distributed);
+				logger::debug("[🧥] \tResolved Pending Outfit: {}", *replacement->distributed);
 			}
 			//#endif
 		}
@@ -171,26 +171,26 @@ namespace Outfits
 		}
 
 		//#ifndef NDEBUG
-		logger::info("[🧥] BEFORE Outfit items present in {} inventory", *actor);
+		logger::debug("[🧥] BEFORE Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor, "[🧥] \t\t");
 		//#endif
 
 		if (IsSuspendedReplacement(actor)) {
 			//#ifndef NDEBUG
-			logger::info("[🧥] Skipping outfit equip because distribution is suspended for {}", *actor);
+			logger::debug("[🧥] Skipping outfit equip because distribution is suspended for {}", *actor);
 			//#endif
 			return false;
 		}
 
 		if (IsWearingOutfit(actor, outfit)) {
 			//#ifndef NDEBUG
-			logger::info("[🧥] Outfit {} is already equipped on {}", *outfit, *actor);
+			logger::debug("[🧥] Outfit {} is already equipped on {}", *outfit, *actor);
 			//#endif
 			return true;
 		}
 
 		//#ifndef NDEBUG
-		logger::info("[🧥] Equipping Outfit {}", *outfit);
+		logger::debug("[🧥] Equipping Outfit {}", *outfit);
 		//#endif
 		actor->InitInventoryIfRequired();
 		actor->RemoveOutfitItems(nullptr);
@@ -198,7 +198,7 @@ namespace Outfits
 			AddWornOutfit(actor, outfit, shouldUpdate3D);
 		}
 		//#ifndef NDEBUG
-		logger::info("[🧥] AFTER Outfit items present in {} inventory", *actor);
+		logger::debug("[🧥] AFTER Outfit items present in {} inventory", *actor);
 		LogWornOutfitItems(actor, "[🧥] \t\t");
 		//#endif
 		return true;

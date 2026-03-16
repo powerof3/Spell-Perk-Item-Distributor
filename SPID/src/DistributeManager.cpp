@@ -41,7 +41,7 @@ namespace Distribute
 
 			static inline void post_hook()
 			{
-				logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
+				logger::debug("\t\t🪝Installed ShouldBackgroundClone hook.");
 			}
 
 			static inline REL::Relocation<decltype(thunk)> func;
@@ -96,6 +96,7 @@ namespace Distribute
 		LOG_HEADER("EVENTS");
 		Event::Manager::Register();
 		PCLevelMult::Manager::Register();
+		logger::info("Registered event handlers");
 
 		// Clear logger's buffer to free some memory :)
 		buffered_logger::clear();
@@ -108,7 +109,7 @@ namespace Distribute::Event
 	{
 		if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 			scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
-			logger::info("Registered Distribution Manager for {}", typeid(RE::TESFormDeleteEvent).name());
+			logger::debug("Registered Distribution Manager for {}", typeid(RE::TESFormDeleteEvent).name());
 		}
 	}
 

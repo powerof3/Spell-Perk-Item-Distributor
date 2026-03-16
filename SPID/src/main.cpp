@@ -39,12 +39,17 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	case SKSE::MessagingInterface::kPostPostLoad:
 		{
 			LOG_HEADER("MERGES");
+			// Temporarily suppress the "Failed to dispatch" warning from SKSE when MergeMapper isn't installed.
+			// That warning is expected — MergeMapper is an optional plugin only needed for zmerge users.
+			const auto savedLevel = spdlog::default_logger()->level();
+			spdlog::default_logger()->set_level(spdlog::level::err);
 			MergeMapperPluginAPI::GetMergeMapperInterface001();  // Request interface
-			if (g_mergeMapperInterface) {                        // Use Interface
+			spdlog::default_logger()->set_level(savedLevel);
+			if (g_mergeMapperInterface) {  // Use Interface
 				const auto version = g_mergeMapperInterface->GetBuildNumber();
 				logger::info("\tGot MergeMapper interface buildnumber {}", version);
 			} else {
-				logger::info("INFO - MergeMapper not detected");
+				logger::debug("MergeMapper not detected (only needed for users with zmerges)");
 			}
 		}
 		break;
@@ -145,13 +150,28 @@ void InitializeLog()
 
 	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
 
-	log->set_level(spdlog::level::info);
-	log->flush_on(spdlog::level::info);
+	constexpr auto settingsPath = "Data\\SKSE\\Plugins\\SPID.ini";
+	std::string    logLevelStr{ "info" };
+
+	CSimpleIniA ini;
+	ini.SetUnicode();
+	ini.LoadFile(settingsPath);
+	clib_util::ini::get_value(ini, logLevelStr, "Log", "LogLevel", ";  Log level for SPID. Valid values: trace, debug, info, warn, error, critical.\n;  Use 'debug' to enable verbose per-NPC/outfit distribution logging.");
+	(void)ini.SaveFile(settingsPath);
+
+	auto logLevel = spdlog::level::from_str(logLevelStr);
+	if (logLevel == spdlog::level::off) {
+		logLevel = spdlog::level::info;
+	}
+
+	log->set_level(logLevel);
+	log->flush_on(logLevel);
 
 	spdlog::set_default_logger(std::move(log));
 	spdlog::set_pattern("[%H:%M:%S:%e] %v"s);
 
 	logger::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
+	logger::info("Log level: {}", spdlog::level::to_string_view(logLevel));
 }
 
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
@@ -161,6 +181,11 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	logger::info("Game version : {}", a_skse->RuntimeVersion().string());
 
 	SKSE::Init(a_skse, false);
+
+	// Pre-allocate all trampoline space upfront while SKSE's branch pool is available.
+	// Each write_call<5> hook needs 14 bytes (FF 25 00000000 + 8-byte absolute address).
+	// Max active call hooks: 10 (AE 1.6.1170+) or 8 (SE/VR/older AE). Using 14 for headroom.
+	SKSE::AllocTrampoline(14 * 14);
 
 	SKSE::GetMessagingInterface()->RegisterListener(MessageHandler);
 

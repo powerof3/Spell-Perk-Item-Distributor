@@ -73,7 +73,11 @@ namespace Outfits
 	struct Resurrect
 	{
 		using Target = RE::Character;
+#ifndef SKYRIMVR
 		static inline constexpr std::size_t index{ 0xAB };
+#else
+		static inline constexpr std::size_t index{ 0xAD };
+#endif
 
 		static void thunk(RE::Character* actor, bool resetInventory, bool attach3D)
 		{
@@ -137,7 +141,7 @@ namespace Outfits
 	struct SetOutfitActor
 	{
 		static inline constexpr REL::ID     relocation = RELOCATION_ID(53960, 54784);
-		static inline constexpr std::size_t offset = OFFSET(0x3E60, 0x47D5);
+		static inline constexpr std::size_t offset = OFFSET_3(0x3E60, 0x47D5, 0x3c83);
 
 		// This re-creates original papyrus::Actor::SetOutfit function.
 		static void thunk(RE::BSScript::Internal::VirtualMachine* vm, RE::VMStackID stackID, RE::Actor* actor, RE::BGSOutfit* outfit, bool isSleepOutfit)
@@ -245,7 +249,7 @@ namespace Outfits
 	struct FilterInventoryItems2
 	{
 		static inline constexpr REL::ID     relocation = RELOCATION_ID(50217, 51146);
-		static inline constexpr std::size_t offset = OFFSET(0x152, 0x12E);
+		static inline constexpr std::size_t offset = OFFSET_3(0x152, 0x12E, 0x161);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
 		{

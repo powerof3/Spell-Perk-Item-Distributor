@@ -16,7 +16,7 @@ namespace Outfits
 
 	void Manager::ProcessSetOutfitActor(RE::Actor* actor, RE::BGSOutfit* outfit, std::function<void()> funcCall)
 	{
-		logger::info("[🧥][📜] SetOutfit({}) was called for actor {}.", *outfit, *actor);
+		logger::debug("[🧥][📜] SetOutfit({}) was called for actor {}.", *outfit, *actor);
 
 		// Empty outfit might be used to undress the actor.
 		if (outfit->outfitItems.empty()) {
@@ -29,7 +29,7 @@ namespace Outfits
 			if (initialOutfit) {
 				if (initialOutfit == outfit) {
 					if (IsSuspendedReplacement(actor)) {
-						logger::info("[🧥][📜] \t▶️ Resuming outfit distribution for {} as defaultOutfit has been reverted to its initial state", *actor);
+						logger::debug("[🧥][📜] \t▶️ Resuming outfit distribution for {} as defaultOutfit has been reverted to its initial state", *actor);
 						if (actor->GetActorBase()->defaultOutfit != outfit) {
 							actor->GetActorBase()->SetDefaultOutfit(outfit);
 						}
@@ -38,8 +38,8 @@ namespace Outfits
 					}
 				} else {
 					actor->RemoveOutfitItems(wornOutfit->distributed);  // remove distributed outfit, so that it won't be stuck in the inventory
-					logger::info("[🧥][📜] \t⏸️ Suspending outfit distribution for {} due to manual change of the outfit", *actor);
-					logger::info("[🧥][📜] \t\tTo resume distribution SetOutfit({}) should be called for this actor", *initialOutfit);
+					logger::debug("[🧥][📜] \t⏸️ Suspending outfit distribution for {} due to manual change of the outfit", *actor);
+					logger::debug("[🧥][📜] \t\tTo resume distribution SetOutfit({}) should be called for this actor", *initialOutfit);
 				}
 			}
 		}

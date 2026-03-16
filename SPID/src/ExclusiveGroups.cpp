@@ -109,7 +109,7 @@ namespace ExclusiveGroups
 		for (const auto& [group, forms] : groups) {
 			logger::info("Adding '{}' exclusive group", group);
 			for (const auto& form : forms) {
-				logger::info("  {}", describe(form));
+				logger::debug("  {}", describe(form));
 			}
 		}
 	}

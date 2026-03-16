@@ -258,7 +258,7 @@ namespace Outfits
 		LOG_HEADER("REVERTING");
 		// We want to preserve current session's
 		auto& pendingReplacements = manager->pendingReplacements;
-		logger::info("[🧥][💾] Pending Outfit Replacements count: {}", pendingReplacements.size());
+		logger::debug("[🧥][💾] Pending Outfit Replacements count: {}", pendingReplacements.size());
 		int counter = 0;
 		for (auto& [actorID, replacement] : manager->wornReplacements) {
 			if (pendingReplacements.find(actorID) == pendingReplacements.end()) {
@@ -270,7 +270,7 @@ namespace Outfits
 				}
 			}
 		}
-		logger::info("[🧥][💾] Preserved {} Outfit Replacements for pending outfits", counter);
+		logger::info("[🧥][💾] Preserved {} non-death outfit replacements for reapplication", counter);
 
 		manager->wornReplacements.clear();
 	}
@@ -317,25 +317,25 @@ namespace Outfits
 		auto& pendingReplacements = manager->pendingReplacements;
 
 		//#ifndef NDEBUG
-		logger::info("[🧥][💾] Loaded {}/{} Outfit Replacements", loadedReplacements.size(), total);
+		logger::info("[🧥][💾] Loaded {}/{} outfit replacements", loadedReplacements.size(), total);
 		for (const auto& pair : loadedReplacements) {
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-				logger::info("[🧥][💾] \t{}", *actor);
+				logger::debug("[🧥][💾] \t{}", *actor);
 			} else {
-				logger::info("[🧥][💾] \t[ACHR:{:08X}]", pair.first);
+				logger::debug("[🧥][💾] \t[ACHR:{:08X}]", pair.first);
 			}
-			logger::info("[🧥][💾] \t\t{}", pair.second);
+			logger::debug("[🧥][💾] \t\t{}", pair.second);
 		}
 
-		logger::info("[🧥][💾] Pending {} Outfit Replacements", pendingReplacements.size());
+		logger::debug("[🧥][💾] Pending {} Outfit Replacements", pendingReplacements.size());
 		for (const auto& pair : pendingReplacements) {
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-				logger::info("[🧥][💾] \t{}", *actor);
+				logger::debug("[🧥][💾] \t{}", *actor);
 			}
-			logger::info("[🧥][💾] \t\t{}", pair.second);
+			logger::debug("[🧥][💾] \t\t{}", pair.second);
 		}
 
-		logger::info("[🧥][💾] Applying resolved outfits...");
+		logger::debug("[🧥][💾] Applying resolved outfits...");
 		//#endif
 
 		// We don't increment iterator here, since ResolveWornOutfit will be erasing each pending entry
@@ -343,9 +343,9 @@ namespace Outfits
 			if (auto actor = RE::TESForm::LookupByID<RE::Actor>(it->first); actor) {
 				if (auto resolved = manager->ResolveWornOutfit(actor, it, false); resolved) {
 					//#ifndef NDEBUG
-					logger::info("[🧥][💾] \tActor: {}", *actor);
-					logger::info("[🧥][💾] \tResolved: {}", *resolved);
-					logger::info("[🧥][💾] \tDefault: {}", *(actor->GetActorBase()->defaultOutfit));
+					logger::debug("[🧥][💾] \tActor: {}", *actor);
+					logger::debug("[🧥][💾] \tResolved: {}", *resolved);
+					logger::debug("[🧥][💾] \tDefault: {}", *(actor->GetActorBase()->defaultOutfit));
 					//#endif
 					manager->ApplyOutfit(actor, resolved->distributed);
 				}
@@ -380,7 +380,7 @@ namespace Outfits
 			}
 			//#ifndef NDEBUG
 			if (const auto actor = RE::TESForm::LookupByID<RE::Actor>(pair.first); actor) {
-				logger::info("[🧥][💾] \tSaved Outfit Replacement ({}) for actor {}", pair.second, *actor);
+				logger::debug("[🧥][💾] \tSaved Outfit Replacement ({}) for actor {}", pair.second, *actor);
 			}
 			++savedCount;
 			//#endif
