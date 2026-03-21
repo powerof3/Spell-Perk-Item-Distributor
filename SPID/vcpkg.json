@@ -1,6 +1,7 @@
 {
   "name": "spid",
   "version-string": "7.2.0",
+    "builtin-baseline": "b472291f295551b7127359ea38fdd2ca092f6f1b",
   "description": "Spell Perk Item Distributor",
   "homepage": "https://github.com/powerof3/Spell-Perk-Item-Distributor",
   "license": "MIT",

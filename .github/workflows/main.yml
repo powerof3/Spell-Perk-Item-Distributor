@@ -28,4 +28,3 @@ jobs:
       PUBLISH_MOD_CHANGELOG_FILE: "FOMOD/changelog.txt"
       PUBLISH_MOD_DESCRIPTION_FILE: "FOMOD/description.txt"
       PUBLISH_ARCHIVE_TYPE: '7z'
-      VCPKG_COMMIT_ID: '0d9d4684352ba8de70bdf251c6fc9a3c464fa12b'
