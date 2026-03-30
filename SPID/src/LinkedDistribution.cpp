@@ -221,15 +221,15 @@ namespace LinkedDistribution
 			logger::info("Linked {}s: ", recordName);
 
 			for (const auto& [form, linkedConfigs] : map) {
-				logger::debug("\t{}", describe(form));
+				logger::info("\t{}", describe(form));
 
 				const auto lastItemIndex = linkedConfigs.size() - 1;
 				for (int i = 0; i < lastItemIndex; ++i) {
 					const auto& linkedItem = linkedConfigs[i];
-					logger::debug("\t├─── {}", describe(linkedItem));
+					logger::info("\t├─── {}", describe(linkedItem));
 				}
 				const auto& lastLinkedItem = linkedConfigs[lastItemIndex];
-				logger::debug("\t└─── {}", describe(lastLinkedItem));
+				logger::info("\t└─── {}", describe(lastLinkedItem));
 			}
 		});
 	}

@@ -167,7 +167,7 @@ namespace Outfits
 
 		// Empty outfit might be used to undress the actor.
 		if (outfit->outfitItems.empty()) {
-			logger::info("[🧥] \t⚠️ Outfit {} is empty - {} will appear naked.", *outfit, *actor);
+			logger::warn("[🧥] \t⚠️ Outfit {} is empty - {} will appear naked.", *outfit, *actor);
 		}
 
 		//#ifndef NDEBUG

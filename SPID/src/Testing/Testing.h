@@ -118,7 +118,8 @@ namespace Testing
 		{
 			LOG_HEADER("SELF TESTING");
 			std::pair<int, int> counter = { 0, 0 };
-			spdlog::set_level(spdlog::level::critical);  // silence all logging coming from the test.
+			const auto savedLevel = spdlog::default_logger()->level();
+			spdlog::default_logger()->set_level(spdlog::level::off);
 			for (auto& [moduleName, tests] : GetSingleton()->tests) {
 				if (const auto& before = GetSingleton()->beforeAll.find(moduleName); before != GetSingleton()->beforeAll.end()) {
 					before->second();
@@ -131,7 +132,7 @@ namespace Testing
 				counter.first += res.first;
 				counter.second += res.second;
 			}
-			spdlog::set_level(spdlog::level::info);  // restore logging level
+			spdlog::default_logger()->set_level(savedLevel);  // restore logging level
 			if (GetSingleton()->tests.size() > 1) {
 				logger::info("Completed all tests: {}/{} tests passed", counter.first, counter.second);
 			}

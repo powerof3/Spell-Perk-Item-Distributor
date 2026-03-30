@@ -150,7 +150,7 @@ void InitializeLog()
 
 	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
 
-	constexpr auto settingsPath = "Data\\SKSE\\Plugins\\SPID.ini";
+	constexpr auto settingsPath = "Data\\SKSE\\Plugins\\po3_SpellPerkItemDistributor.ini";
 	std::string    logLevelStr{ "info" };
 
 	CSimpleIniA ini;

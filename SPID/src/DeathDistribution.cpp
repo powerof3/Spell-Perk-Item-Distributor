@@ -216,7 +216,7 @@ namespace DeathDistribution
 
 		static inline void post_hook()
 		{
-			logger::debug("\t\t🪝Installed ShouldBackgroundClone hook.");
+			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -233,7 +233,7 @@ namespace DeathDistribution
 			logger::info("💀Death Distribution");
 			if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 				scripts->PrependEventSink<RE::TESDeathEvent>(this);
-				logger::debug("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
+				logger::info("\t\t📝Registered for {}.", typeid(RE::TESDeathEvent).name());
 			}
 			stl::install_hook<ShouldBackgroundClone>();
 

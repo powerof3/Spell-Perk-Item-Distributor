@@ -335,7 +335,7 @@ namespace Outfits
 			logger::debug("[🧥][💾] \t\t{}", pair.second);
 		}
 
-		logger::debug("[🧥][💾] Applying resolved outfits...");
+		logger::info("[🧥][💾] Applying resolved outfits...");
 		//#endif
 
 		// We don't increment iterator here, since ResolveWornOutfit will be erasing each pending entry

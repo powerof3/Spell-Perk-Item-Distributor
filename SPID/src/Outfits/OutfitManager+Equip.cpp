@@ -140,7 +140,7 @@ namespace Outfits
 		if (actor && !actor->HasOutfitItems(effectiveOutfit) && (!actor->IsDead() || !RE::BGSSaveLoadGame::GetSingleton()->GetChange(actor, 32))) {
 			if (auto changes = actor->GetInventoryChanges(); changes) {
 				auto level = actor->GetLevel();
-				logger::info("[🧥] Initializing worn outfit {} for {}", *effectiveOutfit, *actor);
+				logger::debug("[🧥] Initializing worn outfit {} for {}", *effectiveOutfit, *actor);
 				changes->InitOutfitItems(effectiveOutfit, level);
 			}
 		}
@@ -152,7 +152,7 @@ namespace Outfits
 			for (const auto& item : effectiveOutfit->outfitItems) {
 				if (const auto obj = item->As<RE::TESBoundObject>(); obj) {
 					if (utils::HasOverlappingSlot(actor, obj)) {
-						logger::info("[🧥] {} has equipped something in slot for {}", *actor, *obj);
+						logger::debug("[🧥] {} has equipped something in slot for {}", *actor, *obj);
 						return;
 					}
 				}
@@ -160,7 +160,7 @@ namespace Outfits
 		}
 #endif
 
-		logger::info("[🧥] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
+		logger::debug("[🧥] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
 		AddWornOutfit(actor, effectiveOutfit, forceUpdate, false);
 	}
 }
