@@ -118,7 +118,7 @@ namespace Testing
 		{
 			LOG_HEADER("SELF TESTING");
 			std::pair<int, int> counter = { 0, 0 };
-			const auto savedLevel = spdlog::default_logger()->level();
+			const auto          savedLevel = spdlog::default_logger()->level();
 			spdlog::default_logger()->set_level(spdlog::level::off);
 			for (auto& [moduleName, tests] : GetSingleton()->tests) {
 				if (const auto& before = GetSingleton()->beforeAll.find(moduleName); before != GetSingleton()->beforeAll.end()) {
