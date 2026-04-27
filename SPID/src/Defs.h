@@ -101,22 +101,38 @@ using Count = std::int32_t;
 using RandomCount = Range<Count>;
 using IndexOrCount = std::variant<Index, RandomCount>;
 
-/// <summary>
-/// A chance that is represented as a decimal value between 0 and 1.
-/// For example, 0.5 would be 50%.
-///
-/// This one is used in a processed Data for filtering.
-/// </summary>
+/// Chance expressed as [0; 100] range.
+/// This is what is being read from configs.
+using PercentChance = double;
+/// Chance expressed in [0; 1] range.
+/// This is what we use internally for random chance calculations.
 using DecimalChance = double;
 
-/// <summary>
-/// A chance that is represented as a percent value between 0 and 100.
-/// It also can be decimal, but would describe fraction of a percent.
-/// So that 0.5 would be 0.5%.
-///
-/// This is used during parsing of INI files.
-/// </summary>
-using PercentChance = double;
+struct Chance
+{
+	DecimalChance value{ 1 };
+	bool          deterministic{ false };
+	/// Hash created from the config entry from which this Chance was parsed.
+	/// This contributes to the RNG seed when the chance is deterministic.
+	/// If chance is not deterministic, then the seed is left at 0 and not used.
+	std::uint64_t lineSeed{ 0 };
+
+	Chance() = default;
+	Chance(double value, bool deterministic = false) :
+		value(value),
+		deterministic(deterministic)
+	{}
+};
+
+inline void hash_combine(std::size_t&) {}
+
+template <typename T, typename... Rest>
+inline void hash_combine(std::size_t& seed, const T& v, Rest... rest)
+{
+	std::hash<T> hasher;
+	seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	hash_combine(seed, rest...);
+}
 
 /// A standardized way of converting any object to string.
 ///

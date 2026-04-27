@@ -101,7 +101,7 @@ namespace Distribution
 			LevelFilters   levelFilters{};
 			Traits         traits{};
 			IndexOrCount   idxOrCount{ RandomCount(1, 1) };
-			PercentChance  chance{ 100 };
+			Chance         chance{};
 			std::string    path{};
 		};
 
@@ -244,9 +244,9 @@ namespace Distribution::INI
 		concept randomized_data = requires(Data data) {
 			{
 				data.chance
-			} -> std::same_as<PercentChance&>;
+			} -> std::same_as<Chance&>;
 			{
-				data.chance = std::declval<PercentChance>()
+				data.chance = std::declval<Chance>()
 			};
 		};
 	}
@@ -575,8 +575,14 @@ namespace Distribution::INI
 	void ChanceComponentParser::operator()(const std::string& entry, Data& data) const
 	{
 		if (distribution::is_valid_entry(entry)) {
+			// A trailing '!' marks a deterministic chance, e.g. "50!".
+			const bool        deterministic = !entry.empty() && entry.back() == '!';
+			const std::string numericPart = deterministic ? entry.substr(0, entry.size() - 1) : entry;
+			if (!distribution::is_valid_entry(numericPart)) {
+				return;
+			}
 			try {
-				data.chance = string::to_num<PercentChance>(entry);
+				data.chance = Chance(string::to_num<PercentChance>(numericPart) / 100.0, deterministic);
 			} catch (const std::exception&) {
 				throw InvalidChanceException(entry);
 			}

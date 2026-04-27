@@ -70,6 +70,10 @@ namespace Distribution
 
 					data.path = path;
 
+					if (data.chance.deterministic) {
+						data.chance.lineSeed = std::hash<std::string>{}(value);
+					}
+
 					if (data.recordTraits & RECORD::TRAITS::Final && data.type != RECORD::TYPE::kOutfit) {
 						data.recordTraits &= ~RECORD::TRAITS::Final;
 						logger::warn("\t\t[{} = {}]", key, value);
