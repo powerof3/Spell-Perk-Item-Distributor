@@ -1,14 +1,15 @@
 #include "LookupFilters.h"
 #include "LookupNPC.h"
+#include "PCLevelMultManager.h"
 
 namespace Filter
 {
-	Data::Data(StringFilters a_strings, FormFilters a_formFilters, LevelFilters a_level, Traits a_traits, PercentChance a_chance) :
-		strings(std::move(a_strings)),
-		forms(std::move(a_formFilters)),
-		levels(std::move(a_level)),
-		traits(a_traits),
-		chance(a_chance / 100)
+	Data::Data(StringFilters strings, FormFilters formFilters, LevelFilters level, Traits traits, Chance chance) :
+		strings(std::move(strings)),
+		forms(std::move(formFilters)),
+		levels(std::move(level)),
+		traits(traits),
+		chance(chance)
 	{
 		hasLeveledFilters = HasLevelFiltersImpl();
 	}
@@ -195,9 +196,20 @@ namespace Filter
 	Result Data::PassedFilters(const NPCData& a_npcData) const
 	{
 		// Fail chance first to avoid running unnecessary checks
-		if (chance < 1) {
-			const auto randNum = RNG().generate();
-			if (randNum > chance) {
+		if (chance.value < 1) {
+			double randNum;
+			if (chance.deterministic) {
+				const auto  playerID    = PCLevelMult::Manager::GetSingleton()->GetCurrentPlayerID();
+				const auto  actorFormID = static_cast<std::uint64_t>(a_npcData.GetActor()->GetFormID());
+				std::size_t seed        = chance.lineSeed;
+				hash_combine(seed, playerID, actorFormID);
+				randNum = RNG(seed).generate();
+				logger::info("Seed for Actor {:08X}, Player {}, base {} = {}. Chance: {:.3f}", a_npcData.GetActor()->GetFormID(), playerID, chance.lineSeed, seed, randNum);
+				
+			} else {
+				randNum = RNG().generate();
+			}
+			if (randNum > chance.value) {
 				return Result::kFailRNG;
 			}
 		}

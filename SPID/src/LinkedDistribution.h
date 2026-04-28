@@ -54,7 +54,7 @@ namespace LinkedDistribution
 			RawFormFilters formFilters{};
 
 			IndexOrCount  idxOrCount{ RandomCount(1, 1) };
-			PercentChance chance{ 100 };
+			Chance        chance{};
 
 			Path path{};
 		};
@@ -108,7 +108,7 @@ namespace LinkedDistribution
 		RECORD::TYPE type;
 		FormsMap     forms{};
 
-		void Link(Form*, Scope, DistributionType, bool isFinal, const FormVec& linkedConfigs, const IndexOrCount&, const PercentChance&, const Path&);
+		void Link(Form*, Scope, DistributionType, bool isFinal, const FormVec& linkedConfigs, const IndexOrCount&, const Chance&, const Path&);
 	};
 
 	class Manager : public ISingleton<Manager>
@@ -255,7 +255,7 @@ namespace LinkedDistribution
 	}
 
 	template <class Form>
-	void LinkedForms<Form>::Link(Form* form, Scope scope, DistributionType distributionType, bool isFinal, const FormVec& linkedConfigs, const IndexOrCount& idxOrCount, const PercentChance& chance, const Path& path)
+	void LinkedForms<Form>::Link(Form* form, Scope scope, DistributionType distributionType, bool isFinal, const FormVec& linkedConfigs, const IndexOrCount& idxOrCount, const Chance& chance, const Path& path)
 	{
 		for (const auto& linkedForm : linkedConfigs) {
 			if (std::holds_alternative<RE::TESForm*>(linkedForm)) {
