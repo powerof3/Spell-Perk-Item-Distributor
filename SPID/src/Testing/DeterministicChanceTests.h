@@ -87,7 +87,7 @@ namespace DeterministicChance
 
 			TEST(SameEntryLineProducesSameLineSeed)
 			{
-				const std::string key   = "Spell";
+				const std::string key = "Spell";
 				const std::string value = "0x10F7F7||||||50!";
 
 				Distribution::INI::configs.clear();
@@ -101,7 +101,7 @@ namespace DeterministicChance
 
 			TEST(SlightlyDifferentEntryLineProducesDifferentLineSeed)
 			{
-				const std::string key    = "Spell";
+				const std::string key = "Spell";
 				const std::string value1 = "0x10F7F7||||||50!";
 				const std::string value2 = "0x10F7F7||||||51!";
 

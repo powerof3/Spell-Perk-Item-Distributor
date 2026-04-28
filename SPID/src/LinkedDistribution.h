@@ -53,8 +53,8 @@ namespace LinkedDistribution
 			/// Raw filters in RawLinkedForm only use MATCH, there is no meaning for ALL or NOT, so they are ignored.
 			RawFormFilters formFilters{};
 
-			IndexOrCount  idxOrCount{ RandomCount(1, 1) };
-			Chance        chance{};
+			IndexOrCount idxOrCount{ RandomCount(1, 1) };
+			Chance       chance{};
 
 			Path path{};
 		};
