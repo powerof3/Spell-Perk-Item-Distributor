@@ -200,11 +200,12 @@ namespace Filter
 			double randNum;
 			if (chance.deterministic) {
 				const auto  playerID    = PCLevelMult::Manager::GetSingleton()->GetCurrentPlayerID();
-				const auto  npcFormID   = static_cast<std::uint64_t>(a_npcData.GetNPC()->GetFormID());
 				const auto  actorFormID = static_cast<std::uint64_t>(a_npcData.GetActor()->GetFormID());
 				std::size_t seed        = chance.lineSeed;
-				hash_combine(seed, playerID, npcFormID, actorFormID);
+				hash_combine(seed, playerID, actorFormID);
 				randNum = RNG(seed).generate();
+				logger::info("Seed for Actor {:08X}, Player {}, base {} = {}. Chance: {:.3f}", a_npcData.GetActor()->GetFormID(), playerID, chance.lineSeed, seed, randNum);
+				
 			} else {
 				randNum = RNG().generate();
 			}
