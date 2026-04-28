@@ -8,6 +8,7 @@
 #	include "Testing/OutfitManagerTests.h"
 #	include "Testing/DistributionTests.h"
 #	include "Testing/DeathDistributionTests.h"
+#	include "Testing/DeterministicChanceTests.h"
 #	include "Testing/Testing.h"
 #endif
 

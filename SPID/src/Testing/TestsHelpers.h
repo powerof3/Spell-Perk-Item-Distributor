@@ -54,6 +54,11 @@ namespace Testing::Helper
 			actor->KillImmediate();
 			return actor;
 		}
+
+		inline RE::Actor* GetAnotherActor()
+		{
+			return GetForm<RE::Actor>(0x1C1A4);
+		}
 	};
 
 	namespace Distribution

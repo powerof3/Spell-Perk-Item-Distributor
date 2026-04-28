@@ -110,6 +110,7 @@ namespace Distribution
 		inline Map<RECORD::TYPE, DataVec> configs{};
 
 		std::pair<bool, bool> GetConfigs();
+		void                  TryParse(const std::string& key, const std::string& value, const Path& path);
 	}
 }
 
