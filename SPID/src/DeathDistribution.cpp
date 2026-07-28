@@ -285,7 +285,12 @@ namespace DeathDistribution
 			return RE::BSEventNotifyControl::kContinue;
 		}
 
-		if (const auto actor = a_event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef()) {
+		// When summoned actors die, they are dispelled and being removed from the world. 
+		// Morevoer, they are not recycled properly, but rather reused for subsequent summons.
+		// 
+		// As such, if we were to distribute on death, the next summon would appear having all the dead items on them.
+		// Because of that, we simply ignore summoned actors in On Death Distribution.
+		if (const auto actor = a_event->actorDying->As<RE::Actor>(); actor && !actor->IsPlayerRef() && !actor->IsSummoned()) {
 			if (const auto npc = actor->GetActorBase(); npc) {
 				logger::debug("[💀] Dying {}", *actor);
 				auto npcData = NPCData(actor, npc, true);
