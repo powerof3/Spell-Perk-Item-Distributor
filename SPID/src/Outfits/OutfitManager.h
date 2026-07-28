@@ -165,6 +165,12 @@ namespace Outfits
 		bool IsProcessed(RE::FormID actorID) const;
 		void MarkProcessed(const RE::Actor*);
 
+		/// Removes actor from the tracked replacements and processed list.
+		///
+		/// This method is called when the actor is about to be deleted permanently, 
+		/// so that the FormID might be used for any other Form, in particular for a new Actor.
+		void UntrackActor(RE::FormID actorID);
+
 		/// <summary>
 		/// Resolves the outfit that should be worn by the actor.
 		///

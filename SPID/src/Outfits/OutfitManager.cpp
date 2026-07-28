@@ -280,6 +280,14 @@ namespace Outfits
 		processedActors.insert(actor->formID);
 	}
 
+	void Manager::UntrackActor(RE::FormID actorID)
+	{
+		wornReplacements.erase(actorID);
+		pendingReplacements.erase(actorID);
+		processedActors.erase(actorID);
+		initialOutfits.erase(actorID);
+	}
+
 	bool Manager::IsSuspendedReplacement(const RE::Actor* actor) const
 	{
 		if (const auto npc = actor->GetActorBase(); npc && npc->defaultOutfit) {
@@ -294,9 +302,7 @@ namespace Outfits
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESFormDeleteEvent* event, RE::BSTEventSource<RE::TESFormDeleteEvent>*)
 	{
 		if (event && event->formID != 0) {
-			wornReplacements.erase(event->formID);
-			pendingReplacements.erase(event->formID);
-			initialOutfits.erase(event->formID);
+			UntrackActor(event->formID);
 		}
 		return RE::BSEventNotifyControl::kContinue;
 	}
