@@ -77,7 +77,8 @@ namespace Outfits
 	bool Manager::ProcessResetReference(RE::Actor* actor, std::function<bool()> funcCall)
 	{
 		logger::info("[🧥] Recycling {}", *actor);
-		RevertOutfit(actor, false);
+		RevertOutfit(actor);
+		pendingReplacements.erase(actor->formID);
 		processedActors.erase(actor->formID);
 		return funcCall();
 	}
