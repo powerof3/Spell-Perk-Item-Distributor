@@ -279,6 +279,7 @@ namespace DeathDistribution
 		Distribute::LogDistribution(distributedForms, data, false, "[💀][📦] ");
 	}
 
+	// TODO: We need to have undistribute for resurrection and reset references.
 	RE::BSEventNotifyControl Manager::ProcessEvent(const RE::TESDeathEvent* a_event, RE::BSTEventSource<RE::TESDeathEvent>*)
 	{
 		if (!a_event || a_event->dead) {

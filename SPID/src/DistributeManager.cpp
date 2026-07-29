@@ -47,8 +47,9 @@ namespace Distribute
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 
+		// TODO: Seek a better solution. Ideally we need to re-apply cahced distribution, unlike the workaround here which would just roll completely new distribution.
+		// 
 		// Post distribution
-		// Fixes weird behavior with leveled npcs?
 		struct InitLoadGame
 		{
 			using Target = RE::Character;
@@ -62,7 +63,6 @@ namespace Distribute
 				if (const auto npc = a_this->GetActorBase()) {
 					// some leveled npcs are completely reset upon loading
 					if (a_this->Is3DLoaded()) {
-						// MAYBE: Test whether there are some NPCs that are getting in this branch
 						// I haven't experienced issues with ShouldBackgroundClone hook.
 						//logger::info("InitLoadGame({})", *a_this);
 						detail::distribute_on_load(a_this, npc);
@@ -75,7 +75,7 @@ namespace Distribute
 		void Install()
 		{
 			logger::info("🧝Actors");
-			//stl::install_hook<InitLoadGame>();
+			stl::install_hook<InitLoadGame>();
 			stl::install_hook<ShouldBackgroundClone>();
 		}
 	}
