@@ -167,7 +167,7 @@ namespace Outfits
 
 		/// Removes actor from the tracked replacements and processed list.
 		///
-		/// This method is called when the actor is about to be deleted permanently, 
+		/// This method is called when the actor is about to be deleted permanently,
 		/// so that the FormID might be used for any other Form, in particular for a new Actor.
 		void UntrackActor(RE::FormID actorID);
 

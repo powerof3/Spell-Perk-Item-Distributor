@@ -48,7 +48,7 @@ namespace Distribute
 		};
 
 		// TODO: Seek a better solution. Ideally we need to re-apply cahced distribution, unlike the workaround here which would just roll completely new distribution.
-		// 
+		//
 		// Post distribution
 		struct InitLoadGame
 		{
