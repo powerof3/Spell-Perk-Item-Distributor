@@ -19,7 +19,7 @@ namespace Distribution
 					string::replace_first_instance(newValue, " - ", "~");
 				}
 
-#ifdef SKYRIMVR
+#ifdef ENABLE_SKYRIM_VR
 				// swap dawnguard and dragonborn forms
 				// we do this during sanitize instead of in get_formID to squelch log errors
 				// VR apparently does not load masters in order so the lookup fails

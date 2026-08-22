@@ -11,24 +11,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  run:
+  build:
     if: github.repository_owner == 'powerof3'
-    uses: adya/pack-skse-mod/.github/workflows/pack.yml@main
-    with:
-      CMAKE_PROJECT_DIR: "SPID"
-      CMAKE_SE_CONFIG_PRESET: 'vs2026-windows-vcpkg-se'
-      CMAKE_SE_BUILD_PRESET: ''
-      CMAKE_AE_CONFIG_PRESET: 'vs2026-windows-vcpkg-ae'
-      CMAKE_AE_BUILD_PRESET: ''
-      CMAKE_VR_CONFIG_PRESET: ''
-      CMAKE_VR_BUILD_PRESET: ''
-      FOMOD_INCLUDE_PDB: true
-      FOMOD_MOD_NAME: "Spell Perk Item Distributor"
-      FOMOD_MOD_AUTHOR: "powerofthree & sasnikol"
-      FOMOD_MOD_NEXUS_ID: "36869"
-      FOMOD_SE_MIN_GAME_VERSION: '1.5'
-      FOMOD_AE_MIN_GAME_VERSION: '1.6'
-      FOMOD_DEFAULT_IMAGE: "FOMOD/images/cover.png"
-      PUBLISH_MOD_CHANGELOG_FILE: "FOMOD/changelog.txt"
-      PUBLISH_MOD_DESCRIPTION_FILE: "FOMOD/description.txt"
-      PUBLISH_ARCHIVE_TYPE: '7z'
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgJsonGlob: 'vcpkg.json'
+
+    - name: Configure
+      shell: pwsh
+      run: cmake --preset vs2026-windows-vcpkg
+
+    - name: Build
+      shell: pwsh
+      run: cmake --build --preset vs2026-windows-vcpkg
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: po3_SpellPerkItemDistributor-${{ github.ref_name }}
+        if-no-files-found: error
+        path: |
+          build/SPID/Release/po3_SpellPerkItemDistributor.dll
+          build/SPID/Release/po3_SpellPerkItemDistributor.pdb

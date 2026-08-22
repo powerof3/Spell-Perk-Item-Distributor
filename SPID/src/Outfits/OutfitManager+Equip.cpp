@@ -100,7 +100,7 @@ namespace Outfits
 		funcCall();
 	}
 
-#ifdef SKYRIM_SUPPORT_AE
+#ifdef ENABLE_SKYRIM_AE
 	/// Utility functions for ProcessUpdateWornGear.
 	namespace utils
 	{
@@ -160,7 +160,7 @@ namespace Outfits
 
 // Logic related to horses only appears in AE version of the game.
 // SE only checks the outfit as written above.
-#ifdef SKYRIM_SUPPORT_AE
+#ifdef ENABLE_SKYRIM_AE
 		if (actor && actor->IsHorse()) {
 			for (const auto& item : effectiveOutfit->outfitItems) {
 				if (const auto obj = item->As<RE::TESBoundObject>(); obj) {

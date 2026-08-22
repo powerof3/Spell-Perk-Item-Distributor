@@ -1,15 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_SpellPerkItemDistributor" CACHE STRING "")
 set(VERSION 7.3.2 CACHE STRING "")
-set(SE_VERSION 1597)
-set(AE_VERSION 16)
-set(VR_VERSION 1415)
 
 # ---- Options ----
 
 option(COPY_BUILD "Copy the build output to the Skyrim directory." TRUE)
-option(BUILD_SKYRIMAE "Build for Skyrim AE" OFF)
-option(BUILD_SKYRIMVR "Build for Skyrim VR" OFF)
 
 # ---- Cache build vars ----
 
@@ -19,43 +14,18 @@ macro(set_from_environment VARIABLE)
 	endif ()
 endmacro()
 
-macro(find_commonlib_path)
-	if (CommonLibName AND NOT ${CommonLibName} STREQUAL "")
-		# Check extern
-		find_path(CommonLibPath
-		include/REL/Relocation.h
-		PATHS ${PROJECT_SOURCE_DIR}/extern/${CommonLibName})
-		if (${CommonLibPath} STREQUAL "CommonLibPath-NOTFOUND")
-			#Check path
-			set_from_environment(${CommonLibName}Path)
-			set(CommonLibPath ${${CommonLibName}Path})
-		endif()
-	endif()
-endmacro()
+
+set(ENABLE_SKYRIM_SE ON CACHE BOOL "" FORCE)
+set(ENABLE_SKYRIM_AE ON CACHE BOOL "" FORCE)
+set(ENABLE_SKYRIM_VR OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+set(SKSE_SUPPORT_XBYAK ON CACHE BOOL "" FORCE)
 
 set_from_environment(VCPKG_ROOT)
-if(BUILD_SKYRIMAE)
-	add_compile_definitions(SKYRIM_AE)
-	add_compile_definitions(SKYRIM_SUPPORT_AE)
-	set(CommonLibName "CommonLibSSE")
-	set_from_environment(SkyrimAEPath)
-	set(SkyrimPath ${SkyrimAEPath})
-	set(SkyrimVersion "Skyrim AE")
-	set(VERSION ${VERSION}.${AE_VERSION})
-elseif(BUILD_SKYRIMVR)
-	add_compile_definitions(SKYRIMVR)
-	set(CommonLibName "CommonLibVR")
-	set_from_environment(SkyrimVRPath)
-	set(SkyrimPath ${SkyrimVRPath})
-	set(SkyrimVersion "Skyrim VR")
-	set(VERSION ${VERSION}.${VR_VERSION})
-else()
-	set(CommonLibName "CommonLibSSE")
-	set_from_environment(Skyrim64Path)
-	set(SkyrimPath ${Skyrim64Path})
-	set(SkyrimVersion "Skyrim SSE")
-	set(VERSION ${VERSION}.${SE_VERSION})
-endif()
+set(SkyrimVersion "Skyrim SE/AE")
+set_from_environment(Skyrim64Path)
+set(SkyrimPath ${Skyrim64Path})
 if(DEFINED SkyrimPath)
 	cmake_path(GET SkyrimPath FILENAME _lastComp)
 	if(_lastComp STREQUAL "Data")
@@ -63,10 +33,10 @@ if(DEFINED SkyrimPath)
 	endif()
 	unset(_lastComp)
 endif()
-find_commonlib_path()
+set(CommonLibPath "${PROJECT_SOURCE_DIR}/extern/CommonLibSSE-NG")
 message(
 	STATUS
-	"Building ${NAME} ${VERSION} for ${SkyrimVersion} at ${SkyrimPath} with ${CommonLibName} at ${CommonLibPath}."
+	"Building ${NAME} ${VERSION} for ${SkyrimVersion} at ${SkyrimPath} with CommonLibSSE-NG at ${CommonLibPath}."
 )
 
 if (DEFINED VCPKG_ROOT)
@@ -132,12 +102,12 @@ set(Boost_USE_STATIC_LIBS ON)
 
 # ---- Dependencies ----
 
-if (DEFINED CommonLibPath AND NOT ${CommonLibPath} STREQUAL "" AND IS_DIRECTORY ${CommonLibPath})
-	add_subdirectory(${CommonLibPath} ${CommonLibName})
+if (IS_DIRECTORY ${CommonLibPath})
+	add_subdirectory(${CommonLibPath} CommonLibSSE-NG)
 else ()
 	message(
 		FATAL_ERROR
-		"Variable ${CommonLibName}Path is not set."
+		"CommonLibSSE-NG submodule not found at ${CommonLibPath}. Run 'git submodule update --init --recursive'."
 	)
 endif()
 
@@ -221,7 +191,7 @@ target_include_directories(
 target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
-		${CommonLibName}::${CommonLibName}
+		CommonLibSSE::CommonLibSSE
 		unordered_dense::unordered_dense
 )
 

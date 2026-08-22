@@ -1,9 +1,7 @@
-[submodule "extern/CommonLibSSE"]
-	path = extern/CommonLibSSE
-	url = https://github.com/powerof3/CommonLibSSE
-[submodule "extern/CommonLibVR"]
-	path = extern/CommonLibVR
-	url = https://github.com/alandtse/CommonLibVR
 [submodule "extern/SKSEHooking"]
 	path = extern/SKSEHooking
 	url = https://github.com/adya/SKSEHooking.git
+[submodule "extern/CommonLibSSE-NG"]
+	path = extern/CommonLibSSE-NG
+	url = https://github.com/alandtse/CommonLibSSE-NG
+	branch = ng

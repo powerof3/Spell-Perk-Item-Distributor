@@ -44,71 +44,20 @@
       "toolset": "v145"
     },
     {
-      "name": "se",
-      "hidden": true,
-      "binaryDir": "${sourceDir}/build"
-    },
-    {
-      "name": "ae",
-      "hidden": true,
-      "binaryDir": "${sourceDir}/buildae",
-      "cacheVariables": {
-        "BUILD_SKYRIMAE": true
-      }
-    },
-    {
-      "name": "vr",
-      "hidden": true,
-      "binaryDir": "${sourceDir}/buildvr",
-      "cacheVariables": {
-        "BUILD_SKYRIMVR": true
-      }
-    },
-    {
-      "name": "vs2026-windows-vcpkg-se",
+      "name": "vs2026-windows-vcpkg",
+      "binaryDir": "${sourceDir}/build",
       "inherits": [
         "cmake-dev",
         "vcpkg",
         "windows",
-        "vs2026",
-        "se"
-      ]
-    },
-    {
-      "name": "vs2026-windows-vcpkg-ae",
-      "inherits": [
-        "cmake-dev",
-        "vcpkg",
-        "windows",
-        "vs2026",
-        "ae"
-      ]
-    },
-    {
-      "name": "vs2026-windows-vcpkg-vr",
-      "inherits": [
-        "cmake-dev",
-        "vcpkg",
-        "windows",
-        "vs2026",
-        "vr"
+        "vs2026"
       ]
     }
   ],
   "buildPresets": [
     {
-      "name": "vs2026-windows-vcpkg-ae",
-      "configurePreset": "vs2026-windows-vcpkg-ae",
-      "configuration": "Release"
-    },
-    {
-      "name": "vs2026-windows-vcpkg-se",
-      "configurePreset": "vs2026-windows-vcpkg-se",
-      "configuration": "Release"
-    },
-    {
-      "name": "vs2026-windows-vcpkg-vr",
-      "configurePreset": "vs2026-windows-vcpkg-vr",
+      "name": "vs2026-windows-vcpkg",
+      "configurePreset": "vs2026-windows-vcpkg",
       "configuration": "Release"
     }
   ]

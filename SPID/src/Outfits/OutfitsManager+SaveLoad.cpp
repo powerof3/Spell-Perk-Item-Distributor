@@ -1,5 +1,7 @@
 #include "OutfitManager.h"
 
+#undef interface
+
 namespace Outfits
 {
 	constexpr std::uint32_t serializationKey = 'SPID';

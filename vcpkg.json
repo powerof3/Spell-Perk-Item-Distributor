@@ -1,7 +1,7 @@
 {
   "name": "spid-common",
   "version-string": "1",
-  "builtin-baseline": "b472291f295551b7127359ea38fdd2ca092f6f1b",
+  "builtin-baseline": "ee12231b20c95013c6638d845d04c91559a1d1ff",
   "dependencies": [
     "clib-util",
     "mergemapper",
@@ -9,6 +9,8 @@
     "srell",
     "spdlog",
     "unordered-dense",
-    "xbyak"
+    "xbyak",
+    "directxtk",
+    "rapidcsv"
   ]
 }

@@ -72,17 +72,6 @@ namespace stl
 	using namespace SKSE::stl;
 };
 
-#ifdef SKYRIM_AE
-#	define OFFSET(se, ae) ae
-#	define OFFSET_3(se, ae, vr) ae
-#elif SKYRIMVR
-#	define OFFSET(se, ae) se
-#	define OFFSET_3(se, ae, vr) vr
-#else
-#	define OFFSET(se, ae) se
-#	define OFFSET_3(se, ae, vr) se
-#endif
-
 // These macros are used to provide a standardized way of managing hooks.
 // A hook should be contained in a struct,
 // which should call Process#HookName#() function of the responsible Manager class where this macro is used.

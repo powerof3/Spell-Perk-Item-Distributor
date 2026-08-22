@@ -10,8 +10,8 @@ namespace Distribute::PlayerLeveledActor
 	{
 		// ProcessLists::HandlePlayerLevelUpdate
 		// inlined into SetLevel in AE
-		static inline constexpr REL::ID     relocation = RELOCATION_ID(40575, 41567);
-		static inline constexpr std::size_t offset = OFFSET(0x97, 0x137);
+		static inline constexpr REL::RelocationID relocation{ 40575, 41567 };
+		static inline constexpr REL::VariantOffset offset{ 0x97, 0x137, 0 };
 
 		static void thunk(RE::Actor* a_actor)
 		{
