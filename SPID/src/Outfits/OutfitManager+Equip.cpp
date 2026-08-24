@@ -100,12 +100,12 @@ namespace Outfits
 		funcCall();
 	}
 
-#ifdef ENABLE_SKYRIM_AE
-	/// Utility functions for ProcessUpdateWornGear.
+	// Utility functions for ProcessUpdateWornGear.
 	namespace utils
 	{
 		RE::InventoryEntryData* GetObjectInSlot(RE::Actor* actor, int slotIndex)
 		{
+			assert(REL::Module::IsAE());
 			using func_t = decltype(&GetObjectInSlot);
 			static REL::Relocation<func_t> func{ REL::ID(419334) };
 			return func(actor, slotIndex);
@@ -113,6 +113,7 @@ namespace Outfits
 
 		RE::BGSBipedObjectForm* GetBipedObject(RE::TESBoundObject* object)
 		{
+			assert(REL::Module::IsAE());
 			if (const auto armo = object->As<RE::TESObjectARMO>(); armo) {
 				return armo;
 			} else if (const auto arma = object->As<RE::TESObjectARMA>(); arma) {
@@ -123,6 +124,7 @@ namespace Outfits
 
 		inline bool HasOverlappingSlot(RE::Actor* actor, RE::TESBoundObject* obj)
 		{
+			assert(REL::Module::IsAE());
 			if (const auto biped = GetBipedObject(obj); biped) {
 				for (int slot = 0; slot < RE::BIPED_OBJECT::kEditorTotal; ++slot) {
 					if (const auto equipped = GetObjectInSlot(actor, slot); equipped && equipped->object) {
@@ -137,7 +139,6 @@ namespace Outfits
 			return false;
 		}
 	}
-#endif
 
 	void Manager::ProcessUpdateWornGear(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate, std::function<void()> funcCall)
 	{
@@ -158,10 +159,9 @@ namespace Outfits
 			}
 		}
 
-// Logic related to horses only appears in AE version of the game.
-// SE only checks the outfit as written above.
-#ifdef ENABLE_SKYRIM_AE
-		if (actor && actor->IsHorse()) {
+		// Logic related to horses only appears in AE version of the game.
+		// SE only checks the outfit as written above.
+		if (actor && actor->IsHorse() && REL::Module::IsAE()) {
 			for (const auto& item : effectiveOutfit->outfitItems) {
 				if (const auto obj = item->As<RE::TESBoundObject>(); obj) {
 					if (utils::HasOverlappingSlot(actor, obj)) {
@@ -171,7 +171,6 @@ namespace Outfits
 				}
 			}
 		}
-#endif
 
 		logger::debug("[🧥] Equipping {} outfit {} to {}", isDefault ? "default" : "distributed", *effectiveOutfit, *actor);
 		AddWornOutfit(actor, effectiveOutfit, forceUpdate, false);

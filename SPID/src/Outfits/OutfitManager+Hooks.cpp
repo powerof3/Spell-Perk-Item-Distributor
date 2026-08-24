@@ -115,8 +115,8 @@ namespace Outfits
 	/// This hook ensures that NPCs receive distributed outfit when inventory is reset.
 	struct ResetInventory
 	{
-		static inline constexpr REL::RelocationID relocation{ 36332, 37322 };
-		static inline constexpr REL::VariantOffset offset{ 0x56, 0x56, 0 };
+		static inline constexpr REL::RelocationID  relocation{ 36332, 37322 };
+		static inline constexpr REL::VariantOffset offset{ 0x56, 0x56, 0x56 };
 
 		static void thunk(RE::Actor* actor, bool leveledOnly)
 		{
@@ -140,8 +140,8 @@ namespace Outfits
 	/// thus eligible for a fresh distribution.
 	struct ResetReference
 	{
-		static inline constexpr REL::RelocationID relocation{ 21556, 22038 };
-		static inline constexpr REL::VariantOffset offset{ 0x4B, 0x4B, 0 };
+		static inline constexpr REL::RelocationID  relocation{ 21556, 22038 };
+		static inline constexpr REL::VariantOffset offset{ 0x4B, 0x4B, 0x4B };
 
 		static bool thunk(std::int64_t a1, std::int64_t a2, std::int64_t a3, RE::TESObjectREFR* refr, std::int64_t a5, std::int64_t a6, int a7, int* a8)
 		{
@@ -170,7 +170,7 @@ namespace Outfits
 	/// Suspending allows SPID-managed outfits to behave like default outfits.
 	struct SetOutfitActor
 	{
-		static inline constexpr REL::RelocationID relocation{ 53960, 54784 };
+		static inline constexpr REL::RelocationID  relocation{ 53960, 54784 };
 		static inline constexpr REL::VariantOffset offset{ 0x3E60, 0x47D5, 0x3c83 };
 
 		// This re-creates original papyrus::Actor::SetOutfit function.
@@ -222,7 +222,7 @@ namespace Outfits
 	//struct EquipObject
 	//{
 	//	static inline constexpr REL::RelocationID relocation{ 37938, 38894 };
-	//	static inline constexpr REL::VariantOffset offset{ 0xE5, 0x170, 0 };
+	//	static inline constexpr REL::VariantOffset offset{ 0xE5, 0x170, 0xE5 };
 
 	//	static void thunk(RE::ActorEquipManager* manager, RE::Actor* actor, RE::TESBoundObject* object, RE::ObjectEquipParams* params)
 	//	{
@@ -243,7 +243,7 @@ namespace Outfits
 	//struct UnequipObject
 	//{
 	//	static inline constexpr REL::RelocationID relocation{ 37945, 38901 };
-	//	static inline constexpr REL::VariantOffset offset{ 0x138, 0x1B9, 0 };
+	//	static inline constexpr REL::VariantOffset offset{ 0x138, 0x1B9, 0x138 };
 
 	//	static void thunk(RE::ActorEquipManager* manager, RE::Actor* actor, RE::TESBoundObject* object, RE::ObjectEquipParams* params)
 	//	{
@@ -264,8 +264,10 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems
 	{
-		static inline constexpr REL::RelocationID relocation{ 50216, 51145 };
-		static inline constexpr REL::VariantOffset offset{ 0xED, 0xBE, 0 };
+		static inline constexpr REL::Version       max_version{ SKSE::RUNTIME_SSE_1_6_629 };
+
+		static inline constexpr REL::RelocationID  relocation{ 50216, 51145 };
+		static inline constexpr REL::VariantOffset offset{ 0xED, 0xBE, 0xED };
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -288,7 +290,9 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems2
 	{
-		static inline constexpr REL::RelocationID relocation{ 50217, 51146 };
+		static inline constexpr REL::Version       max_version{ SKSE::RUNTIME_SSE_1_6_629 };
+
+		static inline constexpr REL::RelocationID  relocation{ 50217, 51146 };
 		static inline constexpr REL::VariantOffset offset{ 0x152, 0x12E, 0x161 };
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
@@ -309,12 +313,13 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-#ifdef ENABLE_SKYRIM_AE
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItemsAE1170
 	{
+		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1170 };
+
 		static inline constexpr REL::ID     relocation = REL::ID(51145);
-		static inline constexpr std::size_t offset = 0xEB;
+		static inline constexpr REL::Offset offset = REL::Offset(0xEB);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -337,8 +342,10 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems2AE1170
 	{
-		static inline constexpr REL::ID     relocation = REL::ID(51146);
-		static inline constexpr std::size_t offset = 0x15B;
+		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1170 };
+
+		static inline constexpr REL::ID      relocation = REL::ID(51146);
+		static inline constexpr REL::Offset  offset = REL::Offset(0x15B);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -361,9 +368,12 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems3AE
 	{
+		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_640 };
+		static inline constexpr REL::Version max_version{ SKSE::RUNTIME_SSE_1_6_1130 };
+
 		// In AE one of the functions inlines call to function used in the above hook (FilterInventoryItems), so we need to add extra hook for it.
 		static inline constexpr REL::ID     relocation = REL::ID(51144);
-		static inline constexpr std::size_t offset = 0xE2;
+		static inline constexpr REL::Offset offset = REL::Offset(0xE2);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -386,9 +396,11 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems3AE1170
 	{
+		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1170 };
+
 		// In AE one of the functions inlines call to function used in the above hook (FilterInventoryItems), so we need to add extra hook for it.
 		static inline constexpr REL::ID     relocation = REL::ID(51144);
-		static inline constexpr std::size_t offset = 0x10F;
+		static inline constexpr REL::Offset offset = REL::Offset(0x10F);
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -407,14 +419,13 @@ namespace Outfits
 
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
-#endif
 
-	///  This hook stubs call to HasOutfitItems, so that the UpdateWornGear function would always call AddWornOutfit where we handle outfit.
+	/// This hook stubs call to HasOutfitItems, so that the UpdateWornGear function would always call AddWornOutfit where we handle outfit.
 	/// Our hook will re-iomplement the entire logic related to outfit.
 	struct UpdateWornGear_HasOutfitItems_stub
 	{
-		static inline constexpr REL::RelocationID relocation{ 24234, 418622 };
-		static inline constexpr REL::VariantOffset offset{ 0x158, 0x15B, 0 };
+		static inline constexpr REL::RelocationID  relocation{ 24234, 418622 };
+		static inline constexpr REL::VariantOffset offset{ 0x158, 0x15B, 0x158 };
 
 		static bool thunk(RE::TESObjectREFR* refr, RE::BGSOutfit* outfit)
 		{
@@ -434,14 +445,15 @@ namespace Outfits
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
-#ifdef ENABLE_SKYRIM_AE
 	/// This hook stubs call to IsHorse, so that the UpdateWornGear function would always call AddWornOutfit where we handle outfit.
 	/// Our hook will re-iomplement the entire logic related to outfit.
 	struct UpdateWornGear_IsHorse_stub
 	{
 		// This logic related to horse only appears in AE version of the game.
-		static inline constexpr REL::ID     relocation = REL::ID(418622);
-		static inline constexpr std::size_t offset = 0x1C0;
+		static inline constexpr REL::Module::Runtime runtime{ REL::Module::Runtime::AE };
+
+		static inline constexpr REL::ID              relocation = REL::ID(418622);
+		static inline constexpr REL::Offset          offset = REL::Offset(0x1C0);
 
 		static bool thunk(RE::TESObjectREFR* refr)
 		{
@@ -460,13 +472,12 @@ namespace Outfits
 
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
-#endif
 
 	/// This hook implements part of the UpdateWornGear related to the default outfit.
 	struct UpdateWornGear_AddWornOutfit
 	{
-		static inline constexpr REL::RelocationID relocation{ 24234, 418622 };
-		static inline constexpr REL::VariantOffset offset{ 0x1C3, 0x25E, 0 };
+		static inline constexpr REL::RelocationID  relocation{ 24234, 418622 };
+		static inline constexpr REL::VariantOffset offset{ 0x1C3, 0x25E, 0x1C3 };
 
 		static void thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
 		{
@@ -517,26 +528,16 @@ namespace Outfits
 		stl::install_hook<SetOutfitActor>();
 
 		// Hide distributed outfit items from the inventory.
-#ifdef ENABLE_SKYRIM_AE
-		auto gameVersion = REL::Module::get().version();
-		if (gameVersion >= SKSE::RUNTIME_SSE_1_6_1170) {
-			stl::install_hook<FilterInventoryItemsAE1170>();
-			stl::install_hook<FilterInventoryItems2AE1170>();
-			stl::install_hook<FilterInventoryItems3AE1170>();
-		} else if (gameVersion >= SKSE::RUNTIME_SSE_1_6_640) {
-			stl::install_hook<FilterInventoryItems3AE>();
-		} else {
-#else
-		{
-#endif
-			stl::install_hook<FilterInventoryItems>();
-			stl::install_hook<FilterInventoryItems2>();
-		}
+		stl::install_hook<FilterInventoryItems>();
+		stl::install_hook<FilterInventoryItems2>();
+		stl::install_hook<FilterInventoryItems3AE>();
+		stl::install_hook<FilterInventoryItemsAE1170>();
+		stl::install_hook<FilterInventoryItems2AE1170>();
+		stl::install_hook<FilterInventoryItems3AE1170>();
+
 		// Track attempts to keep best gear equipped.
 		stl::install_hook<UpdateWornGear_HasOutfitItems_stub>();
-#ifdef ENABLE_SKYRIM_AE
 		stl::install_hook<UpdateWornGear_IsHorse_stub>();
-#endif
 		stl::install_hook<UpdateWornGear_AddWornOutfit>();
 	}
 }
