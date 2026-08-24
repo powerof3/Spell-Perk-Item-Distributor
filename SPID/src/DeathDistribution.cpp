@@ -217,6 +217,11 @@ namespace DeathDistribution
 			return func(actor);
 		}
 
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing ShouldBackgroundClone hook...");
+		}
+
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");

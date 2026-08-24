@@ -23,6 +23,12 @@ namespace Distribute::PlayerLeveledActor
 
 			func(a_actor);
 		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing HandleUpdatePlayerLevel hook...");
+		}
+
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
@@ -90,6 +96,12 @@ namespace Distribute::PlayerLeveledActor
 				});
 			}
 		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing Revert hook...");
+		}
+
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 
@@ -162,6 +174,12 @@ namespace Distribute::PlayerLeveledActor
 
 			func(a_this, a_buf);
 		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing LoadGame hook...");
+		}
+
 		static inline REL::Relocation<decltype(thunk)> func;
 	};
 

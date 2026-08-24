@@ -17,6 +17,11 @@ namespace Outfits
 			return Manager::GetSingleton()->ProcessShouldBackgroundClone(actor, [&] { return func(actor); });
 		}
 
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing ShouldBackgroundClone hook...");
+		}
+
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed ShouldBackgroundClone hook.");
@@ -37,6 +42,11 @@ namespace Outfits
 			return Manager::GetSingleton()->ProcessLoad3D(actor, a_backgroundLoading, [&] { return func(actor, a_backgroundLoading); });
 		}
 
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing Load3D hook...");
+		}
+
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed Load3D hook.");
@@ -55,6 +65,11 @@ namespace Outfits
 		static void thunk(RE::TESNPC* npc)
 		{
 			Manager::GetSingleton()->ProcessInitItemImpl(npc, [&] { func(npc); });
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing InitItemImpl hook...");
 		}
 
 		static inline void post_hook()
@@ -84,6 +99,11 @@ namespace Outfits
 			Manager::GetSingleton()->ProcessResurrect(actor, resetInventory, [&] { func(actor, resetInventory, attach3D); });
 		}
 
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing Resurrect hook...");
+		}
+
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed Resurrect hook.");
@@ -101,6 +121,11 @@ namespace Outfits
 		static void thunk(RE::Actor* actor, bool leveledOnly)
 		{
 			Manager::GetSingleton()->ProcessResetInventory(actor, [&] { func(actor, leveledOnly); });
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing ResetInventory hook...");
 		}
 
 		static inline void post_hook()
@@ -126,6 +151,11 @@ namespace Outfits
 				}
 			}
 			return func(a1, a2, a3, refr, a5, a6, a7, a8);
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing ResetReference hook...");
 		}
 
 		static inline void post_hook()
@@ -170,6 +200,11 @@ namespace Outfits
 			} else {
 				Manager::GetSingleton()->ProcessSetOutfitActor(actor, outfit, [&] { func(vm, stackID, actor, outfit, isSleepOutfit); });
 			}
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing SetOutfit hook...");
 		}
 
 		static inline void post_hook()
@@ -237,6 +272,11 @@ namespace Outfits
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
 		}
 
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing FilterInventoryItems hook...");
+		}
+
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed FilterInventoryItems hook.");
@@ -254,6 +294,11 @@ namespace Outfits
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, item, container); });
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing FilterInventoryItems2 hook...");
 		}
 
 		static inline void post_hook()
@@ -276,6 +321,11 @@ namespace Outfits
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
 		}
 
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing FilterInventoryItems hook...");
+		}
+
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed FilterInventoryItems hook.");
@@ -293,6 +343,11 @@ namespace Outfits
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, item, container); });
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing FilterInventoryItems2 hook...");
 		}
 
 		static inline void post_hook()
@@ -315,6 +370,11 @@ namespace Outfits
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
 		}
 
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing FilterInventoryItemsAE hook...");
+		}
+
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed FilterInventoryItemsAE hook.");
@@ -333,6 +393,11 @@ namespace Outfits
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing FilterInventoryItemsAE hook...");
 		}
 
 		static inline void post_hook()
@@ -354,6 +419,11 @@ namespace Outfits
 		static bool thunk(RE::TESObjectREFR* refr, RE::BGSOutfit* outfit)
 		{
 			return true;
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing HasOutfitItems stub...");
 		}
 
 		static inline void post_hook()
@@ -378,6 +448,11 @@ namespace Outfits
 			return false;
 		}
 
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing IsHorse stub...");
+		}
+
 		static inline void post_hook()
 		{
 			logger::info("\t\t🪝Installed IsHorse stub.");
@@ -396,6 +471,11 @@ namespace Outfits
 		static void thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
 		{
 			Manager::GetSingleton()->ProcessUpdateWornGear(actor, outfit, forceUpdate, [&]() { return func(actor, outfit, forceUpdate); });
+		}
+
+		static inline void pre_hook()
+		{
+			logger::debug("\t\t🪝Installing AddWornOutfit hook...");
 		}
 
 		static inline void post_hook()
