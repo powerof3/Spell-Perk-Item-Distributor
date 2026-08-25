@@ -324,9 +324,9 @@ namespace Outfits
 	};
 
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
-	struct FilterInventoryItemsAE1170
+	struct FilterInventoryItemsAE1130
 	{
-		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1170 };
+		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1130 };
 
 		static inline constexpr REL::ID     relocation = REL::ID(51145);
 		static inline constexpr REL::Offset offset = REL::Offset(0xEB);
@@ -352,9 +352,9 @@ namespace Outfits
 	};
 
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
-	struct FilterInventoryItems2AE1170
+	struct FilterInventoryItems2AE1130
 	{
-		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1170 };
+		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1130 };
 
 		static inline constexpr REL::ID      relocation = REL::ID(51146);
 		static inline constexpr REL::Offset  offset = REL::Offset(0x15B);
@@ -382,8 +382,7 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems3AE
 	{
-		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_640 };
-		static inline constexpr REL::Version max_version{ SKSE::RUNTIME_SSE_1_6_1130 };
+		static inline constexpr std::array exact_versions{ SKSE::RUNTIME_SSE_1_6_640 };
 
 		// In AE one of the functions inlines call to function used in the above hook (FilterInventoryItems), so we need to add extra hook for it.
 		static inline constexpr REL::ID     relocation = REL::ID(51144);
@@ -410,9 +409,9 @@ namespace Outfits
 	};
 
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
-	struct FilterInventoryItems3AE1170
+	struct FilterInventoryItems3AE1130
 	{
-		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1170 };
+		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1130 };
 
 		// In AE one of the functions inlines call to function used in the above hook (FilterInventoryItems), so we need to add extra hook for it.
 		static inline constexpr REL::ID     relocation = REL::ID(51144);
@@ -555,9 +554,9 @@ namespace Outfits
 		stl::install_hook<FilterInventoryItems>();
 		stl::install_hook<FilterInventoryItems2>();
 		stl::install_hook<FilterInventoryItems3AE>();
-		stl::install_hook<FilterInventoryItemsAE1170>();
-		stl::install_hook<FilterInventoryItems2AE1170>();
-		stl::install_hook<FilterInventoryItems3AE1170>();
+		stl::install_hook<FilterInventoryItemsAE1130>();
+		stl::install_hook<FilterInventoryItems2AE1130>();
+		stl::install_hook<FilterInventoryItems3AE1130>();
 
 		// Track attempts to keep best gear equipped.
 		stl::install_hook<UpdateWornGear_HasOutfitItems_stub>();
