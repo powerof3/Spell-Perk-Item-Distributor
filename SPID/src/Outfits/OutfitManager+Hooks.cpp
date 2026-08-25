@@ -270,7 +270,7 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems
 	{
-		static inline constexpr REL::Version       max_version{ SKSE::RUNTIME_SSE_1_6_629 };
+		static inline constexpr REL::Version max_version{ SKSE::RUNTIME_SSE_1_6_629 };
 
 		static inline constexpr REL::RelocationID  relocation{ 50216, 51145 };
 		static inline constexpr REL::VariantOffset offset{ 0xED, 0xBE, 0xED };
@@ -298,7 +298,7 @@ namespace Outfits
 	/// This hook ensures that items from distributed outfit are not accessible in the inventory.
 	struct FilterInventoryItems2
 	{
-		static inline constexpr REL::Version       max_version{ SKSE::RUNTIME_SSE_1_6_629 };
+		static inline constexpr REL::Version max_version{ SKSE::RUNTIME_SSE_1_6_629 };
 
 		static inline constexpr REL::RelocationID  relocation{ 50217, 51146 };
 		static inline constexpr REL::VariantOffset offset{ 0x152, 0x12E, 0x161 };
@@ -356,8 +356,8 @@ namespace Outfits
 	{
 		static inline constexpr REL::Version min_version{ SKSE::RUNTIME_SSE_1_6_1130 };
 
-		static inline constexpr REL::ID      relocation = REL::ID(51146);
-		static inline constexpr REL::Offset  offset = REL::Offset(0x15B);
+		static inline constexpr REL::ID     relocation = REL::ID(51146);
+		static inline constexpr REL::Offset offset = REL::Offset(0x15B);
 
 		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 48 83 C7 08 EB 9C" };
 
@@ -471,8 +471,8 @@ namespace Outfits
 		// This logic related to horse only appears in AE version of the game.
 		static inline constexpr REL::Module::Runtime runtime{ REL::Module::Runtime::AE };
 
-		static inline constexpr REL::ID              relocation = REL::ID(418622);
-		static inline constexpr REL::Offset          offset = REL::Offset(0x1C0);
+		static inline constexpr REL::ID     relocation = REL::ID(418622);
+		static inline constexpr REL::Offset offset = REL::Offset(0x1C0);
 
 		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 84 C0 0F 84 88 00 00 00" };
 

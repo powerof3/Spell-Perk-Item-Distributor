@@ -10,7 +10,7 @@ namespace Distribute::PlayerLeveledActor
 	{
 		// ProcessLists::HandlePlayerLevelUpdate
 		// inlined into SetLevel in AE
-		static inline constexpr REL::RelocationID relocation{ 40575, 41567 };
+		static inline constexpr REL::RelocationID  relocation{ 40575, 41567 };
 		static inline constexpr REL::VariantOffset offset{ 0x97, 0x137, 0x97 };
 
 		static inline constexpr VariantSignature<"E8 ?? ?? ?? ?? 90 48 85 FF", "E8 ?? ?? ?? ?? 90 48 85 DB"> signature;
