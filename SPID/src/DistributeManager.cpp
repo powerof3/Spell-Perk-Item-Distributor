@@ -80,6 +80,11 @@ namespace Distribute
 				logger::debug("\t\t🪝Installing InitLoadGame hook...");
 			}
 
+			static inline void post_hook()
+			{
+				logger::info("\t\t🪝Installed InitLoadGame hook.");
+			}
+
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
 

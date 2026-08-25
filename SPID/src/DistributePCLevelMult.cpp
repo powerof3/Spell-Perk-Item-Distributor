@@ -13,6 +13,8 @@ namespace Distribute::PlayerLeveledActor
 		static inline constexpr REL::RelocationID relocation{ 40575, 41567 };
 		static inline constexpr REL::VariantOffset offset{ 0x97, 0x137, 0x97 };
 
+		static inline constexpr VariantSignature<"E8 ?? ?? ?? ?? 90 48 85 FF", "E8 ?? ?? ?? ?? 90 48 85 DB"> signature;
+
 		static void thunk(RE::Actor* a_actor)
 		{
 			if (const auto npc = a_actor->GetActorBase(); npc && npc->HasKeyword(processed)) {
@@ -27,6 +29,11 @@ namespace Distribute::PlayerLeveledActor
 		static inline void pre_hook()
 		{
 			logger::debug("\t\t🪝Installing HandleUpdatePlayerLevel hook...");
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed HandleUpdatePlayerLevel hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -100,6 +107,11 @@ namespace Distribute::PlayerLeveledActor
 		static inline void pre_hook()
 		{
 			logger::debug("\t\t🪝Installing Revert hook...");
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed Revert hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;
@@ -178,6 +190,11 @@ namespace Distribute::PlayerLeveledActor
 		static inline void pre_hook()
 		{
 			logger::debug("\t\t🪝Installing LoadGame hook...");
+		}
+
+		static inline void post_hook()
+		{
+			logger::info("\t\t🪝Installed LoadGame hook.");
 		}
 
 		static inline REL::Relocation<decltype(thunk)> func;

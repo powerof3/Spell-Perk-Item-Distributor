@@ -118,6 +118,8 @@ namespace Outfits
 		static inline constexpr REL::RelocationID  relocation{ 36332, 37322 };
 		static inline constexpr REL::VariantOffset offset{ 0x56, 0x56, 0x56 };
 
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 48 8B CB E8 ?? ?? ?? ??" };
+
 		static void thunk(RE::Actor* actor, bool leveledOnly)
 		{
 			Manager::GetSingleton()->ProcessResetInventory(actor, [&] { func(actor, leveledOnly); });
@@ -142,6 +144,8 @@ namespace Outfits
 	{
 		static inline constexpr REL::RelocationID  relocation{ 21556, 22038 };
 		static inline constexpr REL::VariantOffset offset{ 0x4B, 0x4B, 0x4B };
+
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 84 C0 75 10" };
 
 		static bool thunk(std::int64_t a1, std::int64_t a2, std::int64_t a3, RE::TESObjectREFR* refr, std::int64_t a5, std::int64_t a6, int a7, int* a8)
 		{
@@ -172,6 +176,8 @@ namespace Outfits
 	{
 		static inline constexpr REL::RelocationID  relocation{ 53960, 54784 };
 		static inline constexpr REL::VariantOffset offset{ 0x3E60, 0x47D5, 0x3c83 };
+
+		static inline constexpr VariantSignature<"4C 8D 0D ?? ?? ?? ?? 4C 8D 05 ?? ?? ?? ?? 48 8D 15 ?? ?? ?? ??", "48 8D 05 ?? ?? ?? ?? 49 89 47 50 41 8B 3C 3C"> signature;
 
 		// This re-creates original papyrus::Actor::SetOutfit function.
 		static void thunk(RE::BSScript::Internal::VirtualMachine* vm, RE::VMStackID stackID, RE::Actor* actor, RE::BGSOutfit* outfit, bool isSleepOutfit)
@@ -269,6 +275,8 @@ namespace Outfits
 		static inline constexpr REL::RelocationID  relocation{ 50216, 51145 };
 		static inline constexpr REL::VariantOffset offset{ 0xED, 0xBE, 0xED };
 
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 90 48 85 DB" };
+
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
@@ -294,6 +302,8 @@ namespace Outfits
 
 		static inline constexpr REL::RelocationID  relocation{ 50217, 51146 };
 		static inline constexpr REL::VariantOffset offset{ 0x152, 0x12E, 0x161 };
+
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 48 83 C7 08 48 8D 94 24 98 00 00 00" };
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -321,6 +331,8 @@ namespace Outfits
 		static inline constexpr REL::ID     relocation = REL::ID(51145);
 		static inline constexpr REL::Offset offset = REL::Offset(0xEB);
 
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 90 48 85 DB" };
+
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
@@ -346,6 +358,8 @@ namespace Outfits
 
 		static inline constexpr REL::ID      relocation = REL::ID(51146);
 		static inline constexpr REL::Offset  offset = REL::Offset(0x15B);
+
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 48 83 C7 08 EB 9C" };
 
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::InventoryEntryData* item, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
@@ -375,6 +389,8 @@ namespace Outfits
 		static inline constexpr REL::ID     relocation = REL::ID(51144);
 		static inline constexpr REL::Offset offset = REL::Offset(0xE2);
 
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 90 48 85 DB" };
+
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
@@ -402,6 +418,8 @@ namespace Outfits
 		static inline constexpr REL::ID     relocation = REL::ID(51144);
 		static inline constexpr REL::Offset offset = REL::Offset(0x10F);
 
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 90 48 85 DB" };
+
 		static void thunk(RE::ItemList* itemList, RE::InventoryChanges* invChanges, RE::NiPointer<RE::TESObjectREFR>& container)
 		{
 			return Manager::GetSingleton()->ProcessFilterInventoryItems(container, [&] { return func(itemList, invChanges, container); });
@@ -426,6 +444,8 @@ namespace Outfits
 	{
 		static inline constexpr REL::RelocationID  relocation{ 24234, 418622 };
 		static inline constexpr REL::VariantOffset offset{ 0x158, 0x15B, 0x158 };
+
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 84 C0 75 59" };
 
 		static bool thunk(RE::TESObjectREFR* refr, RE::BGSOutfit* outfit)
 		{
@@ -455,6 +475,8 @@ namespace Outfits
 		static inline constexpr REL::ID              relocation = REL::ID(418622);
 		static inline constexpr REL::Offset          offset = REL::Offset(0x1C0);
 
+		static inline constexpr Signature signature{ "E8 ?? ?? ?? ?? 84 C0 0F 84 88 00 00 00" };
+
 		static bool thunk(RE::TESObjectREFR* refr)
 		{
 			return false;
@@ -478,6 +500,8 @@ namespace Outfits
 	{
 		static inline constexpr REL::RelocationID  relocation{ 24234, 418622 };
 		static inline constexpr REL::VariantOffset offset{ 0x1C3, 0x25E, 0x1C3 };
+
+		static inline constexpr VariantSignature<"E8 ?? ?? ?? ?? 41 BF 01 00 00 00 4C 89 7C 24 60", "E8 ?? ?? ?? ?? 41 BC 01 00 00 00 4C 89 64 24 60"> signature;
 
 		static void thunk(RE::Actor* actor, RE::BGSOutfit* outfit, bool forceUpdate)
 		{
