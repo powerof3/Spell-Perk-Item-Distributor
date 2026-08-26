@@ -10,9 +10,54 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  version:
     if: github.repository_owner == 'powerof3'
+    runs-on: ubuntu-latest
+    outputs:
+      moved: ${{ steps.bump.outputs.moved }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: master
+        fetch-depth: 0
+
+    - name: Verify tag points at master's tip
+      run: |
+        MASTER_SHA=$(git rev-parse HEAD)
+        if [ "$MASTER_SHA" != "${{ github.sha }}" ]; then
+          echo "::error::Tag ${{ github.ref_name }} does not point at the tip of master ($MASTER_SHA). Re-tag master's tip and push again."
+          exit 1
+        fi
+
+    - name: Bump version files and move tag
+      id: bump
+      run: |
+        VERSION=$(echo "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
+        sed -i -E "s/set\(VERSION [0-9]+\.[0-9]+\.[0-9]+/set(VERSION $VERSION/" SPID/CMakeLists.txt
+        sed -i -E "s/\"version-string\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"version-string\": \"$VERSION\"/" SPID/vcpkg.json
+
+        if git diff --quiet; then
+          echo "Version files already match tag $VERSION; nothing to do."
+          echo "moved=false" >> $GITHUB_OUTPUT
+        else
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add SPID/CMakeLists.txt SPID/vcpkg.json
+          git commit -m "Set version to $VERSION"
+          git push origin HEAD:master
+          git tag -f "${{ github.ref_name }}"
+          git push origin "refs/tags/${{ github.ref_name }}" --force
+          echo "moved=true" >> $GITHUB_OUTPUT
+        fi
+
+  build:
+    needs: version
+    if: needs.version.outputs.moved == 'false'
     runs-on: windows-latest
 
     steps:
@@ -34,11 +79,35 @@ jobs:
       shell: pwsh
       run: cmake --build --preset vs2026-windows-vcpkg
 
+    - id: export
+      shell: pwsh
+      run: |
+        $PRODUCT_NAME = cmake -L -N build | grep "^NAME:STRING=" | %{$_ -replace "NAME:STRING=",""}
+        echo "PRODUCT_NAME=$PRODUCT_NAME" >> $Env:GITHUB_OUTPUT
+
+    - name: Package
+      shell: pwsh
+      run: |
+        $name = "${{ steps.export.outputs.PRODUCT_NAME }}"
+        $binDir = "build/SPID/Release"
+        $pluginDir = "package/SKSE/Plugins"
+        New-Item -ItemType Directory -Force -Path $pluginDir | Out-Null
+        Copy-Item "$binDir/$name.dll" $pluginDir
+        Copy-Item "$binDir/$name.pdb" $pluginDir
+        Push-Location package
+        7z a -t7z "../$name-${{ github.ref_name }}.7z" "SKSE"
+        Pop-Location
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: po3_SpellPerkItemDistributor-${{ github.ref_name }}
+        name: ${{ steps.export.outputs.PRODUCT_NAME }}-${{ github.ref_name }}
         if-no-files-found: error
-        path: |
-          build/SPID/Release/po3_SpellPerkItemDistributor.dll
-          build/SPID/Release/po3_SpellPerkItemDistributor.pdb
+        path: ${{ steps.export.outputs.PRODUCT_NAME }}-${{ github.ref_name }}.7z
+
+    - name: Publish release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ${{ steps.export.outputs.PRODUCT_NAME }}-${{ github.ref_name }}.7z
+        prerelease: ${{ contains(github.ref_name, 'rc') }}
+        generate_release_notes: true
