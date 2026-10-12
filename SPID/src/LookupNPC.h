@@ -16,7 +16,7 @@ namespace NPC
 
 		[[nodiscard]] bool HasStringFilter(const StringVec& a_strings, bool a_all = false) const;
 		[[nodiscard]] bool ContainsStringFilter(const StringVec& a_strings) const;
-		/// Inserts a keyword by its EditorID. Returns false if the keyword is already present (case-sensitive).
+		/// Inserts a keyword by its EditorID. Returns false if the keyword is already present (case-insensitive).
 		bool               InsertKeyword(const char* a_keyword);
 		[[nodiscard]] bool HasFormFilter(const FormVec& a_forms, bool all = false) const;
 
@@ -82,8 +82,7 @@ namespace NPC
 		RE::TESRace*             race;
 		std::vector<ID>          IDs;
 		std::string              name;
-		StringSet                keywords{};
-		CaseInsensitiveStringSet keywordIndex{};
+		CaseInsensitiveStringSet keywords{};
 		std::uint16_t            level;
 		bool                     child;
 		bool                     teammate;

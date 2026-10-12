@@ -45,7 +45,7 @@ namespace NPC
 		// Pre-allocate capacity for both NPC and race keywords to avoid rehashing during initialization.
 		const auto initialKeywordCount = static_cast<std::size_t>(npc->GetNumKeywords()) + (race ? race->GetNumKeywords() : 0);
 		if (initialKeywordCount != 0) {
-			keywordIndex.reserve(initialKeywordCount);
+			keywords.reserve(initialKeywordCount);
 		}
 
 		npc->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
@@ -91,7 +91,7 @@ namespace NPC
 
 	bool Data::has_keyword_string(std::string_view a_string) const
 	{
-		return keywordIndex.contains(a_string);
+		return keywords.contains(a_string);
 	}
 
 	bool Data::HasStringFilter(const StringVec& a_strings, bool a_all) const
@@ -120,11 +120,7 @@ namespace NPC
 
 	bool Data::InsertKeyword(const char* a_keyword)
 	{
-		if (!keywords.emplace(a_keyword).second) {
-			return false;
-		}
-		keywordIndex.emplace(a_keyword);
-		return true;
+		return keywords.emplace(a_keyword).second;
 	}
 
 	bool Data::has_form(RE::TESForm* a_form) const
