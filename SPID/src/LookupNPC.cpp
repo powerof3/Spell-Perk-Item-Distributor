@@ -42,8 +42,14 @@ namespace NPC
 		leveled(a_actor->IsLeveled()),
 		dying(isDying)
 	{
+		// Pre-allocate capacity for both NPC and race keywords to avoid rehashing during initialization.
+		const auto initialKeywordCount = static_cast<std::size_t>(npc->GetNumKeywords()) + (race ? race->GetNumKeywords() : 0);
+		if (initialKeywordCount != 0) {
+			keywords.reserve(initialKeywordCount);
+		}
+
 		npc->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
-			keywords.emplace(a_keyword->GetFormEditorID());
+			InsertKeyword(a_keyword->GetFormEditorID());
 			return RE::BSContainer::ForEachResult::kContinue;
 		});
 
@@ -64,7 +70,7 @@ namespace NPC
 
 		if (race) {
 			race->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
-				keywords.emplace(a_keyword->GetFormEditorID());
+				InsertKeyword(a_keyword->GetFormEditorID());
 				return RE::BSContainer::ForEachResult::kContinue;
 			});
 		}
@@ -83,11 +89,9 @@ namespace NPC
 		return actor;
 	}
 
-	bool Data::has_keyword_string(const std::string& a_string) const
+	bool Data::has_keyword_string(std::string_view a_string) const
 	{
-		return std::any_of(keywords.begin(), keywords.end(), [&](const auto& keyword) {
-			return string::iequals(keyword, a_string);
-		});
+		return keywords.contains(a_string);
 	}
 
 	bool Data::HasStringFilter(const StringVec& a_strings, bool a_all) const

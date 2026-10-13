@@ -66,7 +66,7 @@ namespace ExclusiveGroups
 	void Manager::LookupExclusiveGroups(RE::TESDataHandler* const dataHandler, INI::ExclusiveGroupsVec& exclusiveGroups)
 	{
 		groups.clear();
-		linkedGroups.clear();
+		mutuallyExclusiveForms.clear();
 
 		for (auto& [name, filterIDs, path] : exclusiveGroups) {
 			auto&   forms = groups[name];
@@ -91,11 +91,7 @@ namespace ExclusiveGroups
 		// Remove empty groups
 		std::erase_if(groups, [](const auto& pair) { return pair.second.empty(); });
 
-		for (auto& [name, forms] : groups) {
-			for (auto& form : forms) {
-				linkedGroups[form].insert(name);
-			}
-		}
+		BuildMutuallyExclusiveForms();
 	}
 
 	void Manager::LogExclusiveGroupsLookup()
@@ -114,20 +110,30 @@ namespace ExclusiveGroups
 		}
 	}
 
-	std::unordered_set<RE::TESForm*> Manager::MutuallyExclusiveFormsForForm(RE::TESForm* form) const
+	std::span<RE::TESForm* const> Manager::MutuallyExclusiveFormsForForm(RE::TESForm* form) const
 	{
-		std::unordered_set<RE::TESForm*> forms{};
-		if (auto it = linkedGroups.find(form); it != linkedGroups.end()) {
-			std::ranges::for_each(it->second, [&](const Group& name) {
-				const auto& group = groups.at(name);
-				forms.insert(group.begin(), group.end());
-			});
+		if (const auto it = mutuallyExclusiveForms.find(form); it != mutuallyExclusiveForms.end()) {
+			return it->second;
+		}
+		return {};
+	}
+
+	void Manager::BuildMutuallyExclusiveForms()
+	{
+		for (const auto& [name, forms] : groups) {
+			for (auto form : forms) {
+				auto& excludedForms = mutuallyExclusiveForms[form];
+				excludedForms.insert(excludedForms.end(), forms.begin(), forms.end());
+			}
 		}
 
-		// Remove self from the list.
-		forms.erase(form);
-
-		return forms;
+		for (auto& [form, excludedForms] : mutuallyExclusiveForms) {
+			std::erase(excludedForms, form);
+			std::ranges::sort(excludedForms, std::less<>{});
+			const auto duplicates = std::ranges::unique(excludedForms);
+			excludedForms.erase(duplicates.begin(), duplicates.end());
+			excludedForms.shrink_to_fit();
+		}
 	}
 
 	const GroupFormsMap& ExclusiveGroups::Manager::GetGroups() const

@@ -1,4 +1,6 @@
 #pragma once
+#include <span>
+
 #include "LookupConfigs.h"
 
 namespace ExclusiveGroups
@@ -25,7 +27,7 @@ namespace ExclusiveGroups
 	}
 
 	using Group = std::string;
-	using FormGroupMap = std::unordered_map<RE::TESForm*, std::unordered_set<Group>>;
+	using FormExclusionsMap = std::unordered_map<RE::TESForm*, std::vector<RE::TESForm*>>;
 	using GroupFormsMap = std::unordered_map<Group, std::unordered_set<RE::TESForm*>>;
 
 	class Manager : public ISingleton<Manager>
@@ -43,12 +45,12 @@ namespace ExclusiveGroups
 		void LogExclusiveGroupsLookup();
 
 		/// <summary>
-		/// Gets a set of all forms that are in the same exclusive group as the given form.
-		/// Note that a form can appear in multiple exclusive groups, all of those groups are returned.
+		/// Gets all forms that are in the same exclusive group as the given form (excluding the form itself).
+		/// Note that a form can appear in multiple exclusive groups, so forms from all matching groups are returned.
 		/// </summary>
 		/// <param name="form">A form for which mutually exclusive forms will be returned.</param>
-		/// <returns>A union of all groups that contain a given form.</returns>
-		std::unordered_set<RE::TESForm*> MutuallyExclusiveFormsForForm(RE::TESForm* form) const;
+		/// <returns>A view of all forms mutually exclusive with the given form, valid until the next LookupExclusiveGroups call.</returns>
+		std::span<RE::TESForm* const> MutuallyExclusiveFormsForForm(RE::TESForm* form) const;
 
 		/// <summary>
 		/// Retrieves all exclusive groups.
@@ -57,11 +59,13 @@ namespace ExclusiveGroups
 		const GroupFormsMap& GetGroups() const;
 
 	private:
+		/// Precomputes the mutually exclusive forms lookup table from the resolved groups.
+		void BuildMutuallyExclusiveForms();
+
 		/// <summary>
-		/// A map of exclusive group names related to each form in the exclusive groups.
-		/// Provides a quick and easy way to get names of all groups that need to be checked.
+		/// A map of each form to all other forms that share an exclusive group with it.
 		/// </summary>
-		FormGroupMap linkedGroups{};
+		FormExclusionsMap mutuallyExclusiveForms{};
 
 		/// <summary>
 		///  A map of exclusive groups names and the forms that are part of each exclusive group.

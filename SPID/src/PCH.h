@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 
+#include <cctype>
 #include <ranges>
 #include <shared_mutex>
 
@@ -66,6 +67,32 @@ struct string_hash
 template <class D>
 using StringMap = ankerl::unordered_dense::segmented_map<std::string, D, string_hash, std::equal_to<>>;
 using StringSet = ankerl::unordered_dense::segmented_set<std::string, string_hash, std::equal_to<>>;
+
+struct case_insensitive_string_hash
+{
+	using is_transparent = void;  // enable heterogeneous overloads
+
+	// Uppercase each character with std::toupper to stay consistent with string::iequals
+	[[nodiscard]] std::uint64_t operator()(std::string_view a_string) const noexcept
+	{
+		const auto foldedString = a_string | std::views::transform([](unsigned char character) {
+			return static_cast<unsigned char>(std::toupper(character));
+		});
+		return hash::fnv1a_64(foldedString);
+	}
+};
+
+struct case_insensitive_string_equal
+{
+	using is_transparent = void;
+
+	[[nodiscard]] bool operator()(std::string_view a_left, std::string_view a_right) const
+	{
+		return string::iequals(a_left, a_right);
+	}
+};
+
+using CaseInsensitiveStringSet = ankerl::unordered_dense::set<std::string, case_insensitive_string_hash, case_insensitive_string_equal>;
 
 namespace stl
 {
